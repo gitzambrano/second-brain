@@ -207,12 +207,14 @@ Nenhuma dessas subpastas é lida pela wiki como fonte de verdade — `output/` �
 5. **Enriquecimento obrigatório de todo essay:**
    - Frontmatter YAML completo (tags, sources, created, updated)
    - Byline padronizada com DUAS linhas de blockquote logo abaixo do `# Título`, com **uma linha vazia** entre o título e a byline:
+
      ```
      # Título do Essay
 
      > Tipo · Categoria Temática
      > Gustavo Zambrano · Mês de Ano
      ```
+
      Onde **Tipo** é: `Ensaio`, `White Paper`, `Brainstorm`, `Estudo` ou `Análise`.
      Onde **Categoria** é a área temática (ex: `Filosofia da Ciência & Biologia`, `Dinâmica de Aeronaves`).
      Onde **Mês de Ano** é por extenso (ex: `Maio de 2026`, `Junho de 2026`).
@@ -220,6 +222,7 @@ Nenhuma dessas subpastas é lida pela wiki como fonte de verdade — `output/` �
      **NÃO usar dois-pontos (`:`) na byline** — Obsidian interpreta como separador de bloco.
    - **Sem resumo executivo dentro do essay.** O essay não tem seção de abstract/resumo condensado — ele abre com a byline e vai direto ao `## Sumário`, e a primeira seção `##` do corpo já é a introdução de fato, que faz o trabalho de situar a tese. Um resumo condensado do essay é um artefato à parte: ver `## Handouts`. Handout NUNCA fica dentro do essay, só em `wiki/handouts/`.
    - **`## Sumário` obrigatório** logo após a byline, antes do primeiro heading de conteúdo. Lista links para todas as seções `##` do essay (exceto Referências e Conexões). Formato:
+
      ```
      ## Sumário
 
@@ -228,6 +231,7 @@ Nenhuma dessas subpastas é lida pela wiki como fonte de verdade — `output/` �
 
      ---
      ```
+
    - **Links externos** (Wikipedia, SEP, artigos) para **TODOS** os conceitos, entidades e termos técnicos mencionados inline no corpo do essay. Cada conceito importante deve ter pelo menos um link externo na primeira ocorrência.
    - **Seção `## Referências`** obrigatória, com referências bibliográficas (livros, artigos, normas). Cada referência deve incluir links externos quando disponíveis. O heading deve ser exatamente `## Referências` (nunca H1, nunca `## Referências Bibliográficas`, nunca com numeração).
    - **Seção `## Conexões`** obrigatória no final, com `[[wikilinks]]` bidirecionais para conceitos, entidades e essays relacionados. Esta seção NÃO é exportada para PDF.
@@ -300,6 +304,7 @@ O índice contém **APENAS essays**, organizados por categoria temática:
 Use o formato `[[filename|Display Title]]` para links Obsidian-compatíveis. O título do índice deve ser `# Índice`.
 
 **IMPORTANTE — Compatibilidade Obsidian:**
+
 - **NUNCA usar dois-pontos (`:`) no display text** de wikilinks no índice. Obsidian interpreta `:` como separador de bloco/heading e quebra o link.
 - Substituir `:` por `—` (em-dash) nos display texts.
 - Exemplo correto: `[[filename|Título — Subtítulo]]`

@@ -1,10 +1,12 @@
 __pycache__/
 .obsidian/
 *.code-workspace
-raw/*
-!raw/.gitkeep
-output/*
-!output/.gitkeep
+raw/**
+!raw/**/
+!raw/**/.gitkeep
+output/**
+!output/**/
+!output/**/.gitkeep
 wiki/**
 !wiki/**/
 !wiki/**/.gitkeep
