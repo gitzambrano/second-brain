@@ -12,7 +12,7 @@ allowed-tools: Bash Read Write Edit Glob Grep
 
 # Polish
 
-Ajuste de tom, ritmo e elegância de prosa, sem alterar conteúdo. Aplica `## Estilo de Prosa dos Essays` do AGENTS.md.
+Ajuste de tom, ritmo e elegância de prosa, sem alterar conteúdo. Aplica o `## Estilo de prosa` de `conventions/SKILL.md`.
 
 ## Regra de abertura
 

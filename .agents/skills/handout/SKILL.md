@@ -9,10 +9,9 @@ description: >
   alguém que não vai ler o texto inteiro.
 allowed-tools: Bash Read Write Edit Glob
 ---
-
 # Handout
 
-Gera `wiki/handouts/<slug-do-essay>.md`: uma versão de uma página do essay, para o usuário mandar rápido pra alguém que não vai ler o white paper inteiro. Ver `## Handouts` no `AGENTS.md` para a definição completa — este skill só executa o fluxo.
+Gera `wiki/handouts/<slug-do-essay>.md`: uma versão de uma página do essay, para o usuário mandar rápido pra alguém que não vai ler o white paper inteiro.
 
 ## Quando usar
 
@@ -23,7 +22,7 @@ Gera `wiki/handouts/<slug-do-essay>.md`: uma versão de uma página do essay, pa
 
 1. **Leia o essay completo** em `wiki/essays/<slug>.md` — não há `## Resumo Executivo` interno para atalhar essa leitura, então o handout vem de ler de fato o `## Sumário`, a introdução e a conclusão, não de um resumo genérico do tema.
 2. A partir dessa leitura, escreva a linha de tese (uma frase com a ideia central) — a única "compressão" que este skill faz, sem seção pronta pra copiar.
-3. Extraia **3 a 5 conclusões principais** em prosa curta corrida, não bullets (mesma regra de `## Estilo de Prosa dos Essays` no AGENTS.md).
+3. Extraia **3 a 5 conclusões principais** em prosa curta corrida, não bullets (mesma regra do `## Estilo de prosa` em `conventions/SKILL.md`).
 4. Monte o arquivo em `wiki/handouts/<slug>.md`:
 
 ```markdown
@@ -45,9 +44,9 @@ created: YYYY-MM-DD
 Leia o essay completo: [<Título do Essay>](../essays/<slug>.md)
 ```
 
-5. **Não inclua** `## Sumário`, `## Referências` ou `## Conexões` — essas seções pertencem ao essay completo, não ao handout.
-6. Se já existir um handout para esse essay (de uma edição anterior do essay), leia-o primeiro e regenere em vez de duplicar — sobrescreva com o conteúdo atualizado.
-7. Não é necessário atualizar `wiki/index.md` (que contém apenas essays) nem `wiki/log.md` — handout é um artefato leve, gerado sob demanda, não uma operação de conteúdo da wiki que precise de rastro no log.
+1. **Não inclua** `## Sumário`, `## Referências` ou `## Conexões` — essas seções pertencem ao essay completo, não ao handout.
+2. Se já existir um handout para esse essay (de uma edição anterior do essay), leia-o primeiro e regenere em vez de duplicar — sobrescreva com o conteúdo atualizado.
+3. Não é necessário atualizar `wiki/index.md` (que contém apenas essays) nem `wiki/log.md` — handout é um artefato leve, gerado sob demanda, não uma operação de conteúdo da wiki que precise de rastro no log.
 
 ## Handout como output
 
@@ -55,10 +54,12 @@ Leia o essay completo: [<Título do Essay>](../essays/<slug>.md)
 
 1. Copie o arquivo para `output/handouts/<slug>.md`.
 2. Pergunte se o usuário quer também `.pdf` e/ou `.html`, mais apresentáveis para anexar ou mandar por link:
+
    ```bash
-   python wiki/scripts/export_essay.py <slug> --handout --output output/handouts
-   python wiki/scripts/export_essay_html.py <slug> --handout --output output/handouts
+   python scripts/export_essay.py <slug> --handout --output output/handouts
+   python scripts/export_essay_html.py <slug> --handout --output output/handouts
    ```
+
 3. Não gere `.pdf`/`.html` automaticamente — só quando o usuário confirmar que vai usar. O `.md` em `output/handouts/` pode ser copiado sempre, é barato.
 
 ## Depois de gerar

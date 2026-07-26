@@ -2,16 +2,15 @@
 name: pdf
 description: >
   Exporta um ou todos os essays de wiki/essays/ para PDF via
-  wiki/scripts/export_essay.py (Pandoc + LuaLaTeX). Use quando o
+  scripts/export_essay.py (Pandoc + LuaLaTeX). Use quando o
   usuário disser "exporta esse essay pra PDF", "gera o PDF de X",
   "exporta tudo pra PDF", ou quiser uma versão compartilhável/
   imprimível de um essay.
 allowed-tools: Bash Read Glob
 ---
-
 # PDF
 
-Gera PDF a partir de um ou mais essays em `wiki/essays/`, via `wiki/scripts/export_essay.py` (Pandoc + LuaLaTeX). Este skill só invoca o script existente e interpreta o resultado — a lógica de conversão vive no script, não aqui.
+Gera PDF a partir de um ou mais essays em `wiki/essays/`, via `scripts/export_essay.py` (Pandoc + LuaLaTeX). Este skill só invoca o script existente e interpreta o resultado — a lógica de conversão vive no script, não aqui.
 
 ## Quando usar
 
@@ -23,22 +22,22 @@ Para HTML, use `/html` em vez deste skill — não duplique lógica de exportaç
 
 ## Pré-requisitos
 
-O script depende de **Pandoc** com o engine **LuaLaTeX** (não XeLaTeX — ver `## Exportação para PDF` no `AGENTS.md` para o motivo). Se o comando falhar com "Pandoc not found" ou erro de LaTeX, avise o usuário e não tente contornar reimplementando a conversão manualmente.
+O script depende de **Pandoc** com o engine **LuaLaTeX** (não XeLaTeX — ver `## Exportação para PDF` em `conventions/SKILL.md` para o motivo). Se o comando falhar com "Pandoc not found" ou erro de LaTeX, avise o usuário e não tente contornar reimplementando a conversão manualmente.
 
 ## Uso
 
 ```bash
 # Listar essays disponíveis
-python wiki/scripts/export_essay.py --list
+python scripts/export_essay.py --list
 
 # Exportar um essay específico (nome do arquivo, com ou sem .md)
-python wiki/scripts/export_essay.py nome-do-essay
+python scripts/export_essay.py nome-do-essay
 
 # Exportar todos os essays
-python wiki/scripts/export_essay.py --all
+python scripts/export_essay.py --all
 
 # Diretório de saída customizado (padrão: output/pdf/)
-python wiki/scripts/export_essay.py nome-do-essay --output caminho/custom
+python scripts/export_essay.py nome-do-essay --output caminho/custom
 ```
 
 ## O que o script já garante (não precisa reimplementar)
@@ -55,10 +54,10 @@ python wiki/scripts/export_essay.py nome-do-essay --output caminho/custom
 O mesmo script exporta handouts de `wiki/handouts/` com a flag `--handout`:
 
 ```bash
-python wiki/scripts/export_essay.py <slug-do-essay> --handout --output output/handouts
+python scripts/export_essay.py <slug-do-essay> --handout --output output/handouts
 ```
 
-Use quando o usuário quiser mandar o handout como PDF em vez de só o `.md` cru — ver `## Handouts` e `## Saídas` no AGENTS.md. O handout não tem `## Conexões`/`## Referências`/`## Sumário`, então esses passos rodam como no-op; o resultado sai com a mesma tipografia dos essays, só mais curto.
+Use quando o usuário quiser mandar o handout como PDF em vez de só o `.md` cru — ver skill `/handout` e `## Arquitetura` (bloco `output/`) no AGENTS.md. O handout não tem `## Conexões`/`## Referências`/`## Sumário`, então esses passos rodam como no-op; o resultado sai com a mesma tipografia dos essays, só mais curto.
 
 ## Depois de exportar
 

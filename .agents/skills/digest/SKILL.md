@@ -13,13 +13,13 @@ allowed-tools: Bash Read Write Glob Grep WebSearch WebFetch
 
 # Digest
 
-Lê uma fonte que não é um ensaio completo do próprio Gustavo, escreve um resumo pra ele e arquiva a fonte organizadamente. **Nunca gera essay.** Se o material for denso o bastante para merecer um essay próprio, avise o usuário e sugira `/essay` ou `/import` em vez de fazer isso aqui.
+Lê uma fonte que não é um ensaio completo do próprio Usuário, escreve um resumo pra ele e arquiva a fonte organizadamente. **Nunca gera essay.** Se o material for denso o bastante para merecer um essay próprio, avise o usuário e sugira `/essay` ou `/import` em vez de fazer isso aqui.
 
 ## Quando usar (e quando não)
 
-Use para: papers acadêmicos, capítulos de livro, web clippings, documentação técnica, transcrições — qualquer coisa que Gustavo não escreveu e não quer necessariamente virar um essay agora.
+Use para: papers acadêmicos, capítulos de livro, web clippings, documentação técnica, transcrições — qualquer coisa que Usuário não escreveu e não quer necessariamente virar um essay agora.
 
-Não use para: um ensaio/white paper do próprio Gustavo (isso é `/import`) ou quando o usuário já quer o conteúdo incorporado a um essay/conceito existente agora mesmo (isso é `/absorb`, rodado depois do digest ou direto se a fonte já estiver em `wiki/sources/`).
+Não use para: um ensaio/white paper do próprio Usuário (isso é `/import`) ou quando o usuário já quer o conteúdo incorporado a um essay/conceito existente agora mesmo (isso é `/absorb`, rodado depois do digest ou direto se a fonte já estiver em `wiki/sources/`).
 
 ## Passo a passo
 

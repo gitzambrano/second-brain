@@ -4,6 +4,9 @@ __pycache__/
 raw/**
 !raw/**/
 !raw/**/.gitkeep
+plan/**
+!plan/**/
+!plan/**/.gitkeep
 output/**
 !output/**/
 !output/**/.gitkeep

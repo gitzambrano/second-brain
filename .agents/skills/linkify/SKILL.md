@@ -17,14 +17,14 @@ Garante que todo conceito, termo técnico, pensador, ou obra citada no corpo de 
 
 ## Regra de escopo
 
-Só o **corpo do essay** (texto corrido) recebe links externos `[texto](url)`. `[[wikilinks]]` ficam exclusivamente em `## Conexões` — nunca misture os dois formatos fora dessa seção (ver item 6, "Regra de Links — Exportabilidade para PDF", de `## A Regra Fundamental: Essays São o Centro` no AGENTS.md).
+Só o **corpo do essay** (texto corrido) recebe links externos `[texto](url)`. `[[wikilinks]]` ficam exclusivamente em `## Conexões` — nunca misture os dois formatos fora dessa seção (ver `## Regra de links — exportabilidade para PDF` em `conventions/SKILL.md`).
 
 ## Adicionar links
 
 1. Leia o essay inteiro e liste os conceitos, termos técnicos, pensadores, correntes filosóficas, obras, normas técnicas, ou entidades mencionados sem link.
 2. Para cada um, busque a referência mais apropriada: Wikipedia para conceitos gerais, Stanford Encyclopedia of Philosophy (SEP) para filosofia, paper original ou norma técnica para conceitos de engenharia, site oficial para ferramentas/produtos.
 3. Adicione o link na **primeira ocorrência** do termo no essay (não em toda repetição — isso poluiria o texto).
-4. Mínimo de 10 links externos por essay (ver item 5 de `## A Regra Fundamental: Essays São o Centro` no AGENTS.md) — se o essay estiver abaixo disso, esse é o sinal de que faltam links, não que o mínimo é opcional.
+4. Mínimo de 10 links externos por essay (ver `## Regra de links — exportabilidade para PDF` em `conventions/SKILL.md`) — se o essay estiver abaixo disso, esse é o sinal de que faltam links, não que o mínimo é opcional.
 
 ## Checar links existentes
 

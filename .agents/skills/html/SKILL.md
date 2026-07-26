@@ -2,17 +2,16 @@
 name: html
 description: >
   Exporta um ou todos os essays de wiki/essays/ para um arquivo HTML
-  standalone e responsivo via wiki/scripts/export_essay_html.py
+  standalone e responsivo via scripts/export_essay_html.py
   (Pandoc). Use quando o usuário disser "exporta esse essay pra HTML",
   "manda um link/arquivo HTML desse ensaio", ou quiser uma versão
   web-friendly que abre bem em desktop ou celular sem precisar de
   LaTeX.
 allowed-tools: Bash Read Glob
 ---
-
 # HTML
 
-Gera um `.html` autocontido (CSS e imagens embutidos, um único arquivo) a partir de um ou mais essays, via `wiki/scripts/export_essay_html.py`. Este skill só invoca o script existente — a lógica de conversão vive no script, não aqui.
+Gera um `.html` autocontido (CSS e imagens embutidos, um único arquivo) a partir de um ou mais essays, via `scripts/export_essay_html.py`. Este skill só invoca o script existente — a lógica de conversão vive no script, não aqui.
 
 ## Quando usar
 
@@ -26,16 +25,16 @@ Para PDF, use `/pdf` em vez deste skill — não duplique lógica de exportaçã
 
 ```bash
 # Listar essays disponíveis
-python wiki/scripts/export_essay_html.py --list
+python scripts/export_essay_html.py --list
 
 # Exportar um essay específico (nome do arquivo, com ou sem .md)
-python wiki/scripts/export_essay_html.py nome-do-essay
+python scripts/export_essay_html.py nome-do-essay
 
 # Exportar todos os essays
-python wiki/scripts/export_essay_html.py --all
+python scripts/export_essay_html.py --all
 
 # Diretório de saída customizado (padrão: output/html/)
-python wiki/scripts/export_essay_html.py nome-do-essay --output caminho/custom
+python scripts/export_essay_html.py nome-do-essay --output caminho/custom
 ```
 
 ## O que o script já garante (não precisa reimplementar)
@@ -57,10 +56,10 @@ Quando o essay usa matemática, o MathJax é carregado de um CDN (`cdn.jsdelivr.
 O mesmo script exporta handouts de `wiki/handouts/` com a flag `--handout`:
 
 ```bash
-python wiki/scripts/export_essay_html.py <slug-do-essay> --handout --output output/handouts
+python scripts/export_essay_html.py <slug-do-essay> --handout --output output/handouts
 ```
 
-Útil quando o handout vai ser mandado como link/arquivo que abre bem no celular, sem precisar do PDF. Ver `## Handouts` e `## Saídas` no AGENTS.md.
+Útil quando o handout vai ser mandado como link/arquivo que abre bem no celular, sem precisar do PDF. Ver skill `/handout` e `## Arquitetura` (bloco `output/`) no AGENTS.md.
 
 ## Depois de exportar
 

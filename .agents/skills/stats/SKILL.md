@@ -24,23 +24,28 @@ Dashboard **read-only**. Só relata, nunca corrige — esse é o trabalho de `/o
 ## Passo a passo
 
 1. Rode o script:
+
    ```bash
-   python wiki/scripts/stats.py
+   python scripts/stats.py
    ```
+
 2. Leia o output e apresente ao usuário de forma resumida na conversa — não é necessário colar o relatório inteiro se ele for longo, destaque o que chama atenção (órfãos, sources sem manifest, essays com mais de 2 travessões).
 3. Se o usuário quiser um snapshot salvo (para comparar com uma stats anterior, por exemplo), rode com `--save`:
+
    ```bash
-   python wiki/scripts/stats.py --save
+   python scripts/stats.py --save
    ```
-   Isso grava em `output/stats/stats-YYYY-MM-DD.md` (ver `## Saídas` no AGENTS.md). Não salve por padrão — só quando pedido, já que é um artefato descartável na maioria das vezes.
+
+   Isso grava em `output/stats/stats-YYYY-MM-DD.md` (ver `## Arquitetura` no AGENTS.md). Não salve por padrão — só quando pedido, já que é um artefato descartável na maioria das vezes.
 
 ## O que o script cobre
 
 - **Essays**: contagem total, por `Tipo` (Ensaio/White Paper/Estudo/etc), por categoria temática da byline, e distribuição de tags do vocabulário controlado.
-- **Sinais de lint rápidos**: essays com `## Resumo Executivo` residual (não deveria existir mais, ver AGENTS.md), essays com mais de 2 travessões, essays sem `## Sumário`/`## Referências`/`## Conexões`. Isso é uma varredura rasa (regex), não substitui `deep_format_check.py` nem o julgamento humano do lint completo.
+- **Sinais de lint rápidos**: essays com `## Resumo Executivo` residual (não deveria existir mais, ver `conventions/SKILL.md`), essays com mais de 2 travessões, essays sem `## Sumário`/`## Referências`/`## Conexões`. Isso é uma varredura rasa (regex), não substitui `deep_format_check.py` nem o julgamento humano do lint completo.
 - **Órfãos**: concepts/entities em `wiki/concepts/` e `wiki/entities/` que não aparecem em nenhuma seção `## Conexões` de essay.
-- **Sources**: total de arquivos em `wiki/sources/**`, distribuição por subpasta de tipo, quantos não têm entrada em `manifest.md`, e quantos estão em uma subpasta fora do vocabulário controlado (ver `## Tipos de Source — Vocabulário Controlado` no AGENTS.md).
+- **Sources**: total de arquivos em `wiki/sources/**`, distribuição por subpasta de tipo, quantos não têm entrada em `manifest.md`, e quantos estão em uma subpasta fora do vocabulário controlado (ver `## Sources, Tags e Vocabulários Controlados` no AGENTS.md).
 - **Handouts**: quantos existem em `wiki/handouts/`.
+- **Plano de estudos**: quantos itens pendentes em `plan/plano-estudos.md`, por tipo (Estudo / Essay Futuro).
 
 ## Diferença em relação ao lint
 

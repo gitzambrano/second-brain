@@ -45,7 +45,7 @@ Cada capítulo deve se encadear logicamente com o anterior e com o seguinte — 
 
 ## 4. Redigir com profundidade real
 
-Escreva em `wiki/essays/<slug>.md`, Português do Brasil, seguindo `## Estilo de Prosa dos Essays` do AGENTS.md (prosa corrida, travessões extremamente raros).
+Escreva em `wiki/essays/<slug>.md`, Português do Brasil, seguindo o `## Estilo de prosa` de `conventions/SKILL.md` (prosa corrida, travessões extremamente raros).
 
 ### Se o domínio é filosófico
 
@@ -115,3 +115,4 @@ Depois de pronto, ofereça `/pdf` ou `/html` conforme o uso (imprimir/anexar vs.
 - **Processar novas fontes** com `/import`, `/digest`, ou `/absorb`
 - **Perguntar sobre o que já existe** com `/query`
 - **Organizar/auditar a wiki** com `/organize`, `/sweep`, `/stats`
+- **Se este essay veio de um item do plano** (`plan/plano-estudos.md`, tipo "Essay Futuro"), rode `/study done` ao terminar, para tirá-lo do plano

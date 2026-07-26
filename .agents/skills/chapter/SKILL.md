@@ -22,7 +22,7 @@ Leia o essay inteiro antes de mover uma única linha. Reorganização é cara de
 ## Adicionar um capítulo/seção nova
 
 1. Depois de ler o essay inteiro, decida a posição: onde a seção nova prepara o terreno para a seguinte e continua o que veio antes.
-2. Crie a seção com heading `##`, escreva o conteúdo seguindo `## Estilo de Prosa dos Essays`.
+2. Crie a seção com heading `##`, escreva o conteúdo seguindo o `## Estilo de prosa` de `conventions/SKILL.md`.
 3. Adicione a nova seção ao `## Sumário` com o link correspondente.
 4. Se a seção nova introduz um conceito/entidade que merece página própria, crie em `wiki/concepts/` ou `wiki/entities/` e linke em `## Conexões`.
 
@@ -52,7 +52,7 @@ Se existir handout para este essay e a reorganização mudou a tese ou o caminho
 
 ## Convenções
 
-Texto novo segue `## Estilo de Prosa dos Essays`. Não invente conteúdo para preencher uma seção nova sem ter material — se o pedido for só "cria um capítulo sobre X" sem mais direção, trate como um pedido de `/expand` primeiro (perguntar o que deve entrar), e só então estruture aqui.
+Texto novo segue o `## Estilo de prosa` de `conventions/SKILL.md`. Não invente conteúdo para preencher uma seção nova sem ter material — se o pedido for só "cria um capítulo sobre X" sem mais direção, trate como um pedido de `/expand` primeiro (perguntar o que deve entrar), e só então estruture aqui.
 
 ## Skills relacionadas
 

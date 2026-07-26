@@ -197,7 +197,7 @@ def main():
             if re.search(r"(?m)^## [^#]", content_after_conex):
                 report.append(f"ERROR: {rel_path} '## Conexões' must be the last section in the essay.")
                 
-        # Idioma: wiki inteira deve ser PT-BR (ver AGENTS.md regra 10)
+        # Idioma: wiki inteira deve ser PT-BR (ver AGENTS.md, Regras Gerais item 8)
         report.extend(check_language_ptbr(content, rel_path))
 
         # External links count (min 10)
@@ -291,7 +291,7 @@ def main():
                     # "Every wiki page MUST include YAML frontmatter with tags, sources, created, and updated fields."
                     report.append(f"ERROR: {rel_path} frontmatter missing field: '{field}'")
             
-            # Idioma: wiki inteira deve ser PT-BR (ver AGENTS.md regra 10)
+            # Idioma: wiki inteira deve ser PT-BR (ver AGENTS.md, Regras Gerais item 8)
             report.extend(check_language_ptbr(content, rel_path))
 
             # Check for spacing between headings and text
@@ -399,7 +399,7 @@ def main():
         report.append("ERROR: index.md does not exist!")
         
     # Write report to output
-    output_report_path = WIKI_ROOT / "scripts" / "comprehensive_lint_output.txt"
+    output_report_path = WIKI_ROOT / "comprehensive_lint_output.txt"
     with open(output_report_path, "w", encoding="utf-8") as f:
         f.write("\n".join(report))
         

@@ -17,7 +17,7 @@ Adiciona ou corrige conteúdo substantivo — ideias, teses, exemplos, conceitos
 
 ## Regra de abertura
 
-Leia o essay inteiro antes de qualquer edição, mesmo que o pedido pareça hiper-local. Ver `## Iteração em Essays Existentes` no AGENTS.md.
+Leia o essay inteiro antes de qualquer edição, mesmo que o pedido pareça hiper-local. Ver `## Regras Gerais` no AGENTS.md.
 
 ## Quando o pedido é vago, pergunte
 
@@ -55,7 +55,7 @@ Se `## Sumário` ou `## Conexões` ficaram desatualizados, atualize-os. Se exist
 
 ## Convenções
 
-Todo texto adicionado segue `## Estilo de Prosa dos Essays` do AGENTS.md (sem bullets no corpo, travessões extremamente raros) e está em Português do Brasil. Essays originais preservados de `raw/` também podem receber expansão — a regra de "texto intacto" vale para o momento da ingestão, não impede uma expansão pedida explicitamente depois.
+Todo texto adicionado segue o `## Estilo de prosa` de `conventions/SKILL.md` (sem bullets no corpo, travessões extremamente raros) e está em Português do Brasil. Essays originais preservados de `raw/` também podem receber expansão — a regra de "texto intacto" vale para o momento da ingestão, não impede uma expansão pedida explicitamente depois.
 
 ## Skills relacionadas
 
