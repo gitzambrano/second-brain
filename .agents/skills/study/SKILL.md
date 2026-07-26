@@ -1,7 +1,3 @@
-ois
-
----
-
 name: study
 description: >
   Mantém plan/plano-estudos.md, o to-do do que Usuário quer estudar ou
@@ -11,7 +7,7 @@ description: >
   "quero estudar X", "anota isso pra estudar depois", "já estudei X",
   "tira isso do plano", ou "o que falta estudar".
 allowed-tools: Bash Read Write Edit Glob
----
+----------------------------------------
 
 # Study
 
