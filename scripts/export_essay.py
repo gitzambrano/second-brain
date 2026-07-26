@@ -1,0 +1,391 @@
+#!/usr/bin/env python3
+"""
+export_essay.py - Export Second Brain essays to beautiful PDFs via Pandoc.
+
+Usage:
+    python export_essay.py <essay_filename_or_path>    # Export single essay
+    python export_essay.py --all                        # Export all essays
+    python export_essay.py --list                       # List available essays
+
+Features:
+    - Strips ## Conexões section (internal wiki links, not for PDF)
+    - Preserves ## Referências (bibliographic references)
+    - Converts YAML frontmatter to elegant title block with author/date
+    - Removes any residual [[wikilinks]]
+    - Generates professional PDF via Pandoc + LaTeX
+"""
+
+import re
+import os
+import sys
+import yaml
+import subprocess
+import tempfile
+import argparse
+from pathlib import Path
+
+ROOT_DIR = Path(__file__).resolve().parent.parent.parent
+ESSAYS_DIR = ROOT_DIR / "wiki" / "essays"
+HANDOUTS_DIR = ROOT_DIR / "wiki" / "handouts"
+OUTPUT_DIR = ROOT_DIR / "output" / "pdf"
+HANDOUT_OUTPUT_DIR = ROOT_DIR / "output" / "handouts"
+TEMPLATE_DIR = ROOT_DIR / "output"
+
+AUTHOR = "Gustavo Zambrano"
+
+
+def extract_frontmatter(content):
+    """Extract YAML frontmatter and body from markdown content."""
+    if content.startswith('---'):
+        parts = content.split('---', 2)
+        if len(parts) >= 3:
+            try:
+                meta = yaml.safe_load(parts[1])
+                body = parts[2].lstrip('\n')
+                return meta, body
+            except yaml.YAMLError:
+                pass
+    return {}, content
+
+
+def strip_conexoes_section(body):
+    """Remove the ## Conexões section and everything after it (but preserve ## Referências if before)."""
+    lines = body.split('\n')
+    result = []
+    in_conexoes = False
+    
+    for line in lines:
+        # Check if this is the start of Conexões
+        if re.match(r'^## Conex', line):
+            in_conexoes = True
+            continue
+        
+        # If we're in Conexões and hit another ## section that's not a sub-heading
+        if in_conexoes:
+            # Conexões is always the last section, so skip everything after it
+            continue
+        
+        result.append(line)
+    
+    # Clean trailing whitespace
+    while result and result[-1].strip() == '':
+        result.pop()
+    
+    return '\n'.join(result) + '\n'
+
+
+def clean_residual_wikilinks(text):
+    """Remove any remaining [[wikilinks]] converting to plain text."""
+    # [[Target|Display]] -> Display
+    text = re.sub(r'\[\[([^\]|]+)\|([^\]]+)\]\]', r'\2', text)
+    # [[Target]] -> Target
+    text = re.sub(r'\[\[([^\]]+)\]\]', r'\1', text)
+    return text
+
+
+def extract_title(body):
+    """Extract H1 title from markdown body."""
+    for line in body.split('\n'):
+        m = re.match(r'^# (.+)', line)
+        if m:
+            return m.group(1).strip()
+    return "Untitled"
+
+
+def remove_h1_and_byline(body):
+    """Remove the H1 title and byline (> Ensaio ...) from body since Pandoc generates title."""
+    lines = body.split('\n')
+    result = []
+    skip_next_blank = False
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        # Skip H1 title
+        if re.match(r'^# ', line):
+            i += 1
+            # Skip blank lines after title
+            while i < len(lines) and lines[i].strip() == '':
+                i += 1
+            # Skip byline (> Ensaio · ... or > White Paper ·...)
+            while i < len(lines) and lines[i].startswith('>') and ('Ensaio' in lines[i] or 'White Paper' in lines[i] or 'Gustavo' in lines[i]):
+                i += 1
+            # Skip blank lines after byline
+            while i < len(lines) and lines[i].strip() == '':
+                i += 1
+            continue
+        result.append(line)
+        i += 1
+    
+    return '\n'.join(result)
+
+
+def resolve_image_paths(text, essay_dir):
+    """Convert relative image paths to absolute paths for PDF export."""
+    def replace_img(m):
+        alt = m.group(1)
+        path = m.group(2)
+        if path.startswith('http://') or path.startswith('https://'):
+            return m.group(0)  # leave URLs alone
+        # Resolve relative to essay directory
+        abs_path = (essay_dir / path).resolve()
+        return f'![{alt}]({abs_path})'
+    
+    return re.sub(r'!\[([^\]]*)\]\(([^)]+)\)', replace_img, text)
+
+
+def prepare_for_pandoc(filepath):
+    """Prepare a markdown file for Pandoc PDF conversion."""
+    with open(filepath, 'r', encoding='utf-8') as f:
+        content = f.read()
+    
+    meta, body = extract_frontmatter(content)
+    
+    # Extract title from H1
+    title = extract_title(body)
+    
+    # Parse byline from the body to get subtitle and author/date line
+    subtitle = ''
+    author_date = ''
+    for line in body.split('\n'):
+        line_stripped = line.strip()
+        if line_stripped.startswith('>') and '·' in line_stripped:
+            clean = line_stripped.lstrip('> ').strip()
+            # First byline: "Ensaio · Categoria"
+            if any(kw in clean for kw in ['Ensaio', 'White Paper', 'Estudo', 'Análise', 'Brainstorm']):
+                subtitle = clean
+            # Second byline: "Gustavo Zambrano · Mês de Ano"
+            elif 'Zambrano' in clean or 'Gustavo' in clean:
+                author_date = clean
+    
+    # Fallback: use frontmatter date if no byline date found
+    if not author_date:
+        date = meta.get('updated', meta.get('created', ''))
+        if date:
+            author_date = f"{AUTHOR} · {date}"
+        else:
+            author_date = AUTHOR
+    
+    # Strip Conexões section
+    body = strip_conexoes_section(body)
+    
+    # Clean residual wikilinks
+    body = clean_residual_wikilinks(body)
+    
+    # Remove H1 and byline (Pandoc will generate from metadata)
+    body = remove_h1_and_byline(body)
+    
+    # Replace --- horizontal rules with *** to avoid Pandoc YAML block parsing
+    body = re.sub(r'^---\s*$', '***', body, flags=re.MULTILINE)
+    
+    # Resolve image paths to absolute
+    body = resolve_image_paths(body, Path(filepath).parent)
+    
+    # Escape quotes in title for YAML
+    safe_title = title.replace('"', '\\"')
+    
+    # Build new YAML frontmatter for Pandoc
+    # NOTE: subtitle is injected as body text below, not in YAML, to control spacing
+    pandoc_meta = f"""---
+title: "{safe_title}"
+author: "{author_date}"
+documentclass: article
+classoption:
+  - 12pt
+  - a4paper
+geometry:
+  - top=30mm
+  - bottom=30mm
+  - left=25mm
+  - right=25mm
+header-includes:
+  - |
+    \\usepackage{{fancyhdr}}
+    \\usepackage{{xcolor}}
+    \\usepackage{{titlesec}}
+    \\usepackage{{enumitem}}
+    \\usepackage{{microtype}}
+    \\usepackage{{graphicx}}
+    \\usepackage{{setspace}}
+    \\definecolor{{linkblue}}{{HTML}}{{2563EB}}
+    \\definecolor{{titleblue}}{{HTML}}{{1E3A5F}}
+    \\definecolor{{subtlegray}}{{HTML}}{{6B7280}}
+    \\pagestyle{{fancy}}
+    \\fancyhf{{}}
+    \\fancyhead[L]{{\\small\\textcolor{{subtlegray}}{{{AUTHOR}}}}}
+    \\fancyhead[R]{{\\small\\textcolor{{subtlegray}}{{\\thepage}}}}
+    \\renewcommand{{\\headrulewidth}}{{0.4pt}}
+    \\titleformat{{\\section}}{{\\Large\\bfseries\\color{{titleblue}}}}{{}}{{0em}}{{}}
+    \\titleformat{{\\subsection}}{{\\large\\bfseries\\color{{titleblue!80}}}}{{}}{{0em}}{{}}
+    \\titleformat{{\\subsubsection}}{{\\normalsize\\bfseries\\color{{titleblue!60}}}}{{}}{{0em}}{{}}
+    \\titlespacing*{{\\section}}{{0pt}}{{2em}}{{0.8em}}
+    \\titlespacing*{{\\subsection}}{{0pt}}{{1.5em}}{{0.5em}}
+    \\titlespacing*{{\\subsubsection}}{{0pt}}{{1em}}{{0.3em}}
+    \\setlength{{\\parskip}}{{0.6em}}
+    \\setlength{{\\parindent}}{{0pt}}
+    \\onehalfspacing
+---
+
+"""
+    
+    # Inject subtitle as styled text right after the YAML block
+    subtitle_block = ""
+    if subtitle:
+        # Escape LaTeX special characters in subtitle
+        safe_subtitle = subtitle.replace('&', '\\&').replace('#', '\\#').replace('%', '\\%').replace('_', '\\_')
+        subtitle_block = f"""\\begin{{center}}
+\\textcolor{{subtlegray}}{{\\large {safe_subtitle}}}
+\\end{{center}}
+
+\\vspace{{0.5em}}
+
+"""
+    
+    return pandoc_meta + subtitle_block + body
+
+
+def export_essay(filepath, output_dir=None, source_dir=None):
+    """Export a single essay (or handout, if source_dir=HANDOUTS_DIR) to PDF."""
+    filepath = Path(filepath)
+    if source_dir is None:
+        source_dir = ESSAYS_DIR
+    if not filepath.exists():
+        # Try relative to source dir
+        filepath = source_dir / filepath
+    if not filepath.exists():
+        # Try adding .md
+        filepath = source_dir / (str(filepath.name) + '.md')
+    if not filepath.exists():
+        print(f"ERROR: File not found: {filepath}")
+        return False
+    
+    if output_dir is None:
+        output_dir = OUTPUT_DIR
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Prepare content
+    prepared = prepare_for_pandoc(filepath)
+    
+    # Write to temp file
+    temp_path = output_dir / f"_temp_{filepath.stem}.md"
+    with open(temp_path, 'w', encoding='utf-8') as f:
+        f.write(prepared)
+    
+    # Output PDF path
+    pdf_path = output_dir / f"{filepath.stem}.pdf"
+    
+    # Run Pandoc
+    cmd = [
+        'pandoc',
+        str(temp_path),
+        '-o', str(pdf_path),
+        '--pdf-engine=lualatex',
+        '-V', 'mainfont=Segoe UI',
+        '-V', 'monofont=Consolas',
+        '-V', 'mathfont=Cambria Math',
+        '-V', 'colorlinks=true',
+        '-V', 'urlcolor=blue',
+        '-V', 'linkcolor=blue',
+        '-V', 'citecolor=blue',
+        '--toc',
+        '--toc-depth=3',
+        f'--resource-path={filepath.parent}',
+        '-f', 'markdown+smart+tex_math_dollars+pipe_tables+strikeout+superscript+subscript+implicit_figures',
+    ]
+    
+    print(f"  Exporting: {filepath.name} -> {pdf_path.name}")
+    
+    try:
+        result = subprocess.run(cmd, capture_output=True, timeout=600,
+                                encoding='utf-8', errors='replace')
+        if result.returncode != 0:
+            print(f"  ERROR: Pandoc failed for {filepath.name}")
+            print(f"  STDERR: {result.stderr[:500]}")
+            return False
+        else:
+            size_kb = pdf_path.stat().st_size / 1024
+            print(f"  OK: {pdf_path.name} ({size_kb:.0f} KB)")
+            return True
+    except FileNotFoundError:
+        print("  ERROR: Pandoc not found. Install from https://pandoc.org/installing.html")
+        return False
+    except subprocess.TimeoutExpired:
+        print(f"  ERROR: Pandoc timed out for {filepath.name}")
+        return False
+    finally:
+        # Clean up temp file
+        if temp_path.exists():
+            temp_path.unlink()
+
+
+def list_essays():
+    """List all available essays."""
+    essays = sorted(ESSAYS_DIR.glob('*.md'))
+    print(f"\nAvailable essays ({len(essays)}):\n")
+    for e in essays:
+        with open(e, 'r', encoding='utf-8') as f:
+            for line in f:
+                if line.startswith('# '):
+                    title = line[2:].strip()
+                    print(f"  {e.stem:<50s} {title}")
+                    break
+    print(f"\nUsage: python export_essay.py <filename>")
+    print(f"       python export_essay.py --all")
+
+
+def list_handouts():
+    """List all available handouts."""
+    handouts = sorted(HANDOUTS_DIR.glob('*.md')) if HANDOUTS_DIR.exists() else []
+    print(f"\nAvailable handouts ({len(handouts)}):\n")
+    for h in handouts:
+        with open(h, 'r', encoding='utf-8') as f:
+            for line in f:
+                if line.startswith('# '):
+                    title = line[2:].strip()
+                    print(f"  {h.stem:<50s} {title}")
+                    break
+    print(f"\nUsage: python export_essay.py <slug> --handout")
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Export Second Brain essays to PDF')
+    parser.add_argument('essay', nargs='?', help='Essay (or handout, with --handout) filename or path')
+    parser.add_argument('--all', action='store_true', help='Export all essays')
+    parser.add_argument('--list', action='store_true', help='List available essays')
+    parser.add_argument('--handout', action='store_true', help='Export from wiki/handouts/ instead of wiki/essays/')
+    parser.add_argument('--output', '-o', help='Output directory', default=None)
+
+    args = parser.parse_args()
+
+    source_dir = HANDOUTS_DIR if args.handout else ESSAYS_DIR
+    default_output = HANDOUT_OUTPUT_DIR if args.handout else OUTPUT_DIR
+    output_dir = args.output if args.output else default_output
+
+    if args.list:
+        list_handouts() if args.handout else list_essays()
+        return 0
+
+    if args.all:
+        items = sorted(source_dir.glob('*.md'))
+        kind = "handouts" if args.handout else "essays"
+        print(f"Exporting {len(items)} {kind} to PDF...\n")
+        success = 0
+        failed = 0
+        for e in items:
+            if export_essay(e, output_dir, source_dir=source_dir):
+                success += 1
+            else:
+                failed += 1
+        print(f"\nDone: {success} exported, {failed} failed")
+        return 0 if failed == 0 else 1
+
+    if args.essay:
+        ok = export_essay(args.essay, output_dir, source_dir=source_dir)
+        return 0 if ok else 1
+    
+    parser.print_help()
+    return 1
+
+
+if __name__ == '__main__':
+    sys.exit(main())

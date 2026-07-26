@@ -1,0 +1,17 @@
+__pycache__/
+.obsidian/
+*.code-workspace
+raw/*
+wiki/*
+output/*
+
+!raw/.gitkeep
+!output/.gitkeep
+!wiki/assets/.gitkeep
+!wiki/concepts/.gitkeep
+!wiki/essays/.gitkeep
+!wiki/entities/.gitkeep
+!wiki/sources/.gitkeep
+!wiki/synthesis/.gitkeep
+!wiki/book-chapters/.gitkeep
+!wiki/.gitkeep

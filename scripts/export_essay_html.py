@@ -1,0 +1,232 @@
+#!/usr/bin/env python3
+"""
+export_essay_html.py - Export Second Brain essays to standalone HTML via Pandoc.
+
+Usage:
+    python export_essay_html.py <essay_filename_or_path>    # Export single essay
+    python export_essay_html.py --all                        # Export all essays
+    python export_essay_html.py --list                       # List available essays
+
+Features (mirrors export_essay.py so PDF and HTML stay in sync):
+    - Strips ## Conexões section (internal wiki links, not for export)
+    - Preserves ## Referências, ## Sumário
+    - Converts YAML frontmatter into a title/subtitle/byline header block
+    - Removes any residual [[wikilinks]]
+    - Renders LaTeX math via MathJax, code blocks via Pandoc syntax highlighting
+    - Embeds images/CSS into a single self-contained .html file
+      (--embed-resources --standalone) so the output works offline and is a
+      single file to share, on desktop or mobile (responsive CSS, no JS
+      required except the MathJax CDN script for essays that use math)
+
+This script imports its markdown-preparation helpers from export_essay.py
+(same folder) instead of duplicating them, so both exporters always agree on
+how frontmatter, byline, Conexões-stripping, and wikilinks are handled. If
+you change that logic, change it once in export_essay.py.
+"""
+
+import re
+import sys
+import subprocess
+import argparse
+from pathlib import Path
+
+# Reuse the shared preparation logic from the PDF exporter.
+sys.path.insert(0, str(Path(__file__).parent))
+from export_essay import (
+    extract_frontmatter,
+    strip_conexoes_section,
+    clean_residual_wikilinks,
+    extract_title,
+    resolve_image_paths,
+    AUTHOR,
+)
+
+ROOT_DIR = Path(__file__).resolve().parent.parent.parent
+ESSAYS_DIR = ROOT_DIR / "wiki" / "essays"
+OUTPUT_DIR = ROOT_DIR / "output" / "html"
+TEMPLATE_PATH = Path(__file__).parent / "essay_template.html"
+
+
+def parse_byline(body):
+    """Extract (subtitle, author_date) from the two blockquote byline lines."""
+    subtitle = ''
+    author_date = ''
+    for line in body.split('\n'):
+        line_stripped = line.strip()
+        if line_stripped.startswith('>') and '·' in line_stripped:
+            clean = line_stripped.lstrip('> ').strip()
+            if any(kw in clean for kw in ['Ensaio', 'White Paper', 'Estudo', 'Análise', 'Brainstorm']):
+                subtitle = clean
+            elif 'Zambrano' in clean or 'Gustavo' in clean:
+                author_date = clean
+    return subtitle, author_date
+
+
+def remove_h1_and_byline(body):
+    """Remove the H1 title and byline blockquote lines (header is rebuilt by the template)."""
+    lines = body.split('\n')
+    result = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        if line.startswith('# '):
+            i += 1
+            while i < len(lines) and lines[i].strip() == '':
+                i += 1
+            while i < len(lines) and lines[i].startswith('>') and ('Ensaio' in lines[i] or 'White Paper' in lines[i]
+                                                                     or 'Estudo' in lines[i] or 'Análise' in lines[i]
+                                                                     or 'Brainstorm' in lines[i] or 'Gustavo' in lines[i]):
+                i += 1
+            while i < len(lines) and lines[i].strip() == '':
+                i += 1
+            continue
+        result.append(line)
+        i += 1
+    return '\n'.join(result)
+
+
+def prepare_for_pandoc(filepath):
+    """Prepare a markdown file for Pandoc HTML conversion. Returns (markdown_text, title, subtitle, author_date)."""
+    with open(filepath, 'r', encoding='utf-8') as f:
+        content = f.read()
+
+    meta, body = extract_frontmatter(content)
+    title = extract_title(body)
+    subtitle, author_date = parse_byline(body)
+
+    if not author_date:
+        date = meta.get('updated', meta.get('created', ''))
+        author_date = f"{AUTHOR} · {date}" if date else AUTHOR
+
+    body = strip_conexoes_section(body)
+    body = clean_residual_wikilinks(body)
+    body = remove_h1_and_byline(body)
+    body = resolve_image_paths(body, Path(filepath).parent)
+
+    return body, title, subtitle, author_date
+
+
+MATH_PATTERN = re.compile(r'(?<!\\)\$[^\s$][^$]*\$|\\\[.*?\\\]|\\\(.*?\\\)', re.DOTALL)
+
+
+def body_has_math(body):
+    """Heuristic: does the essay body contain any $...$ / \\[...\\] math?"""
+    return bool(MATH_PATTERN.search(body))
+
+
+def export_essay(filepath, output_dir=None):
+    """Export a single essay to a standalone HTML file."""
+    filepath = Path(filepath)
+    if not filepath.exists():
+        filepath = ESSAYS_DIR / filepath
+    if not filepath.exists():
+        filepath = ESSAYS_DIR / (str(filepath) + '.md')
+    if not filepath.exists():
+        print(f"ERROR: File not found: {filepath}")
+        return False
+
+    if output_dir is None:
+        output_dir = OUTPUT_DIR
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    body, title, subtitle, author_date = prepare_for_pandoc(filepath)
+
+    temp_path = output_dir / f"_temp_{filepath.stem}.md"
+    with open(temp_path, 'w', encoding='utf-8') as f:
+        f.write(body)
+
+    html_path = output_dir / f"{filepath.stem}.html"
+    safe_subtitle = subtitle.replace('"', '\\"')
+    safe_author = author_date.replace('"', '\\"')
+
+    cmd = [
+        'pandoc',
+        str(temp_path),
+        '-o', str(html_path),
+        '--standalone',
+        '--embed-resources',
+        f'--template={TEMPLATE_PATH}',
+        '--highlight-style=pygments',
+        '-V', f'title={title}',
+        '-V', f'subtitle={safe_subtitle}',
+        '-V', f'author={safe_author}',
+        f'--resource-path={filepath.parent}',
+        '-f', 'markdown+smart+tex_math_dollars+pipe_tables+strikeout+superscript+subscript+implicit_figures',
+    ]
+
+    # Only pull in MathJax (CDN, ~3MB once embedded) for essays that actually use math.
+    # Keeps non-technical essays small and exportable without network access.
+    if body_has_math(body):
+        cmd.insert(6, '--mathjax=https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js')
+
+    print(f"  Exporting: {filepath.name} -> {html_path.name}")
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, timeout=300,
+                                 encoding='utf-8', errors='replace')
+        if result.returncode != 0:
+            print(f"  ERROR: Pandoc failed for {filepath.name}")
+            print(f"  STDERR: {result.stderr[:500]}")
+            return False
+        size_kb = html_path.stat().st_size / 1024
+        print(f"  OK: {html_path.name} ({size_kb:.0f} KB)")
+        return True
+    except FileNotFoundError:
+        print("  ERROR: Pandoc not found. Install from https://pandoc.org/installing.html")
+        return False
+    except subprocess.TimeoutExpired:
+        print(f"  ERROR: Pandoc timed out for {filepath.name}")
+        return False
+    finally:
+        if temp_path.exists():
+            temp_path.unlink()
+
+
+def list_essays():
+    essays = sorted(ESSAYS_DIR.glob('*.md'))
+    print(f"\nAvailable essays ({len(essays)}):\n")
+    for e in essays:
+        with open(e, 'r', encoding='utf-8') as f:
+            for line in f:
+                if line.startswith('# '):
+                    print(f"  {e.stem:<50s} {line[2:].strip()}")
+                    break
+    print("\nUsage: python export_essay_html.py <filename>")
+    print("       python export_essay_html.py --all")
+
+
+def main():
+    parser = argparse.ArgumentParser(description='Export Second Brain essays to standalone HTML')
+    parser.add_argument('essay', nargs='?', help='Essay filename or path')
+    parser.add_argument('--all', action='store_true', help='Export all essays')
+    parser.add_argument('--list', action='store_true', help='List available essays')
+    parser.add_argument('--output', '-o', help='Output directory', default=str(OUTPUT_DIR))
+    args = parser.parse_args()
+
+    if args.list:
+        list_essays()
+        return 0
+
+    if args.all:
+        essays = sorted(ESSAYS_DIR.glob('*.md'))
+        print(f"Exporting {len(essays)} essays to HTML...\n")
+        success = failed = 0
+        for e in essays:
+            if export_essay(e, args.output):
+                success += 1
+            else:
+                failed += 1
+        print(f"\nDone: {success} exported, {failed} failed")
+        return 0 if failed == 0 else 1
+
+    if args.essay:
+        ok = export_essay(args.essay, args.output)
+        return 0 if ok else 1
+
+    parser.print_help()
+    return 1
+
+
+if __name__ == '__main__':
+    sys.exit(main())

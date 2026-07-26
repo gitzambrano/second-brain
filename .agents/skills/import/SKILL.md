@@ -1,0 +1,48 @@
+---
+name: import
+description: >
+  Ingere uma fonte que já é um essay/white paper completo escrito pelo
+  próprio Gustavo: preserva o texto intacto, empacota como um essay
+  próprio da wiki. Use quando um arquivo em raw/ (ou texto colado) for
+  um texto pronto do próprio autor, não material de terceiro a
+  resumir. Se houver dúvida se a fonte é de fato obra completa do
+  autor, pergunte antes de prosseguir: usar /import numa fonte de
+  terceiro apresentaria incorretamente a escrita de outra pessoa como
+  essay do autor.
+allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch
+---
+
+# Import
+
+Processa uma fonte que **já é** um ensaio, white paper, ou artigo completo escrito pelo próprio Gustavo. O texto vira essay preservando-se intacto — Claude aqui é arquivista, não coautor. Para qualquer fonte que não seja do próprio autor (paper de terceiro, livro, web clipping, transcrição), use `/digest`, não este skill.
+
+## Antes de começar: confirme a natureza da fonte
+
+Se não estiver claro que o texto é do próprio Gustavo e já está pronto (não um rascunho a desenvolver, não um material de terceiro), pergunte antes de prosseguir. É melhor uma pergunta rápida do que apresentar o trabalho de outra pessoa como um essay do autor.
+
+## Passo a passo
+
+1. Leia a fonte inteira em `raw/`.
+2. Discuta com o usuário os pontos-chave, se fizer sentido — mas o texto em si não muda.
+3. Se necessário, traduza para Português do Brasil.
+4. Classifique o `Tipo:` do source (normalmente `Ensaio Completo Importado`, ver `## Tipos de Source — Vocabulário Controlado` no AGENTS.md) — isso determina a subpasta de destino em `wiki/sources/`.
+5. Copie o conteúdo **integralmente** para `wiki/essays/` como arquivo `.md`. **O texto original não é alterado** — apenas adicione: frontmatter YAML, links externos inline, `## Sumário`, `## Referências`, `## Conexões`. Sem resumo condensado dentro do essay (ver `## Handouts` no AGENTS.md se o usuário quiser um depois).
+6. Identifique todos os conceitos e entidades mencionados. Para cada um: se já existe página, atualize com informação nova desta fonte; se não existe, crie na subpasta apropriada.
+7. Verifique se todos os conceitos/entidades criados/atualizados são referenciados por pelo menos um essay. Se não, crie um novo essay que os abrace ou atualize um existente.
+8. Adicione `[[wikilinks]]` entre todas as páginas relacionadas, na seção `## Conexões`.
+9. Atualize `wiki/index.md` (apenas essays).
+10. Mova o arquivo original de `raw/` para `wiki/sources/<subpasta-do-tipo>/`, preservando o nome original. Registre em `wiki/sources/manifest.md` (`Tipo:`, `Pasta:`, `Virou:`) e em `wiki/sources/map.md` (status: "Importado como [[Essay]]").
+11. Log: `## [YYYY-MM-DD] import | Título do Essay`
+
+Uma única fonte pode tocar 10-15 páginas da wiki. Isso é normal.
+
+## Convenções
+
+- **O texto original não é alterado no momento da importação** — só depois, se pedido explicitamente via `/expand`, `/proofread`, etc.
+- `wiki/sources/` está no `.gitignore` — arquivos originais, muitas vezes pesados, não vão pro Git.
+
+## Skills relacionadas
+
+- `/digest` — quando a fonte NÃO é um essay completo do autor
+- `/absorb` — para enriquecer páginas existentes com uma fonte já processada
+- `/expand`, `/proofread`, `/polish` — para iterar no essay depois de importado
