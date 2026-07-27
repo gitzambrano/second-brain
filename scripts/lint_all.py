@@ -1,6 +1,8 @@
 import os
 import re
+import sys
 import yaml
+import argparse
 import subprocess
 from pathlib import Path
 
@@ -19,6 +21,39 @@ DIRS = {
     "entities": ENTITIES_DIR,
     "insights": INSIGHTS_DIR
 }
+
+
+def build_parser():
+    p = argparse.ArgumentParser(
+        description="Lint completo da wiki (corpus inteiro) ou de um único essay."
+    )
+    p.add_argument(
+        "--essay", "-e",
+        metavar="SLUG",
+        help=(
+            "Checa apenas este essay (slug, nome do arquivo, ou caminho completo), "
+            "em vez do corpus inteiro. As seções que são inerentemente de corpus "
+            "inteiro (índice, manifesto, plano, categorias, órfãos) são puladas "
+            "nesse modo, exceto a checagem de wikilinks mortos, que é filtrada "
+            "para mostrar apenas links originados neste essay."
+        ),
+    )
+    return p
+
+
+def resolve_essay(slug):
+    # tenta como caminho direto
+    p = Path(slug)
+    if p.exists():
+        return p.resolve()
+    # tenta como nome de arquivo dentro de ESSAYS_DIR
+    for ext in ("", ".md"):
+        candidate = ESSAYS_DIR / (slug + ext)
+        if candidate.exists():
+            return candidate
+    raise FileNotFoundError(
+        f"Essay '{slug}' não encontrado em {ESSAYS_DIR} nem como caminho direto"
+    )
 
 def load_file_content(path):
     with open(path, "r", encoding="utf-8-sig") as f:
@@ -70,7 +105,18 @@ def check_language_ptbr(content, rel_path):
     return issues
 
 def main():
+    args = build_parser().parse_args()
+    target_essay = None
+    if args.essay:
+        try:
+            target_essay = resolve_essay(args.essay)
+        except FileNotFoundError as e:
+            print(f"ERROR: {e}")
+            sys.exit(1)
+
     report = []
+    if target_essay:
+        report.append(f"Modo: --essay {target_essay.name} (seções de corpus inteiro puladas — ver nota em cada uma).")
     
     # 1. Build map of all files and their titles (H1)
     title_to_file = {}
@@ -99,7 +145,8 @@ def main():
     # 2. Check each essay
     report.append("\n=== DETAILED ESSAY LINT ===")
     essays_count = 0
-    for file in ESSAYS_DIR.glob("*.md"):
+    essays_to_check = [target_essay] if target_essay else sorted(ESSAYS_DIR.glob("*.md"))
+    for file in essays_to_check:
         essays_count += 1
         rel_path = f"essays/{file.name}"
         content = load_file_content(file)
@@ -269,62 +316,67 @@ def main():
 
     # 3. Check concepts, entities, sources, insights frontmatter and H1
     report.append("\n=== SUPPORT PAGES LINT (CONCEPTS, ENTITIES, INSIGHTS) ===")
-    for category in ["concepts", "entities", "insights"]:
-        dir_path = DIRS[category]
-        if not dir_path.exists():
-            continue
-        for file in dir_path.glob("*.md"):
-            rel_path = f"{category}/{file.name}"
-            content = load_file_content(file)
-            lines = content.splitlines()
+    if target_essay:
+        report.append("(pulado — modo --essay: só faz sentido no corpus inteiro.)")
+    else:
+        for category in ["concepts", "entities", "insights"]:
+            dir_path = DIRS[category]
+            if not dir_path.exists():
+                continue
+            for file in dir_path.glob("*.md"):
+                rel_path = f"{category}/{file.name}"
+                content = load_file_content(file)
+                lines = content.splitlines()
             
-            # Check Frontmatter
-            has_fm = content.startswith("---")
-            fm_data = {}
-            if has_fm:
-                parts = content.split("---", 2)
-                if len(parts) >= 3:
-                    try:
-                        fm_data = yaml.safe_load(parts[1]) or {}
-                    except Exception as e:
-                        report.append(f"ERROR: {rel_path} has invalid YAML frontmatter: {e}")
+                # Check Frontmatter
+                has_fm = content.startswith("---")
+                fm_data = {}
+                if has_fm:
+                    parts = content.split("---", 2)
+                    if len(parts) >= 3:
+                        try:
+                            fm_data = yaml.safe_load(parts[1]) or {}
+                        except Exception as e:
+                            report.append(f"ERROR: {rel_path} has invalid YAML frontmatter: {e}")
+                    else:
+                        report.append(f"ERROR: {rel_path} has malformed frontmatter block.")
                 else:
-                    report.append(f"ERROR: {rel_path} has malformed frontmatter block.")
-            else:
-                report.append(f"ERROR: {rel_path} has NO YAML frontmatter.")
+                    report.append(f"ERROR: {rel_path} has NO YAML frontmatter.")
                 
-            # Verify required frontmatter fields
-            for field in ["tags", "sources", "created", "updated"]:
-                if field not in fm_data:
-                    # sources is not strictly required for sources themselves? But GEMINI.md says:
-                    # "Every wiki page MUST include YAML frontmatter with tags, sources, created, and updated fields."
-                    report.append(f"ERROR: {rel_path} frontmatter missing field: '{field}'")
+                # Verify required frontmatter fields
+                for field in ["tags", "sources", "created", "updated"]:
+                    if field not in fm_data:
+                        # sources is not strictly required for sources themselves? But GEMINI.md says:
+                        # "Every wiki page MUST include YAML frontmatter with tags, sources, created, and updated fields."
+                        report.append(f"ERROR: {rel_path} frontmatter missing field: '{field}'")
             
-            # Idioma: wiki inteira deve ser PT-BR (ver AGENTS.md, Regras Gerais item 8)
-            report.extend(check_language_ptbr(content, rel_path))
+                # Idioma: wiki inteira deve ser PT-BR (ver AGENTS.md, Regras Gerais item 8)
+                report.extend(check_language_ptbr(content, rel_path))
 
-            # Check for spacing between headings and text
-            for idx, line in enumerate(lines):
-                if re.match(r"^#{1,6} ", line):
-                    if idx + 1 < len(lines) and lines[idx+1].strip() != "" and not lines[idx+1].strip().startswith("#"):
-                        report.append(f"ERROR: {rel_path} heading '{line}' on line {idx+1} is not followed by a blank line.")
+                # Check for spacing between headings and text
+                for idx, line in enumerate(lines):
+                    if re.match(r"^#{1,6} ", line):
+                        if idx + 1 < len(lines) and lines[idx+1].strip() != "" and not lines[idx+1].strip().startswith("#"):
+                            report.append(f"ERROR: {rel_path} heading '{line}' on line {idx+1} is not followed by a blank line.")
                         
-            # Residual symbols/HTML
-            for idx, line in enumerate(lines):
-                for sym in ["◆", "\ufffd", " ", "&nbsp;", "&amp;"]:
-                    if sym in line:
-                        report.append(f"ERROR: {rel_path} contains residual symbol '{sym}' on line {idx+1}: '{line.strip()}'")
-                html_matches = re.findall(r"</?(?:div|span|p|br|hr|img|a|h[1-6]|ul|ol|li|table|tr|td|th|thead|tbody|iframe|button|input|label|form|select|option)(?:\s|/|>)[^>]*>|class=|style=", line, re.IGNORECASE)
-                for match in html_matches:
-                    report.append(f"ERROR: {rel_path} contains residual HTML tag/attribute: '{match}'")
+                # Residual symbols/HTML
+                for idx, line in enumerate(lines):
+                    for sym in ["◆", "\ufffd", " ", "&nbsp;", "&amp;"]:
+                        if sym in line:
+                            report.append(f"ERROR: {rel_path} contains residual symbol '{sym}' on line {idx+1}: '{line.strip()}'")
+                    html_matches = re.findall(r"</?(?:div|span|p|br|hr|img|a|h[1-6]|ul|ol|li|table|tr|td|th|thead|tbody|iframe|button|input|label|form|select|option)(?:\s|/|>)[^>]*>|class=|style=", line, re.IGNORECASE)
+                    for match in html_matches:
+                        report.append(f"ERROR: {rel_path} contains residual HTML tag/attribute: '{match}'")
 
     # 4. Check for dead wikilinks
     report.append("\n=== DEAD WIKILINKS ===")
     dead_links = {}
-    for category, dir_path in DIRS.items():
-        if not dir_path.exists():
-            continue
-        for file in dir_path.glob("*.md"):
+    if target_essay:
+        dead_link_scope = {"essays": [target_essay]}
+    else:
+        dead_link_scope = {cat: sorted(d.glob("*.md")) for cat, d in DIRS.items() if d.exists()}
+    for category, files in dead_link_scope.items():
+        for file in files:
             content = load_file_content(file)
             # Find all [[wikilink]] or [[wikilink|display]]
             links = re.findall(r"\[\[([^\]]+)\]\]", content)
@@ -352,23 +404,26 @@ def main():
         
     # 5. Check for orphan concepts/entities (not linked by any essay)
     report.append("\n=== ORPHAN PAGES ===")
-    essay_content = ""
-    for file in ESSAYS_DIR.glob("*.md"):
-        essay_content += load_file_content(file)
-        
-    for category in ["concepts", "entities"]:
-        dir_path = DIRS[category]
-        if not dir_path.exists():
-            continue
-        for file in dir_path.glob("*.md"):
-            content = load_file_content(file)
-            title = get_h1(content)
-            if title:
-                # Check if [[Title]] is in essay_content (with or without display text)
-                pattern = re.compile(r"\[\[" + re.escape(title) + r"(\|[^\]]+)?\]\]")
-                if not pattern.search(essay_content):
-                    report.append(f"ORPHAN {category.upper()}: '{title}' ({category}/{file.name}) is not referenced by any essay!")
-                    
+    if target_essay:
+        report.append("(pulado — modo --essay: precisa do corpus inteiro para saber o que é órfão.)")
+    else:
+        essay_content = ""
+        for file in ESSAYS_DIR.glob("*.md"):
+            essay_content += load_file_content(file)
+
+        for category in ["concepts", "entities"]:
+            dir_path = DIRS[category]
+            if not dir_path.exists():
+                continue
+            for file in dir_path.glob("*.md"):
+                content = load_file_content(file)
+                title = get_h1(content)
+                if title:
+                    # Check if [[Title]] is in essay_content (with or without display text)
+                    pattern = re.compile(r"\[\[" + re.escape(title) + r"(\|[^\]]+)?\]\]")
+                    if not pattern.search(essay_content):
+                        report.append(f"ORPHAN {category.upper()}: '{title}' ({category}/{file.name}) is not referenced by any essay!")
+
     # 6. Verify index.md consistency
     report.append("\n=== INDEX.MD AUDIT ===")
     index_path = WIKI_ROOT / "index.md"
@@ -397,7 +452,10 @@ def main():
                 report.append(f"ERROR: index.md contains non-essay or dead link: '{target}'")
                 
         # Check if any actual essay is NOT in index.md
-        for essay_title in sorted(essay_titles):
+        essay_titles_to_check = {get_h1(load_file_content(target_essay))} if target_essay else sorted(essay_titles)
+        for essay_title in essay_titles_to_check:
+            if not essay_title or essay_title not in title_to_file:
+                continue
             # Get filename for essay_title
             filename = title_to_file[essay_title].split("/")[-1]
             stem = filename.replace(".md", "")
@@ -407,138 +465,143 @@ def main():
     else:
         report.append("ERROR: index.md does not exist!")
         
-    # 7. Sources & manifest audit (genérico: pega tudo que falta, nos dois sentidos)
-    report.append("\n=== SOURCES & MANIFEST AUDIT ===")
-    HANDOUTS_DIR = WIKI_ROOT / "handouts"
-    manifest_path = SOURCES_DIR / "manifest.md"
-    SOURCE_TYPE_TO_FOLDER = {
-        "Ensaio Completo Importado": "ensaio-importado",
-        "Web Clipping": "web-clipping",
-        "Artigo Acadêmico": "artigo-academico",
-        "Livro": "livro",
-        "Documentação Técnica": "documentacao-tecnica",
-        "Transcrição": "transcricao",
-        "Ideias": "ideias",
-        "Outro": "outro",
-    }
-    utility_source_folders = {"resumos"}
-
-    if not manifest_path.exists():
-        report.append("ERROR: wiki/sources/manifest.md não existe!")
-        manifest_entries = {}
+    # 7-10. Sources & manifest, plano, insights, categorias temáticas — audits de corpo inteiro
+    if target_essay:
+        report.append("\n=== SOURCES & MANIFEST / PLANO / INSIGHTS / CATEGORIAS ===")
+        report.append("(pulado — modo --essay: essas seções auditam o corpus inteiro, não um essay isolado.)")
     else:
-        manifest_content = load_file_content(manifest_path)
-        # Each entry: "## [YYYY-MM-DD] filename" heading, followed by Tipo:/Pasta:/Virou:/Verificação: lines
-        entry_blocks = re.split(r"(?m)^## \[(\d{4}-\d{2}-\d{2})\]\s+(.+)$", manifest_content)
-        # entry_blocks alternates: [preamble, date, filename, body, date, filename, body, ...]
-        manifest_entries = {}
-        for i in range(1, len(entry_blocks), 3):
-            date, filename, body = entry_blocks[i], entry_blocks[i + 1], entry_blocks[i + 2]
-            tipo_m = re.search(r"(?m)^Tipo:\s*(.+?)\.?$", body)
-            pasta_m = re.search(r"(?m)^Pasta:\s*(.+?)\.?$", body)
-            virou_m = re.search(r"(?m)^Virou:\s*(.+?)\.?$", body)
-            manifest_entries[filename.strip()] = {
-                "tipo": tipo_m.group(1).strip() if tipo_m else None,
-                "pasta": pasta_m.group(1).strip() if pasta_m else None,
-                "virou": virou_m.group(1).strip() if virou_m else None,
-            }
+        # 7. Sources & manifest audit (genérico: pega tudo que falta, nos dois sentidos)
+        report.append("\n=== SOURCES & MANIFEST AUDIT ===")
+        HANDOUTS_DIR = WIKI_ROOT / "handouts"
+        manifest_path = SOURCES_DIR / "manifest.md"
+        SOURCE_TYPE_TO_FOLDER = {
+            "Ensaio Completo Importado": "ensaio-importado",
+            "Web Clipping": "web-clipping",
+            "Artigo Acadêmico": "artigo-academico",
+            "Livro": "livro",
+            "Documentação Técnica": "documentacao-tecnica",
+            "Transcrição": "transcricao",
+            "Ideias": "ideias",
+            "Outro": "outro",
+        }
+        utility_source_folders = {"resumos"}
 
-        # 7a. Every file on disk under wiki/sources/<tipo>/ has a manifest entry, and vice-versa
-        files_on_disk = set()
-        if SOURCES_DIR.exists():
-            for sub in SOURCES_DIR.iterdir():
-                if not sub.is_dir() or sub.name in utility_source_folders:
-                    continue
-                for f in sub.iterdir():
-                    if f.name == ".gitkeep" or f.is_dir():
+        if not manifest_path.exists():
+            report.append("ERROR: wiki/sources/manifest.md não existe!")
+            manifest_entries = {}
+        else:
+            manifest_content = load_file_content(manifest_path)
+            # Each entry: "## [YYYY-MM-DD] filename" heading, followed by Tipo:/Pasta:/Virou:/Verificação: lines
+            entry_blocks = re.split(r"(?m)^## \[(\d{4}-\d{2}-\d{2})\]\s+(.+)$", manifest_content)
+            # entry_blocks alternates: [preamble, date, filename, body, date, filename, body, ...]
+            manifest_entries = {}
+            for i in range(1, len(entry_blocks), 3):
+                date, filename, body = entry_blocks[i], entry_blocks[i + 1], entry_blocks[i + 2]
+                tipo_m = re.search(r"(?m)^Tipo:\s*(.+?)\.?$", body)
+                pasta_m = re.search(r"(?m)^Pasta:\s*(.+?)\.?$", body)
+                virou_m = re.search(r"(?m)^Virou:\s*(.+?)\.?$", body)
+                manifest_entries[filename.strip()] = {
+                    "tipo": tipo_m.group(1).strip() if tipo_m else None,
+                    "pasta": pasta_m.group(1).strip() if pasta_m else None,
+                    "virou": virou_m.group(1).strip() if virou_m else None,
+                }
+
+            # 7a. Every file on disk under wiki/sources/<tipo>/ has a manifest entry, and vice-versa
+            files_on_disk = set()
+            if SOURCES_DIR.exists():
+                for sub in SOURCES_DIR.iterdir():
+                    if not sub.is_dir() or sub.name in utility_source_folders:
                         continue
-                    files_on_disk.add(f.name)
-                    if f.name not in manifest_entries:
-                        report.append(f"ERROR: wiki/sources/{sub.name}/{f.name} existe no disco mas não tem entrada em manifest.md.")
-                    if sub.name not in SOURCE_TYPE_TO_FOLDER.values():
-                        report.append(f"ERROR: wiki/sources/{sub.name}/ não é uma subpasta do vocabulário controlado (ver AGENTS.md).")
+                    for f in sub.iterdir():
+                        if f.name == ".gitkeep" or f.is_dir():
+                            continue
+                        files_on_disk.add(f.name)
+                        if f.name not in manifest_entries:
+                            report.append(f"ERROR: wiki/sources/{sub.name}/{f.name} existe no disco mas não tem entrada em manifest.md.")
+                        if sub.name not in SOURCE_TYPE_TO_FOLDER.values():
+                            report.append(f"ERROR: wiki/sources/{sub.name}/ não é uma subpasta do vocabulário controlado (ver AGENTS.md).")
 
-        for filename, entry in manifest_entries.items():
-            if filename not in files_on_disk:
-                report.append(f"ERROR: manifest.md tem entrada para '{filename}' mas o arquivo não existe em wiki/sources/**.")
-            # 7b. "Ensaio Completo Importado" deve sempre ter virado um essay concreto
-            if entry["tipo"] == "Ensaio Completo Importado":
-                if not entry["virou"] or "[[" not in (entry["virou"] or ""):
-                    report.append(f"ERROR: source '{filename}' é Tipo: Ensaio Completo Importado mas manifest.md não registra 'Virou: [[Essay]]' — fonte importada sem essay correspondente.")
-                elif entry["virou"]:
-                    virou_target = re.search(r"\[\[([^\]|]+)", entry["virou"])
-                    if virou_target and virou_target.group(1).strip() not in essay_titles:
-                        report.append(f"ERROR: source '{filename}' Virou: aponta para '{virou_target.group(1).strip()}', que não existe como título de essay.")
+            for filename, entry in manifest_entries.items():
+                if filename not in files_on_disk:
+                    report.append(f"ERROR: manifest.md tem entrada para '{filename}' mas o arquivo não existe em wiki/sources/**.")
+                # 7b. "Ensaio Completo Importado" deve sempre ter virado um essay concreto
+                if entry["tipo"] == "Ensaio Completo Importado":
+                    if not entry["virou"] or "[[" not in (entry["virou"] or ""):
+                        report.append(f"ERROR: source '{filename}' é Tipo: Ensaio Completo Importado mas manifest.md não registra 'Virou: [[Essay]]' — fonte importada sem essay correspondente.")
+                    elif entry["virou"]:
+                        virou_target = re.search(r"\[\[([^\]|]+)", entry["virou"])
+                        if virou_target and virou_target.group(1).strip() not in essay_titles:
+                            report.append(f"ERROR: source '{filename}' Virou: aponta para '{virou_target.group(1).strip()}', que não existe como título de essay.")
 
-    # 7c. Estrutura canônica: todas as subpastas de tipo devem existir (mesmo vazias)
-    for tipo, subpasta in SOURCE_TYPE_TO_FOLDER.items():
-        if not (SOURCES_DIR / subpasta).exists():
-            report.append(f"WARNING: wiki/sources/{subpasta}/ (Tipo: {tipo}) não existe — crie com .gitkeep, mesmo vazia, para manter a estrutura canônica.")
-    if not HANDOUTS_DIR.exists():
-        report.append("WARNING: wiki/handouts/ não existe — crie com .gitkeep.")
+        # 7c. Estrutura canônica: todas as subpastas de tipo devem existir (mesmo vazias)
+        for tipo, subpasta in SOURCE_TYPE_TO_FOLDER.items():
+            if not (SOURCES_DIR / subpasta).exists():
+                report.append(f"WARNING: wiki/sources/{subpasta}/ (Tipo: {tipo}) não existe — crie com .gitkeep, mesmo vazia, para manter a estrutura canônica.")
+        if not HANDOUTS_DIR.exists():
+            report.append("WARNING: wiki/handouts/ não existe — crie com .gitkeep.")
 
-    # 8. Plano audit (5 seções fixas, vocabulário de Status)
-    report.append("\n=== PLANO AUDIT (plan/plano.md) ===")
-    PLAN_SECOES = ["Tarefas", "Fontes para Ingerir", "Revisões", "Estudos", "Essays Futuros"]
-    plano_path = ROOT_DIR / "plan" / "plano.md"
-    if not plano_path.exists():
-        report.append("WARNING: plan/plano.md não existe ainda (normal se o Usuário nunca usou /plan).")
-    else:
-        plano_content = load_file_content(plano_path)
-        secoes_found = set()
-        parts = re.split(r"(?m)^## ", plano_content)[1:]
-        for part in parts:
-            heading = part.split("\n", 1)[0].strip()
-            if heading in PLAN_SECOES:
-                secoes_found.add(heading)
-            elif heading != "Índice":
-                report.append(f"ERROR: plan/plano.md tem uma seção '## {heading}' fora do vocabulário fechado ({', '.join(PLAN_SECOES)}).")
-        for secao in PLAN_SECOES:
-            if secao not in secoes_found:
-                report.append(f"ERROR: plan/plano.md está sem a seção '## {secao}' (as 5 seções devem sempre existir, mesmo vazias).")
-        status_values = re.findall(r"(?m)^- Status:\s*(.+)$", plano_content)
-        for sv in status_values:
-            if sv.strip() not in ("Pendente", "Em Andamento"):
-                report.append(f"ERROR: plan/plano.md tem um item com Status: '{sv.strip()}' fora do vocabulário (Pendente | Em Andamento).")
+        # 8. Plano audit (5 seções fixas, vocabulário de Status)
+        report.append("\n=== PLANO AUDIT (plan/plano.md) ===")
+        PLAN_SECOES = ["Tarefas", "Fontes para Ingerir", "Revisões", "Estudos", "Essays Futuros"]
+        plano_path = ROOT_DIR / "plan" / "plano.md"
+        if not plano_path.exists():
+            report.append("WARNING: plan/plano.md não existe ainda (normal se o Usuário nunca usou /plan).")
+        else:
+            plano_content = load_file_content(plano_path)
+            secoes_found = set()
+            parts = re.split(r"(?m)^## ", plano_content)[1:]
+            for part in parts:
+                heading = part.split("\n", 1)[0].strip()
+                if heading in PLAN_SECOES:
+                    secoes_found.add(heading)
+                elif heading != "Índice":
+                    report.append(f"ERROR: plan/plano.md tem uma seção '## {heading}' fora do vocabulário fechado ({', '.join(PLAN_SECOES)}).")
+            for secao in PLAN_SECOES:
+                if secao not in secoes_found:
+                    report.append(f"ERROR: plan/plano.md está sem a seção '## {secao}' (as 5 seções devem sempre existir, mesmo vazias).")
+            status_values = re.findall(r"(?m)^- Status:\s*(.+)$", plano_content)
+            for sv in status_values:
+                if sv.strip() not in ("Pendente", "Em Andamento"):
+                    report.append(f"ERROR: plan/plano.md tem um item com Status: '{sv.strip()}' fora do vocabulário (Pendente | Em Andamento).")
 
-    # 9. Insights audit (maturidade válida, órfãs)
-    report.append("\n=== INSIGHTS AUDIT (wiki/insights/) ===")
-    MATURIDADES_VALIDAS = ("solta", "germinando", "madura", "absorvida")
-    if INSIGHTS_DIR.exists():
-        for file in sorted(INSIGHTS_DIR.glob("*.md")):
+        # 9. Insights audit (maturidade válida, órfãs)
+        report.append("\n=== INSIGHTS AUDIT (wiki/insights/) ===")
+        MATURIDADES_VALIDAS = ("solta", "germinando", "madura", "absorvida")
+        if INSIGHTS_DIR.exists():
+            for file in sorted(INSIGHTS_DIR.glob("*.md")):
+                content = load_file_content(file)
+                fm_match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
+                fm_data = {}
+                if fm_match:
+                    try:
+                        fm_data = yaml.safe_load(fm_match.group(1)) or {}
+                    except Exception:
+                        pass
+                maturidade = fm_data.get("maturidade")
+                if maturidade not in MATURIDADES_VALIDAS:
+                    report.append(f"ERROR: insights/{file.name} tem 'maturidade:' inválida ou ausente ('{maturidade}'), esperado {'|'.join(MATURIDADES_VALIDAS)}.")
+                conexoes_match = re.search(r"## Conexões\s*\n(.*?)(?=\n##|\Z)", content, re.DOTALL)
+                if conexoes_match and not re.search(r"\[\[", conexoes_match.group(1)):
+                    report.append(f"WARNING: insights/{file.name} não tem nenhum [[wikilink]] em Conexões — candidata a ficar órfã.")
+
+        # 10. Categorias temáticas quase-duplicadas (heurística: normaliza acento/caixa)
+        report.append("\n=== CATEGORIAS TEMÁTICAS (heurística de quase-duplicata) ===")
+        import unicodedata
+
+        def normalize(s):
+            s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode().lower().strip()
+            return re.sub(r"\s+", " ", s)
+
+        categorias_por_norm = {}
+        for file in ESSAYS_DIR.glob("*.md") if ESSAYS_DIR.exists() else []:
             content = load_file_content(file)
-            fm_match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
-            fm_data = {}
-            if fm_match:
-                try:
-                    fm_data = yaml.safe_load(fm_match.group(1)) or {}
-                except Exception:
-                    pass
-            maturidade = fm_data.get("maturidade")
-            if maturidade not in MATURIDADES_VALIDAS:
-                report.append(f"ERROR: insights/{file.name} tem 'maturidade:' inválida ou ausente ('{maturidade}'), esperado {'|'.join(MATURIDADES_VALIDAS)}.")
-            conexoes_match = re.search(r"## Conexões\s*\n(.*?)(?=\n##|\Z)", content, re.DOTALL)
-            if conexoes_match and not re.search(r"\[\[", conexoes_match.group(1)):
-                report.append(f"WARNING: insights/{file.name} não tem nenhum [[wikilink]] em Conexões — candidata a ficar órfã.")
-
-    # 10. Categorias temáticas quase-duplicadas (heurística: normaliza acento/caixa)
-    report.append("\n=== CATEGORIAS TEMÁTICAS (heurística de quase-duplicata) ===")
-    import unicodedata
-
-    def normalize(s):
-        s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode().lower().strip()
-        return re.sub(r"\s+", " ", s)
-
-    categorias_por_norm = {}
-    for file in ESSAYS_DIR.glob("*.md") if ESSAYS_DIR.exists() else []:
-        content = load_file_content(file)
-        m = re.search(r"(?m)^>\s*(?:Ensaio|White Paper|Brainstorm|Estudo|Análise)\s*·\s*(.+)$", content)
-        if m:
-            cat = m.group(1).strip()
-            categorias_por_norm.setdefault(normalize(cat), set()).add(cat)
-    for norm, variants in categorias_por_norm.items():
-        if len(variants) > 1:
-            report.append(f"WARNING: categorias possivelmente duplicadas (grafias diferentes da mesma categoria): {', '.join(sorted(variants))}")
+            m = re.search(r"(?m)^>\s*(?:Ensaio|White Paper|Brainstorm|Estudo|Análise)\s*·\s*(.+)$", content)
+            if m:
+                cat = m.group(1).strip()
+                categorias_por_norm.setdefault(normalize(cat), set()).add(cat)
+        for norm, variants in categorias_por_norm.items():
+            if len(variants) > 1:
+                report.append(f"WARNING: categorias possivelmente duplicadas (grafias diferentes da mesma categoria): {', '.join(sorted(variants))}")
 
 
     output_report_path = ROOT_DIR / "output" / "comprehensive_lint_output.txt"
