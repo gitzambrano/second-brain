@@ -10,8 +10,9 @@ description: >
   a wiki inteira", "vê se tá tudo certo", "o que está faltando",
   "confere a estrutura", ou quiser manutenção da base inteira em vez
   de corrigir a prosa de um essay específico (isso é /sweep).
-allowed-tools: Bash Read Write Edit Glob Grep
+allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion
 ---
+
 # Organize
 
 Organiza a base inteira na camada de metadados: índice, log, mapa de sources, tags, plano, synthesis, e a estrutura de pastas como um todo. **Não reescreve prosa de essay** — isso é `/sweep`. Pense em `/organize` como a manutenção do grafo e do catálogo; `/sweep` como a manutenção do texto.
@@ -56,7 +57,7 @@ Se quiser um snapshot salvo da stats pós-organização, rode `python scripts/st
 
 ## Convenções
 
-Todo texto adicionado ou corrigido segue o `## Estilo de prosa` de `conventions/SKILL.md`.
+Prosa segue `## Estilo de prosa` em `conventions/SKILL.md`.
 
 Não corrija silenciosamente algo que depende de julgamento editorial (qual claim prevalece numa contradição, se um órfão vira essay ou é removido, se duas categorias devem de fato virar uma só).
 
@@ -70,4 +71,4 @@ Correções mecânicas e inequívocas (índice desatualizado, entrada de manifes
 - `/plan` — recebe itens `Revisão` quando `/organize` encontra algo que precisa de atenção mas não pode ser corrigido na hora
 - `/atom` — recebe notas atômicas maduras sinalizadas aqui, para promoção
 - `/status` — depois de um `/organize` substancial, ofereça `/status update` para refletir as pendências corrigidas
-- `/gaps` — cobertura conceitual (termo citado sem página, página sem link, desbalanço temático); `/organize` só cobre órfão *reverso* (página existente sem essay que a referencie) no passo 2 — a direção oposta é `/gaps`
+- `/gaps` — cobertura conceitual (direção oposta ao órfão *reverso* do passo 2)

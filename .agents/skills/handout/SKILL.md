@@ -7,7 +7,7 @@ description: >
   handout desse essay", "resume isso numa página pra eu mandar pro
   fulano", ou quiser uma versão executiva rápida de um essay para
   alguém que não vai ler o texto inteiro.
-allowed-tools: Bash Read Write Edit Glob
+allowed-tools: Bash Read Write Edit Glob AskUserQuestion
 ---
 # Handout
 

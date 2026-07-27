@@ -11,7 +11,7 @@ description: >
   "anota esse insight solto", "essa nota já está madura o bastante
   pra virar essay?", ou trouxer um fragmento de pensamento que não se
   encaixa em nenhum essay hoje.
-allowed-tools: Bash Read Write Edit Glob Grep
+allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion
 ---
 
 # Atom

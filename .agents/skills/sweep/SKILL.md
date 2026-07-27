@@ -10,16 +10,14 @@ description: >
   pente fino nesse essay", ou quiser a bateria completa de correções sem
   invocar cada skill manualmente. É um orquestrador: chama outros skills,
   não duplica a lógica deles.
-allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch
+allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch AskUserQuestion
 ---
-# Sweep
-
 Roda a bateria completa de revisão — `/format` → `/continuity` → `/proofread` → `/polish` → `/linkify` — em qualquer escopo pedido pelo Usuário, e consolida os resultados num único relatório. É um **orquestrador**: toda a lógica de cada correção vive no skill correspondente.
 
 ## O que é e o que não é
 
 - **É**: pente fino completo de um essay ou todos essays, cobrindo formatação, continuidade, português, estilo e links.
-- **Não é**: `/organize` (saúde da wiki: índice, manifesto, orphans — rode antes para decidir se vale um sweep). Não é `/review` (validade argumentativa e profundidade de conteúdo.
+- **Não é**: `/organize` (saúde da wiki: índice, manifesto, orphans — rode antes para decidir se vale um sweep). Não é `/review` (validade argumentativa e profundidade de conteúdo).
 
 ## Escopo
 
@@ -126,7 +124,7 @@ Atualize `updated:` no frontmatter de cada essay tocado.
 
 ## Convenções
 
-Todo texto adicionado ou corrigido segue `## Estilo de prosa` de `conventions/SKILL.md`.
+Prosa segue `## Estilo de prosa` em `conventions/SKILL.md`.
 
 ## Skills relacionadas
 

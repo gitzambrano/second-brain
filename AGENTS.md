@@ -19,6 +19,8 @@ A wiki tem cinco diretórios de topo, cada um com um papel definido:
   - `wiki/sources/` — arquivo permanente dos documentos originais, organizado por tipo. Veja `## Sources, Tags e Vocabulários Controlados`.
   - `wiki/synthesis/` — espaço para atomizar ideias. Guarda notas atômicas (`/atom`), que ainda não sabem a que essay pertencem e podem crescer até virar um, e comparações curtas (`/query`), que não chegam a virar essay.
   - `wiki/handouts/` — resumos de uma página de essays específicos, gerados sob demanda. Nunca são criados automaticamente; veja `/handout` para o fluxo completo.
+  - `wiki/assets/` — imagens e figuras referenciadas pelos essays (caminho relativo `../assets/nome.png`). Alimentada por `/import`, `/digest`, `/absorb` sempre que a fonte processada tem figura embutida. Veja `## Tratamento de imagens` em `conventions/SKILL.md`.
+  - `wiki/book-chapters/` — reservada para um projeto de livro futuro. Não usar ainda.
   - `wiki/index.md` — catálogo mestre, contendo apenas essays, organizado por categoria temática.
   - `wiki/log.md` — log cronológico, append-only, de toda operação realizada na wiki.
   - `wiki/status.md` — snapshot do estado atual: foco corrente, perguntas em aberto, pendências. Funciona como ponte entre uma sessão e outra; veja a skill `/status`.
@@ -127,22 +129,11 @@ Lista atual, as regras de reuso e os critérios para criar uma tag nova estão e
 
 ### Tipos de Source
 
-Vocabulário fechado, que também define a subpasta física em `wiki/sources/`.
+Vocabulário fechado que define a subpasta física em `wiki/sources/`.
 
-| Tipo (manifesto)          | Subpasta                  | O que entra aqui                                                                                                                   |
-| ------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Ensaio Completo Importado | `ensaio-importado/`     | Ensaio ou white paper pronto vindo de fora, que virou essay preservando o texto integral                                           |
-| Web Clipping              | `web-clipping/`         | Recorte de página web: post, thread, matéria online                                                                              |
-| Artigo Acadêmico         | `artigo-academico/`     | Paper com peer review, DOI, ou publicado em periódico/conferência                                                                |
-| Livro                     | `livro/`                | Livro ou capítulo, inteiro ou em trecho relevante                                                                                 |
-| Documentação Técnica   | `documentacao-tecnica/` | Manuais, specs, normas, documentação de ferramenta ou API                                                                        |
-| Transcrição             | `transcricao/`          | Palestra, podcast, entrevista, aula                                                                                                |
-| Ideias                    | `ideias/`               | Texto curto e não estruturado: rascunho, nota rápida, trecho de conversa, que ainda não é um ensaio, artigo ou clipping formal |
-| Outro                     | `outro/`                | Use apenas quando genuinamente nenhuma categoria acima cobre o caso                                                                |
+Tabela completa, formato do manifesto (`wiki/sources/manifest.md`) e do mapa (`wiki/sources/map.md`) estão em `## Tipos de Source — Vocabulário Controlado` de `conventions/SKILL.md`.
 
 Reuse um tipo existente antes de criar um novo: a subpasta é sempre derivada do `Tipo:`, nunca escolhida à mão. As skills `/organize` e `/stats` auditam essa consistência entre o manifesto e o disco.
-
-O formato do manifesto (`wiki/sources/manifest.md`) e do mapa (`wiki/sources/map.md`) estão descritos em `conventions/SKILL.md`.
 
 ## Plano de Longo Prazo
 

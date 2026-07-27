@@ -12,7 +12,7 @@ description: >
   "retoma aquele item do plano", "tira isso do plano", ou trouxer
   qualquer pendência de longo prazo — de estudar algo a revisar um
   essay a uma tarefa qualquer que não seja sobre a wiki.
-allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch
+allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch AskUserQuestion
 ---
 
 # Plan

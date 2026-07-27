@@ -6,7 +6,7 @@ description: >
   Usuário disser "corrige o português", "dá uma geral na gramática",
   "revisa a ortografia", ou quiser uma passada só de língua, sem mudar
   conteúdo ou argumento.
-allowed-tools: Bash Read Write Edit Glob Grep
+allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion
 ---
 # Proofread
 
@@ -14,7 +14,7 @@ Passada geral de português: gramática, ortografia, concordância, pontuação.
 
 ## Regra de abertura
 
-Todo texto adicionado ou corrigido segue o `## Estilo de prosa` de `conventions/SKILL.md`.
+Prosa segue `## Estilo de prosa` em `conventions/SKILL.md`.
 
 Leia o essay inteiro nessa passada, não seção por seção isoladamente. É comum um termo técnico aparecer traduzido de duas formas diferentes em capítulos escritos em momentos distintos, e só a leitura completa pega isso.
 
@@ -49,7 +49,7 @@ Atualize `updated:` no frontmatter.
 
 ## Convenções
 
-Aplique a regra de status do essay (`draft`/`maduro`/`finalizado`, batch vs específico) em `## Status de essay` de `conventions/SKILL.md`.
+Segue a regra de status (batch vs específico) de `## Status de essay` em `conventions/SKILL.md`.
 
 ## Skills relacionadas
 

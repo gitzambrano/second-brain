@@ -8,7 +8,7 @@ description: >
   quiser um resumo rápido e o arquivamento correto, não um essay novo.
   Se o Usuário quiser o conteúdo da fonte incorporado a essays/
   conceitos já existentes, isso é /absorb, executado depois deste.
-allowed-tools: Bash Read Write Glob Grep WebSearch WebFetch
+allowed-tools: Bash Read Write Glob Grep WebSearch WebFetch AskUserQuestion
 ---
 # Digest
 
@@ -24,10 +24,11 @@ Não use para: um ensaio/white paper do próprio Usuário (isso é `/import`) ou
 
 1. Leia a fonte inteira em `raw/`.
 2. Classifique o `Tipo:` (vocabulário controlado: Web Clipping, Artigo Acadêmico, Livro, Documentação Técnica, Transcrição, Ideias, Outro — ver AGENTS.md).
-3. Escreva um resumo de uma página em `wiki/sources/resumos/<slug>.md`: claim(s) principal(is), metodologia se aplicável, limitações, 2-3 citações-chave (parafraseadas, nunca copiadas verbatim além de trechos curtíssimos). Frontmatter simples: `fonte:` (nome do arquivo original), `tipo:`, `created:`.
-4. **Entregue o resumo ao Usuário na própria conversa** — não é suficiente só salvar o arquivo, ele quer ler agora.
-5. Arquive o original em `wiki/sources/<subpasta-do-tipo>/`, preservando o nome. Registre em `wiki/sources/manifest.md` e em `wiki/sources/map.md` (status: "Resumido — ver resumo", com link pro arquivo em `resumos/`).
-6. Log: `## [YYYY-MM-DD] digest | Título da Fonte`
+3. Se a fonte tiver figura embutida (PDF, DOCX, HTML), extraia para `wiki/assets/` e linke no resumo — ver `## Tratamento de imagens` em `conventions/SKILL.md`.
+4. Escreva um resumo de uma página em `wiki/sources/resumos/<slug>.md`: claim(s) principal(is), metodologia se aplicável, limitações, 2-3 citações-chave (parafraseadas, nunca copiadas verbatim além de trechos curtíssimos). Frontmatter simples: `fonte:` (nome do arquivo original), `tipo:`, `created:`.
+5. **Entregue o resumo ao Usuário na própria conversa** — não é suficiente só salvar o arquivo, ele quer ler agora.
+6. Arquive o original em `wiki/sources/<subpasta-do-tipo>/`, preservando o nome. Registre em `wiki/sources/manifest.md` e em `wiki/sources/map.md` (status: "Resumido — ver resumo", com link pro arquivo em `resumos/`).
+7. Log: `## [YYYY-MM-DD] digest | Título da Fonte`
 
 ## Depois
 
@@ -39,7 +40,7 @@ Resumo é sempre parafraseado nas próprias palavras — nunca reproduza parágr
 
 Isso não é um essay: sem `## Sumário`, `## Referências` formal, ou `## Conexões` — é um resumo de uma página, direto ao ponto.
 
-Todo texto adicionado ou corrigido segue o `## Estilo de prosa` de `conventions/SKILL.md`.
+Prosa segue `## Estilo de prosa` em `conventions/SKILL.md`.
 
 ## Skills relacionadas
 

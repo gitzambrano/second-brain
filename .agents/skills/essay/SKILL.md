@@ -11,8 +11,9 @@ description: >
   /outline primeiro e só volta aqui depois de aprovado. Única exceção:
   essay que já chega pronto, escrito pelo próprio autor — isso é
   /import, não /essay, e não passa por /outline.
-allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch
+allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch AskUserQuestion
 ---
+
 # Essay
 
 Parceiro de escrita e pesquisa para criar um essay novo, original, do zero. Diferente de `/import` e `/digest`, não há fonte bruta sendo processada: a ideia nasce da conversa com o Usuário, e Claude pesquisa, estrutura e escreve no padrão da wiki.
@@ -36,7 +37,7 @@ O essay resultante deve ser **extenso, profundo e criativo**, não um resumo nem
 
 ## 2. Redigir com profundidade real
 
-Escreva em `wiki/essays/<slug>.md`, Português do Brasil, seguindo o `## Estilo de prosa` de `conventions/SKILL.md` (prosa corrida, travessões extremamente raros).
+Escreva em `wiki/essays/<slug>.md`, Português do Brasil, seguindo `## Estilo de prosa` em `conventions/SKILL.md` (prosa corrida, travessões extremamente raros).
 
 ### Se o domínio é filosófico
 
@@ -98,7 +99,7 @@ Depois de pronto, ofereça `/pdf` ou `/html` conforme o uso (imprimir/anexar vs.
 
 ## Convenções
 
-- Todo texto adicionado segue o `## Estilo de prosa` de `conventions/SKILL.md`
+- Todo texto adicionado segue `## Estilo de prosa` em `conventions/SKILL.md`
 - Nunca escreva prosa sem esboço aprovado — a tese e a estrutura de capítulos são decisão de `/outline`, não deste skill.
 - Nunca invente citações, dados, ou referências — se não pesquisou, não afirme como fato.
 - Toda a wiki é em Português do Brasil.
@@ -109,5 +110,5 @@ Depois de pronto, ofereça `/pdf` ou `/html` conforme o uso (imprimir/anexar vs.
 - **Iterar sobre este essay** com `/expand`, `/chapter`, `/proofread`, `/polish`, `/continuity`, `/linkify`
 - **Processar novas fontes** com `/import`, `/digest`, ou `/absorb`
 - **Perguntar sobre o que já existe** com `/query`
-- **Organizar ouauditar a wiki** com `/organize`, `/sweep`, `/stats`, `/gaps`
+- **Organizar ou auditar a wiki** com `/organize`, `/sweep`, `/stats`, `/gaps`
 - **Se este essay veio de um item do plano** (`plan/plano.md`, seção "Essays Futuros"), rode `/plan done` ao terminar, para tirá-lo do plano

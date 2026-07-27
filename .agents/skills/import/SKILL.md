@@ -9,8 +9,9 @@ description: >
   autor, pergunte antes de prosseguir: usar /import numa fonte de
   terceiro apresentaria incorretamente a escrita de outra pessoa como
   essay do autor.
-allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch
+allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch AskUserQuestion
 ---
+
 # Import
 
 Processa uma fonte que **já é** um ensaio, white paper, ou artigo completo escrito pelo próprio Usuário. O texto vira essay preservando-se intacto — Claude aqui é arquivista, não coautor. Para qualquer fonte que não seja do próprio autor (paper de terceiro, livro, web clipping, transcrição), use `/digest`, não este skill.

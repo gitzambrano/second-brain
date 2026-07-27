@@ -8,8 +8,9 @@ description: >
   automáticas via auto_fix_lint.py e reporta o restante. Aceita escopo
   corpus inteiro (/format) ou essay único (/format <slug>). Sweep chama
   este skill na passada mecânica.
-allowed-tools: Bash Read Write Edit Glob Grep
+allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion
 ---
+
 # Format
 
 Executa uma auditoria completa de formatação em um ou todos os essays, cobrindo cada regra de `conventions/SKILL.md`. É **mecânico e não-interativo**: roda o script, aplica os fixes inequívocos automaticamente, e lista o restante para o Usuário resolver.
@@ -42,10 +43,13 @@ Em modo corpus inteiro, pula essays com `status: finalizado` ou `maduro` nos fix
    - Com `<slug>`: localize o arquivo exato em `wiki/essays/` (tente slug, nome `.md`, ou título parcial); se ambíguo, pergunte antes de prosseguir.
 
 3. **Rode o script de formato**:
+
    ```bash
    python scripts/format_check.py [--file <slug>] --json
    ```
+
    O output JSON tem a estrutura:
+
    ```json
    {
      "essays": [
@@ -56,9 +60,11 @@ Em modo corpus inteiro, pula essays com `status: finalizado` ou `maduro` nos fix
    ```
 
 4. **Aplique os fixes automáticos** para achados mecânicos e inequívocos (sem interação com o Usuário):
+
    ```bash
    python scripts/auto_fix_lint.py
    ```
+
    O `auto_fix_lint.py` corrige:
    - Linha em branco faltando após heading
    - Dois-pontos em `[[wikilinks]]` → em dash
@@ -68,7 +74,7 @@ Em modo corpus inteiro, pula essays com `status: finalizado` ou `maduro` nos fix
 5. **Monte o relatório** agrupando os issues restantes (não auto-corrigíveis) por categoria:
 
    | Categoria | Códigos de issue |
-   |---|---|
+   | --- | --- |
    | Estrutura obrigatória | `NO_FRONTMATTER`, `BAD_FRONTMATTER`, `FM_*`, `NO_H1`, `NO_SUMARIO`, `SUMARIO_NO_HR`, `SUMARIO_BROKEN_ANCHOR`, `NO_REFERENCIAS`, `NO_CONEXOES`, `CONEXOES_NOT_LAST` |
    | Byline | `BYLINE_*` |
    | Links | `WIKILINKS_IN_BODY`, `FEW_EXT_LINKS` |

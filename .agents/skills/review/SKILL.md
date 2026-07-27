@@ -11,23 +11,11 @@ description: >
   review do essay X", "esse ensaio está profundo o suficiente?", "quais
   são os gaps argumentativos?", ou quiser o olhar de um revisor externo
   antes de marcar um essay como maduro ou finalizado.
-allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch
+allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch AskUserQuestion
 ---
 # Review
 
 Funciona como um revisor de paper acadêmico: lê o essay com olhar crítico e construtivo, identifica problemas de argumentação, profundidade e rigor, e — diferente de um revisor puramente negativo — sugere ativamente o que enriqueceria o texto. Só edita após o Usuário aprovar um plano de modificação explícito.
-
-## Diferença em relação a skills vizinhos
-
-| Skill | Foco |
-|---|---|
-| `/continuity` | Fluxo narrativo: a tese é seguida do início ao fim? |
-| `/expand` | Adicionar conteúdo específico apontado pelo Usuário |
-| `/proofread` | Português: gramática, ortografia |
-| `/polish` | Estilo de prosa: ritmo, elegância |
-| `/review` | Validade argumentativa, profundidade filosófica/científica, gaps, sugestões de enriquecimento |
-
-`/review` não repete o trabalho de `/continuity` (fluxo narrativo), mas pode detectar gaps que exigem a intervenção de `/continuity` depois — nesse caso, recomende encadear as duas skills.
 
 ## Passo a passo
 
@@ -151,11 +139,14 @@ Após aplicar as modificações:
 
 - Atualize `updated:` no frontmatter do essay
 - Registre em `wiki/log.md`:
+
   ```
   ## [YYYY-MM-DD] review | [Título do Essay]
   Revisão: N issues críticos, M moderados, K sugestões. X modificações aplicadas.
   ```
+
 - Se o essay estava `draft` e todos os críticos foram resolvidos, **pergunte** ao Usuário se quer promovê-lo para `maduro` — não faça isso automaticamente.
+- Oferença `/continuity` se detectar gaps que exigem a intervenção desse skill.
 - Ofereça `/status update` se a sessão for encerrada após o review.
 
 ## Regras e limites

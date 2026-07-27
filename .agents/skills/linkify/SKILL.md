@@ -50,7 +50,7 @@ N links adicionados, M links corrigidos.
 
 ## Convenções
 
-Aplique a regra de status do essay (`draft`/`maduro`/`finalizado`, batch vs específico) em `## Status de essay` de `conventions/SKILL.md`.
+Segue a regra de status (batch vs específico) de `## Status de essay` em `conventions/SKILL.md`.
 
 ## Skills relacionadas
 

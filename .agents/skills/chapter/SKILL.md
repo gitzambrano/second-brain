@@ -8,7 +8,7 @@ description: >
   essa seção pra depois da 3", "cria uma página de conceito pra Y", ou
   quiser mudanças estruturais no essay em vez de mudança de conteúdo
   dentro de seções já existentes.
-allowed-tools: Bash Read Write Edit Glob Grep
+allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion
 ---
 
 # Chapter
@@ -52,9 +52,9 @@ Se existir handout para este essay e a reorganização mudou a tese ou o caminho
 
 ## Convenções
 
-Aplique a regra de status do essay (`draft`/`maduro`/`finalizado`, batch vs específico) em `## Status de essay` de `conventions/SKILL.md`.
+Segue a regra de status (batch vs específico) de `## Status de essay` em `conventions/SKILL.md`.
 
-Texto novo segue o `## Estilo de prosa` de `conventions/SKILL.md`. Não invente conteúdo para preencher uma seção nova sem ter material — se o pedido for só "cria um capítulo sobre X" sem mais direção, trate como um pedido de `/expand` primeiro (perguntar o que deve entrar), e só então estruture aqui.
+Texto novo segue `## Estilo de prosa` em `conventions/SKILL.md`. Não invente conteúdo para preencher uma seção nova sem ter material — se o pedido for só "cria um capítulo sobre X" sem mais direção, trate como um pedido de `/expand` primeiro (perguntar o que deve entrar), e só então estruture aqui.
 
 ## Skills relacionadas
 

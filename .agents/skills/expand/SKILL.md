@@ -55,9 +55,9 @@ Se `## Sumário` ou `## Conexões` ficaram desatualizados, atualize-os. Se exist
 
 ## Convenções
 
-Aplique a regra de status do essay (`draft`/`maduro`/`finalizado`, batch vs específico) em `## Status de essay` de `conventions/SKILL.md`.
+Segue a regra de status (batch vs específico) de `## Status de essay` em `conventions/SKILL.md`.
 
-Todo texto adicionado segue o `## Estilo de prosa` de `conventions/SKILL.md` (sem bullets no corpo, travessões extremamente raros) e está em Português do Brasil.
+Todo texto adicionado segue `## Estilo de prosa` em `conventions/SKILL.md` (sem bullets no corpo, travessões extremamente raros) e está em Português do Brasil.
 
 Essays originais preservados de `raw/` também podem receber expansão — a regra de "texto intacto" vale para o momento da ingestão, não impede uma expansão pedida explicitamente depois.
 

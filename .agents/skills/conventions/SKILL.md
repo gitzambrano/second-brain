@@ -2,10 +2,11 @@
 name: conventions
 description: >
   Referência central de estilo e formatação da wiki: onde cada tipo de
-  conteúdo vai (tabela canônica de pastas), frontmatter, byline,
-  Sumário/Referências/Conexões, regra de links (exportabilidade PDF),
-  estilo de prosa, nomenclatura, imagens, compatibilidade Obsidian,
-  conversão de fontes e regra de contradição entre fontes. Não tem fluxo
+  conteúdo vai (tabela canônica de pastas), tipos de source e sua
+  subpasta física, frontmatter, byline, Sumário/Referências/Conexões,
+  regra de links (exportabilidade PDF), estilo de prosa, nomenclatura,
+  imagens, compatibilidade Obsidian, conversão de fontes e regra de
+  contradição entre fontes. Não tem fluxo
   próprio — as outras skills (essay, expand, chapter, proofread, polish,
   continuity, linkify, import, digest, absorb, handout, organize, sweep,
   pdf, html) leem este arquivo para saber o formato exato a produzir e em que pasta
@@ -33,6 +34,7 @@ Toda skill que grava em disco decide onde salvar consultando esta tabela, não p
 | `wiki/sources/<tipo>/` | Cópia/referência do documento original, por tipo (vocabulário em `AGENTS.md`) | `/import`, `/digest`, `/absorb` (via `/scout` como triagem) | Toda fonte processada, sempre |
 | `wiki/sources/resumos/` | Resumo de uma página por fonte processada | `/digest` | Toda vez que uma fonte é resumida |
 | `wiki/handouts/` | Versão de uma página de um essay **já existente** | `/handout` | Sempre derivado, sob demanda |
+| `wiki/assets/` | Imagens/figuras referenciadas pelos essays | `/import`, `/digest`, `/absorb` | Fonte processada tem figura embutida (ver `## Tratamento de imagens`) |
 | `wiki/book-chapters/` | Reservado para projeto de livro futuro | — | Não usar ainda |
 | `plan/plano.md` | Pendência de longo prazo | `/plan` | Nunca conteúdo de wiki — só intenção de trabalhar algo depois |
 | `wiki/status.md` | Snapshot do estado da sessão atual | `/status` | Ponte entre sessões, não confundir com o plano |
@@ -69,6 +71,23 @@ Vida Pessoal · Produtividade · Finanças · Saúde · Aprendizado · Projetos 
 3. **Tags são temas, não tipos** — o tipo do essay (`Ensaio`, `White Paper`, etc.) já vive na byline.
 4. **2 a 5 tags por essay.**
 5. `/organize` audita quase-duplicadas e propõe consolidação.
+
+## Tipos de Source — Vocabulário Controlado
+
+Campo `Tipo:` do manifesto (`wiki/sources/manifest.md`), vocabulário fechado — cada tipo define a subpasta física em `wiki/sources/`, nunca escolhida à mão.
+
+| Tipo (manifesto)          | Subpasta                  | O que entra aqui                                                                                                                   |
+| ------------------------- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Ensaio Completo Importado | `ensaio-importado/`     | Ensaio ou white paper pronto vindo de fora, que virou essay preservando o texto integral                                           |
+| Web Clipping              | `web-clipping/`         | Recorte de página web: post, thread, matéria online                                                                              |
+| Artigo Acadêmico         | `artigo-academico/`     | Paper com peer review, DOI, ou publicado em periódico/conferência                                                                |
+| Livro                     | `livro/`                | Livro ou capítulo, inteiro ou em trecho relevante                                                                                 |
+| Documentação Técnica   | `documentacao-tecnica/` | Manuais, specs, normas, documentação de ferramenta ou API                                                                        |
+| Transcrição             | `transcricao/`          | Palestra, podcast, entrevista, aula                                                                                                |
+| Ideias                    | `ideias/`               | Texto curto e não estruturado: rascunho, nota rápida, trecho de conversa, que ainda não é um ensaio, artigo ou clipping formal |
+| Outro                     | `outro/`                | Use apenas quando genuinamente nenhuma categoria acima cobre o caso                                                                |
+
+Reuse um tipo existente antes de criar um novo. `/organize` e `/stats` auditam a consistência entre `Tipo:` no manifesto e a subpasta real no disco.
 
 ## Status de essay (draft | maduro | finalizado)
 
@@ -206,9 +225,10 @@ Atualizado por `/import`, `/digest` e `/absorb` durante o processamento, e revis
 
 ## Tratamento de imagens
 
-1. Imagens vão em `wiki/assets/`, referenciadas como `../assets/nome-da-imagem.png`.
-2. Ao converter PDF/DOCX, extraia figuras embutidas pra `wiki/assets/` e linke no essay.
-3. Se uma imagem carrega informação importante (diagrama, gráfico), descreva o conteúdo em texto também — não pode existir só na imagem.
+1. Toda imagem/figura da wiki vive em `wiki/assets/` — nunca embutida inline em base64, nunca deixada só dentro do PDF/DOCX/HTML original.
+2. Toda fonte processada por `/import`, `/digest` ou `/absorb` que contenha figura embutida (PDF, DOCX, HTML, clipping): extraia para `wiki/assets/` no mesmo momento do processamento.
+3. Essays e resumos linkam a imagem por caminho relativo, `../assets/nome-da-imagem.png` (a partir de `wiki/essays/`) ou `../../assets/nome-da-imagem.png` (a partir de `wiki/sources/resumos/`) — nunca um caminho absoluto do sistema de arquivos.
+4. Se uma imagem carrega informação importante (diagrama, gráfico), descreva o conteúdo em texto também — não pode existir só na imagem.
 
 ## Compatibilidade com Obsidian
 

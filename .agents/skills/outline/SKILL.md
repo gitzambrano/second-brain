@@ -13,7 +13,7 @@ description: >
   esqueleto/outline desse essay", ou já tiver uma tese e quiser
   aprovar a arquitetura do argumento antes do texto em si — ou quando
   /essay for acionado sem um esboço existente ainda.
-allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch
+allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch AskUserQuestion
 ---
 
 # Outline

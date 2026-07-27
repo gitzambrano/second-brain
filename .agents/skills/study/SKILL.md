@@ -9,10 +9,7 @@ description: >
   "quero estudar X agora", "me explica Y", "vamos explorar esse
   assunto", "não entendo bem Z, me ajuda a entender", ou quando /plan
   estiver retomando um item da seção Estudos.
-allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch
----
-
-# Study
+allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch AskUserQuestion
 
 Estudar não é ler passivamente — é o ciclo de buscar material, confrontar com o que o Usuário já pensa, e deixar a compreensão ficar mais precisa a cada volta. Essa skill conduz esse ciclo dentro da sessão atual.
 

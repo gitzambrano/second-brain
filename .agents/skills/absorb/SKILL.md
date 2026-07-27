@@ -9,7 +9,7 @@ description: >
   ou apontar para uma fonte já em wiki/sources/ pedindo que ela seja
   incorporada ao conteúdo da wiki, em vez de só resumida (isso é
   /digest) ou virar um essay próprio (isso é /essay ou /import).
-allowed-tools: Bash Read Write Edit Glob Grep
+allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion
 ---
 # Absorb
 
@@ -33,7 +33,7 @@ Se a atualização de um essay for grande o bastante para mudar a tese central, 
 
 Se o conteúdo absorvido contradiz o que já está escrito, não substitua silenciosamente — sinalize a contradição e cite as duas fontes, deixando a decisão editorial (qual prevalece, ou se ambas as visões devem conviver) para o Usuário.
 
-Todo texto adicionado ou corrigido segue o `## Estilo de prosa` de `conventions/SKILL.md`.
+Prosa segue `## Estilo de prosa` em `conventions/SKILL.md`.
 
 ## Skills relacionadas
 
