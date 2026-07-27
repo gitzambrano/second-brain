@@ -4,10 +4,12 @@ description: >
   Dashboard read-only de saúde da wiki: contagem de essays por tag/
   tipo/categoria, conceitos/entidades órfãos, sources sem entrada no
   manifesto ou na subpasta errada, sinais de travessão/formatação,
-  contagem de handouts. Use quando o usuário disser "como ta minha
+  contagem de handouts, itens do plano por seção, notas atômicas por
+  maturidade. Pode também gerar o grafo visual de conexões
+  (scripts/graph.py). Use quando o usuário disser "como ta minha
   wiki", "dashboard", "stats da wiki", "quantos essays eu tenho",
-  "quais sources não tem manifest", ou quiser um retrato rápido de
-  saúde sem rodar o lint completo.
+  "quais sources não tem manifest", "mostra o grafo/mapa de conexões",
+  ou quiser um retrato rápido de saúde sem rodar o lint completo.
 allowed-tools: Bash Read
 ---
 
@@ -37,6 +39,13 @@ Dashboard **read-only**. Só relata, nunca corrige — esse é o trabalho de `/o
    ```
 
    Isso grava em `output/stats/stats-YYYY-MM-DD.md` (ver `## Arquitetura` no AGENTS.md). Não salve por padrão — só quando pedido, já que é um artefato descartável na maioria das vezes.
+4. Se o usuário quiser **ver** as conexões, não só contá-las, rode o grafo:
+
+   ```bash
+   python scripts/graph.py
+   ```
+
+   Gera `output/graph/graph.html` (visualização interativa: zoom, arraste, clique num nó pra destacar vizinhos, busca por título/tag) e `output/graph/graph.md` (versão Mermaid, sem precisar abrir navegador). É a forma mais rápida de enxergar clusters isolados — por exemplo, se os ensaios de filosofia nunca se conectam aos de engenharia, isso aparece visualmente como dois blobs separados no grafo. Ofereça isso sempre que o usuário perguntar algo como "como as coisas se conectam" ou depois de um `/organize` substancial.
 
 ## O que o script cobre
 
@@ -45,7 +54,8 @@ Dashboard **read-only**. Só relata, nunca corrige — esse é o trabalho de `/o
 - **Órfãos**: concepts/entities em `wiki/concepts/` e `wiki/entities/` que não aparecem em nenhuma seção `## Conexões` de essay.
 - **Sources**: total de arquivos em `wiki/sources/**`, distribuição por subpasta de tipo, quantos não têm entrada em `manifest.md`, e quantos estão em uma subpasta fora do vocabulário controlado (ver `## Sources, Tags e Vocabulários Controlados` no AGENTS.md).
 - **Handouts**: quantos existem em `wiki/handouts/`.
-- **Plano de estudos**: quantos itens pendentes em `plan/plano-estudos.md`, por tipo (Estudo / Essay Futuro).
+- **Plano**: quantos itens em `plan/plano.md`, por seção (Tarefas / Fontes para Ingerir / Revisões / Estudos / Essays Futuros) e por status.
+- **Synthesis**: quantas páginas em `wiki/synthesis/`, por tipo (nota-atomica / comparacao) e, para notas atômicas, por maturidade (solta / germinando / madura) — sinaliza quais estão maduras e prontas para `/atom promote`.
 
 ## Diferença em relação ao lint
 

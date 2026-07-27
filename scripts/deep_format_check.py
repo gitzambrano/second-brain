@@ -18,7 +18,7 @@ import os
 import re
 from pathlib import Path
 
-ESSAYS_DIR = Path(__file__).resolve().parent.parent / "essays"
+ESSAYS_DIR = Path(__file__).resolve().parent.parent / "wiki" / "essays"
 
 def check_essay(filepath):
     issues = []

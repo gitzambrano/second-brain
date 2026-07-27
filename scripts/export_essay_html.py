@@ -41,9 +41,11 @@ from export_essay import (
     AUTHOR,
 )
 
-ROOT_DIR = Path(__file__).resolve().parent.parent.parent
+ROOT_DIR = Path(__file__).resolve().parent.parent
 ESSAYS_DIR = ROOT_DIR / "wiki" / "essays"
+HANDOUTS_DIR = ROOT_DIR / "wiki" / "handouts"
 OUTPUT_DIR = ROOT_DIR / "output" / "html"
+HANDOUT_OUTPUT_DIR = ROOT_DIR / "output" / "handouts"
 TEMPLATE_PATH = Path(__file__).parent / "essay_template.html"
 
 
@@ -114,13 +116,14 @@ def body_has_math(body):
     return bool(MATH_PATTERN.search(body))
 
 
-def export_essay(filepath, output_dir=None):
-    """Export a single essay to a standalone HTML file."""
+def export_essay(filepath, output_dir=None, source_dir=None):
+    """Export a single essay (or handout, if source_dir=HANDOUTS_DIR) to a standalone HTML file."""
+    source_dir = source_dir or ESSAYS_DIR
     filepath = Path(filepath)
     if not filepath.exists():
-        filepath = ESSAYS_DIR / filepath
+        filepath = source_dir / filepath
     if not filepath.exists():
-        filepath = ESSAYS_DIR / (str(filepath) + '.md')
+        filepath = source_dir / (str(filepath) + '.md')
     if not filepath.exists():
         print(f"ERROR: File not found: {filepath}")
         return False
@@ -196,24 +199,42 @@ def list_essays():
     print("       python export_essay_html.py --all")
 
 
+def list_handouts():
+    handouts = sorted(HANDOUTS_DIR.glob('*.md')) if HANDOUTS_DIR.exists() else []
+    print(f"\nAvailable handouts ({len(handouts)}):\n")
+    for h in handouts:
+        with open(h, 'r', encoding='utf-8') as f:
+            for line in f:
+                if line.startswith('# '):
+                    print(f"  {h.stem:<50s} {line[2:].strip()}")
+                    break
+    print("\nUsage: python export_essay_html.py <slug> --handout")
+
+
 def main():
     parser = argparse.ArgumentParser(description='Export Second Brain essays to standalone HTML')
-    parser.add_argument('essay', nargs='?', help='Essay filename or path')
+    parser.add_argument('essay', nargs='?', help='Essay (or handout, with --handout) filename or path')
     parser.add_argument('--all', action='store_true', help='Export all essays')
     parser.add_argument('--list', action='store_true', help='List available essays')
-    parser.add_argument('--output', '-o', help='Output directory', default=str(OUTPUT_DIR))
+    parser.add_argument('--handout', action='store_true', help='Export from wiki/handouts/ instead of wiki/essays/')
+    parser.add_argument('--output', '-o', help='Output directory', default=None)
     args = parser.parse_args()
 
+    source_dir = HANDOUTS_DIR if args.handout else ESSAYS_DIR
+    default_output = HANDOUT_OUTPUT_DIR if args.handout else OUTPUT_DIR
+    output_dir = args.output or str(default_output)
+
     if args.list:
-        list_essays()
+        list_handouts() if args.handout else list_essays()
         return 0
 
     if args.all:
-        essays = sorted(ESSAYS_DIR.glob('*.md'))
-        print(f"Exporting {len(essays)} essays to HTML...\n")
+        items = sorted(source_dir.glob('*.md')) if source_dir.exists() else []
+        kind = "handouts" if args.handout else "essays"
+        print(f"Exporting {len(items)} {kind} to HTML...\n")
         success = failed = 0
-        for e in essays:
-            if export_essay(e, args.output):
+        for e in items:
+            if export_essay(e, output_dir, source_dir=source_dir):
                 success += 1
             else:
                 failed += 1
@@ -221,7 +242,7 @@ def main():
         return 0 if failed == 0 else 1
 
     if args.essay:
-        ok = export_essay(args.essay, args.output)
+        ok = export_essay(args.essay, output_dir, source_dir=source_dir)
         return 0 if ok else 1
 
     parser.print_help()

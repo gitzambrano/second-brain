@@ -2,7 +2,7 @@
 name: scout
 description: >
   Pesquisa a web e sugere fontes candidatas a ingerir — a partir de um
-  item de plan/plano-estudos.md, de um source/ideia já existente em
+  item de plan/plano.md, de um source/ideia já existente em
   wiki/sources/ideias/, ou de um tema livre passado direto no prompt.
   Nunca ingere sozinho: apenas propõe uma lista curada para o Usuário
   escolher. Use quando o usuário disser "acha fontes sobre X", "pesquisa
@@ -16,7 +16,7 @@ Encontra candidatos a fonte e devolve uma lista curta e justificada — nunca ba
 
 ## Pontos de partida (qualquer um dos três)
 
-1. **Um item de `plan/plano-estudos.md`**: "acha fontes pro item X do plano" — leia a Nota e o Tópico do item para orientar a busca.
+1. **Um item de `plan/plano.md`**: "acha fontes pro item X do plano" — leia a Nota e o Tópico do item para orientar a busca. Faz mais sentido para itens das seções Estudos/Essays Futuros/Fontes para Ingerir; para Revisões, prefira reler a fonte original já ligada ao alvo em vez de buscar fonte nova.
 2. **Um source ou ideia já existente**: "acha mais material a partir dessa ideia em `wiki/sources/ideias/`" — leia o conteúdo do arquivo e use como ponto de partida temático, não como texto a resumir.
 3. **Um tema livre direto no prompt**: "acha fontes sobre X" — sem precisar de plano ou source prévio.
 
@@ -30,7 +30,7 @@ Encontra candidatos a fonte e devolve uma lista curta e justificada — nunca ba
    - Uma frase sobre por que essa fonte é relevante para o tema/item específico (não uma descrição genérica do assunto).
    - Tipo provável no vocabulário de `AGENTS.md` (Artigo Acadêmico, Livro, Documentação Técnica, Web Clipping, etc.), para já indicar a subpasta de destino se for ingerida depois.
 4. Apresente de 3 a 8 candidatos (não despeje dezenas) — curadoria, não uma lista bruta de resultados de busca.
-5. Se o ponto de partida foi um item de `plan/plano-estudos.md`, ofereça anexar a lista a esse item, como uma linha `- Fontes candidatas:` sob o item, para não se perder entre sessões.
+5. Se o ponto de partida foi um item de `plan/plano.md`, ofereça anexar a lista a esse item, como uma linha `- Fontes candidatas:` sob o item, para não se perder entre sessões.
 6. **Nunca baixe nem copie o conteúdo da fonte para `raw/` automaticamente.** Se o Usuário escolher uma, oriente-o a colocar o arquivo/link em `raw/` e rodar `/import` ou `/digest` normalmente — `/scout` termina na sugestão.
 
 ## Regras
@@ -41,5 +41,6 @@ Encontra candidatos a fonte e devolve uma lista curta e justificada — nunca ba
 
 ## Skills relacionadas
 
-- `/study` — origem dos itens do plano que `/scout` pode usar como ponto de partida.
+- `/plan` — origem dos itens do plano que `/scout` pode usar como ponto de partida.
+- `/study` — sessão de estudo que pode chamar `/scout` no meio, quando uma busca rápida não basta.
 - `/import` / `/digest` — o que processa de fato a fonte escolhida, depois que ela chega em `raw/`.

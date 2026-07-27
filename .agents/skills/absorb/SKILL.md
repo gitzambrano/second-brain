@@ -37,3 +37,4 @@ Se a atualização de um essay for grande o bastante para mudar a tese central, 
 - `/digest` — passo anterior, quando a fonte ainda não foi lida/resumida
 - `/chapter` — para criar página de conceito/entidade nova revelada pela fonte
 - `/expand` — mesma lógica de adição de conteúdo, mas disparada por pedido direto do usuário em vez de por uma fonte
+- `/atom` — se a fonte revelar uma ideia tangencial que não cabe no essay em edição, capture como nota atômica em vez de forçar ou descartar

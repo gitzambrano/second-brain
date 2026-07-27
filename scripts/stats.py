@@ -20,14 +20,17 @@ import datetime
 from pathlib import Path
 from collections import Counter, defaultdict
 
-WIKI_ROOT = Path(__file__).resolve().parent.parent
+ROOT_DIR = Path(__file__).resolve().parent.parent
+WIKI_ROOT = ROOT_DIR / "wiki"
+PLAN_DIR = ROOT_DIR / "plan"
 ESSAYS_DIR = WIKI_ROOT / "essays"
 CONCEPTS_DIR = WIKI_ROOT / "concepts"
 ENTITIES_DIR = WIKI_ROOT / "entities"
 SOURCES_DIR = WIKI_ROOT / "sources"
 HANDOUTS_DIR = WIKI_ROOT / "handouts"
 SYNTHESIS_DIR = WIKI_ROOT / "synthesis"
-OUTPUT_DIR = WIKI_ROOT.parent / "output" / "stats"
+PLANO_FILE = PLAN_DIR / "plano.md"
+OUTPUT_DIR = ROOT_DIR / "output" / "stats"
 
 SOURCE_TYPES = [
     "Ensaio Completo Importado",
@@ -195,9 +198,13 @@ def source_stats():
     total = 0
 
     valid_folders = set(SOURCE_TYPE_TO_FOLDER.values())
+    # "resumos" is a utility folder for /digest summaries, not a source-type
+    # folder — it doesn't hold raw sources and isn't part of the Tipo:
+    # vocabulary, so it's exempt from the manifest/misfiled audit below.
+    utility_folders = {"resumos"}
 
     for sub in SOURCES_DIR.iterdir():
-        if not sub.is_dir():
+        if not sub.is_dir() or sub.name in utility_folders:
             continue
         folder_name = sub.name
         for f in sub.iterdir():
@@ -226,7 +233,69 @@ def handout_stats():
     return {"count": len(handouts)}
 
 
-def format_report(essay, orphans, sources, handouts):
+PLAN_SECOES = ["Tarefas", "Fontes para Ingerir", "Revisões", "Estudos", "Essays Futuros"]
+
+
+def plan_stats():
+    """Parse plan/plano.md: 5 fixed '## Seção' headings, each with '### Título'
+    items carrying '- Status:' fields."""
+    if not PLANO_FILE.exists():
+        return {"total": 0, "by_secao": Counter(), "by_status": Counter(), "missing_secoes": PLAN_SECOES}
+
+    content = load(PLANO_FILE)
+    secoes_found = {}
+    # Split on "## " (level-2 headings) to isolate each section's block.
+    parts = re.split(r"(?m)^## ", content)[1:]
+    for part in parts:
+        heading, _, rest = part.partition("\n")
+        heading = heading.strip()
+        if heading in PLAN_SECOES:
+            secoes_found[heading] = rest
+
+    by_secao = Counter()
+    by_status = Counter()
+    total = 0
+    for secao, body in secoes_found.items():
+        items = re.split(r"(?m)^### ", body)[1:]
+        for item in items:
+            status_m = re.search(r"(?m)^- Status:\s*(.+)$", item)
+            total += 1
+            by_secao[secao] += 1
+            by_status[status_m.group(1).strip() if status_m else "(sem status)"] += 1
+
+    missing_secoes = [s for s in PLAN_SECOES if s not in secoes_found]
+    return {"total": total, "by_secao": by_secao, "by_status": by_status, "missing_secoes": missing_secoes}
+
+
+def synthesis_stats():
+    """Count wiki/synthesis/ pages by tipo (nota-atomica vs comparacao) and,
+    for atomic notes, by maturidade (solta/germinando/madura)."""
+    if not SYNTHESIS_DIR.exists():
+        return {"total": 0, "by_tipo": Counter(), "atom_by_maturidade": Counter(), "madura_ready": []}
+
+    by_tipo = Counter()
+    atom_by_maturidade = Counter()
+    madura_ready = []
+    total = 0
+    for f in sorted(SYNTHESIS_DIR.glob("*.md")):
+        content = load(f)
+        total += 1
+        tipo = get_frontmatter_field(content, "tipo") or "(sem tipo)"
+        by_tipo[tipo] += 1
+        if tipo == "nota-atomica":
+            maturidade = get_frontmatter_field(content, "maturidade") or "(sem maturidade)"
+            atom_by_maturidade[maturidade] += 1
+            if maturidade == "madura":
+                madura_ready.append(get_h1(content) or f.stem)
+    return {
+        "total": total,
+        "by_tipo": by_tipo,
+        "atom_by_maturidade": atom_by_maturidade,
+        "madura_ready": madura_ready,
+    }
+
+
+def format_report(essay, orphans, sources, handouts, synthesis, plan):
     lines = []
     lines.append(f"# Second Brain Stats — {datetime.date.today().isoformat()}")
     lines.append("")
@@ -292,6 +361,32 @@ def format_report(essay, orphans, sources, handouts):
     lines.append(f"- Total: {handouts['count']}")
     lines.append("")
 
+    lines.append("## Synthesis (wiki/synthesis/)")
+    lines.append(f"- Total: {synthesis['total']}")
+    if synthesis["by_tipo"]:
+        lines.append("- Por tipo: " + ", ".join(f"{k} ({v})" for k, v in synthesis["by_tipo"].most_common()))
+    if synthesis["atom_by_maturidade"]:
+        lines.append("- Notas atômicas por maturidade: " + ", ".join(
+            f"{k} ({v})" for k, v in synthesis["atom_by_maturidade"].most_common()
+        ))
+    if synthesis["madura_ready"]:
+        lines.append(f"- Maduras, prontas para promover (/atom promote): {len(synthesis['madura_ready'])}")
+        for m in synthesis["madura_ready"]:
+            lines.append(f"  - {m}")
+    lines.append("")
+
+    lines.append("## Plano (plan/plano.md)")
+    lines.append(f"- Total de itens: {plan['total']}")
+    if plan["by_secao"]:
+        lines.append("- Por seção: " + ", ".join(
+            f"{s} ({plan['by_secao'].get(s, 0)})" for s in PLAN_SECOES
+        ))
+    if plan["by_status"]:
+        lines.append("- Por status: " + ", ".join(f"{k} ({v})" for k, v in plan["by_status"].most_common()))
+    if plan["missing_secoes"]:
+        lines.append(f"- ⚠ Seções ausentes do arquivo: {', '.join(plan['missing_secoes'])}")
+    lines.append("")
+
     return "\n".join(lines)
 
 
@@ -304,8 +399,10 @@ def main():
     orphans = orphan_stats(essay["titles"])
     sources = source_stats()
     handouts = handout_stats()
+    synthesis = synthesis_stats()
+    plan = plan_stats()
 
-    report = format_report(essay, orphans, sources, handouts)
+    report = format_report(essay, orphans, sources, handouts, synthesis, plan)
     print(report)
 
     if args.save:

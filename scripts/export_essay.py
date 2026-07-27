@@ -24,7 +24,7 @@ import tempfile
 import argparse
 from pathlib import Path
 
-ROOT_DIR = Path(__file__).resolve().parent.parent.parent
+ROOT_DIR = Path(__file__).resolve().parent.parent
 ESSAYS_DIR = ROOT_DIR / "wiki" / "essays"
 HANDOUTS_DIR = ROOT_DIR / "wiki" / "handouts"
 OUTPUT_DIR = ROOT_DIR / "output" / "pdf"

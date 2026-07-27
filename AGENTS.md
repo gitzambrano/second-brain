@@ -20,13 +20,19 @@ Cinco diretórios de topo, cinco papéis:
   - `wiki/index.md` — catálogo mestre, **apenas essays**, por categoria temática.
   - `wiki/log.md` — log cronológico append-only de toda operação.
   - `wiki/status.md` — snapshot do estado atual: foco corrente, perguntas em aberto, pendências. Ponte entre uma sessão e outra — ver skill `/status`.
-- **`plan/`** — to-do do que estudar ou escrever no futuro. `plan/plano-estudos.md`, por tópico, com estudos e ideias de essays futuros — ver skill `/study`.
+- **`plan/`** — plano de longo prazo do Usuário: tarefas, fontes pra ingerir, revisões, estudos e essays futuros — não só sobre a wiki. `plan/plano.md`, em 5 seções fixas — ver skill `/plan`.
 - **`output/`** — tudo que sai da wiki para ser consumido fora dela: `output/pdf/`, `output/html/`, `output/handouts/` (cópia `.md`/`.pdf`/`.html` do que está em `wiki/handouts/`), `output/stats/` (snapshots de `/stats`, só quando pedido). Nenhuma subpasta de `output/` é lida como fonte de verdade — se algo de lá precisar voltar a ser fonte, reingira via `raw/`.
 - **`scripts/`** — lint, stats, export (PDF/HTML).
 
 ## Skills Disponíveis
 
 Nomes curtos, sem prefixo — todos vivem em `.agents/skills/<nome>/SKILL.md`.
+
+**Ideação** (antes de um essay existir)
+
+| Skill | Comando   | Quando usar                                                                                     |
+| ----- | --------- | ------------------------------------------------------------------------------------------------ |
+| Atom  | `/atom` | Capturar, desenvolver e promover uma nota atômica em `wiki/synthesis/` — uma ideia solta que ainda não sabe a que essay pertence |
 
 **Criação**
 
@@ -57,7 +63,8 @@ Nomes curtos, sem prefixo — todos vivem em `.agents/skills/<nome>/SKILL.md`.
 
 | Skill | Comando    | Quando usar                                                                                                 |
 | ----- | ---------- | ----------------------------------------------------------------------------------------------------------- |
-| Study | `/study` | Ingerir ideia de estudo/essay futuro em`plan/plano-estudos.md`, ou marcar como estudado                   |
+| Plan  | `/plan` | Gerenciar`plan/plano.md` e retomar um item, chamando a skill certa (/study, /essay, /import...)          |
+| Study | `/study` | Sessão de estudo de verdade: busca fontes, perguntas socráticas, gera conexões                            |
 | Scout | `/scout` | Pesquisar e sugerir fontes candidatas a partir de um item do plano, de um source/ideia, ou de um tema livre |
 
 **Manutenção**
@@ -66,7 +73,7 @@ Nomes curtos, sem prefixo — todos vivem em `.agents/skills/<nome>/SKILL.md`.
 | -------- | ------------- | ---------------------------------------------------------------------------------------------------------- |
 | Sweep    | `/sweep`    | Varrer todos os essays, chamando`/proofread`, `/polish`, `/continuity`, `/linkify` essay por essay |
 | Organize | `/organize` | Saúde da base inteira: índice, log, mapa de sources, tags, links                                         |
-| Stats    | `/stats`    | Dashboard read-only: essays por tag/categoria, órfãos, sources sem manifest                              |
+| Stats    | `/stats`    | Dashboard read-only: essays por tag/categoria, órfãos, sources sem manifest, plano, synthesis, grafo      |
 | Status   | `/status`   | Ver ou atualizar`wiki/status.md` — ponte entre sessões                                                 |
 
 **Saída**
@@ -160,9 +167,9 @@ Atualize o manifesto e `wiki/sources/map.md` no mesmo momento em que o arquivo �
 
 Atualizado por `/import`, `/digest` e `/absorb` no momento do processamento; revisado por inteiro por `/organize`.
 
-## Plano de Estudos e Essays Futuros
+## Plano de Longo Prazo
 
-`plan/plano-estudos.md` é o to-do do que o Usuário quer estudar ou transformar em essay, organizado por tópico com índice — mantido pela skill `/study` (`add`, `done`, `list`). Aceita ideias genéricas soltas ou já ancoradas numa fonte. Quando um item precisa de material e ainda não tem, use `/scout` para pesquisar e sugerir candidatos (nunca ingere sozinho — só propõe, o Usuário decide). O plano nunca vira conteúdo de wiki sozinho: quando um item for retomado, ele passa pelo fluxo normal (`/essay`, `/import`, `/digest`, `/absorb`) e só então sai do plano via `/study done`.
+`plan/plano.md` é o plano de longo prazo do Usuário, organizado em 5 seções fixas — mantido pela skill `/plan` (`add`, `work`, `done`, `list`). Da mais mecânica à mais aberta: **Tarefas** (pendência que não é sobre a wiki), **Fontes para Ingerir** (material já identificado, falta processar), **Revisões** (essay/concept/entity existente que precisa ser revisitado), **Estudos** (algo a aprender, ainda em exploração) e **Essays Futuros** (ideia de essay já com tese esboçada). `/plan` nunca produz conteúdo sozinho: `/plan work` retoma um item e conduz para a skill certa (`/study`, `/essay`, `/import`, `/digest`, `/absorb`, `/continuity`, `/expand`), que faz o trabalho de fato — só depois disso o item sai do plano via `/plan done`. Não duplique mecanismos: pendência de curto prazo (o que ficou em aberto nesta sessão) é `wiki/status.md`, não o plano.
 
 ## Status e Ritual de Sessão
 
@@ -170,7 +177,7 @@ Atualizado por `/import`, `/digest` e `/absorb` no momento do processamento; rev
 
 **Abertura de sessão**: se o pedido envolve trabalho substancial na wiki (não uma pergunta pontual), leia `wiki/status.md` primeiro para saber onde o Usuário parou.
 
-**Fechamento de sessão**: depois de trabalho substancial (`/essay`, `/import`, `/digest`, `/absorb`, `/organize`, `/study`), ofereça `/status update` antes de encerrar.
+**Fechamento de sessão**: depois de trabalho substancial (`/essay`, `/import`, `/digest`, `/absorb`, `/organize`, `/study`, `/plan work`), ofereça `/status update` antes de encerrar.
 
 ## Regras Gerais
 

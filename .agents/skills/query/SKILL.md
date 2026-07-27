@@ -59,7 +59,8 @@ Se a resposta gerar algo que vale a pena guardar — uma comparação, uma sínt
 > "Essa síntese pode valer a pena guardar. Quer que eu salve como um novo essay, ou é mais uma nota de síntese curta?"
 
 - **Se for profunda o bastante para ser um essay**: siga o fluxo completo de `/essay` (frontmatter, byline, Sumário, mínimo 10 links externos, Referências, Conexões) e salve em `wiki/essays/`.
-- **Se for uma comparação/nota curta**: salve em `wiki/synthesis/` com frontmatter simples.
+- **Se for uma comparação/nota curta entre coisas que já existem na wiki**: salve em `wiki/synthesis/` com `tipo: comparacao` no frontmatter (ver `conventions/SKILL.md`).
+- **Se a resposta revelar uma ideia nova, ainda sem tese própria** (não é comparação do que já existe, é um insight novo que a pergunta provocou): isso não é `/query` — é `/atom add`. A diferença: comparação organiza conhecimento existente; nota atômica é conhecimento novo que ainda não tem lugar.
 - Em ambos os casos: atualize `wiki/index.md` (se for essay) e registre em `wiki/log.md`:
   ```
   ## [YYYY-MM-DD] query | Resumo da pergunta
@@ -74,4 +75,5 @@ Se a resposta gerar algo que vale a pena guardar — uma comparação, uma sínt
 
 - `/import`, `/digest`, ou `/absorb` — processar novas fontes em essays
 - `/essay` — criar um essay novo do zero
+- `/atom` — quando a resposta revela uma ideia nova, não uma comparação do que já existe
 - `/organize` — auditar e organizar a wiki

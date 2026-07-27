@@ -26,7 +26,7 @@ Leia `wiki/status.md` e mostre o conteúdo ao usuário, tal como está. Read-onl
 1. Releia `wiki/status.md` atual.
 2. Recalcule as **Pendências** automaticamente, sem perguntar:
    - Quantos itens há em `raw/` aguardando triagem.
-   - Quantos itens pendentes (`Status: Pendente`) há em `plan/plano-estudos.md`, por tipo (Estudo / Essay Futuro).
+   - Quantos itens pendentes (`Status: Pendente`) há em `plan/plano.md`, por seção (Tarefas / Fontes para Ingerir / Revisões / Estudos / Essays Futuros).
    - Quantas entradas em `wiki/sources/manifest.md` estão com `Verificação: não verificado`.
    - Qualquer contradição entre fontes ainda não resolvida (ver regra de contradição em `conventions/SKILL.md`) que tenha ficado em aberto na sessão.
 3. Pergunte ao usuário (ou infira da conversa corrente) o que mudou em:
@@ -54,7 +54,7 @@ Atualizado: YYYY-MM-DD
 
 ## Pendências
 - raw/: N item(ns) aguardando triagem
-- plan/plano-estudos.md: N estudo(s) pendente(s), N essay(s) futuro(s) planejado(s)
+- plan/plano.md: N tarefa(s), N fonte(s) para ingerir, N revisão(ões), N estudo(s), N essay(s) futuro(s) pendente(s)
 - sources com Verificação: não verificado: N
 ```
 
@@ -62,11 +62,11 @@ Seções sem conteúdo real ficam com um traço único `- (nenhuma)` em vez de b
 
 ## Quando outras skills devem tocar `/status`
 
-- Ao final de `/essay`, `/import`, `/digest`, `/absorb`, `/organize`, `/study` — se o trabalho foi substancial (não uma correção pontual), ofereça rodar `/status update` antes de encerrar a sessão.
+- Ao final de `/essay`, `/import`, `/digest`, `/absorb`, `/organize`, `/study`, `/plan work` — se o trabalho foi substancial (não uma correção pontual), ofereça rodar `/status update` antes de encerrar a sessão.
 - Nunca rode `/status update` automaticamente sem avisar — é rápido, mas quem decide o que é "foco atual" é o Usuário, não uma inferência silenciosa.
 
 ## Skills relacionadas
 
-- `/study` — pendências de `plan/plano-estudos.md` alimentam a seção Pendências.
+- `/plan` — pendências de `plan/plano.md` alimentam a seção Pendências.
 - `/organize` — pendências de sources sem manifest/verificação alimentam a seção Pendências.
 - `conventions` — decisões de estilo fechadas na sessão podem migrar para a lista de decisões fechadas lá.

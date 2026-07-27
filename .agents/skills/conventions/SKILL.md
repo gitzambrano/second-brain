@@ -1,21 +1,41 @@
 ---
 name: conventions
 description: >
-  Referência central de estilo e formatação da wiki: frontmatter, byline,
+  Referência central de estilo e formatação da wiki: onde cada tipo de
+  conteúdo vai (tabela canônica de pastas), frontmatter, byline,
   Sumário/Referências/Conexões, regra de links (exportabilidade PDF),
   estilo de prosa, nomenclatura, imagens, compatibilidade Obsidian,
   conversão de fontes e regra de contradição entre fontes. Não tem fluxo
   próprio — as outras skills (essay, expand, chapter, proofread, polish,
   continuity, linkify, import, digest, absorb, organize, sweep, pdf, html)
-  leem este arquivo para saber o formato exato a produzir. Consulte
-  também quando o usuário perguntar "qual é a regra de X" sobre
-  formatação da wiki.
+  leem este arquivo para saber o formato exato a produzir e em que pasta
+  salvar. Consulte também quando o usuário perguntar "qual é a regra de
+  X" ou "onde isso deveria ficar" sobre a wiki.
 allowed-tools: Read
 ---
 
 # Conventions
 
 Este skill não executa nada — é a fonte única das regras de formatação e estilo. Toda outra skill que grava ou edita conteúdo (essay, expand, chapter, proofread, polish, continuity, linkify, import, digest, absorb, handout, organize, sweep, pdf, html) segue o que está aqui. Se uma regra de formatação mudar, muda só neste arquivo.
+
+## Onde as coisas vão — tabela canônica
+
+Toda skill que grava em disco decide onde salvar consultando esta tabela, não por analogia ou hábito. `/organize` e `/sweep` também a usam para auditar desconexões (arquivo na pasta errada, pasta canônica faltando, etc.).
+
+| Pasta | Contém | Quem escreve | Quando |
+| --- | --- | --- | --- |
+| `wiki/essays/` | Ensaios/white papers completos, com tese sustentada do início ao fim | `/essay`, `/import` | A ideia já é (ou virou, via `/atom promote`) um argumento completo |
+| `wiki/concepts/` | Definição/explicação curta de um conceito, sem tese própria | `/essay`, `/expand`, `/absorb`, `/digest`, `/chapter` | Um termo é citado mas ainda não tem página própria |
+| `wiki/entities/` | Página curta sobre uma pessoa, obra, instituição específica e nomeada | mesmas skills que concepts | Uma entidade nomeada é citada mas ainda não tem página própria |
+| `wiki/synthesis/` | Comparações curtas (`tipo: comparacao`) e notas atômicas (`tipo: nota-atomica`) | `/query` (comparações), `/atom` (notas atômicas) | Insight ou comparação que não é essay nem concept/entity |
+| `wiki/sources/<tipo>/` | Cópia/referência do documento original, por tipo (ver vocabulário controlado em `AGENTS.md`) | `/import`, `/digest`, `/absorb` (via `/scout` como triagem anterior) | Toda fonte processada, sempre — mesmo se só embasou um claim pontual |
+| `wiki/sources/resumos/` | Resumo de uma página por fonte processada | `/digest` | Toda vez que uma fonte é resumida (não é um source-type, é derivado) |
+| `wiki/handouts/` | Versão de uma página de um essay **já existente** | `/handout` | Nunca conteúdo primário — sempre derivado, sob demanda |
+| `wiki/book-chapters/` | Reservado para um projeto de livro futuro | — | Não usar ainda |
+| `plan/plano.md` | Pendência de longo prazo (tarefa, fonte a ingerir, revisão, estudo, essay futuro) | `/plan` | Nunca conteúdo de wiki — só a intenção de trabalhar algo depois |
+| `wiki/status.md` | Snapshot do estado da sessão atual | `/status` | Ponte entre sessões, não confundir com o plano de longo prazo |
+
+Regra geral: se o conteúdo tem tese própria sustentada → `essays/`. Se é definição/explicação de um termo ou entidade sem tese própria → `concepts/`/`entities/`. Se é insight novo sem lar ainda, ou comparação do que já existe → `synthesis/`. Se é material bruto de terceiros → `sources/`. Tudo o mais específico (handouts, book-chapters, plan) tem função única, listada acima — não miscelânea.
 
 ## Frontmatter
 
@@ -98,6 +118,16 @@ Apenas essays, por categoria temática:
 - **Nunca** dois-pontos no display text — Obsidian quebra o link. Substitua `:` por `—`.
 - Correto: `[[filename|Título — Subtítulo]]`. Errado: `[[filename|Título: Subtítulo]]`.
 - Título do arquivo: `# Índice`.
+
+## Formato de páginas em `wiki/synthesis/`
+
+Dois tipos de conteúdo, na mesma pasta, distinguidos pelo campo `tipo:` do frontmatter — nunca misture os dois formatos no mesmo arquivo:
+
+**`tipo: comparacao`** — comparação ou análise cruzada curta, gerada por `/query` quando uma resposta vale a pena guardar. Frontmatter simples (`tags`, `sources`, `created`, `updated`, `tipo: comparacao`), corpo em prosa curta, sem `## Sumário`/`## Referências` formais.
+
+**`tipo: nota-atomica`** — fragmento denso de uma ideia só, gerado por `/atom`. Formato completo em `.agents/skills/atom/SKILL.md`; resumo: frontmatter com `tipo: nota-atomica` e `maturidade: solta | germinando | madura`, corpo curto (uma ideia, não um esboço de capítulo), `## Conexões` com `[[wikilinks]]` para o que a ancora na wiki.
+
+Ambos ficam fora de `wiki/index.md` (que é só essays) e não entram na contagem de "essays" de `/stats` — aparecem na seção própria "Synthesis".
 
 ## Formato do log (`wiki/log.md`)
 
