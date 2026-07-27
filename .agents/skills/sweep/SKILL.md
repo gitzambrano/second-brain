@@ -5,9 +5,13 @@ description: >
   os skills focados de iteração (continuity, proofread, polish,
   linkify) um essay por vez. Use quando o Usuário disser "corrige
   todos os essays", "faz uma revisão geral", "passa o pente fino na
-  wiki inteira", ou quiser uma passada completa no corpus de essays em
-  vez de um essay específico. É um orquestrador: chama outros skills,
-  não duplica a lógica deles.
+  wiki inteira", ou quiser uma passada completa no corpus de essays.
+  Também aceita escopo único ("passa o pente fino nesse essay", "roda
+  o sweep só no essay X") para rodar a mesma bateria de correções e
+  gerar o mesmo tipo de relatório consolidado num essay específico,
+  em vez de invocar continuity/proofread/polish/linkify manualmente
+  um por um. É um orquestrador: chama outros skills, não duplica a
+  lógica deles.
 allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch
 ---
 # Sweep
@@ -20,15 +24,15 @@ Varre todos os essays de `wiki/essays/` e corrige cada um, chamando os skills fo
 
 ## Passo a passo
 
-1. Liste todos os essays em `wiki/essays/` (`ls wiki/essays/*.md` ou `Glob`).
+1. Liste todos os essays em `wiki/essays/` (`ls wiki/essays/*.md` ou `Glob`). Em modo escopado (veja `## Modo essay único`), pule direto pra esse essay.
 2. **Passada mecânica primeiro**, por script, antes de qualquer correção de prosa:
    - Rode `scripts/lint_all.py` (formatação: linha em branco após heading, labels de capítulo soltos, símbolos residuais, resíduos HTML, blockquote mal usado, contagem de travessões, parágrafos possivelmente não traduzidos para PT-BR) e `scripts/deep_format_check.py`.
    - Aplique os fixes automáticos via `scripts/auto_fix_lint.py` quando o achado for mecânico e inequívoco (ex: linha em branco faltando); para o resto, reporte e peça confirmação.
-   - Nessa mesma passada, confirme: frontmatter completo, byline padronizada, ausência de `## Resumo Executivo`, `## Sumário`/`## Referências`/`## Conexões` presentes, nenhum `[[wikilink]]` fora de Conexões.
+   - Nessa mesma passada, confirme: frontmatter completo, byline padronizada, `## Sumário`/`## Referências`/`## Conexões` presentes, nenhum `[[wikilink]]` fora de Conexões.
    - Essay sem `status:` (essay antigo, pré-campo): proponha `draft` como default e confirme com o Usuário, não aplique em silêncio.
 3. **Pule essays com `status: finalizado` ou `maduro`** — sem perguntar, sem avisar durante a execução (regra completa em `## Status de essay`, `conventions/SKILL.md`). No resumo final, informe quantos foram pulados por status.
 4. Para os demais, na ordem:
-   1. **`/continuity`** — se encontrar problema estrutural relevante (salto lógico, conclusão que não fecha o argumento), reporte e pergunte se o Usuário quer que a correção seja aplicada agora ou revisada por ele depois, antes de prosseguir para os passos seguintes neste essay.
+   1. **`/continuity`** — se encontrar um problema grave (contradição direta com a tese, conclusão que não fecha o argumento), reporte e pergunte se a correção deve ser aplicada agora ou revisada depois, mas só pause os passos seguintes deste essay — nunca o sweep inteiro; continue processando os demais essays do batch normalmente enquanto aguarda essa decisão. Para achados estruturais menores (transição fraca, termo levemente antecipado), apenas registre no relatório final sem interromper.
    2. **`/proofread`** — passada de português.
    3. **`/polish`** — passada de estilo (bullets, travessões).
    4. **`/linkify`** — checagem e adição de links externos.
@@ -37,22 +41,33 @@ Varre todos os essays de `wiki/essays/` e corrige cada um, chamando os skills fo
 
 ## Volume e ritmo
 
-Se a wiki tiver muitos essays, isso pode ser uma operação longa. Avise o Usuário da escala antes de começar (ex: "são 23 essays, vou levar um tempo") e considere processar em lotes se ele preferir acompanhar o progresso em vez de esperar o relatório final de tudo.
+Se a wiki tiver muitos essays, isso pode ser uma operação longa. Avise o Usuário da escala antes de começar (ex: "são 23 essays, vou levar um tempo") e considere processar em lotes se ele preferir acompanhar o progresso em vez de esperar o relatório final de tudo. Não se aplica ao modo essay único.
+
+## Modo essay único
+
+`/sweep <slug ou título>` roda a mesma bateria (`/continuity` → `/proofread` → `/polish` → `/linkify`) e o mesmo relatório consolidado, só que num único essay pedido pelo Usuário — sem precisar invocar os quatro skills um por um manualmente.
+
+Ao final das modificações, se o `status: finalizado`alerte o usuário que esse essay estava com status finalizado.
 
 ## Depois
 
-Log como uma única entrada consolidada, não uma por essay:
+Log como uma única entrada consolidada, não uma por essay (modo corpus inteiro):
 
 ```
 ## [YYYY-MM-DD] sweep | N essays revisados
 Resumo agregado: X problemas de continuidade reportados, Y correções de português, Z de estilo, W links adicionados/corrigidos. K essays pulados por status (finalizado/maduro).
 ```
 
+Em modo essay único:
+
+```
+## [YYYY-MM-DD] sweep | <Título do Essay>
+Resumo: X problemas de continuidade reportados, Y correções de português, Z de estilo, W links adicionados/corrigidos.
+```
+
 Atualize `updated:` no frontmatter de cada essay tocado.
 
 ## Convenções
-
-Não pule `/continuity` mesmo que o Usuário só tenha pedido "corrige o português de tudo" — se você notar um problema estrutural sério passando por um essay durante o `/proofread`, reporte de qualquer forma ao final, mesmo que fora do escopo original pedido.
 
 Todo texto adicionado ou corrigido segue o `## Estilo de prosa` de `conventions/SKILL.md`.
 

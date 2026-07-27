@@ -95,9 +95,17 @@ Depois de cada rodada, reapresente o esqueleto completo atualizado (não um diff
 
 ## 6. Aprovado — entregar para `/essay`
 
-Quando o Usuário confirmar que o esqueleto está pronto para virar texto, ofereça `/essay` explicitamente. `/essay` lê `plan/drafts/<slug>.md` como brief de escrita (usa os capítulos e bullets já aprovados em vez de propor um esboço novo do zero) e, ao terminar o essay em `wiki/essays/`, apaga o arquivo de esboço — o conteúdo já está incorporado ao essay e ao `wiki/log.md`, não há razão para manter os dois.
+Quando o Usuário confirmar que o esqueleto está pronto para virar texto, ofereça `/essay` explicitamente. `/essay` lê `plan/drafts/<slug>.md` como brief de escrita (usa os capítulos e bullets já aprovados em vez de propor um esboço novo do zero) e, só quando **todos** os capítulos do esboço estiverem escritos, apaga o arquivo — o conteúdo já está incorporado ao essay e ao `wiki/log.md`. Se o essay ficar parcialmente escrito entre sessões, o draft continua vivo (veja `## Retomar um esboço em andamento` abaixo).
 
 Se o Usuário preferir deixar para depois em vez de escrever agora, ofereça `/plan add` (seção Essays Futuros) com `Nota:` apontando para `plan/drafts/<slug>.md`, para retomar em outra sessão sem perder o esqueleto.
+
+## Esboço implicitamente aprovado
+
+Se o pedido do Usuário já trouxer tese e capítulos com detalhe suficiente (título, papel de cada um, conteúdo que dá pra virar bullets sem inventar nada), não force uma rodada de aprovação separada: monte o esqueleto (passo 4), mostre-o rapidamente numa única mensagem confirmando o que foi capturado, e já ofereça `/essay` na mesma resposta, em vez de esperar o Usuário aprovar antes de seguir. Só pare para perguntar se algo ficou genuinamente ambíguo — capítulo sem direção clara, tese ainda soando como tema. Pedidos curtos ou vagos continuam pelo fluxo normal dos passos 5 e 6.
+
+## Retomar um esboço em andamento
+
+Se `plan/drafts/<slug>.md` ainda existir mas o essay em `wiki/essays/` já tiver capítulos escritos (sessão anterior parou no meio), `/outline` pode ser chamado de novo para reestruturar só os capítulos ainda não escritos — reordenar, fundir, dividir, adicionar ou remover, como no passo 5. Não toque nos capítulos já marcados como escritos (`escritos:` no frontmatter do draft) nem no texto já publicado no essay: se a mudança pedida afeta um capítulo já escrito, isso é `/chapter`, não `/outline`. Reapresente só a parte pendente do esqueleto ao final.
 
 ## O que não fazer
 

@@ -25,15 +25,14 @@ O essay resultante deve ser **extenso, profundo e criativo**, não um resumo nem
 
 `/essay` nunca escreve prosa sem um esboço aprovado em `plan/drafts/<slug>.md`. Isso é regra, não sugestão:
 
-- **Já existe o draft** (Usuário veio de `/outline`, ou citou um esboço já pronto): leia `plan/drafts/<slug>.md`. Tese (`tese:`), tipo, categoria e domínio já estão no frontmatter; a estrutura de capítulos e bullets é o brief de escrita — não proponha esboço novo, desenvolva o que já foi aprovado. Ao concluir o essay (passo 4), apague `plan/drafts/<slug>.md` — o conteúdo já está incorporado.
-- **Não existe draft ainda**: não pergunte tese nem proponha esboço aqui dentro. Rode `/outline` primeiro (mesma conversa, sem exigir que o Usuário digite o comando à parte) e só volte a este skill depois que o esboço estiver aprovado.
+- **Já existe o draft** (Usuário veio de `/outline`, ou citou um esboço já pronto): leia `plan/drafts/<slug>.md`. Tese (`tese:`), tipo, categoria e domínio já estão no frontmatter; a estrutura de capítulos e bullets é o brief de escrita — não proponha esboço novo, desenvolva o que já foi aprovado. Só apague `plan/drafts/<slug>.md` quando **todos** os capítulos do esboço estiverem escritos no essay. Se a sessão terminar com o essay parcialmente escrito, mantenha o draft e marque nele quais capítulos já foram escritos (`escritos: [Capítulo 1, Capítulo 2]` no frontmatter) — isso permite retomar depois, inclusive reestruturando só a parte pendente via `/outline` (ver `## Retomar um esboço em andamento` em `outline/SKILL.md`).
+- **Não existe draft ainda**: não pergunte tese nem proponha esboço aqui dentro. Rode `/outline` primeiro (mesma conversa, sem exigir que o Usuário digite o comando à parte) e só volte a este skill depois que o esboço estiver aprovado. Se o próprio pedido do Usuário já trouxer tese e capítulos detalhados o bastante, `/outline` pode tratar o esboço como implicitamente aprovado e seguir direto pra escrita (ver `## Esboço implicitamente aprovado` em `outline/SKILL.md`).
 - **Única exceção**: essay que já é texto pronto do próprio autor não passa por aqui — isso é `/import`, que transforma o texto em `.md` preservando-o intacto, sem tese a estruturar porque não há autoria nova acontecendo.
 
 ## 1. Pesquisar o terreno antes de escrever
 
 1. **Busque na wiki existente** (`wiki/index.md`, `wiki/concepts/`, `wiki/entities/`) por temas relacionados. Um essay novo deve **linkar e construir sobre** essays/conceitos anteriores do Usuário quando fizer sentido — o esboço aprovado já deve ter listado candidatos em `## Conexões candidatas`, confirme e complete.
 2. Use `WebSearch`/`WebFetch` para embasamento externo, agora capítulo a capítulo, com a profundidade que `/outline` deliberadamente não fez: dados, citações, referências acadêmicas, e — se o domínio for filosófico — as correntes e pensadores relevantes ao argumento. Parafraseie sempre, nunca reproduza trechos longos de fontes de terceiros.
-3. Reporte ao Usuário o que encontrou de relacionado na wiki: *"Isso conversa direto com [[Mente Aumentada]] e [[Second Brain]] — vou linkar os dois."*
 
 ## 2. Redigir com profundidade real
 
@@ -70,7 +69,7 @@ Aplique as duas seções acima na proporção que o argumento pedir — um essay
 
 ## 3. Criar/atualizar conceitos e entidades
 
-Todo conceito, pensador, ou entidade central ao argumento que ainda não tem página própria ganha uma em `wiki/concepts/` ou `wiki/entities/`, linkada de volta ao essay. Nenhum conceito relevante fica sem página só porque "nasceu" num essay criado agora.
+Todo conceito, pensador, ou entidade central ao argumento que ainda não tem página própria ganha uma em `wiki/concepts/` ou `wiki/entities/`, linkada de volta ao essay (não no corpo do texto). Nenhum conceito relevante fica sem página só porque "nasceu" num essay criado agora.
 
 ## 4. Indexar e logar
 
@@ -91,11 +90,11 @@ Depois de pronto, ofereça `/pdf` ou `/html` conforme o uso (imprimir/anexar vs.
 
 |                                  | `/import`                                        | `/digest`                        | `/essay`                                                 |
 | -------------------------------- | -------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------- |
-| Ponto de partida                 | Arquivo em`raw/`, já pronto                     | Arquivo em`raw/`, de terceiro    | Esboço aprovado via`/outline`                           |
+| Ponto de partida                 | Arquivo em `raw/`, já pronto                     | Arquivo em `raw/`, de terceiro    | Esboço aprovado via `/outline`                           |
 | Papel do Claude                  | Arquivista — processa fielmente                   | Leitor — resume, nunca gera essay | Coautor — pesquisa e escreve sobre o esboço já aprovado |
 | Texto preservado?                | Sim, intacto                                       | N/A (não vira essay)              | Não aplicável — texto é gerado                         |
-| Passa por`/outline`?           | Não — já é texto pronto, sem tese a estruturar | N/A — nunca vira essay            | Sim, sempre                                                |
-| Pode expandir livremente depois? | Sim, via`/expand` etc.                           | N/A                                | Sim                                                        |
+| Passa por `/outline`?           | Não — já é texto pronto, sem tese a estruturar | N/A — nunca vira essay            | Sim, sempre                                                |
+| Pode expandir livremente depois? | Sim, via `/expand` etc.                           | N/A                                | Sim                                                        |
 
 ## Convenções
 
@@ -110,5 +109,5 @@ Depois de pronto, ofereça `/pdf` ou `/html` conforme o uso (imprimir/anexar vs.
 - **Iterar sobre este essay** com `/expand`, `/chapter`, `/proofread`, `/polish`, `/continuity`, `/linkify`
 - **Processar novas fontes** com `/import`, `/digest`, ou `/absorb`
 - **Perguntar sobre o que já existe** com `/query`
-- **Organizar/auditar a wiki** com `/organize`, `/sweep`, `/stats`, `/gaps`
+- **Organizar ouauditar a wiki** com `/organize`, `/sweep`, `/stats`, `/gaps`
 - **Se este essay veio de um item do plano** (`plan/plano.md`, seção "Essays Futuros"), rode `/plan done` ao terminar, para tirá-lo do plano
