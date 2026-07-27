@@ -10,14 +10,14 @@ ESSAYS_DIR = WIKI_ROOT / "essays"
 CONCEPTS_DIR = WIKI_ROOT / "concepts"
 ENTITIES_DIR = WIKI_ROOT / "entities"
 SOURCES_DIR = WIKI_ROOT / "sources"
-SYNTHESIS_DIR = WIKI_ROOT / "synthesis"
+INSIGHTS_DIR = WIKI_ROOT / "insights"
 
 # Categories/dirs to lint (sources excluded — they are original immutable documents)
 DIRS = {
     "essays": ESSAYS_DIR,
     "concepts": CONCEPTS_DIR,
     "entities": ENTITIES_DIR,
-    "synthesis": SYNTHESIS_DIR
+    "insights": INSIGHTS_DIR
 }
 
 def load_file_content(path):
@@ -267,9 +267,9 @@ def main():
                 # Simple heuristic: if it contains normal prose without quotation marks, or is very long.
                 # Let's skip strict check on this unless it's obviously bad, but let's check for standard patterns.
 
-    # 3. Check concepts, entities, sources, synthesis frontmatter and H1
-    report.append("\n=== SUPPORT PAGES LINT (CONCEPTS, ENTITIES, SYNTHESIS) ===")
-    for category in ["concepts", "entities", "synthesis"]:
+    # 3. Check concepts, entities, sources, insights frontmatter and H1
+    report.append("\n=== SUPPORT PAGES LINT (CONCEPTS, ENTITIES, INSIGHTS) ===")
+    for category in ["concepts", "entities", "insights"]:
         dir_path = DIRS[category]
         if not dir_path.exists():
             continue
@@ -501,11 +501,11 @@ def main():
             if sv.strip() not in ("Pendente", "Em Andamento"):
                 report.append(f"ERROR: plan/plano.md tem um item com Status: '{sv.strip()}' fora do vocabulário (Pendente | Em Andamento).")
 
-    # 9. Synthesis audit (notas atômicas: maturidade válida, órfãs)
-    report.append("\n=== SYNTHESIS AUDIT (wiki/synthesis/) ===")
+    # 9. Insights audit (maturidade válida, órfãs)
+    report.append("\n=== INSIGHTS AUDIT (wiki/insights/) ===")
     MATURIDADES_VALIDAS = ("solta", "germinando", "madura", "absorvida")
-    if SYNTHESIS_DIR.exists():
-        for file in sorted(SYNTHESIS_DIR.glob("*.md")):
+    if INSIGHTS_DIR.exists():
+        for file in sorted(INSIGHTS_DIR.glob("*.md")):
             content = load_file_content(file)
             fm_match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
             fm_data = {}
@@ -514,16 +514,12 @@ def main():
                     fm_data = yaml.safe_load(fm_match.group(1)) or {}
                 except Exception:
                     pass
-            tipo = fm_data.get("tipo")
-            if tipo not in ("nota-atomica", "comparacao"):
-                report.append(f"ERROR: synthesis/{file.name} tem 'tipo:' inválido ou ausente ('{tipo}'), esperado nota-atomica | comparacao.")
-            if tipo == "nota-atomica":
-                maturidade = fm_data.get("maturidade")
-                if maturidade not in MATURIDADES_VALIDAS:
-                    report.append(f"ERROR: synthesis/{file.name} tem 'maturidade:' inválida ('{maturidade}'), esperado {'|'.join(MATURIDADES_VALIDAS)}.")
-                conexoes_match = re.search(r"## Conexões\s*\n(.*?)(?=\n##|\Z)", content, re.DOTALL)
-                if conexoes_match and not re.search(r"\[\[", conexoes_match.group(1)):
-                    report.append(f"WARNING: synthesis/{file.name} (nota atômica) não tem nenhum [[wikilink]] em Conexões — candidata a ficar órfã.")
+            maturidade = fm_data.get("maturidade")
+            if maturidade not in MATURIDADES_VALIDAS:
+                report.append(f"ERROR: insights/{file.name} tem 'maturidade:' inválida ou ausente ('{maturidade}'), esperado {'|'.join(MATURIDADES_VALIDAS)}.")
+            conexoes_match = re.search(r"## Conexões\s*\n(.*?)(?=\n##|\Z)", content, re.DOTALL)
+            if conexoes_match and not re.search(r"\[\[", conexoes_match.group(1)):
+                report.append(f"WARNING: insights/{file.name} não tem nenhum [[wikilink]] em Conexões — candidata a ficar órfã.")
 
     # 10. Categorias temáticas quase-duplicadas (heurística: normaliza acento/caixa)
     report.append("\n=== CATEGORIAS TEMÁTICAS (heurística de quase-duplicata) ===")

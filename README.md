@@ -15,8 +15,8 @@ wiki/                        espaço de trabalho do LLM — tudo que é conteúd
   essays/                    o centro da wiki: ensaios, white papers, estudos aprofundados
   concepts/                  páginas curtas de apoio — ideias, frameworks, teorias
   entities/                  páginas curtas de apoio — pessoas, organizações, ferramentas
-  synthesis/                 notas atômicas (/atom, tipo: nota-atomica) e
-                              comparações curtas (/query, tipo: comparacao)
+  insights/                  pasta atomizadora de ideias — sementes, sínteses/pontes,
+                              observações e mini-argumentos, tudo pelo mesmo /insight
   handouts/                  resumo de uma página de um essay específico, sob demanda (/handout)
   assets/                    imagens e figuras referenciadas pelos essays/resumos
                               (../assets/nome.png); alimentada por /import, /digest, /absorb
@@ -49,7 +49,7 @@ plan/                        plano de longo prazo do Usuário (não confundir co
 scripts/                     lint, stats, grafo de conexões, export (PDF/HTML)
   format_check.py            auditoria mecânica de formatação (usado por /format)
   auto_fix_lint.py           aplica fixes mecânicos inequívocos
-  lint_all.py                lint completo: wikilinks mortos, órfãos, manifesto, plano, synthesis
+  lint_all.py                lint completo: wikilinks mortos, órfãos, manifesto, plano, insights
   stats.py                   dashboard read-only (usado por /stats)
   gap_candidates.py          heurística de cobertura conceitual (usado por /gaps)
   graph.py                   gera output/graph/graph.html (interativo) e graph.md (Mermaid)
@@ -73,7 +73,7 @@ As skills estão agrupadas pela mesma lógica de `AGENTS.md`: da ideação de um
 
 ### Ideação (antes de um essay existir)
 
-- **Atom** · `/atom` — captura, desenvolve e promove notas atômicas em `wiki/synthesis/`: fragmentos densos de uma ideia só, que ainda não sabem a que essay pertencem. Tem três estados de maturidade (`solta` → `germinando` → `madura`) e comandos `add`, `develop`, `list`, `promote`. Existe para não forçar toda ideia nova a nascer já como capítulo ou concept.
+- **Insight** · `/insight` — captura, desenvolve e promove insights em `wiki/insights/`: sementes de ideia, sínteses/pontes entre fontes, observações/intuições e mini-argumentos, fragmentos densos de uma ideia só que ainda não sabem a que essay pertencem. `add` registra na hora, sem exigir conversa, e só depois oferece (sem insistir) expandir/conectar. `develop` já é conversa e iteração com o Usuário para polir ou expandir a nota. Tem três estados de maturidade (`solta` → `germinando` → `madura`) e comandos `add`, `develop`, `list`, `promote`. Existe para não forçar toda ideia nova a nascer já como capítulo ou concept.
 
 ### Criação
 
@@ -99,14 +99,14 @@ As skills estão agrupadas pela mesma lógica de `AGENTS.md`: da ideação de um
 ### Planejamento
 
 - **Plan** · `/plan` — gerencia `plan/plano.md`, o plano de longo prazo (5 seções fixas: Tarefas, Fontes para Ingerir, Revisões, Estudos, Essays Futuros). Comandos `add`, `work`, `done`, `list`. `/plan work` retoma um item e encaminha para a skill certa — nunca produz conteúdo sozinho.
-- **Study** · `/study` — conduz uma sessão de estudo de verdade: busca e lê fontes de verdade (não só lista), faz perguntas socráticas para o Usuário desenvolver a própria posição, e gera conexões ativas com o que já existe na wiki. Fecha perguntando o que fazer com o material estudado (`/atom`, `/digest`, `/essay`, ou deixar no plano).
+- **Study** · `/study` — conduz uma sessão de estudo de verdade: busca e lê fontes de verdade (não só lista), faz perguntas socráticas para o Usuário desenvolver a própria posição, e gera conexões ativas com o que já existe na wiki. Fecha perguntando o que fazer com o material estudado (`/insight`, `/digest`, `/essay`, ou deixar no plano).
 - **Scout** · `/scout` — pesquisa a web e devolve uma lista curta e curada de fontes candidatas (3 a 8, com justificativa), a partir de um item do plano, de um source/ideia existente, ou de um tema livre. Nunca baixa nem ingere sozinho — só propõe.
 
 ### Manutenção
 
 - **Sweep** · `/sweep` — orquestra a bateria completa de revisão num essay ou no corpus inteiro: `/format` → `/continuity` → `/proofread` → `/polish` → `/linkify`, com relatório consolidado. Aceita `/sweep` (corpus) ou `/sweep <slug>` (essay único).
 - **Format** · `/format` — auditoria mecânica de formatação: estrutura obrigatória, byline, LaTeX, aspas, espaçamento, compatibilidade Obsidian. Aplica fixes automáticos inequívocos via `auto_fix_lint.py` e reporta o restante. Não toca em prosa nem argumento.
-- **Organize** · `/organize` — organiza a base inteira na camada de metadados: índice, log, manifesto de sources, tags, plano, synthesis, estrutura de pastas, e gera o grafo de conexões. A skill mais importante para comunicar com clareza — nunca cola o relatório bruto do lint.
+- **Organize** · `/organize` — organiza a base inteira na camada de metadados: índice, log, manifesto de sources, tags, plano, insights, estrutura de pastas, e gera o grafo de conexões. A skill mais importante para comunicar com clareza — nunca cola o relatório bruto do lint.
 - **Gaps** · `/gaps` — audita cobertura conceitual: termo citado repetidamente na prosa mas sem página própria, página existente sem link em `## Conexões`, e desbalanço temático entre categorias. Prospectivo e opt-in — nunca cria página nem insere link sozinho.
 - **Stats** · `/stats` — dashboard read-only de saúde da wiki: essays por tag/tipo/categoria, órfãos, sources sem manifesto, itens do plano, notas atômicas por maturidade. Não corrige nada, só relata; rápido o bastante para rodar com frequência.
 - **Status** · `/status` — mantém `wiki/status.md`, o snapshot que liga uma sessão à próxima: foco atual, perguntas em aberto, decisões recentes, pendências (raw/, plano, sources não verificados). `/status` mostra; `/status update` recalcula e reescreve.
@@ -119,7 +119,7 @@ As skills estão agrupadas pela mesma lógica de `AGENTS.md`: da ideação de um
 
 ### Consulta
 
-- **Query** · `/query` — responde perguntas usando a wiki como base de conhecimento: começa pelo índice, aprofunda via `[[wikilinks]]` de `## Conexões`, cita sempre o essay de origem. Se a resposta gerar uma síntese nova, oferece salvá-la como essay (`/essay`) ou nota curta (`/atom` ou `wiki/synthesis/`).
+- **Query** · `/query` — responde perguntas usando a wiki como base de conhecimento: começa pelo índice, aprofunda via `[[wikilinks]]` de `## Conexões`, cita sempre o essay de origem. Se a resposta gerar uma síntese nova, oferece salvá-la como essay (`/essay`) ou nota curta (`/insight` ou `wiki/insights/`).
 
 ### Referência de formatação (sem comando próprio)
 
@@ -158,9 +158,9 @@ Campo `Tipo:` do manifesto (`wiki/sources/manifest.md`) — cada tipo determina 
 
 Toda fonte processada também gera uma entrada em `wiki/sources/manifest.md` (proveniência, append-only) e uma linha em `wiki/sources/map.md` (mapa por assunto); ambos são auditados por `/organize`.
 
-### Tipos de synthesis
+### Insights
 
-`wiki/synthesis/` guarda dois formatos, distinguidos pelo `tipo:` do frontmatter: `nota-atomica` (fragmento denso de uma ideia só, ver skill `/atom`) e `comparacao` (comparação curta gerada por `/query`). Ambos ficam fora de `wiki/index.md`.
+`wiki/insights/` guarda um único formato (ver skill `/insight`): fragmentos densos de uma ideia só — sementes, sínteses/pontes, observações/intuições, mini-argumentos — com `maturidade:` no frontmatter (`solta` → `germinando` → `madura`). Fica fora de `wiki/index.md`.
 
 ## Requisitos
 
@@ -169,5 +169,5 @@ Toda fonte processada também gera uma entrada em `wiki/sources/manifest.md` (pr
 
 ## Notas
 
-- **Tudo o que é pessoal fica fora do controle de versão, por design.** `raw/`, `plan/` e a `wiki/` inteira (essays, concepts, entities, synthesis, handouts, assets, sources, `manifest.md`, `map.md`, `index.md`, `log.md`, `status.md`) estão no `.gitignore` — só a estrutura de pastas é versionada (via `.gitkeep`), nunca o conteúdo. `output/` também fica fora, é sempre derivado. O que de fato é versionado no Git é a camada operacional: `AGENTS.md`, `README.md`, `.agents/skills/**` e `scripts/**`.
+- **Tudo o que é pessoal fica fora do controle de versão, por design.** `raw/`, `plan/` e a `wiki/` inteira (essays, concepts, entities, insights, handouts, assets, sources, `manifest.md`, `map.md`, `index.md`, `log.md`, `status.md`) estão no `.gitignore` — só a estrutura de pastas é versionada (via `.gitkeep`), nunca o conteúdo. `output/` também fica fora, é sempre derivado. O que de fato é versionado no Git é a camada operacional: `AGENTS.md`, `README.md`, `.agents/skills/**` e `scripts/**`.
 - Todo o conteúdo é em Português do Brasil.

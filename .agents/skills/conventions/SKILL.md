@@ -27,10 +27,10 @@ Toda skill que grava em disco decide onde salvar consultando esta tabela, não p
 
 | Pasta | Contém | Quem escreve | Quando |
 | --- | --- | --- | --- |
-| `wiki/essays/` | Ensaios/white papers completos, tese sustentada do início ao fim | `/essay`, `/import` | A ideia já é (ou virou, via `/atom promote`) um argumento completo |
+| `wiki/essays/` | Ensaios/white papers completos, tese sustentada do início ao fim | `/essay`, `/import` | A ideia já é (ou virou, via `/insight promote`) um argumento completo |
 | `wiki/concepts/` | Definição/explicação curta de um conceito, sem tese própria | `/essay`, `/expand`, `/absorb`, `/digest`, `/chapter` | Um termo é citado mas ainda não tem página própria |
 | `wiki/entities/` | Página curta sobre pessoa/obra/instituição nomeada | mesmas skills que concepts | Uma entidade nomeada é citada mas ainda não tem página própria |
-| `wiki/synthesis/` | Comparações curtas (`tipo: comparacao`) e notas atômicas (`tipo: nota-atomica`) | `/query` (comparações), `/atom` (notas atômicas) | Insight ou comparação que não é essay nem concept/entity |
+| `wiki/insights/` | Fragmentos densos de ideia — sementes, sínteses, observações, mini-argumentos | `/insight` (também via `/query`, que passa a ideia para `/insight add`) | Insight novo que ainda não tem lar, não é essay nem concept/entity |
 | `wiki/sources/<tipo>/` | Cópia/referência do documento original, por tipo (vocabulário em `AGENTS.md`) | `/import`, `/digest`, `/absorb` (via `/scout` como triagem) | Toda fonte processada, sempre |
 | `wiki/sources/resumos/` | Resumo de uma página por fonte processada | `/digest` | Toda vez que uma fonte é resumida |
 | `wiki/handouts/` | Versão de uma página de um essay **já existente** | `/handout` | Sempre derivado, sob demanda |
@@ -39,7 +39,7 @@ Toda skill que grava em disco decide onde salvar consultando esta tabela, não p
 | `plan/plano.md` | Pendência de longo prazo | `/plan` | Nunca conteúdo de wiki — só intenção de trabalhar algo depois |
 | `wiki/status.md` | Snapshot do estado da sessão atual | `/status` | Ponte entre sessões, não confundir com o plano |
 
-Regra geral: tese própria sustentada → `essays/`. Definição/explicação sem tese própria → `concepts/`/`entities/`. Insight novo sem lar, ou comparação → `synthesis/`. Material bruto de terceiros → `sources/`.
+Regra geral: tese própria sustentada → `essays/`. Definição/explicação sem tese própria → `concepts/`/`entities/`. Insight novo sem lar → `insights/`. Material bruto de terceiros → `sources/`.
 
 O resto (handouts, book-chapters, plan) tem função única, listada acima.
 
@@ -169,14 +169,11 @@ Apenas essays, por categoria temática:
 - **Nunca** dois-pontos no display text (quebra o link no Obsidian) — substitua `:` por `—`. Correto: `[[filename|Título — Subtítulo]]`.
 - Título do arquivo: `# Índice`.
 
-## Formato de páginas em `wiki/synthesis/`
+## Formato de páginas em `wiki/insights/`
 
-Dois tipos de conteúdo, mesma pasta, distinguidos pelo `tipo:` do frontmatter — nunca misture os dois formatos no mesmo arquivo:
+Um formato único — não existe mais distinção de `tipo:` dentro da pasta, tudo ali é insight (gerado por `/insight`, formato completo em `.agents/skills/insight/SKILL.md`): frontmatter com `tags`, `sources`, `created`, `updated`, `maturidade: solta | germinando | madura`, corpo curto, `## Conexões` com `[[wikilinks]]`.
 
-- **`tipo: comparacao`** — comparação curta gerada por `/query`. Frontmatter simples (`tags`, `sources`, `created`, `updated`, `tipo: comparacao`), prosa curta, sem `## Sumário`/`## Referências`.
-- **`tipo: nota-atomica`** — fragmento denso de uma ideia só, gerado por `/atom` (formato completo em `.agents/skills/atom/SKILL.md`): frontmatter com `maturidade: solta | germinando | madura`, corpo curto, `## Conexões` com `[[wikilinks]]`.
-
-Ambos ficam fora de `wiki/index.md` e fora da contagem de "essays" de `/stats` — aparecem na seção "Synthesis".
+Fica fora de `wiki/index.md` e fora da contagem de "essays" de `/stats` — aparece na seção "Insights".
 
 ## Formato do log (`wiki/log.md`)
 

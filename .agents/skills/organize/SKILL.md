@@ -3,7 +3,7 @@ name: organize
 description: >
   Organiza a base de conhecimento inteira na camada de metadados/
   grafo: roda e comunica o lint completo (manifesto, sources sem
-  essay, estrutura canônica de pastas, plano, synthesis, categorias
+  essay, estrutura canônica de pastas, plano, insights, categorias
   quase-duplicadas), corrige links quebrados ou órfãos, atualiza
   wiki/index.md, wiki/sources/map.md, tags, e gera o grafo de
   conexões via scripts/graph.py. Use quando o Usuário disser "organiza
@@ -15,13 +15,13 @@ allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion
 
 # Organize
 
-Organiza a base inteira na camada de metadados: índice, log, mapa de sources, tags, plano, synthesis, e a estrutura de pastas como um todo. **Não reescreve prosa de essay** — isso é `/sweep`. Pense em `/organize` como a manutenção do grafo e do catálogo; `/sweep` como a manutenção do texto.
+Organiza a base inteira na camada de metadados: índice, log, mapa de sources, tags, plano, insights, e a estrutura de pastas como um todo. **Não reescreve prosa de essay** — isso é `/sweep`. Pense em `/organize` como a manutenção do grafo e do catálogo; `/sweep` como a manutenção do texto.
 
 `/organize` é a skill mais importante para comunicar com clareza — ela existe para pegar **tudo** que está faltando ou desconectado, não só o óbvio. Nunca cole o relatório bruto de `lint_all.py` sem tratamento; ele é genérico de propósito (pega tudo), mas o Usuário precisa de um resumo priorizado, não de um texto bruto e extenso.
 
 ## Passo a passo
 
-1. Rode `python scripts/stats.py` para ver o estado atual — números de essays/tags/órfãos/sources sem manifesto/plano/synthesis.
+1. Rode `python scripts/stats.py` para ver o estado atual — números de essays/tags/órfãos/sources sem manifesto/plano/insights.
 2. **Órfãos**: para cada concept/entity sem essay que o referencie, decida com o Usuário se cria um essay novo, se anexa a um existente, ou se a página órfã deve ser removida por não servir a nada.
 3. **Contradições e claims desatualizados**: ao ler os essays (via os achados do stats ou amostragem), sinalize contradições entre páginas e claims que fontes mais novas já superaram. Se a correção não for imediata, ofereça registrar como item `Revisão` em `plan/plano.md` (via `/plan add`) em vez de deixar a inconsistência solta.
 4. **`wiki/index.md`**: confirme que contém apenas essays, no formato `[[filename|Display Title]]`, sem dois-pontos no display text, organizados por categoria temática (ver `## Formato do índice` em `conventions/SKILL.md`). Adicione essays que faltarem, remova entradas de essays deletados.
@@ -32,8 +32,8 @@ Organiza a base inteira na camada de metadados: índice, log, mapa de sources, t
 9. **`wiki/sources/map.md`**: revise por inteiro (não só incremente) — toda fonte em `wiki/sources/` e todo item ainda pendente em `raw/` deve aparecer, com status correto e organizado por assunto.
 10. **`wiki/log.md`**: confirme que é append-only (nenhuma entrada antiga foi editada) — só verifique, nunca reescreva o histórico.
 11. **`plan/plano.md`**: as 5 seções fixas existem (mesmo vazias)? Algum item usa um `Status:` fora do vocabulário (Pendente | Em Andamento)? Algum tópico fragmentou em quase-duplicatas? Corrija estrutura (seções faltando) direto; para tópicos quase-duplicados, proponha consolidação como faria com tags.
-12. **`wiki/synthesis/`**: toda página tem `tipo:` válido (`nota-atomica` | `comparacao`)? Toda nota atômica tem `maturidade:` válida? Sinalize notas atômicas sem nenhum link em `## Conexões` — candidatas a órfãs — e notas `madura` havia tempo sem promoção (sugira `/atom promote`).
-13. **Links de toda a wiki — rode e corrija**: rode `python scripts/lint_all.py` (cobre wikilinks mortos, órfãos, consistência de `index.md`, formatação mecânica, sources/manifesto nos dois sentidos, plano, synthesis, categorias — tudo dos passos acima, em um único relatório). Aplique `python scripts/auto_fix_lint.py` para os achados mecânicos e inequívocos (espaçamento de heading, dois-pontos em display text de wikilink) — sem perguntar. Para cada **wikilink morto** reportado:
+12. **`wiki/insights/`**: toda página tem `maturidade:` válida? Sinalize insights sem nenhum link em `## Conexões` — candidatos a órfãos — e insights `madura` havia tempo sem promoção (sugira `/insight promote`).
+13. **Links de toda a wiki — rode e corrija**: rode `python scripts/lint_all.py` (cobre wikilinks mortos, órfãos, consistência de `index.md`, formatação mecânica, sources/manifesto nos dois sentidos, plano, insights, categorias — tudo dos passos acima, em um único relatório). Aplique `python scripts/auto_fix_lint.py` para os achados mecânicos e inequívocos (espaçamento de heading, dois-pontos em display text de wikilink) — sem perguntar. Para cada **wikilink morto** reportado:
     - Se o alvo for claramente um erro de digitação de uma página que existe, corrija agora, sem perguntar.
     - Se o alvo não corresponder a nada existente nem a um erro de digitação óbvio, **não invente ou apague o link silenciosamente** — reporte a lista completa e pergunte o que fazer.
       Links **externos** (URLs que saíram do ar) não são responsabilidade do `/organize` — isso é `/linkify`, chamado por essay via `/sweep`.
@@ -69,6 +69,6 @@ Correções mecânicas e inequívocas (índice desatualizado, entrada de manifes
 - `/stats` — o primeiro passo daqui, e também útil sozinho sem rodar o resto
 - `/import`, `/digest`, `/absorb` — quem alimenta `manifest.md` e `map.md` no dia a dia; `/organize` é a auditoria periódica
 - `/plan` — recebe itens `Revisão` quando `/organize` encontra algo que precisa de atenção mas não pode ser corrigido na hora
-- `/atom` — recebe notas atômicas maduras sinalizadas aqui, para promoção
+- `/insight` — recebe notas atômicas maduras sinalizadas aqui, para promoção
 - `/status` — depois de um `/organize` substancial, ofereça `/status update` para refletir as pendências corrigidas
 - `/gaps` — cobertura conceitual (direção oposta ao órfão *reverso* do passo 2)

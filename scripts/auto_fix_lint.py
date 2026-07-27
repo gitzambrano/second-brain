@@ -2,7 +2,7 @@
 auto_fix_lint.py — Aplica correções mecânicas e inequívocas à formatação da wiki.
 
 Escopo intencional: apenas wiki/essays, wiki/concepts, wiki/entities,
-wiki/synthesis — nunca AGENTS.md, README.md, .agents/skills/**, nem
+wiki/insights — nunca AGENTS.md, README.md, .agents/skills/**, nem
 wiki/sources/** (documentos originais, imutáveis).
 
 Todas as correções são aplicadas apenas FORA do frontmatter YAML e de
@@ -26,11 +26,11 @@ WIKI_ROOT = ROOT_DIR / "wiki"
 ESSAYS_DIR = WIKI_ROOT / "essays"
 CONCEPTS_DIR = WIKI_ROOT / "concepts"
 ENTITIES_DIR = WIKI_ROOT / "entities"
-SYNTHESIS_DIR = WIKI_ROOT / "synthesis"
+INSIGHTS_DIR = WIKI_ROOT / "insights"
 
 # Same set of directories lint_all.py treats as "wiki content" -- sources are
 # original/immutable documents and are excluded on purpose.
-DIRS = [ESSAYS_DIR, CONCEPTS_DIR, ENTITIES_DIR, SYNTHESIS_DIR]
+DIRS = [ESSAYS_DIR, CONCEPTS_DIR, ENTITIES_DIR, INSIGHTS_DIR]
 
 FENCE_RE = re.compile(r"^```.*$")
 

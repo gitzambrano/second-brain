@@ -55,7 +55,7 @@ Dashboard **read-only**. Só relata, nunca corrige — esse é o trabalho de `/o
 - **Sources**: total de arquivos em `wiki/sources/**`, distribuição por subpasta de tipo, quantos não têm entrada em `manifest.md`, e quantos estão em uma subpasta fora do vocabulário controlado (ver `## Sources, Tags e Vocabulários Controlados` no AGENTS.md).
 - **Handouts**: quantos existem em `wiki/handouts/`.
 - **Plano**: quantos itens em `plan/plano.md`, por seção (Tarefas / Fontes para Ingerir / Revisões / Estudos / Essays Futuros) e por status.
-- **Synthesis**: quantas páginas em `wiki/synthesis/`, por tipo (nota-atomica / comparacao) e, para notas atômicas, por maturidade (solta / germinando / madura) — sinaliza quais estão maduras e prontas para `/atom promote`.
+- **Insights**: quantas páginas em `wiki/insights/`, por maturidade (solta / germinando / madura) — sinaliza quais estão maduras e prontas para `/insight promote`.
 
 ## Diferença em relação ao lint
 

@@ -28,7 +28,7 @@ CONCEPTS_DIR = WIKI_ROOT / "concepts"
 ENTITIES_DIR = WIKI_ROOT / "entities"
 SOURCES_DIR = WIKI_ROOT / "sources"
 HANDOUTS_DIR = WIKI_ROOT / "handouts"
-SYNTHESIS_DIR = WIKI_ROOT / "synthesis"
+INSIGHTS_DIR = WIKI_ROOT / "insights"
 PLANO_FILE = PLAN_DIR / "plano.md"
 OUTPUT_DIR = ROOT_DIR / "output" / "stats"
 
@@ -267,35 +267,29 @@ def plan_stats():
     return {"total": total, "by_secao": by_secao, "by_status": by_status, "missing_secoes": missing_secoes}
 
 
-def synthesis_stats():
-    """Count wiki/synthesis/ pages by tipo (nota-atomica vs comparacao) and,
-    for atomic notes, by maturidade (solta/germinando/madura)."""
-    if not SYNTHESIS_DIR.exists():
-        return {"total": 0, "by_tipo": Counter(), "atom_by_maturidade": Counter(), "madura_ready": []}
+def insights_stats():
+    """Count wiki/insights/ pages by maturidade (solta/germinando/madura)."""
+    if not INSIGHTS_DIR.exists():
+        return {"total": 0, "by_maturidade": Counter(), "madura_ready": []}
 
-    by_tipo = Counter()
-    atom_by_maturidade = Counter()
+    by_maturidade = Counter()
     madura_ready = []
     total = 0
-    for f in sorted(SYNTHESIS_DIR.glob("*.md")):
+    for f in sorted(INSIGHTS_DIR.glob("*.md")):
         content = load(f)
         total += 1
-        tipo = get_frontmatter_field(content, "tipo") or "(sem tipo)"
-        by_tipo[tipo] += 1
-        if tipo == "nota-atomica":
-            maturidade = get_frontmatter_field(content, "maturidade") or "(sem maturidade)"
-            atom_by_maturidade[maturidade] += 1
-            if maturidade == "madura":
-                madura_ready.append(get_h1(content) or f.stem)
+        maturidade = get_frontmatter_field(content, "maturidade") or "(sem maturidade)"
+        by_maturidade[maturidade] += 1
+        if maturidade == "madura":
+            madura_ready.append(get_h1(content) or f.stem)
     return {
         "total": total,
-        "by_tipo": by_tipo,
-        "atom_by_maturidade": atom_by_maturidade,
+        "by_maturidade": by_maturidade,
         "madura_ready": madura_ready,
     }
 
 
-def format_report(essay, orphans, sources, handouts, synthesis, plan):
+def format_report(essay, orphans, sources, handouts, insights, plan):
     lines = []
     lines.append(f"# Second Brain Stats — {datetime.date.today().isoformat()}")
     lines.append("")
@@ -361,17 +355,15 @@ def format_report(essay, orphans, sources, handouts, synthesis, plan):
     lines.append(f"- Total: {handouts['count']}")
     lines.append("")
 
-    lines.append("## Synthesis (wiki/synthesis/)")
-    lines.append(f"- Total: {synthesis['total']}")
-    if synthesis["by_tipo"]:
-        lines.append("- Por tipo: " + ", ".join(f"{k} ({v})" for k, v in synthesis["by_tipo"].most_common()))
-    if synthesis["atom_by_maturidade"]:
-        lines.append("- Notas atômicas por maturidade: " + ", ".join(
-            f"{k} ({v})" for k, v in synthesis["atom_by_maturidade"].most_common()
+    lines.append("## Insights (wiki/insights/)")
+    lines.append(f"- Total: {insights['total']}")
+    if insights["by_maturidade"]:
+        lines.append("- Por maturidade: " + ", ".join(
+            f"{k} ({v})" for k, v in insights["by_maturidade"].most_common()
         ))
-    if synthesis["madura_ready"]:
-        lines.append(f"- Maduras, prontas para promover (/atom promote): {len(synthesis['madura_ready'])}")
-        for m in synthesis["madura_ready"]:
+    if insights["madura_ready"]:
+        lines.append(f"- Maduras, prontas para promover (/insight promote): {len(insights['madura_ready'])}")
+        for m in insights["madura_ready"]:
             lines.append(f"  - {m}")
     lines.append("")
 
@@ -399,10 +391,10 @@ def main():
     orphans = orphan_stats(essay["titles"])
     sources = source_stats()
     handouts = handout_stats()
-    synthesis = synthesis_stats()
+    insights = insights_stats()
     plan = plan_stats()
 
-    report = format_report(essay, orphans, sources, handouts, synthesis, plan)
+    report = format_report(essay, orphans, sources, handouts, insights, plan)
     print(report)
 
     if args.save:

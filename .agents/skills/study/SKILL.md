@@ -16,7 +16,7 @@ allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch AskUserQuestion
 
 Estudar não é ler passivamente — é o ciclo de buscar material, confrontar com o que o Usuário já pensa, e deixar a compreensão ficar mais precisa a cada volta. Essa skill conduz esse ciclo dentro da sessão atual.
 
-Ela não decide sozinha quando um assunto "acabou de ser estudado" e virou conteúdo de wiki — isso é decisão do Usuário, geralmente via `/atom` (se virou uma ideia atômica) ou `/essay` (se já virou uma tese completa).
+Ela não decide sozinha quando um assunto "acabou de ser estudado" e virou conteúdo de wiki — isso é decisão do Usuário, geralmente via `/insight` (se virou uma ideia atômica) ou `/essay` (se já virou uma tese completa).
 
 ## O ciclo
 
@@ -33,10 +33,10 @@ Ela não decide sozinha quando um assunto "acabou de ser estudado" e virou conte
 
 4. **Faça perguntas socráticas.** Em vez de só entregar a resposta, devolva perguntas que levem o Usuário a articular a própria posição: "isso bate com o que você pensava sobre X?", "e se Y estiver errado, o que muda no seu argumento?", "como isso se conecta com [[Essay Já Existente]]?". O objetivo é o Usuário sair da sessão com uma posição mais clara, não só mais informação.
 
-5. **Gere conexões ativamente.** Ao longo da sessão, aponte explicitamente onde o que está sendo estudado ecoa (ou contradiz) algo já na wiki — um essay, um concept, uma entity, ou até uma nota atômica em `wiki/synthesis/`. Não espere o fim da sessão para fazer isso; conexões encontradas no meio do processo costumam ser as mais interessantes.
+5. **Gere conexões ativamente.** Ao longo da sessão, aponte explicitamente onde o que está sendo estudado ecoa (ou contradiz) algo já na wiki — um essay, um concept, uma entity, ou até uma nota atômica em `wiki/insights/`. Não espere o fim da sessão para fazer isso; conexões encontradas no meio do processo costumam ser as mais interessantes.
 
 6. **Feche com uma decisão sobre o que fazer com o que foi estudado.** No fim (ou quando o Usuário quiser parar), pergunte o que fazer com o material:
-   - Virou uma ideia solta, ainda sem tese? → `/atom add`.
+   - Virou uma ideia solta, ainda sem tese? → `/insight add`.
    - Virou uma fonte específica que vale preservar? → `/digest` ou `/absorb`, dependendo do uso.
    - Já virou uma tese completa? → `/essay`.
    - Ainda não deu para concluir nada, mas vale continuar depois? → deixe (ou crie, via `/plan add`) o item na seção Estudos do plano, com uma `Nota:` atualizada sobre até onde chegou.
@@ -53,7 +53,7 @@ Ela não decide sozinha quando um assunto "acabou de ser estudado" e virou conte
 >
 > **Usuário:** boa pergunta, não tinha pensado nisso.
 >
-> **Claude:** [ao final] Isso virou uma posição clara o suficiente para virar uma nota atômica — "Leishman-Beddoes tem fidelidade maior mas o custo computacional pode não valer a pena dado o uso em near-real-time do zBEMT GUI" é uma ideia com tese própria. Quer que eu capture isso via `/atom add`?
+> **Claude:** [ao final] Isso virou uma posição clara o suficiente para virar uma nota atômica — "Leishman-Beddoes tem fidelidade maior mas o custo computacional pode não valer a pena dado o uso em near-real-time do zBEMT GUI" é uma ideia com tese própria. Quer que eu capture isso via `/insight add`?
 
 ## O que não fazer
 
@@ -67,7 +67,7 @@ Não confunda `/study` com `/query` — `/query` responde uma pergunta pontual u
 
 - `/plan` — quem decide chamar `/study` ao retomar um item da seção Estudos, e quem registra se ficou pendente
 - `/scout` — busca mais extensa e curada de fontes, quando `WebSearch` direto não é suficiente
-- `/atom` — destino natural de um insight que emergiu da sessão mas ainda não é uma tese completa
+- `/insight` — destino natural de um insight que emergiu da sessão mas ainda não é uma tese completa
 - `/essay` — destino de uma sessão que já produziu uma tese completa
 - `/digest`, `/absorb` — destino de uma fonte específica encontrada durante o estudo
 - `/query` — para responder uma pergunta pontual com o que já está na wiki, sem sair buscando material novo

@@ -17,7 +17,7 @@ A wiki tem cinco diretórios de topo, cada um com um papel definido:
   - `wiki/essays/` — **o centro da wiki.** Ensaios, white papers e estudos aprofundados. Veja `## Essays — Tema Central`.
   - `wiki/concepts/` e `wiki/entities/` — páginas curtas de apoio: concepts são ideias, frameworks e teorias; entities são pessoas, organizações e ferramentas. Não têm função própria, existem apenas para serem linkadas por essays via `[[wikilink]]`.
   - `wiki/sources/` — arquivo permanente dos documentos originais, organizado por tipo. Veja `## Sources, Tags e Vocabulários Controlados`.
-  - `wiki/synthesis/` — espaço para atomizar ideias. Guarda notas atômicas (`/atom`), que ainda não sabem a que essay pertencem e podem crescer até virar um, e comparações curtas (`/query`), que não chegam a virar essay.
+  - `wiki/insights/` — espaço para atomizar ideias: sementes de ideia, sínteses e pontes entre fontes, observações/intuições, e mini-argumentos. Guarda notas de insight (`/insight`), que ainda não sabem a que essay pertencem e podem crescer até virar um. `/query` também pode encaminhar uma síntese nova para cá via `/insight add`.
   - `wiki/handouts/` — resumos de uma página de essays específicos, gerados sob demanda. Nunca são criados automaticamente; veja `/handout` para o fluxo completo.
   - `wiki/assets/` — imagens e figuras referenciadas pelos essays (caminho relativo `../assets/nome.png`). Alimentada por `/import`, `/digest`, `/absorb` sempre que a fonte processada tem figura embutida. Veja `## Tratamento de imagens` em `conventions/SKILL.md`.
   - `wiki/book-chapters/` — reservada para um projeto de livro futuro. Não usar ainda.
@@ -36,7 +36,7 @@ A wiki tem cinco diretórios de topo, cada um com um papel definido:
 
 | Skill | Comando   | Quando usar                                                                                                                          |
 | ----- | --------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Atom  | `/atom` | Capturar, desenvolver e promover uma nota atômica em`wiki/synthesis/` — uma ideia solta que ainda não sabe a que essay pertence |
+| Insight | `/insight` | Capturar, desenvolver e promover uma nota de insight em `wiki/insights/` — uma ideia solta que ainda não sabe a que essay pertence |
 
 **Criação**
 
@@ -81,7 +81,7 @@ A wiki tem cinco diretórios de topo, cada um com um papel definido:
 | Format   | `/format`   | Auditoria mecânica de formatação: estrutura, byline, LaTeX, aspas, espaçamento, Obsidian-compat. Aplica fixes automáticos via`auto_fix_lint.py` e reporta o restante                                              |
 | Organize | `/organize` | Verificar a saúde da base inteira: índice, log, mapa de sources, tags, links                                                                                                                                           |
 | Gaps     | `/gaps`     | Checar cobertura conceitual: termo citado sem página própria, página sem link em Conexões, desbalanço temático entre categorias                                                                                    |
-| Stats    | `/stats`    | Gerar um dashboard read-only: essays por tag/categoria, órfãos, sources sem manifest, estado do plano, synthesis, grafo                                                                                                |
+| Stats    | `/stats`    | Gerar um dashboard read-only: essays por tag/categoria, órfãos, sources sem manifest, estado do plano, insights, grafo                                                                                                |
 | Status   | `/status`   | Ver ou atualizar`wiki/status.md`, a ponte entre sessões                                                                                                                                                               |
 
 **Saída**

@@ -2,7 +2,7 @@
 """
 graph.py - Generate a connection graph of the entire wiki.
 
-Nodes: essays, concepts, entities, synthesis pages (nota-atomica / comparacao).
+Nodes: essays, concepts, entities, insights pages.
 Edges: every [[wikilink]] found in a page's body, resolved by H1 title
 (the wiki's own linking convention -- see conventions/SKILL.md).
 
@@ -27,14 +27,14 @@ WIKI_ROOT = ROOT_DIR / "wiki"
 ESSAYS_DIR = WIKI_ROOT / "essays"
 CONCEPTS_DIR = WIKI_ROOT / "concepts"
 ENTITIES_DIR = WIKI_ROOT / "entities"
-SYNTHESIS_DIR = WIKI_ROOT / "synthesis"
+INSIGHTS_DIR = WIKI_ROOT / "insights"
 OUTPUT_DIR = ROOT_DIR / "output" / "graph"
 
 DIRS = {
     "essay": ESSAYS_DIR,
     "concept": CONCEPTS_DIR,
     "entity": ENTITIES_DIR,
-    "synthesis": SYNTHESIS_DIR,
+    "insights": INSIGHTS_DIR,
 }
 
 
@@ -83,10 +83,8 @@ def build_graph():
             fm = get_frontmatter(content)
             node_id = f"{node_type}:{file.stem}"
             subtype = None
-            if node_type == "synthesis":
-                subtype = fm.get("tipo", "desconhecido")
-                if subtype == "nota-atomica":
-                    subtype = f"nota-atomica:{fm.get('maturidade', 'desconhecida')}"
+            if node_type == "insights":
+                subtype = f"maturidade:{fm.get('maturidade', 'desconhecida')}"
             nodes[node_id] = {
                 "id": node_id,
                 "title": title,
@@ -126,7 +124,7 @@ MERMAID_CLASS = {
     "essay": "essay",
     "concept": "concept",
     "entity": "entity",
-    "synthesis": "synthesis",
+    "insights": "insights",
 }
 
 
@@ -144,7 +142,7 @@ def render_mermaid(nodes, edges):
         "    classDef essay fill:#4fa8ff,stroke:#1c3f66,color:#0b1220;",
         "    classDef concept fill:#5fd3c4,stroke:#1c4f47,color:#0b1220;",
         "    classDef entity fill:#e8b657,stroke:#6b4f16,color:#0b1220;",
-        "    classDef synthesis fill:#b48ce8,stroke:#4a2f66,color:#0b1220;",
+        "    classDef insights fill:#b48ce8,stroke:#4a2f66,color:#0b1220;",
         "```",
     ]
     return "\n".join(lines)
@@ -166,8 +164,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     --instrument-blue: #4fa8ff;
     --concept: #5fd3c4;
     --entity: #e8b657;
-    --synthesis: #b48ce8;
-    --synthesis-comparacao: #8a9aa8;
+    --insight: #b48ce8;
     --edge: #454b52;
   }
   * { box-sizing: border-box; }
@@ -201,8 +198,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <div class="legend-item"><span class="dot" style="background:var(--instrument-blue)"></span> Essay</div>
   <div class="legend-item"><span class="dot" style="background:var(--concept)"></span> Concept</div>
   <div class="legend-item"><span class="dot" style="background:var(--entity)"></span> Entity</div>
-  <div class="legend-item"><span class="dot" style="background:var(--synthesis)"></span> Synthesis (nota atômica)</div>
-  <div class="legend-item"><span class="dot" style="background:var(--synthesis-comparacao)"></span> Synthesis (comparação)</div>
+  <div class="legend-item"><span class="dot" style="background:var(--insight)"></span> Insight</div>
   <div id="info">Clique num nó para ver detalhes e destacar vizinhos. Arraste pra reorganizar. Scroll pra zoom.</div>
   <div id="stats"></div>
 </div>
@@ -213,9 +209,7 @@ const typeColor = (n) => {
   if (n.type === "essay") return "var(--instrument-blue)";
   if (n.type === "concept") return "var(--concept)";
   if (n.type === "entity") return "var(--entity)";
-  if (n.type === "synthesis") {
-    return (n.subtype || "").startsWith("nota-atomica") ? "var(--synthesis)" : "var(--synthesis-comparacao)";
-  }
+  if (n.type === "insights") return "var(--insight)";
   return "#888";
 };
 

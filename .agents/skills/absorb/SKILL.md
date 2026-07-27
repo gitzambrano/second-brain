@@ -41,4 +41,4 @@ Prosa segue `## Estilo de prosa` em `conventions/SKILL.md`.
 - `/digest` — passo anterior, quando a fonte ainda não foi lida/resumida
 - `/chapter` — para criar página de conceito/entidade nova revelada pela fonte
 - `/expand` — mesma lógica de adição de conteúdo, mas disparada por pedido direto do Usuário em vez de por uma fonte
-- `/atom` — se a fonte revelar uma ideia tangencial que não cabe no essay em edição, capture como nota atômica em vez de forçar ou descartar
+- `/insight` — se a fonte revelar uma ideia tangencial que não cabe no essay em edição, capture como nota atômica em vez de forçar ou descartar
