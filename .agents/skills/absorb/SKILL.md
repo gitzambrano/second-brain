@@ -11,7 +11,6 @@ description: >
   /digest) ou virar um essay próprio (isso é /essay ou /import).
 allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion
 ---
-
 # Absorb
 
 Incorpora o conteúdo de uma fonte já processada às páginas existentes da wiki — essays, conceitos, entidades. **Só roda quando pedido explicitamente.** `/digest` nunca chama isso sozinho; se o Usuário só queria o resumo, a fonte fica arquivada e parada até ele pedir esse passo.
@@ -23,7 +22,7 @@ Incorpora o conteúdo de uma fonte já processada às páginas existentes da wik
 3. Atualize as páginas relevantes com o conteúdo novo — seja profundo, não superficial. Uma frase genérica não cumpre o propósito de absorver a fonte.
 4. Ajuste `[[wikilinks]]` em `## Conexões` das páginas tocadas, nos dois sentidos quando fizer sentido.
 5. Se a fonte revelar um conceito/entidade sem página própria e central o bastante, crie a página (mesma lógica de `/chapter`).
-6. Atualize `wiki/sources/map.md` (status: "Absorvido em [[Página A]], [[Página B]]") e `manifest.md` se a fonte ainda não tiver entrada — raro, mas possível se foi arquivada manualmente.
+6. Atualize `wiki/sources/map.md` (status: "Absorvido em [[Página A]], [[Página B]]") e `manifest.md` se a fonte ainda não tiver entrada — raro, mas possível se foi arquivada manualmente. Se `manifest.md` já tiver a entrada mas faltar `Tags:` (fonte antiga, de antes desse campo existir), aproveite e preencha — vocabulário controlado em `conventions`.
 7. Log: `## [YYYY-MM-DD] absorb | Fonte → páginas afetadas`
 
 Uma única fonte pode tocar 10-15 páginas. Isso é normal.

@@ -59,17 +59,17 @@ Essays têm um campo a mais, `status: draft | maduro | finalizado` — ver `## S
 
 ## Tags — Vocabulário Controlado
 
-Campo `tags:` do frontmatter, vocabulário fechado — evita tags quase-duplicadas (`Filosofia`, `filosofia`, `Filosofia da Mente`) que fragmentam a navegação.
+Campo `tags:` do frontmatter de essay/concept/entity/insight, e campo `Tags:` do manifesto de sources (`wiki/sources/manifest.md`) e do mapa (`wiki/sources/map.md`) — **uma única lista, um único vocabulário fechado** para a wiki inteira, evita tags quase-duplicadas (`Filosofia`, `filosofia`, `Filosofia da Mente`) que fragmentam a navegação. Uma fonte processada nunca inventa uma tag que não serviria também para um essay — é o mesmo tema, só um tipo de página diferente.
 
-**Tags atuais** (fonte da verdade — adicione uma nova aqui só quando um essay não se encaixa em nenhuma existente):
+**Tags atuais** (fonte da verdade — adicione uma nova aqui só quando um essay ou source não se encaixa em nenhuma existente):
 
-Vida Pessoal · Produtividade · Finanças · Saúde · Aprendizado · Projetos · Diário · Filosofia · Aerodinâmica · Dinâmica de Vôo · Asas Rotativas · Engenharia · Xadrez · Quoridor · Cosmologia · Física · Matemática · Estatística · Epistemologia · Ontologia · Metafísica · Biologia · Psicologia · Consciência · Inteligência Artificial · Computação · Ética · Gestão · Simulação · Lógica · Filosofia da Mente
+Vida Pessoal · Produtividade · Finanças · Saúde · Aprendizado · Projetos · Diário · Filosofia · Aerodinâmica · Dinâmica de Vôo · Asas Rotativas · Engenharia · Xadrez · Quoridor · Cosmologia · Física · Matemática · Estatística · Epistemologia · Ontologia · Metafísica · Biologia · Psicologia · Consciência · Inteligência Artificial · Computação · Ética · Gestão · Simulação · Lógica · Filosofia da Mente · Psicometria · Neurosciência · Termodinãmica
 
-1. **Reuse antes de criar** — busque em `wiki/index.md` e nos frontmatters já usados.
+1. **Reuse antes de criar** — busque em `wiki/index.md`, nos frontmatters já usados, e em `Tags:` do manifesto de sources. `output/index/wiki_index.json` (`build_index.py`, ver README) cacheia `tags_in_use` já combinando essays e sources, é a forma mais barata de checar.
 2. **Uma tag, uma grafia** — Title Case em Português, nunca uma variante (singular/plural, acento, sinônimo) de tag existente.
-3. **Tags são temas, não tipos** — o tipo do essay (`Ensaio`, `White Paper`, etc.) já vive na byline.
-4. **2 a 5 tags por essay.**
-5. `/organize` audita quase-duplicadas e propõe consolidação.
+3. **Tags são temas, não tipos** — o tipo do essay (`Ensaio`, `White Paper`, etc.) ou da source (`Artigo Acadêmico`, `Livro`, etc.) já vive na byline/`Tipo:`, nunca em `tags`/`Tags:`.
+4. **2 a 5 tags por essay; 1 a 5 tags por source** — uma source geralmente cobre um tema só, então pode ter menos.
+5. `/organize` audita quase-duplicadas (nos dois campos, `tags:` e `Tags:`) e propõe consolidação.
 
 ## Tipos de Source — Vocabulário Controlado
 
@@ -190,10 +190,13 @@ Append-only, uma entrada por fonte ingerida:
 ```
 ## [YYYY-MM-DD] nome-do-arquivo-original.pdf
 Tipo: [vocabulário controlado, ver AGENTS.md].
+Tags: [tag1, tag2] (mesmo vocabulário controlado dos essays — ver ## Tags — Vocabulário Controlado logo abaixo; nunca uma lista própria de tags de source).
 Pasta: wiki/sources/<subpasta-correspondente>/
 Virou: [[Essay Resultante]] (essay novo) | enriqueceu [[Essay Existente]] | ainda não — ver resumo em wiki/sources/resumos/.
 Verificação: [referências confirmadas | não verificado — checar antes de citar em outro essay].
 ```
+
+`Tags:` é obrigatório em toda entrada nova (`/import`, `/digest`, `/absorb`) — 1 a 5 tags do mesmo tema da fonte, reusando o vocabulário controlado de `## Tags — Vocabulário Controlado`. Existe **uma única fonte de tags para toda a wiki**: essay e source nunca têm vocabulários de tag separados — uma tag nova entra no mesmo lugar (a lista canônica abaixo) e vale para os dois. `build_index.py` consolida `tags_in_use` combinando essays e manifesto num só cômputo, exatamente por isso.
 
 Antes de reutilizar uma citação em outro essay, confira `Verificação:` — se estiver "não verificado", confirme antes de propagar.
 
@@ -205,9 +208,11 @@ Visão por assunto de tudo já processado ou pendente:
 
 ```
 ## <Categoria Temática>
-- [[Nome do Source]] — Tipo · Status
+- [[Nome do Source]] — Tipo · Tags: tag1, tag2 · Status
   - Status: Importado como [[Essay]] | Resumido — ver wiki/sources/resumos/<slug>.md | Absorvido em [[Essay X]] | Pendente em raw/
 ```
+
+`Tags:` aqui espelha o que já está em `manifest.md` para a mesma fonte (nunca uma lista divergente) — repetido no mapa só porque o mapa é organizado por assunto e a tag ajuda a confirmar que a fonte está na categoria certa.
 
 Atualizado por `/import`, `/digest` e `/absorb` durante o processamento, e revisado por inteiro por `/organize`.
 

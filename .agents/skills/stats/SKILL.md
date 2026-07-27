@@ -52,7 +52,7 @@ Dashboard **read-only**. Só relata, nunca corrige — esse é o trabalho de `/o
 - **Essays**: contagem total, por `Tipo` (Ensaio/White Paper/Estudo/etc), por categoria temática da byline, e distribuição de tags do vocabulário controlado.
 - **Sinais de lint rápidos**: essays com `## Resumo Executivo` residual (não deveria existir mais, ver `conventions/SKILL.md`), essays com mais de 2 travessões, essays sem `## Sumário`/`## Referências`/`## Conexões`. Isso é uma varredura rasa (regex), não substitui `format_check.py` nem o julgamento humano do lint completo.
 - **Órfãos**: concepts/entities em `wiki/concepts/` e `wiki/entities/` que não aparecem em nenhuma seção `## Conexões` de essay.
-- **Sources**: total de arquivos em `wiki/sources/**`, distribuição por subpasta de tipo, quantos não têm entrada em `manifest.md`, e quantos estão em uma subpasta fora do vocabulário controlado (ver `## Sources, Tags e Vocabulários Controlados` no AGENTS.md).
+- **Sources**: total de arquivos em `wiki/sources/**`, distribuição por subpasta de tipo, quantos não têm entrada em `manifest.md`, quantos estão em uma subpasta fora do vocabulário controlado, quantas entradas do manifesto não têm `Tags:` preenchido, e a distribuição de tags em uso no manifesto — mesmo vocabulário controlado dos essays (ver `## Sources, Tags e Vocabulários Controlados` no AGENTS.md).
 - **Handouts**: quantos existem em `wiki/handouts/`.
 - **Plano**: quantos itens em `plan/plano.md`, por seção (Tarefas / Fontes para Ingerir / Revisões / Estudos / Essays Futuros) e por status.
 - **Insights**: quantas páginas em `wiki/insights/`, por maturidade (solta / germinando / madura) — sinaliza quais estão maduras e prontas para `/insight promote`.

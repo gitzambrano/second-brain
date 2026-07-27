@@ -491,17 +491,25 @@ def main():
             manifest_entries = {}
         else:
             manifest_content = load_file_content(manifest_path)
-            # Each entry: "## [YYYY-MM-DD] filename" heading, followed by Tipo:/Pasta:/Virou:/Verificação: lines
+            # Each entry: "## [YYYY-MM-DD] filename" heading, followed by Tipo:/Tags:/Pasta:/Virou:/Verificação: lines
             entry_blocks = re.split(r"(?m)^## \[(\d{4}-\d{2}-\d{2})\]\s+(.+)$", manifest_content)
             # entry_blocks alternates: [preamble, date, filename, body, date, filename, body, ...]
             manifest_entries = {}
             for i in range(1, len(entry_blocks), 3):
                 date, filename, body = entry_blocks[i], entry_blocks[i + 1], entry_blocks[i + 2]
                 tipo_m = re.search(r"(?m)^Tipo:\s*(.+?)\.?$", body)
+                tags_m = re.search(r"(?m)^Tags:\s*(.+?)\.?$", body)
                 pasta_m = re.search(r"(?m)^Pasta:\s*(.+?)\.?$", body)
                 virou_m = re.search(r"(?m)^Virou:\s*(.+?)\.?$", body)
+                tags_raw = tags_m.group(1).strip() if tags_m else None
+                if tags_raw and tags_raw.startswith("[") and tags_raw.endswith("]"):
+                    tags_raw = tags_raw[1:-1]
+                tags = [t.strip().strip('"').strip("'") for t in tags_raw.split(",")] if tags_raw else []
+                tags = [t for t in tags if t]
                 manifest_entries[filename.strip()] = {
                     "tipo": tipo_m.group(1).strip() if tipo_m else None,
+                    "tags": tags,
+                    "tags_present": tags_m is not None,
                     "pasta": pasta_m.group(1).strip() if pasta_m else None,
                     "virou": virou_m.group(1).strip() if virou_m else None,
                 }
@@ -532,6 +540,14 @@ def main():
                         virou_target = re.search(r"\[\[([^\]|]+)", entry["virou"])
                         if virou_target and virou_target.group(1).strip() not in essay_titles:
                             report.append(f"ERROR: source '{filename}' Virou: aponta para '{virou_target.group(1).strip()}', que não existe como título de essay.")
+                # 7d. Tags: é obrigatório em toda entrada — mesmo vocabulário controlado dos essays
+                # (ver ## Tags — Vocabulário Controlado em conventions/SKILL.md). Vocabulário em si é
+                # lista aberta/editorial (vive em prosa, não hardcoded aqui) — só a presença/não-vazio
+                # é auditada mecanicamente; quase-duplicata de grafia é julgamento de /organize.
+                if not entry["tags_present"]:
+                    report.append(f"WARNING: source '{filename}' não tem campo 'Tags:' em manifest.md — adicione (mesmo vocabulário controlado dos essays).")
+                elif not entry["tags"]:
+                    report.append(f"WARNING: source '{filename}' tem 'Tags:' vazio em manifest.md.")
 
         # 7c. Estrutura canônica: todas as subpastas de tipo devem existir (mesmo vazias)
         for tipo, subpasta in SOURCE_TYPE_TO_FOLDER.items():

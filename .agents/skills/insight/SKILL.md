@@ -52,8 +52,8 @@ Não pule estados retroativamente sem justificativa (um insight não vira `madur
 Registre primeiro, converse depois — o Usuário pode só querer soltar a ideia e seguir em frente, sem interagir.
 
 1. Capture a ideia como o Usuário a trouxe e **grave imediatamente**, sem inflar artificialmente e sem exigir uma rodada de conversa antes de salvar. Um insight de 3 linhas é normal e não é um problema a corrigir.
-2. Busque na wiki (`wiki/index.md`, `wiki/concepts/`, `wiki/entities/`, e outros insights em `wiki/insights/`) por algo relacionado — se a ideia já ecoa um essay ou concept existente, linke desde o início em `## Conexões`. Isso não deve atrasar o registro: é uma busca rápida, não uma pesquisa aprofundada.
-3. Título curto, arquivo `wiki/insights/<slug>.md`:
+2. Busque na wiki (`python scripts/search.py "termo" --ignore-case`, cobre `wiki/index.md`-relevant essays, `concepts/`, `entities/`, e outros insights em `wiki/insights/` de uma vez) por algo relacionado — se a ideia já ecoa um essay ou concept existente, linke desde o início em `## Conexões`. Isso não deve atrasar o registro: é uma busca rápida, não uma pesquisa aprofundada.
+3. Título curto — antes de decidir o nome do arquivo, rode `python scripts/resolve_title.py "Título Da Ideia"` para não nascer um quase-duplicado de algo que já existe com outra grafia. Arquivo `wiki/insights/<slug>.md`:
 
    ```markdown
    ---

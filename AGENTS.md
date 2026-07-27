@@ -34,9 +34,9 @@ A wiki tem cinco diretórios de topo, cada um com um papel definido:
 
 **Ideação** (antes de um essay existir)
 
-| Skill | Comando   | Quando usar                                                                                                                          |
-| ----- | --------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Insight | `/insight` | Capturar, desenvolver e promover uma nota de insight em `wiki/insights/` — uma ideia solta que ainda não sabe a que essay pertence |
+| Skill   | Comando      | Quando usar                                                                                                                           |
+| ------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| Insight | `/insight` | Capturar, desenvolver e promover uma nota de insight em`wiki/insights/` — uma ideia solta que ainda não sabe a que essay pertence |
 
 **Criação**
 
@@ -81,7 +81,7 @@ A wiki tem cinco diretórios de topo, cada um com um papel definido:
 | Format   | `/format`   | Auditoria mecânica de formatação: estrutura, byline, LaTeX, aspas, espaçamento, Obsidian-compat. Aplica fixes automáticos via`auto_fix_lint.py` e reporta o restante                                              |
 | Organize | `/organize` | Verificar a saúde da base inteira: índice, log, mapa de sources, tags, links                                                                                                                                           |
 | Gaps     | `/gaps`     | Checar cobertura conceitual: termo citado sem página própria, página sem link em Conexões, desbalanço temático entre categorias                                                                                    |
-| Stats    | `/stats`    | Gerar um dashboard read-only: essays por tag/categoria, órfãos, sources sem manifest, estado do plano, insights, grafo                                                                                                |
+| Stats    | `/stats`    | Gerar um dashboard read-only: essays por tag/categoria, órfãos, sources sem manifest, estado do plano, insights, grafo                                                                                                 |
 | Status   | `/status`   | Ver ou atualizar`wiki/status.md`, a ponte entre sessões                                                                                                                                                               |
 
 **Saída**
@@ -123,7 +123,7 @@ A wiki tem cinco diretórios de topo, cada um com um papel definido:
 
 ### Tags
 
-O campo `tags:` do frontmatter de todo essay representa o tema do essay, com vocabulário fechado, para evitar que tags parecidas virem três tags diferentes.
+O campo `tags:` do frontmatter de todo essay/concept/entity/insight, e o campo `Tags:` do manifesto de sources (`wiki/sources/manifest.md`), representam o tema — mesmo vocabulário fechado para os dois, para evitar que tags parecidas virem tags diferentes.
 
 Lista atual, as regras de reuso e os critérios para criar uma tag nova estão em `## Tags — Vocabulário Controlado`, em `conventions/SKILL.md`.
 
@@ -173,5 +173,6 @@ A pendência de curto prazo (o que ficou em aberto na sessão atual) fica regist
 Ferramentas de linha de comando disponíveis; use quando fizer sentido:
 
 - **summarize** — resume links, arquivos e mídia. Veja `summarize --help`.
-- **qmd** — motor de busca local para markdown, útil quando a wiki crescer além do que `index.md` consegue navegar bem sozinho. Veja `qmd --help`.
+- **scripts/search.py** — busca com trecho (grep -n com contexto) escopada às pastas da wiki, sem dependência externa; primeira opção para `/query`, `/study`, `/insight`, `/essay` buscarem conteúdo sem abrir arquivo inteiro. Veja `README.md` (seção Estrutura de pastas → `scripts/`) para os outros scripts auxiliares (`build_index.py`, `resolve_title.py`, `backlinks.py`).
+- **qmd** — motor de busca local para markdown, alternativa externa quando instalada e a wiki crescer além do que `search.py`/`index.md` conseguem navegar bem sozinhos. Veja `qmd --help`.
 - **agent-browser** — automação de navegador para pesquisa web, para quando `web_search`/`web_fetch` falharem.

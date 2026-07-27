@@ -46,13 +46,23 @@ plan/                        plano de longo prazo do Usuário (não confundir co
   drafts/                    esqueletos de essay gerados por /outline (plan/drafts/<slug>.md),
                               apagados quando /essay termina de escrever todos os capítulos
 
-scripts/                     lint, stats, grafo de conexões, export (PDF/HTML)
+scripts/                     lint, stats, grafo de conexões, export (PDF/HTML), busca e índice
   format_check.py            auditoria mecânica de formatação (usado por /format)
   auto_fix_lint.py           aplica fixes mecânicos inequívocos
   lint_all.py                lint completo: wikilinks mortos, órfãos, manifesto, plano, insights
   stats.py                   dashboard read-only (usado por /stats)
   gap_candidates.py          heurística de cobertura conceitual (usado por /gaps)
   graph.py                   gera output/graph/graph.html (interativo) e graph.md (Mermaid)
+  search.py                  busca com trecho (grep -n com contexto) escopada à wiki, sem
+                              dependência externa — usado por /query, /study, /essay, /insight
+  build_index.py             gera output/index/wiki_index.json (título, tags, categoria,
+                              status/maturidade de essays/concepts/entities/insights + tags do
+                              manifesto de sources) — cache lido por várias skills, gerado por /organize
+  resolve_title.py           checagem exata/fuzzy de título contra essays/concepts/entities/
+                              insights de uma vez — usado antes de criar página nova
+                              (/insight, /chapter, /essay, /digest, /absorb)
+  backlinks.py               lookup reverso de [[wikilinks]] e detecção de órfãos — usado por
+                              /organize, /gaps, /essay, /chapter
   export_essay.py            export para PDF via Pandoc + LuaLaTeX (usado por /pdf)
   export_essay_html.py       export para HTML standalone via Pandoc (usado por /html)
   essay_template.html        template do HTML exportado
@@ -63,6 +73,9 @@ output/                      tudo que sai da wiki para compartilhamento externo
   handouts/                  cópia do handout (.md, e opcionalmente .pdf/.html) pronta pra enviar
   stats/                     snapshots salvos de /stats --save (stats-YYYY-MM-DD.md)
   graph/                     gerado sob demanda por /organize ou /stats — graph.html, graph.md
+  index/                     gerado por /organize ou sob demanda — wiki_index.json, cache de
+                              metadados (título, tags, categoria, status/maturidade) lido por
+                              /query, /stats, /gaps, /insight, /essay, /chapter, /resolve_title
 
 .agents/skills/               skills (slash commands) que operam sobre a wiki — ver seção abaixo
 ```
@@ -129,11 +142,11 @@ As skills estão agrupadas pela mesma lógica de `AGENTS.md`: da ideação de um
 
 Todos vivem em `conventions/SKILL.md` — a fonte única de verdade, para nunca haver duas grafias do mesmo tema/tipo. Reuso sempre antes de criar um item novo.
 
-### Tags de essay
+### Tags
 
-Campo `tags:` do frontmatter — 2 a 5 tags por essay, Title Case em Português, tema (não tipo).
+Campo `tags:` do frontmatter de essay/concept/entity/insight, e campo `Tags:` do manifesto de sources (`wiki/sources/manifest.md`) — **uma única fonte de tags para a wiki inteira**, não duas listas separadas.
 
-Uma tag nova só entra quando um essay genuinamente não se encaixa em nenhuma existente — `/organize` audita quase-duplicadas (acento, plural, sinônimo) e propõe consolidação.
+Uma tag nova só entra quando um essay ou source genuinamente não se encaixa em nenhuma existente — `/organize` audita quase-duplicadas (acento, plural, sinônimo) nos dois campos e propõe consolidação. `output/index/wiki_index.json` cacheia `tags_in_use` já combinando essays e sources.
 
 ### Status de essay
 
@@ -154,7 +167,7 @@ Campo `Tipo:` do manifesto (`wiki/sources/manifest.md`) — cada tipo determina 
 | Ideias                    | `ideias/`               | Texto curto e não estruturado, ainda não é ensaio, artigo ou clipping formal       |
 | Outro                     | `outro/`                | Só quando genuinamente nenhuma categoria acima cobre o caso                          |
 
-Toda fonte processada também gera uma entrada em `wiki/sources/manifest.md` (proveniência, append-only) e uma linha em `wiki/sources/map.md` (mapa por assunto); ambos são auditados por `/organize`.
+Toda fonte processada também gera uma entrada em `wiki/sources/manifest.md` (proveniência, append-only, incluindo `Tags:` — mesmo vocabulário controlado da seção acima) e uma linha em `wiki/sources/map.md` (mapa por assunto); ambos são auditados por `/organize`.
 
 ### Insights
 

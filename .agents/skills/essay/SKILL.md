@@ -32,7 +32,7 @@ O essay resultante deve ser **extenso, profundo e criativo**, não um resumo nem
 
 ## 1. Pesquisar o terreno antes de escrever
 
-1. **Busque na wiki existente** (`wiki/index.md`, `wiki/concepts/`, `wiki/entities/`) por temas relacionados. Um essay novo deve **linkar e construir sobre** essays/conceitos anteriores do Usuário quando fizer sentido — o esboço aprovado já deve ter listado candidatos em `## Conexões candidatas`, confirme e complete.
+1. **Busque na wiki existente** (`python scripts/search.py "tema" --ignore-case`, cobre `wiki/index.md`-relevant essays, `wiki/concepts/`, `wiki/entities/` de uma vez) por temas relacionados. Um essay novo deve **linkar e construir sobre** essays/conceitos anteriores do Usuário quando fizer sentido — o esboço aprovado já deve ter listado candidatos em `## Conexões candidatas`, confirme e complete.
 2. Use `WebSearch`/`WebFetch` para embasamento externo, agora capítulo a capítulo, com a profundidade que `/outline` deliberadamente não fez: dados, citações, referências acadêmicas, e — se o domínio for filosófico — as correntes e pensadores relevantes ao argumento. Parafraseie sempre, nunca reproduza trechos longos de fontes de terceiros.
 
 ## 2. Redigir com profundidade real
@@ -70,7 +70,7 @@ Aplique as duas seções acima na proporção que o argumento pedir — um essay
 
 ## 3. Criar/atualizar conceitos e entidades
 
-Todo conceito, pensador, ou entidade central ao argumento que ainda não tem página própria ganha uma em `wiki/concepts/` ou `wiki/entities/`, linkada de volta ao essay (não no corpo do texto). Nenhum conceito relevante fica sem página só porque "nasceu" num essay criado agora.
+Todo conceito, pensador, ou entidade central ao argumento que ainda não tem página própria ganha uma em `wiki/concepts/` ou `wiki/entities/`, linkada de volta ao essay (não no corpo do texto). Antes de criar, rode `python scripts/resolve_title.py "Título Do Conceito"` — evita nascer um quase-duplicado de página que já existe com outra grafia. Nenhum conceito relevante fica sem página só porque "nasceu" num essay criado agora.
 
 ## 4. Indexar e logar
 

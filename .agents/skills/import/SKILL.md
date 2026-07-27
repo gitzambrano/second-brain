@@ -33,7 +33,7 @@ Se não estiver claro que o texto é do próprio Usuário e já está pronto (n�
 7. Verifique se todos os conceitos/entidades criados/atualizados são referenciados por pelo menos um essay. Se não, crie um novo essay que os abrace ou atualize um existente.
 8. Adicione `[[wikilinks]]` entre todas as páginas relacionadas, na seção `## Conexões`.
 9. Atualize `wiki/index.md` (apenas essays).
-10. Mova o arquivo original de `raw/` para `wiki/sources/<subpasta-do-tipo>/`, preservando o nome original. Registre em `wiki/sources/manifest.md` (`Tipo:`, `Pasta:`, `Virou:`) e em `wiki/sources/map.md` (status: "Importado como [[Essay]]").
+10. Mova o arquivo original de `raw/` para `wiki/sources/<subpasta-do-tipo>/`, preservando o nome original. Registre em `wiki/sources/manifest.md` (`Tipo:`, `Tags:`, `Pasta:`, `Virou:`) e em `wiki/sources/map.md` (status: "Importado como [[Essay]]"). `Tags:` reusa o mesmo vocabulário controlado dos essays (`## Tags — Vocabulário Controlado` em `conventions/SKILL.md`) — em geral as mesmas tags do essay que a fonte virou, já que é o mesmo conteúdo.
 11. Log: `## [YYYY-MM-DD] import | Título do Essay`
 
 Uma única fonte pode tocar 10-15 páginas da wiki. Isso é normal.

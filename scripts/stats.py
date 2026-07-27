@@ -185,11 +185,26 @@ def orphan_stats(essay_titles):
 
 def source_stats():
     if not SOURCES_DIR.exists():
-        return {"total": 0, "by_type_folder": {}, "unmanifested": [], "misfiled": [], "manifest_entries": 0}
+        return {"total": 0, "by_type_folder": {}, "unmanifested": [], "misfiled": [], "manifest_entries": 0,
+                "tag_counts": Counter(), "missing_tags": []}
 
     manifest_path = SOURCES_DIR / "manifest.md"
     manifest_content = load(manifest_path) if manifest_path.exists() else ""
-    manifest_files = set(re.findall(r"(?m)^## \[\d{4}-\d{2}-\d{2}\]\s+(.+)$", manifest_content))
+    entry_blocks = re.split(r"(?m)^## \[\d{4}-\d{2}-\d{2}\]\s+(.+)$", manifest_content)
+    manifest_files = set()
+    tag_counts = Counter()
+    missing_tags = []
+    # entry_blocks alterna [preambulo, filename, body, filename, body, ...]
+    for i in range(1, len(entry_blocks), 2):
+        filename, body = entry_blocks[i].strip(), entry_blocks[i + 1]
+        manifest_files.add(filename)
+        tags_m = re.search(r"(?m)^Tags:\s*(.+?)\.?$", body)
+        if not tags_m:
+            missing_tags.append(filename)
+        else:
+            tags = parse_list_field(tags_m.group(1))
+            for t in tags:
+                tag_counts[t] += 1
     manifest_entries = len(manifest_files)
 
     by_type_folder = Counter()
@@ -223,6 +238,8 @@ def source_stats():
         "unmanifested": unmanifested,
         "misfiled": misfiled,
         "manifest_entries": manifest_entries,
+        "tag_counts": tag_counts,
+        "missing_tags": missing_tags,
     }
 
 
@@ -349,6 +366,13 @@ def format_report(essay, orphans, sources, handouts, insights, plan):
     lines.append(f"- Em subpasta fora do vocabulário controlado: {len(sources['misfiled'])}")
     for m in sources["misfiled"]:
         lines.append(f"  - {m}")
+    lines.append(f"- Entradas do manifesto sem `Tags:`: {len(sources['missing_tags'])}")
+    for m in sources["missing_tags"]:
+        lines.append(f"  - {m}")
+    if sources["tag_counts"]:
+        lines.append("- Tags em uso no manifesto (mesmo vocabulário controlado dos essays):")
+        for tag, n in sources["tag_counts"].most_common():
+            lines.append(f"  - {tag}: {n}")
     lines.append("")
 
     lines.append("## Handouts")

@@ -28,7 +28,7 @@ Não use para: um ensaio/white paper do próprio Usuário (isso é `/import`) ou
 3. Se a fonte tiver figura embutida (PDF, DOCX, HTML), extraia para `wiki/assets/` e linke no resumo — ver `## Tratamento de imagens` em `conventions/SKILL.md`.
 4. Escreva um resumo de uma página em `wiki/sources/resumos/<slug>.md`: claim(s) principal(is), metodologia se aplicável, limitações, 2-3 citações-chave (parafraseadas, nunca copiadas verbatim além de trechos curtíssimos). Frontmatter simples: `fonte:` (nome do arquivo original), `tipo:`, `created:`.
 5. **Entregue o resumo ao Usuário na própria conversa** — não é suficiente só salvar o arquivo, ele quer ler agora.
-6. Arquive o original em `wiki/sources/<subpasta-do-tipo>/`, preservando o nome. Registre em `wiki/sources/manifest.md` e em `wiki/sources/map.md` (status: "Resumido — ver resumo", com link pro arquivo em `resumos/`).
+6. Arquive o original em `wiki/sources/<subpasta-do-tipo>/`, preservando o nome. Registre em `wiki/sources/manifest.md` (incluindo `Tags:`, 1 a 5 tags do vocabulário controlado — ver `## Tags — Vocabulário Controlado` em `conventions/SKILL.md`, reuse antes de criar) e em `wiki/sources/map.md` (status: "Resumido — ver resumo", com link pro arquivo em `resumos/`).
 7. Log: `## [YYYY-MM-DD] digest | Título da Fonte`
 
 ## Depois
