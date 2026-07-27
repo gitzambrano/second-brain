@@ -6,7 +6,7 @@ description: >
   manifesto ou na subpasta errada, sinais de travessão/formatação,
   contagem de handouts, itens do plano por seção, notas atômicas por
   maturidade. Pode também gerar o grafo visual de conexões
-  (scripts/graph.py). Use quando o usuário disser "como ta minha
+  (scripts/graph.py). Use quando o Usuário disser "como ta minha
   wiki", "dashboard", "stats da wiki", "quantos essays eu tenho",
   "quais sources não tem manifest", "mostra o grafo/mapa de conexões",
   ou quiser um retrato rápido de saúde sem rodar o lint completo.
@@ -31,21 +31,21 @@ Dashboard **read-only**. Só relata, nunca corrige — esse é o trabalho de `/o
    python scripts/stats.py
    ```
 
-2. Leia o output e apresente ao usuário de forma resumida na conversa — não é necessário colar o relatório inteiro se ele for longo, destaque o que chama atenção (órfãos, sources sem manifest, essays com mais de 2 travessões).
-3. Se o usuário quiser um snapshot salvo (para comparar com uma stats anterior, por exemplo), rode com `--save`:
+2. Leia o output e apresente ao Usuário de forma resumida na conversa — não é necessário colar o relatório inteiro se ele for longo, destaque o que chama atenção (órfãos, sources sem manifest, essays com mais de 2 travessões).
+3. Se o Usuário quiser um snapshot salvo (para comparar com uma stats anterior, por exemplo), rode com `--save`:
 
    ```bash
    python scripts/stats.py --save
    ```
 
    Isso grava em `output/stats/stats-YYYY-MM-DD.md` (ver `## Arquitetura` no AGENTS.md). Não salve por padrão — só quando pedido, já que é um artefato descartável na maioria das vezes.
-4. Se o usuário quiser **ver** as conexões, não só contá-las, rode o grafo:
+4. Se o Usuário quiser **ver** as conexões, não só contá-las, rode o grafo:
 
    ```bash
    python scripts/graph.py
    ```
 
-   Gera `output/graph/graph.html` (visualização interativa: zoom, arraste, clique num nó pra destacar vizinhos, busca por título/tag) e `output/graph/graph.md` (versão Mermaid, sem precisar abrir navegador). É a forma mais rápida de enxergar clusters isolados — por exemplo, se os ensaios de filosofia nunca se conectam aos de engenharia, isso aparece visualmente como dois blobs separados no grafo. Ofereça isso sempre que o usuário perguntar algo como "como as coisas se conectam" ou depois de um `/organize` substancial.
+   Gera `output/graph/graph.html` (visualização interativa: zoom, arraste, clique num nó pra destacar vizinhos, busca por título/tag) e `output/graph/graph.md` (versão Mermaid, sem precisar abrir navegador). É a forma mais rápida de enxergar clusters isolados — por exemplo, se os ensaios de filosofia nunca se conectam aos de engenharia, isso aparece visualmente como dois blobs separados no grafo. Ofereça isso sempre que o Usuário perguntar algo como "como as coisas se conectam" ou depois de um `/organize` substancial.
 
 ## O que o script cobre
 

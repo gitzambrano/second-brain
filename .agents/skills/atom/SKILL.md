@@ -7,7 +7,7 @@ description: >
   (adicionar a uma nota atômica existente numa sessão futura), list
   (mostrar notas por maturidade), promote (levar uma nota madura para
   virar essay novo ou capítulo de um essay existente). Use quando o
-  usuário disser "tive uma ideia sobre X mas não é um essay ainda",
+  Usuário disser "tive uma ideia sobre X mas não é um essay ainda",
   "anota esse insight solto", "essa nota já está madura o bastante
   pra virar essay?", ou trouxer um fragmento de pensamento que não se
   encaixa em nenhum essay hoje.
@@ -32,7 +32,7 @@ Não pule estados retroativamente sem justificativa (uma nota não vira `madura`
 
 ## `/atom add`
 
-1. Capture a ideia como o usuário a trouxe, sem inflar artificialmente. Uma nota atômica de 3 linhas é normal e não é um problema a corrigir.
+1. Capture a ideia como o Usuário a trouxe, sem inflar artificialmente. Uma nota atômica de 3 linhas é normal e não é um problema a corrigir.
 2. Busque na wiki (`wiki/index.md`, `wiki/concepts/`, `wiki/entities/`, e outras notas em `wiki/synthesis/`) por algo relacionado — se a ideia já ecoa um essay ou concept existente, linke desde o início em `## Conexões`.
 3. Título curto, arquivo `wiki/synthesis/<slug>.md`:
 
@@ -59,12 +59,12 @@ Não pule estados retroativamente sem justificativa (uma nota não vira `madura`
 
 ## `/atom develop <nota>`
 
-Retoma uma nota atômica existente numa sessão futura, quando o usuário quer desenvolvê-la mais.
+Retoma uma nota atômica existente numa sessão futura, quando o Usuário quer desenvolvê-la mais.
 
 1. Leia a nota inteira, e leia também o que ela já linka em `## Conexões` para ter o contexto que ela já acumulou.
 2. Incorpore o novo conteúdo à prosa existente — não apenas anexe um parágrafo solto ao final sem integrar.
 3. Reavalie `## Conexões`: a nota provavelmente ganhou relação com algo novo.
-4. Reavalie `maturidade:` — se a nota tinha `solta` e agora tem corpo e pelo menos um link, suba para `germinando`; se já está densa e com tese clara, `madura`. Não suba maturidade automaticamente sem que o conteúdo de fato sustente o novo estado — se tiver dúvida, pergunte ao usuário como ele avalia.
+4. Reavalie `maturidade:` — se a nota tinha `solta` e agora tem corpo e pelo menos um link, suba para `germinando`; se já está densa e com tese clara, `madura`. Não suba maturidade automaticamente sem que o conteúdo de fato sustente o novo estado — se tiver dúvida, pergunte ao Usuário como ele avalia.
 5. Atualize `updated:` no frontmatter.
 
 ## `/atom list`
@@ -73,7 +73,7 @@ Leia todas as notas em `wiki/synthesis/` com `tipo: nota-atomica` e mostre agrup
 
 ## `/atom promote <nota>`
 
-Leva uma nota `madura` para o conteúdo de fato da wiki. Nunca promove uma nota `solta` ou `germinando` sem antes perguntar se o usuário tem certeza — a maturidade existe pra evitar promoção prematura.
+Leva uma nota `madura` para o conteúdo de fato da wiki. Nunca promove uma nota `solta` ou `germinando` sem antes perguntar se o Usuário tem certeza — a maturidade existe pra evitar promoção prematura.
 
 1. Pergunte (se não estiver óbvio pela nota) se ela vira:
    - **Essay novo**: quando a ideia sustenta um argumento inteiro por si só. Rode o fluxo completo de `/essay` — a nota atômica serve de ponto de partida (a tese já pode estar praticamente pronta), não de rascunho a copiar sem desenvolver.
@@ -83,7 +83,7 @@ Leva uma nota `madura` para o conteúdo de fato da wiki. Nunca promove uma nota 
 
 ## O que não fazer
 
-Não crie uma nota atômica para algo que já é claramente um essay completo na cabeça do usuário — isso é `/essay` direto, a nota atômica existiria só como um passo morto no meio. Não crie uma nota atômica para uma comparação/síntese que `/query` já cobre (isso é `tipo: comparacao`, não `nota-atomica`). Não deixe notas `solta` acumularem por muito tempo sem nunca virarem `germinando` — se `/stats`/`/organize` sinalizarem várias soltas antigas, isso é sinal de que vale uma sessão de `/atom develop` em lote, ou de que algumas devem ser arquivadas por não terem vingado (pergunte ao usuário, não decida sozinho).
+Não crie uma nota atômica para algo que já é claramente um essay completo na cabeça do Usuário — isso é `/essay` direto, a nota atômica existiria só como um passo morto no meio. Não crie uma nota atômica para uma comparação/síntese que `/query` já cobre (isso é `tipo: comparacao`, não `nota-atomica`). Não deixe notas `solta` acumularem por muito tempo sem nunca virarem `germinando` — se `/stats`/`/organize` sinalizarem várias soltas antigas, isso é sinal de que vale uma sessão de `/atom develop` em lote, ou de que algumas devem ser arquivadas por não terem vingado (pergunte ao Usuário, não decida sozinho).
 
 ## Skills relacionadas
 

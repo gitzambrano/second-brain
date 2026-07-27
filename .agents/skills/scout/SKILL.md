@@ -5,7 +5,7 @@ description: >
   item de plan/plano.md, de um source/ideia já existente em
   wiki/sources/ideias/, ou de um tema livre passado direto no prompt.
   Nunca ingere sozinho: apenas propõe uma lista curada para o Usuário
-  escolher. Use quando o usuário disser "acha fontes sobre X", "pesquisa
+  escolher. Use quando o Usuário disser "acha fontes sobre X", "pesquisa
   material pra esse estudo", ou "o que eu poderia ler sobre isso".
 allowed-tools: WebSearch WebFetch Read Write Edit Glob
 ---
@@ -13,6 +13,8 @@ allowed-tools: WebSearch WebFetch Read Write Edit Glob
 # Scout
 
 Encontra candidatos a fonte e devolve uma lista curta e justificada — nunca baixa, nunca move para `raw/`, nunca ingere sozinho. Quem decide o que vale a pena ler é o Usuário; `/scout` só reduz o trabalho de busca.
+
+**Escopo deliberadamente raso**: `/scout` lista candidatos com uma frase de justificativa cada, não lê o conteúdo inteiro nem produz resumo. Para leitura de verdade — `WebFetch` do conteúdo, resumo parafraseado de verdade, link junto do resumo — isso é `/study`, não `/scout`. Use `/scout` pra triagem ampla ("quais dessas 8 fontes valem meu tempo"); use `/study` quando já se sabe que vale ler e o objetivo é sair com compreensão, não só uma lista.
 
 ## Pontos de partida (qualquer um dos três)
 

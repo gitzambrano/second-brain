@@ -6,7 +6,7 @@ description: >
   essay, estrutura canônica de pastas, plano, synthesis, categorias
   quase-duplicadas), corrige links quebrados ou órfãos, atualiza
   wiki/index.md, wiki/sources/map.md, tags, e gera o grafo de
-  conexões via scripts/graph.py. Use quando o usuário disser "organiza
+  conexões via scripts/graph.py. Use quando o Usuário disser "organiza
   a wiki inteira", "vê se tá tudo certo", "o que está faltando",
   "confere a estrutura", ou quiser manutenção da base inteira em vez
   de corrigir a prosa de um essay específico (isso é /sweep).
@@ -22,7 +22,7 @@ Organiza a base inteira na camada de metadados: índice, log, mapa de sources, t
 ## Passo a passo
 
 1. Rode `python scripts/stats.py` para ver o estado atual — números de essays/tags/órfãos/sources sem manifesto/plano/synthesis.
-2. **Órfãos**: para cada concept/entity sem essay que o referencie, decida com o usuário se cria um essay novo, se anexa a um existente, ou se a página órfã deve ser removida por não servir a nada.
+2. **Órfãos**: para cada concept/entity sem essay que o referencie, decida com o Usuário se cria um essay novo, se anexa a um existente, ou se a página órfã deve ser removida por não servir a nada.
 3. **Contradições e claims desatualizados**: ao ler os essays (via os achados do stats ou amostragem), sinalize contradições entre páginas e claims que fontes mais novas já superaram. Se a correção não for imediata, ofereça registrar como item `Revisão` em `plan/plano.md` (via `/plan add`) em vez de deixar a inconsistência solta.
 4. **`wiki/index.md`**: confirme que contém apenas essays, no formato `[[filename|Display Title]]`, sem dois-pontos no display text, organizados por categoria temática (ver `## Formato do índice` em `conventions/SKILL.md`). Adicione essays que faltarem, remova entradas de essays deletados.
 5. **Tags quase-duplicadas**: verifique se alguma tag em uso é variante de grafia de outra (acento, plural, sinônimo). Proponha consolidação e liste os essays afetados antes de renomear em massa.

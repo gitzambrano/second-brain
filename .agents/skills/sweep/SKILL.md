@@ -3,7 +3,7 @@ name: sweep
 description: >
   Varre todos os essays de wiki/essays/ e corrige cada um, orquestrando
   os skills focados de iteração (continuity, proofread, polish,
-  linkify) um essay por vez. Use quando o usuário disser "corrige
+  linkify) um essay por vez. Use quando o Usuário disser "corrige
   todos os essays", "faz uma revisão geral", "passa o pente fino na
   wiki inteira", ou quiser uma passada completa no corpus de essays em
   vez de um essay específico. É um orquestrador: chama outros skills,
@@ -24,7 +24,7 @@ Varre todos os essays de `wiki/essays/` e corrige cada um, chamando os skills fo
 1. Liste todos os essays em `wiki/essays/` (`ls wiki/essays/*.md` ou `Glob`).
 2. **Passada mecânica primeiro**, por script, antes de qualquer correção de prosa: rode `scripts/lint_all.py` (formatação: linha em branco após heading, labels de capítulo soltos, símbolos residuais, resíduos HTML, blockquote mal usado, contagem de travessões, parágrafos possivelmente não traduzidos para PT-BR) e `scripts/deep_format_check.py`. Aplique os fixes automáticos via `scripts/auto_fix_lint.py` quando o achado for mecânico e inequívoco (ex: linha em branco faltando); para o resto, reporte e peça confirmação. Nessa mesma passada, confirme: frontmatter completo, byline padronizada, ausência de `## Resumo Executivo`, `## Sumário`/`## Referências`/`## Conexões` presentes, nenhum `[[wikilink]]` fora de Conexões.
 3. Para cada essay, na ordem:
-   1. **`/continuity`** — se encontrar problema estrutural relevante (salto lógico, conclusão que não fecha o argumento), reporte e pergunte se o usuário quer que a correção seja aplicada agora ou revisada por ele depois, antes de prosseguir para os passos seguintes neste essay.
+   1. **`/continuity`** — se encontrar problema estrutural relevante (salto lógico, conclusão que não fecha o argumento), reporte e pergunte se o Usuário quer que a correção seja aplicada agora ou revisada por ele depois, antes de prosseguir para os passos seguintes neste essay.
    2. **`/proofread`** — passada de português.
    3. **`/polish`** — passada de estilo (bullets, travessões).
    4. **`/linkify`** — checagem e adição de links externos.
@@ -33,7 +33,7 @@ Varre todos os essays de `wiki/essays/` e corrige cada um, chamando os skills fo
 
 ## Volume e ritmo
 
-Se a wiki tiver muitos essays, isso pode ser uma operação longa. Avise o usuário da escala antes de começar (ex: "são 23 essays, vou levar um tempo") e considere processar em lotes se ele preferir acompanhar o progresso em vez de esperar o relatório final de tudo.
+Se a wiki tiver muitos essays, isso pode ser uma operação longa. Avise o Usuário da escala antes de começar (ex: "são 23 essays, vou levar um tempo") e considere processar em lotes se ele preferir acompanhar o progresso em vez de esperar o relatório final de tudo.
 
 ## Depois
 
@@ -48,7 +48,7 @@ Atualize `updated:` no frontmatter de cada essay tocado.
 
 ## Convenções
 
-Não pule `/continuity` mesmo que o usuário só tenha pedido "corrige o português de tudo" — se você notar um problema estrutural sério passando por um essay durante o `/proofread`, reporte de qualquer forma ao final, mesmo que fora do escopo original pedido.
+Não pule `/continuity` mesmo que o Usuário só tenha pedido "corrige o português de tudo" — se você notar um problema estrutural sério passando por um essay durante o `/proofread`, reporte de qualquer forma ao final, mesmo que fora do escopo original pedido.
 
 ## Skills relacionadas
 

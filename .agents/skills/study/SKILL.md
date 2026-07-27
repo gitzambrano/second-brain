@@ -20,9 +20,14 @@ Estudar não é ler passivamente — é o ciclo de buscar material, confrontar c
 
 1. **Ancore o ponto de partida.** O que o Usuário já sabe ou já pensa sobre isso? Pergunte antes de despejar informação — estudar em cima do que já existe na cabeça da pessoa rende mais do que uma exposição do zero. Se o tema já toca algo na wiki (`wiki/index.md`, `wiki/concepts/`, `wiki/entities/`), mencione e pergunte se aquilo é o ponto de partida.
 
-2. **Busque material.** Use `WebSearch`/`WebFetch` diretamente para uma exploração rápida, ou rode `/scout` se o objetivo é levantar uma lista mais extensa e curada de fontes candidatas antes de aprofundar. Não é preciso decidir de antemão — comece pequeno (2-3 buscas) e escale se o tema pedir.
+2. **Busque material e resuma com link — nunca devolva só uma lista de fontes.** Uma lista de títulos e links (o que `/scout` já produz sozinho) não é o produto de uma sessão de estudo — o valor de `/study` está em já ter lido. Para cada fonte que entrar na conversa:
+   - `WebFetch` o conteúdo de verdade, não só o snippet de busca.
+   - Escreva um resumo real nas próprias palavras (3-6 frases: claim principal, um dado ou argumento que sustenta, e onde a fonte é fraca ou controversa) — mesma disciplina de paráfrase de `/digest`, nunca reproduza parágrafos.
+   - Sempre com o link da fonte junto do resumo, não separado numa lista à parte.
+   - Comece pequeno (2-3 fontes lidas e resumidas) e escale se o tema pedir mais. Se o objetivo virar "preciso de uma lista mais ampla pra escolher o que ler", aí sim rode `/scout` — ele é mais raso de propósito (título + por que é relevante, sem ler o conteúdo inteiro), pensado pra triagem antes de decidir o que aprofundar aqui.
+   - Se, ao longo da sessão, uma fonte se mostrar central o bastante pra merecer arquivamento permanente (não só o resumo efêmero desta conversa), ofereça formalizar via `/digest` — isso grava o resumo em `wiki/sources/resumos/` e registra em `manifest.md`/`map.md`, o que o resumo em conversa não faz sozinho.
 
-3. **Leia com ceticismo produtivo.** Ao trazer o que encontrou, não apenas resuma — aponte onde as fontes discordam entre si, onde o argumento é fraco, onde falta evidência. Isso é o que diferencia "estudar" de "resumir".
+3. **Leia com ceticismo produtivo.** Não pare no resumo por fonte do passo 2 — cruze os resumos: aponte onde as fontes discordam entre si, onde um argumento é mais fraco que o outro, onde falta evidência. Isso é o que diferencia "estudar" de só empilhar resumos.
 
 4. **Faça perguntas socráticas.** Em vez de só entregar a resposta, devolva perguntas que levem o Usuário a articular a própria posição: "isso bate com o que você pensava sobre X?", "e se Y estiver errado, o que muda no seu argumento?", "como isso se conecta com [[Essay Já Existente]]?". O objetivo é o Usuário sair da sessão com uma posição mais clara, não só mais informação.
 

@@ -2,7 +2,7 @@
 name: query
 description: >
   Responde perguntas usando a base de conhecimento centrada em essays.
-  Use quando o usuário fizer uma pergunta sobre seus essays, quiser
+  Use quando o Usuário fizer uma pergunta sobre seus essays, quiser
   explorar conexões entre temas, disser "o que eu já escrevi sobre X",
   "resume meu ensaio sobre Y", ou quiser buscar na wiki.
 allowed-tools: Bash Read Write Edit Glob Grep

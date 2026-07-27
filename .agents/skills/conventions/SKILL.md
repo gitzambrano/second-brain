@@ -7,9 +7,9 @@ description: >
   estilo de prosa, nomenclatura, imagens, compatibilidade Obsidian,
   conversão de fontes e regra de contradição entre fontes. Não tem fluxo
   próprio — as outras skills (essay, expand, chapter, proofread, polish,
-  continuity, linkify, import, digest, absorb, organize, sweep, pdf, html)
-  leem este arquivo para saber o formato exato a produzir e em que pasta
-  salvar. Consulte também quando o usuário perguntar "qual é a regra de
+  continuity, linkify, import, digest, absorb, handout, organize, sweep,
+  pdf, html) leem este arquivo para saber o formato exato a produzir e em que pasta
+  salvar. Consulte também quando o Usuário perguntar "qual é a regra de
   X" ou "onde isso deveria ficar" sobre a wiki.
 allowed-tools: Read
 ---
@@ -100,7 +100,7 @@ Logo após o `# Título`, com uma linha vazia entre o título e a byline:
 
 ## Estilo de prosa
 
-Vale para todo trecho **escrito ou reescrito pela wiki**. Não se aplica retroativamente a texto original preservado de `raw/`, a menos que o usuário peça `/polish` ou `/proofread` explicitamente.
+Vale para todo trecho **escrito ou reescrito pela wiki**. Não se aplica retroativamente a texto original preservado de `raw/`, a menos que o Usuário peça `/polish` ou `/proofread` explicitamente.
 
 1. **Evitar bullets no corpo do texto.** Prosa argumentativa em parágrafos com transições explícitas. Bullets só em `## Sumário`, `## Referências`, e tabelas quando genuinamente mais claras que prosa (dados numéricos/técnicos). Conteúdo argumentativo em bullets deve virar parágrafo corrido.
 2. **Travessões (—) extremamente raros**: no máximo 1 a 2 no essay inteiro, não por parágrafo. Prefira vírgula, dois-pontos, parênteses, ou reestruture a frase. Ao terminar um trecho, conte os travessões do essay inteiro; acima de 2, reescreva os excedentes. Não contam: o `·` da byline, e o `—` usado como separador de display text em wikilinks do índice (ver abaixo).
@@ -184,7 +184,7 @@ Append-only — nunca editar entradas existentes.
 
 ## Regra de contradição entre fontes
 
-Se uma informação nova (de uma fonte ingerida, ou de algo que o usuário disse) contradiz o que já está escrito numa página da wiki: **não escolha um lado sozinho e não tire a média das duas.** Pare, aponte a contradição ao Usuário citando as duas fontes (a existente e a nova, com localização exata), e só edite a página depois que ele disser qual prevalece ou como as duas coexistem. Isso vale para `/absorb`, `/digest`, `/expand`, `/continuity` e qualquer skill que compare conteúdo novo contra o que já está na wiki.
+Se uma informação nova (de uma fonte ingerida, ou de algo que o Usuário disse) contradiz o que já está escrito numa página da wiki: **não escolha um lado sozinho e não tire a média das duas.** Pare, aponte a contradição ao Usuário citando as duas fontes (a existente e a nova, com localização exata), e só edite a página depois que ele disser qual prevalece ou como as duas coexistem. Isso vale para `/absorb`, `/digest`, `/expand`, `/continuity` e qualquer skill que compare conteúdo novo contra o que já está na wiki.
 
 ## Decisões fechadas
 

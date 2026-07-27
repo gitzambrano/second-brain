@@ -3,7 +3,7 @@ name: proofread
 description: >
   Passada de revisão de português num essay: gramática, ortografia,
   concordância, pontuação, consistência terminológica. Use quando o
-  usuário disser "corrige o português", "dá uma geral na gramática",
+  Usuário disser "corrige o português", "dá uma geral na gramática",
   "revisa a ortografia", ou quiser uma passada só de língua, sem mudar
   conteúdo ou argumento.
 allowed-tools: Bash Read Write Edit Glob Grep

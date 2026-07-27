@@ -2,48 +2,39 @@
 name: essay
 description: >
   Escreve um essay, white paper ou estudo novo do zero, não derivado
-  de uma fonte em raw/. Use quando o usuário quiser escrever um essay,
+  de uma fonte em raw/. Use quando o Usuário quiser escrever um essay,
   rascunhar um white paper, desenvolver uma ideia num essay completo,
   disser "quero escrever sobre X", "cria um ensaio sobre", "vamos
   desenvolver essa ideia", ou quiser ajuda para autorar conteúdo
-  original, profundo e extenso. Sempre comece perguntando a tese
-  central do essay antes de qualquer outra coisa.
+  original, profundo e extenso. Sempre exige um esboço aprovado via
+  /outline antes de escrever qualquer prosa — se não existir, aciona
+  /outline primeiro e só volta aqui depois de aprovado. Única exceção:
+  essay que já chega pronto, escrito pelo próprio autor — isso é
+  /import, não /essay, e não passa por /outline.
 allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch
 ---
 
 # Essay
 
-Parceiro de escrita e pesquisa para criar um essay novo, original, do zero. Diferente de `/import` e `/digest`, não há fonte bruta sendo processada: a ideia nasce da conversa com o usuário, e Claude pesquisa, estrutura e escreve no padrão da wiki. É coautoria: Claude é a extensão da mente do usuário para pesquisa, estruturação e redação, não um ghostwriter que decide sozinho o que o ensaio vai dizer.
+Parceiro de escrita e pesquisa para criar um essay novo, original, do zero. Diferente de `/import` e `/digest`, não há fonte bruta sendo processada: a ideia nasce da conversa com o Usuário, e Claude pesquisa, estrutura e escreve no padrão da wiki. É coautoria: Claude é a extensão da mente do Usuário para pesquisa, estruturação e redação, não um ghostwriter que decide sozinho o que o ensaio vai dizer.
 
 O essay resultante deve ser **extenso, profundo e criativo**, não um resumo nem um esboço: o oposto de um artigo curto de blog, com desenvolvimento real de cada ideia.
 
-## 1. Pergunte a tese central primeiro — sempre
+## 0. Exija um esboço aprovado — sem exceção
 
-Antes de qualquer outra coisa, pergunte qual é a **tese principal** do essay: a posição que ele vai defender, não só o tema. "Quero escrever sobre livre-arbítrio" é um tema; "quero argumentar que o compatibilismo dissolve o problema, não o resolve" é uma tese. Se o usuário só trouxer o tema, peça a tese antes de propor qualquer esboço: pesquisa, estrutura e argumentação seguem essa linha, não o contrário.
+`/essay` nunca escreve prosa sem um esboço aprovado em `plan/drafts/<slug>.md`. Isso é regra, não sugestão:
 
-Depois da tese, confirme rapidamente (sem questionário formal se já vier na mensagem):
+- **Já existe o draft** (Usuário veio de `/outline`, ou citou um esboço já pronto): leia `plan/drafts/<slug>.md`. Tese (`tese:`), tipo, categoria e domínio já estão no frontmatter; a estrutura de capítulos e bullets é o brief de escrita — não proponha esboço novo, desenvolva o que já foi aprovado. Ao concluir o essay (passo 4), apague `plan/drafts/<slug>.md` — o conteúdo já está incorporado.
+- **Não existe draft ainda**: não pergunte tese nem proponha esboço aqui dentro. Rode `/outline` primeiro (mesma conversa, sem exigir que o Usuário digite o comando à parte) e só volte a este skill depois que o esboço estiver aprovado.
+- **Única exceção**: essay que já é texto pronto do próprio autor não passa por aqui — isso é `/import`, que transforma o texto em `.md` preservando-o intacto, sem tese a estruturar porque não há autoria nova acontecendo.
 
-1. **Tipo**: `Ensaio`, `White Paper`, `Brainstorm`, `Estudo` ou `Análise`?
-2. **Categoria temática** (ex: `Filosofia da Mente`, `Dinâmica de Aeronaves`) — usada na byline e no index.
-3. **Domínio**: filosófico, técnico/engenharia, ou misto — isso muda o que a seção 4 exige (ver abaixo).
+## 1. Pesquisar o terreno antes de escrever
 
-## 2. Pesquisar o terreno antes de escrever
+1. **Busque na wiki existente** (`wiki/index.md`, `wiki/concepts/`, `wiki/entities/`) por temas relacionados. Um essay novo deve **linkar e construir sobre** essays/conceitos anteriores do Usuário quando fizer sentido — o esboço aprovado já deve ter listado candidatos em `## Conexões candidatas`, confirme e complete.
+2. Use `WebSearch`/`WebFetch` para embasamento externo, agora capítulo a capítulo, com a profundidade que `/outline` deliberadamente não fez: dados, citações, referências acadêmicas, e — se o domínio for filosófico — as correntes e pensadores relevantes ao argumento. Parafraseie sempre, nunca reproduza trechos longos de fontes de terceiros.
+3. Reporte ao Usuário o que encontrou de relacionado na wiki: *"Isso conversa direto com [[Mente Aumentada]] e [[Second Brain]] — vou linkar os dois."*
 
-1. **Busque na wiki existente** (`wiki/index.md`, `wiki/concepts/`, `wiki/entities/`) por temas relacionados. Um essay novo deve **linkar e construir sobre** essays/conceitos anteriores do usuário quando fizer sentido.
-2. Use `WebSearch`/`WebFetch` para embasamento externo: dados, citações, referências acadêmicas, e — se o domínio for filosófico — as correntes e pensadores relevantes ao argumento. Parafraseie sempre, nunca reproduza trechos longos de fontes de terceiros.
-3. Reporte ao usuário o que encontrou de relacionado na wiki: *"Isso conversa direto com [[Mente Aumentada]] e [[Second Brain]] — vou linkar os dois."*
-
-## 3. Estruturar antes de redigir
-
-Proponha um esboço de capítulos e espere aprovação antes do texto corrido. Estrutura mínima, sempre:
-
-- **Introdução** — situa o problema e apresenta a tese, não só o tema
-- **Capítulos de desenvolvimento** — sem teto artificial de quantidade. Um tema denso pode passar de 10 capítulos; o que importa é que cada um avance um passo real do argumento e prepare o seguinte. Prefira mais capítulos focados a poucos capítulos genéricos: divida quando um capítulo tenta cobrir mais de uma ideia central.
-- **Conclusão** — fecha o argumento aberto na introdução, não introduz ideia nova não preparada antes
-
-Cada capítulo deve se encadear logicamente com o anterior e com o seguinte — nunca uma sequência de seções independentes sob o mesmo título. Ao propor o esboço, mostre explicitamente essa cadeia (o que o capítulo N prepara para o capítulo N+1). Se o desenvolvimento crescer para muitos capítulos, rode `/continuity` ao final para confirmar que a progressão ainda se sustenta do início ao fim.
-
-## 4. Redigir com profundidade real
+## 2. Redigir com profundidade real
 
 Escreva em `wiki/essays/<slug>.md`, Português do Brasil, seguindo o `## Estilo de prosa` de `conventions/SKILL.md` (prosa corrida, travessões extremamente raros).
 
@@ -76,11 +67,11 @@ Aplique as duas seções acima na proporção que o argumento pedir — um essay
 - **`## Referências`** (heading exato) com a bibliografia usada — cite a fonte sempre que possível, nunca afirme um dado ou claim sem verificação.
 - **`## Conexões`** como última seção, só `[[wikilinks]]` para essays/conceitos/entidades relacionados
 
-## 5. Criar/atualizar conceitos e entidades
+## 3. Criar/atualizar conceitos e entidades
 
 Todo conceito, pensador, ou entidade central ao argumento que ainda não tem página própria ganha uma em `wiki/concepts/` ou `wiki/entities/`, linkada de volta ao essay. Nenhum conceito relevante fica sem página só porque "nasceu" num essay criado agora.
 
-## 6. Indexar e logar
+## 4. Indexar e logar
 
 - `wiki/index.md`, categoria certa: `[[filename|Título do Essay]] — resumo de uma linha (sob 120 caracteres)`
 - `wiki/log.md`:
@@ -90,27 +81,29 @@ Todo conceito, pensador, ou entidade central ao argumento que ainda não tem pá
   Tipo: X. Categoria: Y. Conecta com: [[Essay Relacionado]], [[Conceito]].
   ```
 
-## 7. Oferecer exportação e handout
+## 5. Oferecer exportação e handout
 
-Depois de pronto, ofereça `/pdf` ou `/html` conforme o uso (imprimir/anexar vs. mandar link leve), e `/handout` se o usuário for compartilhar um resumo com terceiros. Não gere nenhum dos dois automaticamente.
+Depois de pronto, ofereça `/pdf` ou `/html` conforme o uso (imprimir/anexar vs. mandar link leve), e `/handout` se o Usuário for compartilhar um resumo com terceiros. Não gere nenhum dos dois automaticamente.
 
 ## Diferença em relação a `/import` e `/digest`
 
 | | `/import` | `/digest` | `/essay` |
 |---|---|---|---|
-| Ponto de partida | Arquivo em `raw/`, já pronto | Arquivo em `raw/`, de terceiro | Uma tese, conversa ou brainstorm |
-| Papel do Claude | Arquivista — processa fielmente | Leitor — resume, nunca gera essay | Coautor — pesquisa, estrutura, escreve |
+| Ponto de partida | Arquivo em `raw/`, já pronto | Arquivo em `raw/`, de terceiro | Esboço aprovado via `/outline` |
+| Papel do Claude | Arquivista — processa fielmente | Leitor — resume, nunca gera essay | Coautor — pesquisa e escreve sobre o esboço já aprovado |
 | Texto preservado? | Sim, intacto | N/A (não vira essay) | Não aplicável — texto é gerado |
+| Passa por `/outline`? | Não — já é texto pronto, sem tese a estruturar | N/A — nunca vira essay | Sim, sempre |
 | Pode expandir livremente depois? | Sim, via `/expand` etc. | N/A | Sim |
 
 ## Convenções
 
-- Pergunte a tese antes do esboço, e negocie o esboço antes do texto corrido — ensaios longos são caros de refazer.
+- Nunca escreva prosa sem esboço aprovado — a tese e a estrutura de capítulos são decisão de `/outline`, não deste skill.
 - Nunca invente citações, dados, ou referências — se não pesquisou, não afirme como fato.
 - Toda a wiki é em Português do Brasil.
 
 ## Skills relacionadas
 
+- **`/outline` — obrigatório antes deste skill**, exceto quando a fonte é `/import`. Gera e itera o esboço; `/essay` só entra depois de aprovado.
 - **Iterar sobre este essay** com `/expand`, `/chapter`, `/proofread`, `/polish`, `/continuity`, `/linkify`
 - **Processar novas fontes** com `/import`, `/digest`, ou `/absorb`
 - **Perguntar sobre o que já existe** com `/query`

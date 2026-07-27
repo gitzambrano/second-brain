@@ -3,7 +3,7 @@ name: polish
 description: >
   Passada de estilo de prosa num essay: tom, ritmo, elegância, adesão
   às regras de prosa da wiki (sem bullets no corpo argumentativo,
-  travessões extremamente raros). Use quando o usuário disser "melhora
+  travessões extremamente raros). Use quando o Usuário disser "melhora
   o estilo", "deixa a prosa mais elegante", "tira os bullets daqui",
   "conta os travessões", ou quiser que o texto leia melhor sem mudar o
   que ele argumenta.
@@ -30,7 +30,7 @@ Mantenha a voz do autor e o nível técnico esperado pelo público do essay — 
 
 ## Relatório
 
-Resuma o que foi ajustado (ex: "3 travessões reescritos, 2 blocos de bullets convertidos em prosa no capítulo 4") em vez de mostrar cada frase antes/depois, a menos que o usuário peça o diff.
+Resuma o que foi ajustado (ex: "3 travessões reescritos, 2 blocos de bullets convertidos em prosa no capítulo 4") em vez de mostrar cada frase antes/depois, a menos que o Usuário peça o diff.
 
 ## Depois
 

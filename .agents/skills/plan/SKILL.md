@@ -8,7 +8,7 @@ description: >
   (retomar um item e conduzir o fluxo certo, chamando /study, /essay,
   /import, /digest, /absorb, /continuity ou /expand conforme o caso),
   done (marcar concluído), list (mostrar o plano). Use quando o
-  usuário disser "anota isso pra depois", "o que falta fazer",
+  Usuário disser "anota isso pra depois", "o que falta fazer",
   "retoma aquele item do plano", "tira isso do plano", ou trouxer
   qualquer pendência de longo prazo — de estudar algo a revisar um
   essay a uma tarefa qualquer que não seja sobre a wiki.
@@ -111,7 +111,7 @@ O comando que de fato conduz o trabalho, chamando a skill certa:
    - **Fontes para Ingerir** → siga `/import`, `/digest` ou `/absorb` (o que estiver em `Skill sugerida:`, ou pergunte se estiver vazio).
    - **Revisões** → abra o `Alvo:`, leia por inteiro, e siga `/continuity` (reler e avaliar sem editar) ou `/expand` (se a revisão já revelar que precisa de conteúdo novo) — decida com base no que a `Nota:` do item pede.
    - **Estudos** → siga `/study`.
-   - **Essays Futuros** → siga `/essay`.
+   - **Essays Futuros** → se já existe `plan/drafts/<slug>.md` referenciado na `Nota:`, siga direto `/essay` (ele lê o esboço). Se ainda não existe esqueleto, rode `/outline` primeiro — `/essay` não escreve prosa sem esboço aprovado, exceto quando a fonte é `/import`.
 4. Ao final do trabalho, se o item foi de fato concluído, rode `/plan done` nele. Se só avançou parcialmente, deixe `Status: Em Andamento` e registre o progresso na `Nota:`.
 
 ## `/plan done <item>`

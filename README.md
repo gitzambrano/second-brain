@@ -34,6 +34,7 @@ output/                  tudo que sai da wiki: PDFs, HTMLs, handouts, snapshots 
 | Skill      | Comando              | Uso                                                                                                       |
 | ---------- | -------------------- | --------------------------------------------------------------------------------------------------------- |
 | Essay      | `/essay`           | Criar um essay novo do zero, a partir de uma tese                                                         |
+| Outline    | `/outline`         | Esqueleto do essay (título, capítulos, bullets) — obrigatório antes de `/essay`, exceto `/import`             |
 | Atom       | `/atom`            | Capturar/desenvolver uma nota atômica em `wiki/synthesis/`; promover pra essay quando madura              |
 | Expand     | `/expand`          | Adicionar/corrigir conteúdo substantivo de um essay existente                                            |
 | Chapter    | `/chapter`         | Adicionar, mover, fundir ou dividir capítulo/seção                                                     |

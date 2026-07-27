@@ -4,7 +4,7 @@ description: >
   Audita a continuidade lógica e narrativa de um essay do início ao
   fim: conceitos usados antes de serem explicados, saltos abruptos
   entre seções, tese não sustentada de forma consistente, ou conclusão
-  que não fecha o argumento aberto na introdução. Use quando o usuário
+  que não fecha o argumento aberto na introdução. Use quando o Usuário
   disser "verifica a continuidade", "faz sentido do início ao fim?",
   "a conclusão fecha bem o argumento?", ou depois de uma reorganização/
   adição, para confirmar que o essay ainda se sustenta.
@@ -13,7 +13,7 @@ allowed-tools: Bash Read Grep
 
 # Continuity
 
-Auditoria de coerência lógica e narrativa do essay do início ao fim. **Só diagnostica e reporta — não corrige silenciosamente.** A melhor solução geralmente depende de uma decisão editorial do usuário (adicionar uma ponte, reordenar um bloco, cortar algo que não serve mais ao argumento), então o relatório vem antes de qualquer edição.
+Auditoria de coerência lógica e narrativa do essay do início ao fim. **Só diagnostica e reporta — não corrige silenciosamente.** A melhor solução geralmente depende de uma decisão editorial do Usuário (adicionar uma ponte, reordenar um bloco, cortar algo que não serve mais ao argumento), então o relatório vem antes de qualquer edição.
 
 ## O que verificar
 
@@ -33,7 +33,7 @@ Se o essay passar limpo, diga isso também — não é preciso inventar problema
 
 ## Depois
 
-Se o usuário aprovar as correções propostas, aplique-as usando `/expand` (conteúdo) ou `/chapter` (estrutura), conforme o caso — este skill não edita o essay diretamente. Log só se a auditoria motivou mudanças de fato:
+Se o Usuário aprovar as correções propostas, aplique-as usando `/expand` (conteúdo) ou `/chapter` (estrutura), conforme o caso — este skill não edita o essay diretamente. Log só se a auditoria motivou mudanças de fato:
 ```
 ## [YYYY-MM-DD] continuity | Título do Essay
 Problemas encontrados e correções aplicadas (ou "nenhum problema encontrado").

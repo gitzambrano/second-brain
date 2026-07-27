@@ -20,7 +20,7 @@ Cinco diretórios de topo, cinco papéis:
   - `wiki/index.md` — catálogo mestre, **apenas essays**, por categoria temática.
   - `wiki/log.md` — log cronológico append-only de toda operação.
   - `wiki/status.md` — snapshot do estado atual: foco corrente, perguntas em aberto, pendências. Ponte entre uma sessão e outra — ver skill `/status`.
-- **`plan/`** — plano de longo prazo do Usuário: tarefas, fontes pra ingerir, revisões, estudos e essays futuros — não só sobre a wiki. `plan/plano.md`, em 5 seções fixas — ver skill `/plan`.
+- **`plan/`** — plano de longo prazo do Usuário: tarefas, fontes pra ingerir, revisões, estudos e essays futuros — não só sobre a wiki. `plan/plano.md`, em 5 seções fixas — ver skill `/plan`. `plan/drafts/` guarda esqueletos de essay (título, capítulos, bullets) gerados por `/outline`, antes de virarem texto corrido via `/essay` — ver skill `/outline`.
 - **`output/`** — tudo que sai da wiki para ser consumido fora dela: `output/pdf/`, `output/html/`, `output/handouts/` (cópia `.md`/`.pdf`/`.html` do que está em `wiki/handouts/`), `output/stats/` (snapshots de `/stats`, só quando pedido). Nenhuma subpasta de `output/` é lida como fonte de verdade — se algo de lá precisar voltar a ser fonte, reingira via `raw/`.
 - **`scripts/`** — lint, stats, export (PDF/HTML).
 
@@ -39,6 +39,7 @@ Nomes curtos, sem prefixo — todos vivem em `.agents/skills/<nome>/SKILL.md`.
 | Skill | Comando    | Quando usar                                                    |
 | ----- | ---------- | -------------------------------------------------------------- |
 | Essay | `/essay` | Criar um essay/white paper novo, do zero, a partir de uma tese |
+| Outline | `/outline` | Esqueleto de essay (título, capítulos, bullets) — obrigatório antes de `/essay`, exceto `/import` |
 
 **Iteração em essay existente** (uma skill por tipo de mudança; leia o essay inteiro antes de editar, mesmo em pedidos hiper-locais; se o pedido cruzar mais de um tipo, use as skills em sequência)
 
@@ -73,6 +74,7 @@ Nomes curtos, sem prefixo — todos vivem em `.agents/skills/<nome>/SKILL.md`.
 | -------- | ------------- | ---------------------------------------------------------------------------------------------------------- |
 | Sweep    | `/sweep`    | Varrer todos os essays, chamando`/proofread`, `/polish`, `/continuity`, `/linkify` essay por essay |
 | Organize | `/organize` | Saúde da base inteira: índice, log, mapa de sources, tags, links                                         |
+| Gaps     | `/gaps`     | Cobertura conceitual: termo citado sem página, página sem link em Conexões, desbalanço temático entre categorias |
 | Stats    | `/stats`    | Dashboard read-only: essays por tag/categoria, órfãos, sources sem manifest, plano, synthesis, grafo      |
 | Status   | `/status`   | Ver ou atualizar`wiki/status.md` — ponte entre sessões                                                 |
 

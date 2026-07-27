@@ -3,7 +3,7 @@ name: html
 description: >
   Exporta um ou todos os essays de wiki/essays/ para um arquivo HTML
   standalone e responsivo via scripts/export_essay_html.py
-  (Pandoc). Use quando o usuário disser "exporta esse essay pra HTML",
+  (Pandoc). Use quando o Usuário disser "exporta esse essay pra HTML",
   "manda um link/arquivo HTML desse ensaio", ou quiser uma versão
   web-friendly que abre bem em desktop ou celular sem precisar de
   LaTeX.
@@ -47,9 +47,9 @@ python scripts/export_essay_html.py nome-do-essay --output caminho/custom
 6. **MathJax só é incluído se o essay tiver LaTeX** (`$...$`) — checagem automática por regex antes de montar o comando Pandoc, pra não inflar o HTML de essays sem matemática.
 7. `--embed-resources` embute imagens locais e CSS no próprio arquivo — o `.html` resultante é uma única página que funciona offline e pode ser mandada como anexo.
 
-## Limitação a citar ao usuário
+## Limitação a citar ao Usuário
 
-Quando o essay usa matemática, o MathJax é carregado de um CDN (`cdn.jsdelivr.net`) no momento da exportação: **exportar um essay com LaTeX exige internet**. O HTML já exportado funciona offline depois (o script embute o script, não só referencia). Se a exportação falhar por rede bloqueada, avise o usuário em vez de remover o MathJax silenciosamente, o que quebraria as equações.
+Quando o essay usa matemática, o MathJax é carregado de um CDN (`cdn.jsdelivr.net`) no momento da exportação: **exportar um essay com LaTeX exige internet**. O HTML já exportado funciona offline depois (o script embute o script, não só referencia). Se a exportação falhar por rede bloqueada, avise o Usuário em vez de remover o MathJax silenciosamente, o que quebraria as equações.
 
 ## Exportar um handout em vez de um essay
 
@@ -64,7 +64,7 @@ python scripts/export_essay_html.py <slug-do-essay> --handout --output output/ha
 ## Depois de exportar
 
 1. Confira o output: `OK: <arquivo>.html (<tamanho> KB)` por essay, ou `ERROR` com o `STDERR` do Pandoc.
-2. Avise o usuário do caminho final do(s) HTML(s).
+2. Avise o Usuário do caminho final do(s) HTML(s).
 3. Não precisa atualizar `wiki/log.md` — é export de leitura, não uma operação de conteúdo da wiki.
 
 ## Skills relacionadas

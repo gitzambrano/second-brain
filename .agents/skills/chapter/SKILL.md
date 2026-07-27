@@ -3,7 +3,7 @@ name: chapter
 description: >
   Adiciona, move, funde ou divide um capítulo/seção dentro de um essay
   já existente, ou cria uma página nova de conceito/entidade ligada a
-  ele. Use quando o usuário disser "adiciona um capítulo sobre X",
+  ele. Use quando o Usuário disser "adiciona um capítulo sobre X",
   "junta essas duas seções", "divide esse capítulo em dois", "move
   essa seção pra depois da 3", "cria uma página de conceito pra Y", ou
   quiser mudanças estruturais no essay em vez de mudança de conteúdo
@@ -36,8 +36,8 @@ Leia o essay inteiro antes de mover uma única linha. Reorganização é cara de
 
 Dois modos, dependendo de quem decide a estrutura final:
 
-- **Pontual**: o usuário já sabe o que quer mover/fundir/dividir. Execute exatamente o pedido, depois releia o essay inteiro para checar que as transições na nova ordem ainda fazem sentido — uma seção que antes abria referenciando a anterior pode precisar de ajuste na frase de abertura.
-- **Geral**: o usuário pede para você decidir a melhor estrutura. Proponha um esboço novo de seções, em ordem, e espere aprovação antes de mover texto de fato.
+- **Pontual**: o Usuário já sabe o que quer mover/fundir/dividir. Execute exatamente o pedido, depois releia o essay inteiro para checar que as transições na nova ordem ainda fazem sentido — uma seção que antes abria referenciando a anterior pode precisar de ajuste na frase de abertura.
+- **Geral**: o Usuário pede para você decidir a melhor estrutura. Proponha um esboço novo de seções, em ordem, e espere aprovação antes de mover texto de fato.
 
 Depois de qualquer reorganização, atualize `## Sumário` para refletir a nova ordem e os novos títulos.
 
@@ -48,7 +48,7 @@ Atualize `updated:` no frontmatter. Se a mudança foi de peso (nova seção, reo
 ## [YYYY-MM-DD] chapter | Título do Essay
 Resumo da mudança estrutural.
 ```
-Se existir handout para este essay e a reorganização mudou a tese ou o caminho argumentativo, avise o usuário e ofereça regenerá-lo (`/handout`).
+Se existir handout para este essay e a reorganização mudou a tese ou o caminho argumentativo, avise o Usuário e ofereça regenerá-lo (`/handout`).
 
 ## Convenções
 

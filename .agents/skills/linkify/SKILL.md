@@ -3,7 +3,7 @@ name: linkify
 description: >
   Adiciona links externos a conceitos e termos técnicos ao longo do
   corpo de um essay, e checa os links existentes quanto a validade/
-  relevância. Use quando o usuário disser "adiciona mais links", "essa
+  relevância. Use quando o Usuário disser "adiciona mais links", "essa
   seção não tem nenhum link", "checa se os links ainda funcionam", ou
   depois de escrever/editar uma seção que introduz conceitos,
   pensadores ou termos técnicos novos sem hyperlink na primeira

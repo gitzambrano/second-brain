@@ -3,7 +3,7 @@ name: handout
 description: >
   Gera um handout de uma página para um essay existente, em
   wiki/handouts/: linha de tese, 3 a 5 conclusões em prosa, e link de
-  volta para o essay completo. Use quando o usuário disser "gera um
+  volta para o essay completo. Use quando o Usuário disser "gera um
   handout desse essay", "resume isso numa página pra eu mandar pro
   fulano", ou quiser uma versão executiva rápida de um essay para
   alguém que não vai ler o texto inteiro.
@@ -11,7 +11,7 @@ allowed-tools: Bash Read Write Edit Glob
 ---
 # Handout
 
-Gera `wiki/handouts/<slug-do-essay>.md`: uma versão de uma página do essay, para o usuário mandar rápido pra alguém que não vai ler o white paper inteiro.
+Gera `wiki/handouts/<slug-do-essay>.md`: uma versão de uma página do essay, para o Usuário mandar rápido pra alguém que não vai ler o white paper inteiro.
 
 ## Quando usar
 
@@ -50,21 +50,21 @@ Leia o essay completo: [<Título do Essay>](../essays/<slug>.md)
 
 ## Handout como output
 
-`wiki/handouts/<slug>.md` é a fonte de verdade, versionada e atualizada quando o essay muda. O que o usuário manda pra alguém é um output, igual ao PDF/HTML de um essay. Depois de gerar ou atualizar o handout:
+`wiki/handouts/<slug>.md` é a fonte de verdade, versionada e atualizada quando o essay muda. O que o Usuário manda pra alguém é um output, igual ao PDF/HTML de um essay. Depois de gerar ou atualizar o handout:
 
 1. Copie o arquivo para `output/handouts/<slug>.md`.
-2. Pergunte se o usuário quer também `.pdf` e/ou `.html`, mais apresentáveis para anexar ou mandar por link:
+2. Pergunte se o Usuário quer também `.pdf` e/ou `.html`, mais apresentáveis para anexar ou mandar por link:
 
    ```bash
    python scripts/export_essay.py <slug> --handout --output output/handouts
    python scripts/export_essay_html.py <slug> --handout --output output/handouts
    ```
 
-3. Não gere `.pdf`/`.html` automaticamente — só quando o usuário confirmar que vai usar. O `.md` em `output/handouts/` pode ser copiado sempre, é barato.
+3. Não gere `.pdf`/`.html` automaticamente — só quando o Usuário confirmar que vai usar. O `.md` em `output/handouts/` pode ser copiado sempre, é barato.
 
 ## Depois de gerar
 
-Avise o usuário do caminho do handout (em `wiki/handouts/` e em `output/handouts/`) e pergunte se ele quer o essay completo exportado também (`/pdf` ou `/html`) para anexar junto, caso o destinatário queira aprofundar.
+Avise o Usuário do caminho do handout (em `wiki/handouts/` e em `output/handouts/`) e pergunte se ele quer o essay completo exportado também (`/pdf` ou `/html`) para anexar junto, caso o destinatário queira aprofundar.
 
 ## Skills relacionadas
 
