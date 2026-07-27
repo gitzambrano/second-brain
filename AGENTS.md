@@ -23,7 +23,7 @@ A wiki tem cinco diretórios de topo, cada um com um papel definido:
   - `wiki/log.md` — log cronológico, append-only, de toda operação realizada na wiki.
   - `wiki/status.md` — snapshot do estado atual: foco corrente, perguntas em aberto, pendências. Funciona como ponte entre uma sessão e outra; veja a skill `/status`.
 - **`plan/`** — plano de longo prazo do Usuário.
-  - `plan/plano.md`: tem 5 seções fixas, descritas em`/plan`.
+  - `plan/plano.md`: tem 5 seções fixas, descritas em `/plan`.
   - `plan/drafts/`: esqueletos de essay gerados por `/outline`, antes de virarem texto por `/essay`.
 - **`output/`** — saídas da wiki para compartilhamento externo: `output/pdf/`, `output/html/`, `output/handouts/`, `output/stats/`.
 - **`scripts/`** — scripts de lint, estatísticas e exportação (PDF/HTML).
@@ -34,14 +34,14 @@ A wiki tem cinco diretórios de topo, cada um com um papel definido:
 
 | Skill | Comando   | Quando usar                                                                                                                          |
 | ----- | --------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Atom  | `/atom` | Capturar, desenvolver e promover uma nota atômica em`wiki/synthesis/` — uma ideia solta que ainda não sabe a que essay pertence |
+| Atom  | `/atom` | Capturar, desenvolver e promover uma nota atômica em `wiki/synthesis/` — uma ideia solta que ainda não sabe a que essay pertence |
 
 **Criação**
 
 | Skill   | Comando      | Quando usar                                                                                                                                |
 | ------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | Essay   | `/essay`   | Criar um essay/white paper novo, do zero, a partir de uma tese                                                                             |
-| Outline | `/outline` | Gerar o esqueleto de um essay (título, capítulos, bullets). Obrigatório antes de`/essay`, exceto em fluxos que passam por `/import` |
+| Outline | `/outline` | Gerar o esqueleto de um essay (título, capítulos, bullets). Obrigatório antes de `/essay`, exceto em fluxos que passam por `/import` |
 
 **Iteração em essay existente**
 
@@ -59,14 +59,14 @@ A wiki tem cinco diretórios de topo, cada um com um papel definido:
 | Skill | Comando | Quando usar |
 | ------ | ----------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | Import | `/import` | Quando a fonte já é um ensaio/white paper completo do próprio Usuário: vira essay preservando o texto intacto |
-| Digest | `/digest` | Quando a fonte é de terceiros (paper, livro, clipping, transcrição): resume o conteúdo, mas**nunca** gera um essay |
+| Digest | `/digest` | Quando a fonte é de terceiros (paper, livro, clipping, transcrição): resume o conteúdo, mas **nunca** gera um essay |
 | Absorb | `/absorb` | Sob pedido explícito, enriquece essays/concepts/entities já existentes com uma fonte que já foi ingerida |
 
 **Planejamento**
 
 | Skill | Comando    | Quando usar                                                                                                            |
 | ----- | ---------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Plan  | `/plan`  | Gerenciar`plan/plano.md` e retomar um item, encaminhando para a skill certa (`/study`, `/essay`, `/import`...) |
+| Plan  | `/plan`  | Gerenciar `plan/plano.md` e retomar um item, encaminhando para a skill certa (`/study`, `/essay`, `/import`...) |
 | Study | `/study` | Conduzir uma sessão de estudo de verdade: busca fontes, faz perguntas socráticas, gera conexões                     |
 | Scout | `/scout` | Pesquisar e sugerir fontes candidatas a partir de um item do plano, de um source/ideia existente, ou de um tema livre  |
 
@@ -74,11 +74,11 @@ A wiki tem cinco diretórios de topo, cada um com um papel definido:
 
 | Skill    | Comando       | Quando usar                                                                                                                                |
 | -------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Sweep    | `/sweep`    | Varrer todos os essays ou aplicar várias correções num mesmo essay, chamando`/proofread`, `/polish`, `/continuity` e `/linkify` |
+| Sweep    | `/sweep`    | Varrer todos os essays ou aplicar várias correções num mesmo essay, chamando `/proofread`, `/polish`, `/continuity` e `/linkify` |
 | Organize | `/organize` | Verificar a saúde da base inteira: índice, log, mapa de sources, tags, links                                                             |
 | Gaps     | `/gaps`     | Checar cobertura conceitual: termo citado sem página própria, página sem link em Conexões, desbalanço temático entre categorias      |
 | Stats    | `/stats`    | Gerar um dashboard read-only: essays por tag/categoria, órfãos, sources sem manifest, estado do plano, synthesis, grafo                  |
-| Status   | `/status`   | Ver ou atualizar`wiki/status.md`, a ponte entre sessões                                                                                 |
+| Status   | `/status`   | Ver ou atualizar `wiki/status.md`, a ponte entre sessões                                                                                 |
 
 **Saída**
 
@@ -140,7 +140,7 @@ Vocabulário fechado, que também define a subpasta física em `wiki/sources/`.
 
 Reuse um tipo existente antes de criar um novo: a subpasta é sempre derivada do `Tipo:`, nunca escolhida à mão. As skills `/organize` e `/stats` auditam essa consistência entre o manifesto e o disco.
 
-O formato do manifesto (`wiki/sources/manifest.md`) e do mapa (`wiki/sources/map.md`) está descrito em `conventions/SKILL.md`.
+O formato do manifesto (`wiki/sources/manifest.md`) e do mapa (`wiki/sources/map.md`) estão descritos em `conventions/SKILL.md`.
 
 ## Plano de Longo Prazo
 
