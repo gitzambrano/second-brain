@@ -34,7 +34,7 @@ Só o **corpo do essay** (texto corrido) recebe links externos `[texto](url)`. `
 
 ## O que não fazer
 
-Não adicione um link só para bater o mínimo de 10 — o link deve ser genuinamente relevante ao termo.
+Não adicione um link só para atingir o mínimo de 10 — o link deve ser genuinamente relevante ao termo.
 
 Não linke a mesma entidade duas vezes no mesmo parágrafo.
 

@@ -8,7 +8,7 @@ description: >
   quiser um resumo rápido e o arquivamento correto, não um essay novo.
   Se o Usuário quiser o conteúdo da fonte incorporado a essays/
   conceitos já existentes, isso é /absorb, executado depois deste.
-allowed-tools: Bash Read Write Glob Grep WebSearch WebFetch AskUserQuestion
+allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch AskUserQuestion
 ---
 
 # Digest

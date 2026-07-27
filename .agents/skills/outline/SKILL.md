@@ -95,13 +95,13 @@ Depois de cada rodada, reapresente o esqueleto completo atualizado (não um diff
 
 ## 6. Aprovado — entregar para `/essay`
 
-Quando o Usuário confirmar que o esqueleto está pronto para virar texto, ofereça `/essay` explicitamente. `/essay` lê `plan/drafts/<slug>.md` como brief de escrita (usa os capítulos e bullets já aprovados em vez de propor um esboço novo do zero) e, só quando **todos** os capítulos do esboço estiverem escritos, apaga o arquivo — o conteúdo já está incorporado ao essay e ao `wiki/log.md`. Se o essay ficar parcialmente escrito entre sessões, o draft continua vivo (veja `## Retomar um esboço em andamento` abaixo).
+Quando o Usuário confirmar que o esqueleto está pronto para virar texto, ofereça `/essay` explicitamente. `/essay` lê `plan/drafts/<slug>.md` como brief de escrita, usando os capítulos e bullets já aprovados em vez de propor um esboço novo do zero. Só quando **todos** os capítulos do esboço estiverem escritos, `/essay` apaga o arquivo — o conteúdo já está incorporado ao essay e ao `wiki/log.md`. Se o essay ficar parcialmente escrito entre sessões, o draft continua vivo (veja `## Retomar um esboço em andamento` abaixo).
 
 Se o Usuário preferir deixar para depois em vez de escrever agora, ofereça `/plan add` (seção Essays Futuros) com `Nota:` apontando para `plan/drafts/<slug>.md`, para retomar em outra sessão sem perder o esqueleto.
 
 ## Esboço implicitamente aprovado
 
-Se o pedido do Usuário já trouxer tese e capítulos com detalhe suficiente (título, papel de cada um, conteúdo que dá para virar bullets sem inventar nada), não force uma rodada de aprovação separada: monte o esqueleto (passo 4), mostre-o rapidamente numa única mensagem confirmando o que foi capturado, e já ofereça `/essay` na mesma resposta, em vez de esperar o Usuário aprovar antes de seguir. Só pare para perguntar se algo ficou genuinamente ambíguo — capítulo sem direção clara, tese ainda soando como tema. Pedidos curtos ou vagos continuam pelo fluxo normal dos passos 5 e 6.
+Se o pedido do Usuário já trouxer tese e capítulos com detalhe suficiente (título, papel de cada um, conteúdo que dá para virar bullets sem inventar nada), não force uma rodada de aprovação separada. Monte o esqueleto (passo 4), mostre-o rapidamente numa única mensagem confirmando o que foi capturado, e já ofereça `/essay` na mesma resposta, em vez de esperar o Usuário aprovar antes de seguir. Só pare para perguntar se algo ficou genuinamente ambíguo — capítulo sem direção clara, tese ainda soando como tema. Pedidos curtos ou vagos continuam pelo fluxo normal dos passos 5 e 6.
 
 ## Retomar um esboço em andamento
 

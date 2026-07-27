@@ -27,7 +27,7 @@ A wiki tem cinco diretórios de topo, cada um com um papel definido:
 - **`plan/`** — plano de longo prazo do Usuário.
   - `plan/plano.md`: tem 5 seções fixas, descritas em `/plan`.
   - `plan/drafts/`: esqueletos de essay gerados por `/outline`, antes de virarem texto por `/essay`.
-- **`output/`** — saídas da wiki para compartilhamento externo: `output/pdf/`, `output/html/`, `output/handouts/`, `output/stats/`.
+- **`output/`** — saídas da wiki para compartilhamento externo: `output/pdf/`, `output/html/`, `output/handouts/`, `output/stats/`, `output/graph/`.
 - **`scripts/`** — scripts de lint, estatísticas e exportação (PDF/HTML).
 
 ## Skills Disponíveis
@@ -112,7 +112,7 @@ A wiki tem cinco diretórios de topo, cada um com um papel definido:
 3. **Existem dois tipos de essay**: originais, vindos de `raw/` com o texto intacto além de links e formatação; e criados, escritos pela wiki e livremente editáveis. Detalhes em `conventions/SKILL.md`.
 4. **Todo essay carrega**: frontmatter YAML completo, byline padronizada, `## Sumário`, links externos inline, `## Referências` e `## Conexões`. O formato exato de cada peça está em `conventions/SKILL.md`.
 5. **A prosa deve ser corrida, não listas.** Exceções e formato exato em `conventions/SKILL.md`.
-6. **Regra de links**: essays devem ser ricos em links externos. No corpo do texto, use apenas links externos; em `## Conexões`, use apenas `[[wikilinks]]`. Essays são documentos autocontidos, exportáveis a PDF ou HTML sem perda de informação.
+6. **Regra de links**: essays devem ser ricos em links externos. No corpo do texto, use apenas links externos; em `## Conexões`, use apenas `[[wikilinks]]`. Essays são documentos autocontidos, exportáveis a PDF ou sem perda de informação.
 7. **Travessões (—) devem ser extremamente raros.** Limite exato e alternativas em `conventions/SKILL.md`.
 8. **Ao iterar num essay existente**:
    - Use uma skill por tipo de mudança (`/expand`, `/chapter`, `/proofread`, `/polish`, `/continuity`, `/linkify`, `/review`).
@@ -160,7 +160,7 @@ A pendência de curto prazo (o que ficou em aberto na sessão atual) fica regist
 
 ## Regras Gerais
 
-1. **Nunca modifique arquivos em `wiki/sources/`.**
+1. **Nunca modifique arquivos em `wiki/sources/`.**.
 2. Atualize `wiki/index.md` sempre que um essay for criado ou removido.
 3. Registre toda operação de conteúdo em `wiki/log.md` (append-only); o formato está em `conventions/SKILL.md`.
 4. Toda página da wiki tem frontmatter YAML completo (`tags`, `sources`, `created`, `updated`); o formato está em `conventions/SKILL.md`.

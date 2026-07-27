@@ -195,7 +195,7 @@ Append-only, uma entrada por fonte ingerida:
 ## [YYYY-MM-DD] nome-do-arquivo-original.pdf
 Tipo: [vocabulário controlado, ver AGENTS.md].
 Pasta: wiki/sources/<subpasta-correspondente>/
-Virou: [[Essay Resultante]] (essay novo) | enriqueceu [[Essay Existente]].
+Virou: [[Essay Resultante]] (essay novo) | enriqueceu [[Essay Existente]] | ainda não — ver resumo em wiki/sources/resumos/.
 Verificação: [referências confirmadas | não verificado — checar antes de citar em outro essay].
 ```
 

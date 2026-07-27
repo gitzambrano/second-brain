@@ -100,7 +100,6 @@ Depois de pronto, ofereça `/pdf` ou `/html` conforme o uso (imprimir/anexar vs.
 ## Convenções
 
 - Todo texto adicionado segue `## Estilo de prosa` em `conventions/SKILL.md`
-- Nunca escreva prosa sem esboço aprovado — a tese e a estrutura de capítulos são decisão de `/outline`, não deste skill.
 - Nunca invente citações, dados, ou referências — se não pesquisou, não afirme como fato.
 - Toda a wiki é em Português do Brasil.
 

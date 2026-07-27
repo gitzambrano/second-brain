@@ -8,7 +8,7 @@ description: >
   "/status update" para atualizá-lo ao fechar uma sessão com trabalho
   substancial. Use também quando o Usuário perguntar "onde eu parei",
   "o que falta fazer", ou "atualiza o status".
-allowed-tools: Bash Read Write Edit Glob
+allowed-tools: Bash Read Write Edit Glob AskUserQuestion
 ---
 
 # Status
