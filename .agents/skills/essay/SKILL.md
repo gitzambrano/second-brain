@@ -13,7 +13,6 @@ description: >
   /import, não /essay, e não passa por /outline.
 allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch
 ---
-
 # Essay
 
 Parceiro de escrita e pesquisa para criar um essay novo, original, do zero. Diferente de `/import` e `/digest`, não há fonte bruta sendo processada: a ideia nasce da conversa com o Usuário, e Claude pesquisa, estrutura e escreve no padrão da wiki. É coautoria: Claude é a extensão da mente do Usuário para pesquisa, estruturação e redação, não um ghostwriter que decide sozinho o que o ensaio vai dizer.
@@ -88,16 +87,17 @@ Depois de pronto, ofereça `/pdf` ou `/html` conforme o uso (imprimir/anexar vs.
 
 ## Diferença em relação a `/import` e `/digest`
 
-| | `/import` | `/digest` | `/essay` |
-|---|---|---|---|
-| Ponto de partida | Arquivo em `raw/`, já pronto | Arquivo em `raw/`, de terceiro | Esboço aprovado via `/outline` |
-| Papel do Claude | Arquivista — processa fielmente | Leitor — resume, nunca gera essay | Coautor — pesquisa e escreve sobre o esboço já aprovado |
-| Texto preservado? | Sim, intacto | N/A (não vira essay) | Não aplicável — texto é gerado |
-| Passa por `/outline`? | Não — já é texto pronto, sem tese a estruturar | N/A — nunca vira essay | Sim, sempre |
-| Pode expandir livremente depois? | Sim, via `/expand` etc. | N/A | Sim |
+|                                  | `/import`                                        | `/digest`                        | `/essay`                                                 |
+| -------------------------------- | -------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------- |
+| Ponto de partida                 | Arquivo em`raw/`, já pronto                     | Arquivo em`raw/`, de terceiro    | Esboço aprovado via`/outline`                           |
+| Papel do Claude                  | Arquivista — processa fielmente                   | Leitor — resume, nunca gera essay | Coautor — pesquisa e escreve sobre o esboço já aprovado |
+| Texto preservado?                | Sim, intacto                                       | N/A (não vira essay)              | Não aplicável — texto é gerado                         |
+| Passa por`/outline`?           | Não — já é texto pronto, sem tese a estruturar | N/A — nunca vira essay            | Sim, sempre                                                |
+| Pode expandir livremente depois? | Sim, via`/expand` etc.                           | N/A                                | Sim                                                        |
 
 ## Convenções
 
+- Todo texto adicionado segue o `## Estilo de prosa` de `conventions/SKILL.md`
 - Nunca escreva prosa sem esboço aprovado — a tese e a estrutura de capítulos são decisão de `/outline`, não deste skill.
 - Nunca invente citações, dados, ou referências — se não pesquisou, não afirme como fato.
 - Toda a wiki é em Português do Brasil.

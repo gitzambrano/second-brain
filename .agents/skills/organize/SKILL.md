@@ -12,7 +12,6 @@ description: >
   de corrigir a prosa de um essay específico (isso é /sweep).
 allowed-tools: Bash Read Write Edit Glob Grep
 ---
-
 # Organize
 
 Organiza a base inteira na camada de metadados: índice, log, mapa de sources, tags, plano, synthesis, e a estrutura de pastas como um todo. **Não reescreve prosa de essay** — isso é `/sweep`. Pense em `/organize` como a manutenção do grafo e do catálogo; `/sweep` como a manutenção do texto.
@@ -36,7 +35,7 @@ Organiza a base inteira na camada de metadados: índice, log, mapa de sources, t
 13. **Links de toda a wiki — rode e corrija**: rode `python scripts/lint_all.py` (cobre wikilinks mortos, órfãos, consistência de `index.md`, formatação mecânica, sources/manifesto nos dois sentidos, plano, synthesis, categorias — tudo dos passos acima, em um único relatório). Aplique `python scripts/auto_fix_lint.py` para os achados mecânicos e inequívocos (espaçamento de heading, dois-pontos em display text de wikilink) — sem perguntar. Para cada **wikilink morto** reportado:
     - Se o alvo for claramente um erro de digitação de uma página que existe, corrija agora, sem perguntar.
     - Se o alvo não corresponder a nada existente nem a um erro de digitação óbvio, **não invente ou apague o link silenciosamente** — reporte a lista completa e pergunte o que fazer.
-    Links **externos** (URLs que saíram do ar) não são responsabilidade do `/organize` — isso é `/linkify`, chamado por essay via `/sweep`.
+      Links **externos** (URLs que saíram do ar) não são responsabilidade do `/organize` — isso é `/linkify`, chamado por essay via `/sweep`.
 14. **Grafo**: rode `python scripts/graph.py` para gerar `output/graph/graph.html` (visualização interativa) e `output/graph/graph.md` (versão Mermaid). Ofereça abrir o HTML — é a forma mais rápida de ver clusters isolados, hubs, e partes da wiki que nunca se conectam entre si (ex: ensaios de filosofia que nunca linkam com os de engenharia).
 15. **Exportação** (opcional, só se o Usuário quiser uma checagem completa): rode `python scripts/export_essay.py --all` e `python scripts/export_essay_html.py --all`, confirme que PDFs têm hyperlinks clicáveis, imagens resolvem, `## Conexões` não aparece no PDF e `## Referências`/`## Sumário` aparecem.
 16. **Comunique um resumo priorizado** — nunca cole o relatório bruto. Estruture assim:
@@ -56,6 +55,8 @@ Log:
 Se quiser um snapshot salvo da stats pós-organização, rode `python scripts/stats.py --save`.
 
 ## Convenções
+
+Todo texto adicionado ou corrigido segue o `## Estilo de prosa` de `conventions/SKILL.md`.
 
 Não corrija silenciosamente algo que depende de julgamento editorial (qual claim prevalece numa contradição, se um órfão vira essay ou é removido, se duas categorias devem de fato virar uma só). Correções mecânicas e inequívocas (índice desatualizado, entrada de manifesto faltando, pasta canônica ausente, espaçamento) podem ser aplicadas direto.
 

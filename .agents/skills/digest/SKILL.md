@@ -10,7 +10,6 @@ description: >
   conceitos já existentes, isso é /absorb, executado depois deste.
 allowed-tools: Bash Read Write Glob Grep WebSearch WebFetch
 ---
-
 # Digest
 
 Lê uma fonte que não é um ensaio completo do próprio Usuário, escreve um resumo pra ele e arquiva a fonte organizadamente. **Nunca gera essay.** Se o material for denso o bastante para merecer um essay próprio, avise o Usuário e sugira `/essay` ou `/import` em vez de fazer isso aqui.
@@ -37,6 +36,8 @@ Pergunte se o Usuário quer usar essa fonte para enriquecer algum essay/conceito
 ## Convenções
 
 Resumo é sempre parafraseado nas próprias palavras — nunca reproduza parágrafos inteiros da fonte, mesmo internamente em `wiki/sources/resumos/`. Isso não é um essay: sem `## Sumário`, `## Referências` formal, ou `## Conexões` — é um resumo de uma página, direto ao ponto.
+
+Todo texto adicionado ou corrigido segue o `## Estilo de prosa` de `conventions/SKILL.md`.
 
 ## Skills relacionadas
 

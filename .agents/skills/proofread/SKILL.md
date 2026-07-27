@@ -8,12 +8,13 @@ description: >
   conteúdo ou argumento.
 allowed-tools: Bash Read Write Edit Glob Grep
 ---
-
 # Proofread
 
 Passada geral de português: gramática, ortografia, concordância, pontuação. Não toca em conteúdo ou argumento — só na língua.
 
 ## Regra de abertura
+
+Todo texto adicionado ou corrigido segue o `## Estilo de prosa` de `conventions/SKILL.md`.
 
 Leia o essay inteiro nessa passada, não seção por seção isoladamente. É comum um termo técnico aparecer traduzido de duas formas diferentes em capítulos escritos em momentos distintos, e só a leitura completa pega isso.
 
@@ -38,10 +39,12 @@ Ao reportar, resuma o que foi corrigido em vez de listar cada troca individual �
 ## Depois
 
 Correções pequenas e locais não precisam de entrada no log. Se a passada foi extensa (essay inteiro, muitos pontos corrigidos), log:
+
 ```
 ## [YYYY-MM-DD] proofread | Título do Essay
 Resumo do que foi corrigido.
 ```
+
 Atualize `updated:` no frontmatter.
 
 ## Skills relacionadas

@@ -11,7 +11,6 @@ description: >
   essay do autor.
 allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch
 ---
-
 # Import
 
 Processa uma fonte que **já é** um ensaio, white paper, ou artigo completo escrito pelo próprio Usuário. O texto vira essay preservando-se intacto — Claude aqui é arquivista, não coautor. Para qualquer fonte que não seja do próprio autor (paper de terceiro, livro, web clipping, transcrição), use `/digest`, não este skill.
@@ -41,7 +40,6 @@ Uma única fonte pode tocar 10-15 páginas da wiki. Isso é normal.
 ## Convenções
 
 - **O texto original não é alterado no momento da importação** — só depois, se pedido explicitamente via `/expand`, `/proofread`, etc.
-- `wiki/sources/` está no `.gitignore` — arquivos originais, muitas vezes pesados, não vão pro Git.
 
 ## Skills relacionadas
 

@@ -30,16 +30,16 @@ Nomes curtos, sem prefixo — todos vivem em `.agents/skills/<nome>/SKILL.md`.
 
 **Ideação** (antes de um essay existir)
 
-| Skill | Comando   | Quando usar                                                                                     |
-| ----- | --------- | ------------------------------------------------------------------------------------------------ |
-| Atom  | `/atom` | Capturar, desenvolver e promover uma nota atômica em `wiki/synthesis/` — uma ideia solta que ainda não sabe a que essay pertence |
+| Skill | Comando   | Quando usar                                                                                                                          |
+| ----- | --------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Atom  | `/atom` | Capturar, desenvolver e promover uma nota atômica em`wiki/synthesis/` — uma ideia solta que ainda não sabe a que essay pertence |
 
 **Criação**
 
-| Skill | Comando    | Quando usar                                                    |
-| ----- | ---------- | -------------------------------------------------------------- |
-| Essay | `/essay` | Criar um essay/white paper novo, do zero, a partir de uma tese |
-| Outline | `/outline` | Esqueleto de essay (título, capítulos, bullets) — obrigatório antes de `/essay`, exceto `/import` |
+| Skill   | Comando      | Quando usar                                                                                              |
+| ------- | ------------ | -------------------------------------------------------------------------------------------------------- |
+| Essay   | `/essay`   | Criar um essay/white paper novo, do zero, a partir de uma tese                                           |
+| Outline | `/outline` | Esqueleto de essay (título, capítulos, bullets) — obrigatório antes de`/essay`, exceto `/import` |
 
 **Iteração em essay existente** (uma skill por tipo de mudança; leia o essay inteiro antes de editar, mesmo em pedidos hiper-locais; se o pedido cruzar mais de um tipo, use as skills em sequência)
 
@@ -54,29 +54,29 @@ Nomes curtos, sem prefixo — todos vivem em `.agents/skills/<nome>/SKILL.md`.
 
 **Fontes** (três formas de processar algo que chegou em `raw/`)
 
-| Skill  | Comando     | Quando usar                                                                                               |
-| ------ | ----------- | --------------------------------------------------------------------------------------------------------- |
+| Skill  | Comando     | Quando usar                                                                                                |
+| ------ | ----------- | ---------------------------------------------------------------------------------------------------------- |
 | Import | `/import` | A fonte já é um ensaio/white paper completo do próprio Usuário — vira essay preservando texto intacto |
-| Digest | `/digest` | Fonte de terceiro (paper, livro, clipping, transcrição) — resume,**nunca** gera essay            |
-| Absorb | `/absorb` | Sob pedido explícito, enriquece essays/concepts/entities já existentes com fonte já ingerida           |
+| Digest | `/digest` | Fonte de terceiro (paper, livro, clipping, transcrição) — resume,**nunca** gera essay             |
+| Absorb | `/absorb` | Sob pedido explícito, enriquece essays/concepts/entities já existentes com fonte já ingerida            |
 
 **Planejamento**
 
 | Skill | Comando    | Quando usar                                                                                                 |
 | ----- | ---------- | ----------------------------------------------------------------------------------------------------------- |
-| Plan  | `/plan` | Gerenciar`plan/plano.md` e retomar um item, chamando a skill certa (/study, /essay, /import...)          |
-| Study | `/study` | Sessão de estudo de verdade: busca fontes, perguntas socráticas, gera conexões                            |
+| Plan  | `/plan`  | Gerenciar`plan/plano.md` e retomar um item, chamando a skill certa (/study, /essay, /import...)           |
+| Study | `/study` | Sessão de estudo de verdade: busca fontes, perguntas socráticas, gera conexões                           |
 | Scout | `/scout` | Pesquisar e sugerir fontes candidatas a partir de um item do plano, de um source/ideia, ou de um tema livre |
 
 **Manutenção**
 
-| Skill    | Comando       | Quando usar                                                                                                |
-| -------- | ------------- | ---------------------------------------------------------------------------------------------------------- |
-| Sweep    | `/sweep`    | Varrer todos os essays, chamando`/proofread`, `/polish`, `/continuity`, `/linkify` essay por essay |
-| Organize | `/organize` | Saúde da base inteira: índice, log, mapa de sources, tags, links                                         |
+| Skill    | Comando       | Quando usar                                                                                                           |
+| -------- | ------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Sweep    | `/sweep`    | Varrer todos os essays, chamando`/proofread`, `/polish`, `/continuity`, `/linkify` essay por essay            |
+| Organize | `/organize` | Saúde da base inteira: índice, log, mapa de sources, tags, links                                                    |
 | Gaps     | `/gaps`     | Cobertura conceitual: termo citado sem página, página sem link em Conexões, desbalanço temático entre categorias |
-| Stats    | `/stats`    | Dashboard read-only: essays por tag/categoria, órfãos, sources sem manifest, plano, synthesis, grafo      |
-| Status   | `/status`   | Ver ou atualizar`wiki/status.md` — ponte entre sessões                                                 |
+| Stats    | `/stats`    | Dashboard read-only: essays por tag/categoria, órfãos, sources sem manifest, plano, synthesis, grafo                |
+| Status   | `/status`   | Ver ou atualizar`wiki/status.md` — ponte entre sessões                                                            |
 
 **Saída**
 
@@ -177,7 +177,7 @@ Atualizado por `/import`, `/digest` e `/absorb` no momento do processamento; rev
 
 `wiki/status.md` é o que liga uma sessão à próxima — não `wiki/log.md` (que é histórico cronológico, não estado atual). Mantido pela skill `/status`.
 
-**Abertura de sessão**: se o pedido envolve trabalho substancial na wiki (não uma pergunta pontual), leia `wiki/status.md` primeiro para saber onde o Usuário parou.
+**Abertura de sessão**: se o pedido envolve trabalho substancial na wiki (não uma pergunta pontual), leia `wiki/status.md` primeiro para saber onde o Usuário parou. Sempre leia`.agents/skills/conventions/SKILL.md` para regras de formatação.
 
 **Fechamento de sessão**: depois de trabalho substancial (`/essay`, `/import`, `/digest`, `/absorb`, `/organize`, `/study`, `/plan work`), ofereça `/status update` antes de encerrar.
 

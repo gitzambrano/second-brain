@@ -10,7 +10,6 @@ description: >
   não duplica a lógica deles.
 allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch
 ---
-
 # Sweep
 
 Varre todos os essays de `wiki/essays/` e corrige cada um, chamando os skills focados de iteração em sequência. É um **orquestrador**: a lógica de cada correção vive no skill correspondente, `/sweep` só decide a ordem e agrega o relatório final.
@@ -49,6 +48,8 @@ Atualize `updated:` no frontmatter de cada essay tocado.
 ## Convenções
 
 Não pule `/continuity` mesmo que o Usuário só tenha pedido "corrige o português de tudo" — se você notar um problema estrutural sério passando por um essay durante o `/proofread`, reporte de qualquer forma ao final, mesmo que fora do escopo original pedido.
+
+Todo texto adicionado ou corrigido segue o `## Estilo de prosa` de `conventions/SKILL.md`.
 
 ## Skills relacionadas
 
