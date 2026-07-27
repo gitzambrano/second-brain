@@ -75,6 +75,7 @@ Todo conceito, pensador, ou entidade central ao argumento que ainda não tem pá
 
 - `wiki/index.md`, categoria certa: `[[filename|Título do Essay]] — resumo de uma linha (sob 120 caracteres)`
 - `wiki/log.md`:
+
   ```
   ## [YYYY-MM-DD] essay | Título do Essay
   Tese: uma frase com a posição central defendida.
@@ -107,5 +108,5 @@ Depois de pronto, ofereça `/pdf` ou `/html` conforme o uso (imprimir/anexar vs.
 - **Iterar sobre este essay** com `/expand`, `/chapter`, `/proofread`, `/polish`, `/continuity`, `/linkify`
 - **Processar novas fontes** com `/import`, `/digest`, ou `/absorb`
 - **Perguntar sobre o que já existe** com `/query`
-- **Organizar/auditar a wiki** com `/organize`, `/sweep`, `/stats`
+- **Organizar/auditar a wiki** com `/organize`, `/sweep`, `/stats`, `/gaps`
 - **Se este essay veio de um item do plano** (`plan/plano.md`, seção "Essays Futuros"), rode `/plan done` ao terminar, para tirá-lo do plano
