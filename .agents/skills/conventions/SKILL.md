@@ -63,7 +63,7 @@ Campo `tags:` do frontmatter, vocabulário fechado — evita tags quase-duplicad
 
 **Tags atuais** (fonte da verdade — adicione uma nova aqui só quando um essay não se encaixa em nenhuma existente):
 
-Vida Pessoal · Produtividade · Finanças · Saúde · Aprendizado · Projetos · Diário · Filosofia · Aerodinâmica · Dinâmica de Vôo · Asas Rotativas · Engenharia · Xadrez · Quoridor · Cosmologia · Física · Matemática · Estatística · Epistemologia · Ontologia · Metafísica · Biologia · Psicologia · Consciência · Inteligência Artificial · Computação · Ética · Gestão
+Vida Pessoal · Produtividade · Finanças · Saúde · Aprendizado · Projetos · Diário · Filosofia · Aerodinâmica · Dinâmica de Vôo · Asas Rotativas · Engenharia · Xadrez · Quoridor · Cosmologia · Física · Matemática · Estatística · Epistemologia · Ontologia · Metafísica · Biologia · Psicologia · Consciência · Inteligência Artificial · Computação · Ética · Gestão · Simulação · Lógica · Filosofia da Mente
 
 1. **Reuse antes de criar** — busque em `wiki/index.md` e nos frontmatters já usados.
 2. **Uma tag, uma grafia** — Title Case em Português, nunca uma variante (singular/plural, acento, sinônimo) de tag existente.
