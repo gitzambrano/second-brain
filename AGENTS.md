@@ -111,9 +111,9 @@ A wiki tem cinco diretórios de topo, cada um com um papel definido:
 2. **`wiki/index.md` contém apenas essays**, organizados por categoria temática (Filosofia & Consciência, Engenharia Aeronáutica, Física & Cosmologia, etc.). O formato exato está em `conventions/SKILL.md`.
 3. **Existem dois tipos de essay**: originais, vindos de `raw/` com o texto intacto além de links e formatação; e criados, escritos pela wiki e livremente editáveis. Detalhes em `conventions/SKILL.md`.
 4. **Todo essay carrega**: frontmatter YAML completo, byline padronizada, `## Sumário`, links externos inline, `## Referências` e `## Conexões`. O formato exato de cada peça está em `conventions/SKILL.md`.
-5. **A prosa deve ser corrida, não listas.** Não use bullets, exceto em `## Sumário`, `## Referências` e tabelas. Detalhe completo em `conventions/SKILL.md`.
-6. **Regra de links**: essays devem ser ricos em links externos. No corpo do texto, use apenas links externos; em `## Conexões`, use apenas `[[wikilinks]]`. Essays são documentos autocontidos, exportáveis a PDF ou sem perda de informação.
-7. **Travessões (—) devem ser extremamente raros**: no máximo 1 ou 2 no essay inteiro, nunca mais de um por parágrafo. Prefira vírgula, dois-pontos, parênteses, ou reestruture a frase.
+5. **A prosa deve ser corrida, não listas.** Exceções e formato exato em `conventions/SKILL.md`.
+6. **Regra de links**: essays devem ser ricos em links externos. No corpo do texto, use apenas links externos; em `## Conexões`, use apenas `[[wikilinks]]`. Essays são documentos autocontidos, exportáveis a PDF ou HTML sem perda de informação.
+7. **Travessões (—) devem ser extremamente raros.** Limite exato e alternativas em `conventions/SKILL.md`.
 8. **Ao iterar num essay existente**:
    - Use uma skill por tipo de mudança (`/expand`, `/chapter`, `/proofread`, `/polish`, `/continuity`, `/linkify`, `/review`).
    - Leia o essay inteiro antes de editar, mesmo em pedidos localizados.
@@ -160,7 +160,7 @@ A pendência de curto prazo (o que ficou em aberto na sessão atual) fica regist
 
 ## Regras Gerais
 
-1. **`raw/` é um inbox temporário.** Depois de processar um arquivo, mova o original para a subpasta correta de `wiki/sources/` e deixe `raw/` vazio. **Nunca modifique arquivos em `wiki/sources/`.**
+1. **Nunca modifique arquivos em `wiki/sources/`.**
 2. Atualize `wiki/index.md` sempre que um essay for criado ou removido.
 3. Registre toda operação de conteúdo em `wiki/log.md` (append-only); o formato está em `conventions/SKILL.md`.
 4. Toda página da wiki tem frontmatter YAML completo (`tags`, `sources`, `created`, `updated`); o formato está em `conventions/SKILL.md`.
