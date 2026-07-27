@@ -19,7 +19,9 @@ Gera um `.html` autocontido (CSS e imagens embutidos, um único arquivo) a parti
 - "gera uma versão web desse ensaio"
 - "manda esse essay num formato que abre bem no celular"
 
-Para PDF, use `/pdf` em vez deste skill — não duplique lógica de exportação aqui. Os dois scripts compartilham a mesma preparação de markdown (frontmatter, byline, remoção de Conexões) importando de `export_essay.py`, então qualquer inconsistência entre PDF e HTML normalmente é bug no script, não neste skill.
+Para PDF, use `/pdf` em vez deste skill — não duplique lógica de exportação aqui.
+
+Os dois scripts compartilham a mesma preparação de markdown (frontmatter, byline, remoção de Conexões) importando de `export_essay.py`, então qualquer inconsistência entre PDF e HTML normalmente é bug no script, não neste skill.
 
 ## Uso
 
@@ -49,7 +51,9 @@ python scripts/export_essay_html.py nome-do-essay --output caminho/custom
 
 ## Limitação a citar ao Usuário
 
-Quando o essay usa matemática, o MathJax é carregado de um CDN (`cdn.jsdelivr.net`) no momento da exportação: **exportar um essay com LaTeX exige internet**. O HTML já exportado funciona offline depois (o script embute o script, não só referencia). Se a exportação falhar por rede bloqueada, avise o Usuário em vez de remover o MathJax silenciosamente, o que quebraria as equações.
+Quando o essay usa matemática, o MathJax é carregado de um CDN (`cdn.jsdelivr.net`) no momento da exportação: **exportar um essay com LaTeX exige internet**. O HTML já exportado funciona offline depois (o script embute o script, não só referencia).
+
+Se a exportação falhar por rede bloqueada, avise o Usuário em vez de remover o MathJax silenciosamente, o que quebraria as equações.
 
 ## Exportar um handout em vez de um essay
 

@@ -57,7 +57,9 @@ O mesmo script exporta handouts de `wiki/handouts/` com a flag `--handout`:
 python scripts/export_essay.py <slug-do-essay> --handout --output output/handouts
 ```
 
-Use quando o Usuário quiser mandar o handout como PDF em vez de só o `.md` cru — ver skill `/handout` e `## Arquitetura` (bloco `output/`) no AGENTS.md. O handout não tem `## Conexões`/`## Referências`/`## Sumário`, então esses passos rodam como no-op; o resultado sai com a mesma tipografia dos essays, só mais curto.
+Use quando o Usuário quiser mandar o handout como PDF em vez de só o `.md` cru — ver skill `/handout` e `## Arquitetura` (bloco `output/`) no AGENTS.md.
+
+O handout não tem `## Conexões`/`## Referências`/`## Sumário`, então esses passos rodam como no-op; o resultado sai com a mesma tipografia dos essays, só mais curto.
 
 ## Depois de exportar
 

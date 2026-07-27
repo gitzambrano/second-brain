@@ -101,7 +101,11 @@ Se o Usuário preferir deixar para depois em vez de escrever agora, ofereça `/p
 
 ## O que não fazer
 
-Não escreva prosa em nenhum bullet, nem "só uma frase de exemplo" — isso antecipa decisões de redação que são trabalho de `/essay`. Não pesquise a fundo cada capítulo aqui — a pesquisa detalhada por capítulo é de `/essay`; `/outline` só pesquisa o suficiente para validar a arquitetura. Não crie o arquivo em `wiki/essays/` — isso confundiria `/organize`, `/stats` e `/gaps`, que tratam tudo em `wiki/essays/` como conteúdo publicado.
+Não escreva prosa em nenhum bullet, nem "só uma frase de exemplo" — isso antecipa decisões de redação que são trabalho de `/essay`.
+
+Não pesquise a fundo cada capítulo aqui — a pesquisa detalhada por capítulo é de `/essay`; `/outline` só pesquisa o suficiente para validar a arquitetura.
+
+Não crie o arquivo em `wiki/essays/` — isso confundiria `/organize`, `/stats` e `/gaps`, que tratam tudo em `wiki/essays/` como conteúdo publicado.
 
 ## Depois
 

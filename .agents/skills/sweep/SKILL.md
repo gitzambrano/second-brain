@@ -21,14 +21,19 @@ Varre todos os essays de `wiki/essays/` e corrige cada um, chamando os skills fo
 ## Passo a passo
 
 1. Liste todos os essays em `wiki/essays/` (`ls wiki/essays/*.md` ou `Glob`).
-2. **Passada mecânica primeiro**, por script, antes de qualquer correção de prosa: rode `scripts/lint_all.py` (formatação: linha em branco após heading, labels de capítulo soltos, símbolos residuais, resíduos HTML, blockquote mal usado, contagem de travessões, parágrafos possivelmente não traduzidos para PT-BR) e `scripts/deep_format_check.py`. Aplique os fixes automáticos via `scripts/auto_fix_lint.py` quando o achado for mecânico e inequívoco (ex: linha em branco faltando); para o resto, reporte e peça confirmação. Nessa mesma passada, confirme: frontmatter completo, byline padronizada, ausência de `## Resumo Executivo`, `## Sumário`/`## Referências`/`## Conexões` presentes, nenhum `[[wikilink]]` fora de Conexões.
-3. Para cada essay, na ordem:
+2. **Passada mecânica primeiro**, por script, antes de qualquer correção de prosa:
+   - Rode `scripts/lint_all.py` (formatação: linha em branco após heading, labels de capítulo soltos, símbolos residuais, resíduos HTML, blockquote mal usado, contagem de travessões, parágrafos possivelmente não traduzidos para PT-BR) e `scripts/deep_format_check.py`.
+   - Aplique os fixes automáticos via `scripts/auto_fix_lint.py` quando o achado for mecânico e inequívoco (ex: linha em branco faltando); para o resto, reporte e peça confirmação.
+   - Nessa mesma passada, confirme: frontmatter completo, byline padronizada, ausência de `## Resumo Executivo`, `## Sumário`/`## Referências`/`## Conexões` presentes, nenhum `[[wikilink]]` fora de Conexões.
+   - Essay sem `status:` (essay antigo, pré-campo): proponha `draft` como default e confirme com o Usuário, não aplique em silêncio.
+3. **Pule essays com `status: finalizado` ou `maduro`** — sem perguntar, sem avisar durante a execução (regra completa em `## Status de essay`, `conventions/SKILL.md`). No resumo final, informe quantos foram pulados por status.
+4. Para os demais, na ordem:
    1. **`/continuity`** — se encontrar problema estrutural relevante (salto lógico, conclusão que não fecha o argumento), reporte e pergunte se o Usuário quer que a correção seja aplicada agora ou revisada por ele depois, antes de prosseguir para os passos seguintes neste essay.
    2. **`/proofread`** — passada de português.
    3. **`/polish`** — passada de estilo (bullets, travessões).
    4. **`/linkify`** — checagem e adição de links externos.
-4. Acumule um resumo por essay (o que foi corrigido, o que foi só reportado e aguarda decisão) em vez de expor cada correção individual durante a execução.
-5. Ao final, apresente o relatório consolidado de todos os essays de uma vez.
+5. Acumule um resumo por essay (o que foi corrigido, o que foi só reportado e aguarda decisão) em vez de expor cada correção individual durante a execução.
+6. Ao final, apresente o relatório consolidado de todos os essays de uma vez, incluindo a contagem de pulados por status.
 
 ## Volume e ritmo
 
@@ -40,7 +45,7 @@ Log como uma única entrada consolidada, não uma por essay:
 
 ```
 ## [YYYY-MM-DD] sweep | N essays revisados
-Resumo agregado: X problemas de continuidade reportados, Y correções de português, Z de estilo, W links adicionados/corrigidos.
+Resumo agregado: X problemas de continuidade reportados, Y correções de português, Z de estilo, W links adicionados/corrigidos. K essays pulados por status (finalizado/maduro).
 ```
 
 Atualize `updated:` no frontmatter de cada essay tocado.

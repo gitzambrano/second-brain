@@ -34,7 +34,11 @@ Só o **corpo do essay** (texto corrido) recebe links externos `[texto](url)`. `
 
 ## O que não fazer
 
-Não adicione um link só para bater o mínimo de 10 — o link deve ser genuinamente relevante ao termo. Não linke a mesma entidade duas vezes no mesmo parágrafo. Não transforme isso numa desculpa para reescrever a prosa (isso é `/polish`) — a única mudança de texto aqui é a inserção do markdown do link.
+Não adicione um link só para bater o mínimo de 10 — o link deve ser genuinamente relevante ao termo.
+
+Não linke a mesma entidade duas vezes no mesmo parágrafo.
+
+Não transforme isso numa desculpa para reescrever a prosa (isso é `/polish`) — a única mudança de texto aqui é a inserção do markdown do link.
 
 ## Depois
 
@@ -43,6 +47,10 @@ Atualize `updated:` no frontmatter se algum link foi adicionado/corrigido. Log s
 ## [YYYY-MM-DD] linkify | Título do Essay
 N links adicionados, M links corrigidos.
 ```
+
+## Convenções
+
+Aplique a regra de status do essay (`draft`/`maduro`/`finalizado`, batch vs específico) em `## Status de essay` de `conventions/SKILL.md`.
 
 ## Skills relacionadas
 

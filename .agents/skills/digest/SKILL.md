@@ -35,7 +35,9 @@ Pergunte se o Usuário quer usar essa fonte para enriquecer algum essay/conceito
 
 ## Convenções
 
-Resumo é sempre parafraseado nas próprias palavras — nunca reproduza parágrafos inteiros da fonte, mesmo internamente em `wiki/sources/resumos/`. Isso não é um essay: sem `## Sumário`, `## Referências` formal, ou `## Conexões` — é um resumo de uma página, direto ao ponto.
+Resumo é sempre parafraseado nas próprias palavras — nunca reproduza parágrafos inteiros da fonte, mesmo internamente em `wiki/sources/resumos/`.
+
+Isso não é um essay: sem `## Sumário`, `## Referências` formal, ou `## Conexões` — é um resumo de uma página, direto ao ponto.
 
 Todo texto adicionado ou corrigido segue o `## Estilo de prosa` de `conventions/SKILL.md`.
 

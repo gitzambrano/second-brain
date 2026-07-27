@@ -52,6 +52,8 @@ Se existir handout para este essay e a reorganização mudou a tese ou o caminho
 
 ## Convenções
 
+Aplique a regra de status do essay (`draft`/`maduro`/`finalizado`, batch vs específico) em `## Status de essay` de `conventions/SKILL.md`.
+
 Texto novo segue o `## Estilo de prosa` de `conventions/SKILL.md`. Não invente conteúdo para preencher uma seção nova sem ter material — se o pedido for só "cria um capítulo sobre X" sem mais direção, trate como um pedido de `/expand` primeiro (perguntar o que deve entrar), e só então estruture aqui.
 
 ## Skills relacionadas

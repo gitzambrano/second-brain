@@ -14,7 +14,9 @@ allowed-tools: WebSearch WebFetch Read Write Edit Glob
 
 Encontra candidatos a fonte e devolve uma lista curta e justificada — nunca baixa, nunca move para `raw/`, nunca ingere sozinho. Quem decide o que vale a pena ler é o Usuário; `/scout` só reduz o trabalho de busca.
 
-**Escopo deliberadamente raso**: `/scout` lista candidatos com uma frase de justificativa cada, não lê o conteúdo inteiro nem produz resumo. Para leitura de verdade — `WebFetch` do conteúdo, resumo parafraseado de verdade, link junto do resumo — isso é `/study`, não `/scout`. Use `/scout` pra triagem ampla ("quais dessas 8 fontes valem meu tempo"); use `/study` quando já se sabe que vale ler e o objetivo é sair com compreensão, não só uma lista.
+**Escopo deliberadamente raso**: `/scout` lista candidatos com uma frase de justificativa cada, não lê o conteúdo inteiro nem produz resumo. Para leitura de verdade — `WebFetch` do conteúdo, resumo parafraseado de verdade, link junto do resumo — isso é `/study`, não `/scout`.
+
+Use `/scout` pra triagem ampla ("quais dessas 8 fontes valem meu tempo"); use `/study` quando já se sabe que vale ler e o objetivo é sair com compreensão, não só uma lista.
 
 ## Pontos de partida (qualquer um dos três)
 

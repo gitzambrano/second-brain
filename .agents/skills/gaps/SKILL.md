@@ -39,7 +39,11 @@ Audita **cobertura**: o que devia existir na wiki e não existe, ou o que já ex
 
 ## O que não fazer
 
-Não crie página nem insira wikilink sem confirmação — mesmo um candidato com frequência alta pode ser um heurístico capturando ruído (nome comum, título de seção, sigla). Não rode isso como parte automática de `/organize` ou `/sweep` — é uma auditoria pesada e específica, chamada sob demanda. Não tente ajustar o threshold do script pra "pegar tudo" — mais ruído satura o Usuário mais do que ajuda; se o threshold atual (`MIN_ESSAY_HITS`, `MIN_TOTAL_HITS` no topo do script) estiver claramente errado pro tamanho atual da wiki, ajuste com o Usuário, não sozinho.
+Não crie página nem insira wikilink sem confirmação — mesmo um candidato com frequência alta pode ser um heurístico capturando ruído (nome comum, título de seção, sigla).
+
+Não rode isso como parte automática de `/organize` ou `/sweep` — é uma auditoria pesada e específica, chamada sob demanda.
+
+Não tente ajustar o threshold do script pra "pegar tudo" — mais ruído satura o Usuário mais do que ajuda; se o threshold atual (`MIN_ESSAY_HITS`, `MIN_TOTAL_HITS` no topo do script) estiver claramente errado pro tamanho atual da wiki, ajuste com o Usuário, não sozinho.
 
 ## Depois
 

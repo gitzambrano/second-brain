@@ -126,7 +126,15 @@ def main():
                 report.append(f"ERROR: {rel_path} frontmatter missing field: '{field}'")
             elif field in ["tags", "sources"] and not isinstance(fm_data[field], list):
                 report.append(f"ERROR: {rel_path} frontmatter field '{field}' must be a list (got {type(fm_data[field])})")
-                
+
+        # Verify essay status field (controlled vocabulary, essays only)
+        VALID_STATUS = {"draft", "maduro", "finalizado"}
+        status = fm_data.get("status")
+        if status is None:
+            report.append(f"ERROR: {rel_path} frontmatter missing field: 'status' (expected one of {sorted(VALID_STATUS)})")
+        elif status not in VALID_STATUS:
+            report.append(f"ERROR: {rel_path} frontmatter field 'status' has invalid value '{status}' (expected one of {sorted(VALID_STATUS)})")
+
         # Check H1 Title and Byline
         title = get_h1(content)
         if not title:

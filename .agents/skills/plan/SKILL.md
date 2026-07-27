@@ -31,7 +31,9 @@ Não confunda com `wiki/status.md` (skill `/status`): isso é pendência de **se
 4. **Estudos** — algo que o Usuário quer aprender, ainda em fase de exploração, sem fonte fechada nem tese formada.
 5. **Essays Futuros** — ideia de essay/white paper já suficientemente madura (tese em esboço), só falta escrever.
 
-Essa ordem não é arbitrária: cada categoria pressupõe menos trabalho prévio de exploração e mais trabalho de execução do que a seguinte — Tarefas e Fontes para Ingerir são "só fazer", Revisões e Estudos ainda pedem leitura/reflexão, Essays Futuros é o que está mais perto de virar conteúdo. Ao mostrar `/plan list`, respeite essa ordem — é ela que sugere por onde começar quando o Usuário não sabe o que priorizar.
+Essa ordem não é arbitrária: cada categoria pressupõe menos trabalho prévio de exploração e mais trabalho de execução do que a seguinte — Tarefas e Fontes para Ingerir são "só fazer", Revisões e Estudos ainda pedem leitura/reflexão, Essays Futuros é o que está mais perto de virar conteúdo.
+
+Ao mostrar `/plan list`, respeite essa ordem — é ela que sugere por onde começar quando o Usuário não sabe o que priorizar.
 
 ## Formato de `plan/plano.md`
 
@@ -91,7 +93,7 @@ Essa ordem não é arbitrária: cada categoria pressupõe menos trabalho prévio
 - Nota: a tese/ideia central, já esboçada.
 ```
 
-As 5 seções (`##`) sempre existem, mesmo vazias, para o Índice não quebrar. Dentro de cada seção, itens (`###`) não têm ordem obrigatória. `Tópico:` é livre, mas segue a mesma disciplina de reuso do vocabulário de tags (ver `AGENTS.md`) — não crie um tópico novo se um existente já cobre a mesma área.
+As 5 seções (`##`) sempre existem, mesmo vazias, para o Índice não quebrar. Dentro de cada seção, itens (`###`) não têm ordem obrigatória. `Tópico:` é livre, mas segue a mesma disciplina de reuso do vocabulário de tags (ver `conventions/SKILL.md`) — não crie um tópico novo se um existente já cobre a mesma área.
 
 ## `/plan add`
 

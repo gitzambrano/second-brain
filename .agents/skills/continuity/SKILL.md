@@ -39,6 +39,10 @@ Se o Usuário aprovar as correções propostas, aplique-as usando `/expand` (con
 Problemas encontrados e correções aplicadas (ou "nenhum problema encontrado").
 ```
 
+## Convenções
+
+Aplique a regra de status do essay (`draft`/`maduro`/`finalizado`, batch vs específico) em `## Status de essay` de `conventions/SKILL.md`.
+
 ## Skills relacionadas
 
 - `/chapter` — para aplicar correções de reordenação apontadas aqui

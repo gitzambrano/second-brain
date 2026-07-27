@@ -47,6 +47,10 @@ Resumo do que foi corrigido.
 
 Atualize `updated:` no frontmatter.
 
+## Convenções
+
+Aplique a regra de status do essay (`draft`/`maduro`/`finalizado`, batch vs específico) em `## Status de essay` de `conventions/SKILL.md`.
+
 ## Skills relacionadas
 
 - `/polish` — tom e ritmo de prosa, não gramática

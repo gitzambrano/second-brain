@@ -40,6 +40,10 @@ Atualize `updated:` no frontmatter. Log se o ajuste foi extenso:
 Resumo do ajuste de estilo.
 ```
 
+## Convenções
+
+Aplique a regra de status do essay (`draft`/`maduro`/`finalizado`, batch vs específico) em `## Status de essay` de `conventions/SKILL.md`.
+
 ## Skills relacionadas
 
 - `/proofread` — gramática e ortografia, não tom

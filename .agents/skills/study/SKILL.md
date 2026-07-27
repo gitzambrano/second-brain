@@ -14,7 +14,9 @@ allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch
 
 # Study
 
-Estudar não é ler passivamente — é o ciclo de buscar material, confrontar com o que o Usuário já pensa, e deixar a compreensão ficar mais precisa a cada volta. Essa skill conduz esse ciclo dentro da sessão atual. Ela não decide sozinha quando um assunto "acabou de ser estudado" e virou conteúdo de wiki — isso é decisão do Usuário, geralmente via `/atom` (se virou uma ideia atômica) ou `/essay` (se já virou uma tese completa).
+Estudar não é ler passivamente — é o ciclo de buscar material, confrontar com o que o Usuário já pensa, e deixar a compreensão ficar mais precisa a cada volta. Essa skill conduz esse ciclo dentro da sessão atual.
+
+Ela não decide sozinha quando um assunto "acabou de ser estudado" e virou conteúdo de wiki — isso é decisão do Usuário, geralmente via `/atom` (se virou uma ideia atômica) ou `/essay` (se já virou uma tese completa).
 
 ## O ciclo
 
@@ -55,7 +57,11 @@ Estudar não é ler passivamente — é o ciclo de buscar material, confrontar c
 
 ## O que não fazer
 
-Não decida sozinho quando "encerrar" o estudo de um tema — isso é sempre negociado com o Usuário no fechamento do ciclo. Não pule direto pra `/essay` só porque o tema é rico — a maioria das sessões de estudo não produz um essay inteiro, e forçar isso é pior do que deixar a ideia decantar como nota atômica ou item de plano. Não confunda `/study` com `/query` — `/query` responde uma pergunta pontual usando o que **já está** na wiki; `/study` é uma sessão de exploração que pode trazer material **novo**, de fora da wiki.
+Não decida sozinho quando "encerrar" o estudo de um tema — isso é sempre negociado com o Usuário no fechamento do ciclo.
+
+Não pule direto pra `/essay` só porque o tema é rico — a maioria das sessões de estudo não produz um essay inteiro, e forçar isso é pior do que deixar a ideia decantar como nota atômica ou item de plano.
+
+Não confunda `/study` com `/query` — `/query` responde uma pergunta pontual usando o que **já está** na wiki; `/study` é uma sessão de exploração que pode trazer material **novo**, de fora da wiki.
 
 ## Skills relacionadas
 

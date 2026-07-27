@@ -15,7 +15,9 @@ allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch
 ---
 # Essay
 
-Parceiro de escrita e pesquisa para criar um essay novo, original, do zero. Diferente de `/import` e `/digest`, não há fonte bruta sendo processada: a ideia nasce da conversa com o Usuário, e Claude pesquisa, estrutura e escreve no padrão da wiki. É coautoria: Claude é a extensão da mente do Usuário para pesquisa, estruturação e redação, não um ghostwriter que decide sozinho o que o ensaio vai dizer.
+Parceiro de escrita e pesquisa para criar um essay novo, original, do zero. Diferente de `/import` e `/digest`, não há fonte bruta sendo processada: a ideia nasce da conversa com o Usuário, e Claude pesquisa, estrutura e escreve no padrão da wiki.
+
+É coautoria: Claude é a extensão da mente do Usuário para pesquisa, estruturação e redação, não um ghostwriter que decide sozinho o que o ensaio vai dizer.
 
 O essay resultante deve ser **extenso, profundo e criativo**, não um resumo nem um esboço: o oposto de um artigo curto de blog, com desenvolvimento real de cada ideia.
 
@@ -58,7 +60,7 @@ Aplique as duas seções acima na proporção que o argumento pedir — um essay
 
 ### Checklist obrigatório (todo domínio)
 
-- **Frontmatter YAML**: `tags` (reuse do vocabulário controlado — só crie tag nova se nenhuma existente cobrir o tema), `sources`, `created`, `updated`
+- **Frontmatter YAML**: `tags` (reuse do vocabulário controlado — só crie tag nova se nenhuma existente cobrir o tema), `sources`, `created`, `updated`, `status: draft` (ver `## Status de essay` em `conventions/SKILL.md`)
 - **Título** `# Título do Essay`, linha em branco, byline (`> Tipo · Categoria`, `> Gustavo Zambrano · Mês de Ano`, sem `:`, sem `[[wikilinks]]`)
 - **Sem resumo condensado dentro do essay** — vai direto da byline pro `## Sumário`; a introdução (primeira seção `##`) cumpre esse papel. Resumo de uma página é handout (`/handout`), nunca seção do essay.
 - **`## Sumário`** logo após a byline, com links para cada seção `##` (exceto Referências e Conexões)

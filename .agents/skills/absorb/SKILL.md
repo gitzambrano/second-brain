@@ -29,7 +29,9 @@ Uma única fonte pode tocar 10-15 páginas. Isso é normal.
 
 ## Convenções
 
-Se a atualização de um essay for grande o bastante para mudar a tese central, avise o Usuário e ofereça regenerar o handout (`/handout`) se um existir. Se o conteúdo absorvido contradiz o que já está escrito, não substitua silenciosamente — sinalize a contradição e cite as duas fontes, deixando a decisão editorial (qual prevalece, ou se ambas as visões devem conviver) para o Usuário.
+Se a atualização de um essay for grande o bastante para mudar a tese central, avise o Usuário e ofereça regenerar o handout (`/handout`) se um existir.
+
+Se o conteúdo absorvido contradiz o que já está escrito, não substitua silenciosamente — sinalize a contradição e cite as duas fontes, deixando a decisão editorial (qual prevalece, ou se ambas as visões devem conviver) para o Usuário.
 
 Todo texto adicionado ou corrigido segue o `## Estilo de prosa` de `conventions/SKILL.md`.
 

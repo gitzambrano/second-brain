@@ -16,7 +16,9 @@ allowed-tools: Bash Read Write Edit Glob Grep
 
 # Atom
 
-Segura o espaço entre "um insight solto" e "um essay completo": a nota atômica. Uma nota atômica trata de **uma ideia só**, densa o bastante para ser útil, mas sem o aparato de um essay (sem `## Sumário`, sem mínimo de 10 links, sem tese sustentada do início ao fim). Existe para não forçar toda ideia nova a nascer como capítulo de algo ou como página de concept — muita ideia boa fica meses "rondando" antes de encontrar seu essay, e sem um lugar pra isso ela se perde entre sessões ou é forçada cedo demais numa estrutura que ainda não cabe nela.
+Segura o espaço entre "um insight solto" e "um essay completo": a nota atômica. Uma nota atômica trata de **uma ideia só**, densa o bastante para ser útil, mas sem o aparato de um essay (sem `## Sumário`, sem mínimo de 10 links, sem tese sustentada do início ao fim).
+
+Existe para não forçar toda ideia nova a nascer como capítulo de algo ou como página de concept — muita ideia boa fica meses "rondando" antes de encontrar seu essay, e sem um lugar pra isso ela se perde entre sessões ou é forçada cedo demais numa estrutura que ainda não cabe nela.
 
 Vive em `wiki/synthesis/`, ao lado das comparações curtas que `/query` gera — mas com `tipo: nota-atomica` no frontmatter para não confundir os dois (ver `## Formato de páginas em wiki/synthesis/` em `conventions/SKILL.md`).
 
@@ -83,7 +85,11 @@ Leva uma nota `madura` para o conteúdo de fato da wiki. Nunca promove uma nota 
 
 ## O que não fazer
 
-Não crie uma nota atômica para algo que já é claramente um essay completo na cabeça do Usuário — isso é `/essay` direto, a nota atômica existiria só como um passo morto no meio. Não crie uma nota atômica para uma comparação/síntese que `/query` já cobre (isso é `tipo: comparacao`, não `nota-atomica`). Não deixe notas `solta` acumularem por muito tempo sem nunca virarem `germinando` — se `/stats`/`/organize` sinalizarem várias soltas antigas, isso é sinal de que vale uma sessão de `/atom develop` em lote, ou de que algumas devem ser arquivadas por não terem vingado (pergunte ao Usuário, não decida sozinho).
+Não crie uma nota atômica para algo que já é claramente um essay completo na cabeça do Usuário — isso é `/essay` direto, a nota atômica existiria só como um passo morto no meio.
+
+Não crie uma nota atômica para uma comparação/síntese que `/query` já cobre (isso é `tipo: comparacao`, não `nota-atomica`).
+
+Não deixe notas `solta` acumularem por muito tempo sem nunca virarem `germinando` — se `/stats`/`/organize` sinalizarem várias soltas antigas, isso é sinal de que vale uma sessão de `/atom develop` em lote, ou de que algumas devem ser arquivadas por não terem vingado (pergunte ao Usuário, não decida sozinho).
 
 ## Skills relacionadas
 
