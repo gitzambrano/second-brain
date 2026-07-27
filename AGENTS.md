@@ -34,51 +34,53 @@ A wiki tem cinco diretórios de topo, cada um com um papel definido:
 
 | Skill | Comando   | Quando usar                                                                                                                          |
 | ----- | --------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| Atom  | `/atom` | Capturar, desenvolver e promover uma nota atômica em `wiki/synthesis/` — uma ideia solta que ainda não sabe a que essay pertence |
+| Atom  | `/atom` | Capturar, desenvolver e promover uma nota atômica em`wiki/synthesis/` — uma ideia solta que ainda não sabe a que essay pertence |
 
 **Criação**
 
 | Skill   | Comando      | Quando usar                                                                                                                                |
 | ------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
 | Essay   | `/essay`   | Criar um essay/white paper novo, do zero, a partir de uma tese                                                                             |
-| Outline | `/outline` | Gerar o esqueleto de um essay (título, capítulos, bullets). Obrigatório antes de `/essay`, exceto em fluxos que passam por `/import` |
+| Outline | `/outline` | Gerar o esqueleto de um essay (título, capítulos, bullets). Obrigatório antes de`/essay`, exceto em fluxos que passam por `/import` |
 
 **Iteração em essay existente**
 
-| Skill      | Comando         | Quando usar                                                                                          |
-| ---------- | --------------- | ---------------------------------------------------------------------------------------------------- |
-| Expand     | `/expand`     | Adicionar ou corrigir conteúdo substantivo: teses, conceitos, exemplos, correções conceituais     |
-| Chapter    | `/chapter`    | Adicionar, mover, fundir ou dividir um capítulo/seção, ou criar um concept/entity ligado ao essay |
-| Proofread  | `/proofread`  | Revisão de português                                                                               |
-| Polish     | `/polish`     | Revisão de estilo de prosa                                                                          |
-| Continuity | `/continuity` | Auditoria de continuidade lógica e narrativa                                                        |
-| Linkify    | `/linkify`    | Adicionar e checar links externos                                                                    |
+| Skill      | Comando         | Quando usar                                                                                                                                                                  |
+| ---------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Expand     | `/expand`     | Adicionar ou corrigir conteúdo substantivo: teses, conceitos, exemplos, correções conceituais                                                                             |
+| Chapter    | `/chapter`    | Adicionar, mover, fundir ou dividir um capítulo/seção, ou criar um concept/entity ligado ao essay                                                                         |
+| Proofread  | `/proofread`  | Revisão de português                                                                                                                                                       |
+| Polish     | `/polish`     | Revisão de estilo de prosa                                                                                                                                                  |
+| Continuity | `/continuity` | Auditoria de continuidade lógica e narrativa                                                                                                                                |
+| Linkify    | `/linkify`    | Adicionar e checar links externos                                                                                                                                            |
+| Review     | `/review`     | Peer review de conteúdo: validade argumentativa, profundidade filosófica/científica, gaps, ausência de citações, sugestões de experimentos mentais, exemplos e fontes |
 
 **Fontes** (três formas de processar algo que chegou em `raw/`)
 
 | Skill | Comando | Quando usar |
 | ------ | ----------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | Import | `/import` | Quando a fonte já é um ensaio/white paper completo do próprio Usuário: vira essay preservando o texto intacto |
-| Digest | `/digest` | Quando a fonte é de terceiros (paper, livro, clipping, transcrição): resume o conteúdo, mas **nunca** gera um essay |
+| Digest | `/digest` | Quando a fonte é de terceiros (paper, livro, clipping, transcrição): resume o conteúdo, mas**nunca** gera um essay |
 | Absorb | `/absorb` | Sob pedido explícito, enriquece essays/concepts/entities já existentes com uma fonte que já foi ingerida |
 
 **Planejamento**
 
 | Skill | Comando    | Quando usar                                                                                                            |
 | ----- | ---------- | ---------------------------------------------------------------------------------------------------------------------- |
-| Plan  | `/plan`  | Gerenciar `plan/plano.md` e retomar um item, encaminhando para a skill certa (`/study`, `/essay`, `/import`...) |
+| Plan  | `/plan`  | Gerenciar`plan/plano.md` e retomar um item, encaminhando para a skill certa (`/study`, `/essay`, `/import`...) |
 | Study | `/study` | Conduzir uma sessão de estudo de verdade: busca fontes, faz perguntas socráticas, gera conexões                     |
 | Scout | `/scout` | Pesquisar e sugerir fontes candidatas a partir de um item do plano, de um source/ideia existente, ou de um tema livre  |
 
 **Manutenção**
 
-| Skill    | Comando       | Quando usar                                                                                                                                |
-| -------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Sweep    | `/sweep`    | Varrer todos os essays ou aplicar várias correções num mesmo essay, chamando `/proofread`, `/polish`, `/continuity` e `/linkify` |
-| Organize | `/organize` | Verificar a saúde da base inteira: índice, log, mapa de sources, tags, links                                                             |
-| Gaps     | `/gaps`     | Checar cobertura conceitual: termo citado sem página própria, página sem link em Conexões, desbalanço temático entre categorias      |
-| Stats    | `/stats`    | Gerar um dashboard read-only: essays por tag/categoria, órfãos, sources sem manifest, estado do plano, synthesis, grafo                  |
-| Status   | `/status`   | Ver ou atualizar `wiki/status.md`, a ponte entre sessões                                                                                 |
+| Skill    | Comando       | Quando usar                                                                                                                                                                                                              |
+| -------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Sweep    | `/sweep`    | Orquestrar a bateria completa de revisão num essay ou no corpus inteiro:`/format` → `/continuity` → `/proofread` → `/polish` → `/linkify`. Aceita `/sweep` (corpus) ou `/sweep <slug>` (essay único) |
+| Format   | `/format`   | Auditoria mecânica de formatação: estrutura, byline, LaTeX, aspas, espaçamento, Obsidian-compat. Aplica fixes automáticos via`auto_fix_lint.py` e reporta o restante                                              |
+| Organize | `/organize` | Verificar a saúde da base inteira: índice, log, mapa de sources, tags, links                                                                                                                                           |
+| Gaps     | `/gaps`     | Checar cobertura conceitual: termo citado sem página própria, página sem link em Conexões, desbalanço temático entre categorias                                                                                    |
+| Stats    | `/stats`    | Gerar um dashboard read-only: essays por tag/categoria, órfãos, sources sem manifest, estado do plano, synthesis, grafo                                                                                                |
+| Status   | `/status`   | Ver ou atualizar`wiki/status.md`, a ponte entre sessões                                                                                                                                                               |
 
 **Saída**
 
@@ -108,10 +110,10 @@ A wiki tem cinco diretórios de topo, cada um com um papel definido:
 3. **Existem dois tipos de essay**: originais, vindos de `raw/` com o texto intacto além de links e formatação; e criados, escritos pela wiki e livremente editáveis. Detalhes em `conventions/SKILL.md`.
 4. **Todo essay carrega**: frontmatter YAML completo, byline padronizada, `## Sumário`, links externos inline, `## Referências` e `## Conexões`. O formato exato de cada peça está em `conventions/SKILL.md`.
 5. **A prosa deve ser corrida, não listas.** Não use bullets, exceto em `## Sumário`, `## Referências` e tabelas. Detalhe completo em `conventions/SKILL.md`.
-6. **Regra de links**: essays devem ser ricos em links externos. No corpo do texto, use apenas links externos; em `## Conexões`, use apenas `[[wikilinks]]`. Essays são documentos autocontidos, exportáveis a PDF sem perda de informação.
+6. **Regra de links**: essays devem ser ricos em links externos. No corpo do texto, use apenas links externos; em `## Conexões`, use apenas `[[wikilinks]]`. Essays são documentos autocontidos, exportáveis a PDF ou sem perda de informação.
 7. **Travessões (—) devem ser extremamente raros**: no máximo 1 ou 2 no essay inteiro, nunca mais de um por parágrafo. Prefira vírgula, dois-pontos, parênteses, ou reestruture a frase.
 8. **Ao iterar num essay existente**:
-   - Use uma skill por tipo de mudança (`/expand`, `/chapter`, `/proofread`, `/polish`, `/continuity`, `/linkify`).
+   - Use uma skill por tipo de mudança (`/expand`, `/chapter`, `/proofread`, `/polish`, `/continuity`, `/linkify`, `/review`).
    - Leia o essay inteiro antes de editar, mesmo em pedidos localizados.
    - Se o pedido exigir mais de uma skill, aplique-as em sequência.
 
@@ -119,7 +121,7 @@ A wiki tem cinco diretórios de topo, cada um com um papel definido:
 
 ### Tags
 
-O campo `tags:` do frontmatter de todo essay representa o tema do essay, com vocabulário fechado, para evitar que `Filosofia`, `filosofia` e `Filosofia da Mente` virem três tags diferentes.
+O campo `tags:` do frontmatter de todo essay representa o tema do essay, com vocabulário fechado, para evitar que tags parecidas virem três tags diferentes.
 
 Lista atual, as regras de reuso e os critérios para criar uma tag nova estão em `## Tags — Vocabulário Controlado`, em `conventions/SKILL.md`.
 
@@ -152,7 +154,7 @@ O formato do manifesto (`wiki/sources/manifest.md`) e do mapa (`wiki/sources/map
 - **Estudos** — algo a aprender, ainda em exploração.
 - **Essays Futuros** — ideia de essay que já tem uma tese esboçada.
 
-`/plan` nunca produz conteúdo sozinho. Em vez disso, `/plan work` retoma um item e o encaminha para a skill certa: `/study`, `/essay`, `/import`, `/digest`, `/absorb` ou `/expand`. Um item só sai do plano depois disso, via `/plan done`.
+`/plan` nunca produz conteúdo sozinho. Em vez disso, `/plan work` retoma um item e o encaminha para a skill certa: `/study`, `/essay`, `/import`, `/digest`, `/absorb`, `/review` ou `/expand`. Um item só sai do plano depois disso, via `/plan done`.
 
 A pendência de curto prazo (o que ficou em aberto na sessão atual) fica registrada em `wiki/status.md`, não no plano.
 

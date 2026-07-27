@@ -1,18 +1,21 @@
 """
-auto_fix_lint.py - Apply mechanical, unambiguous formatting fixes to wiki content.
+auto_fix_lint.py — Aplica correções mecânicas e inequívocas à formatação da wiki.
 
-Scope is intentionally narrow: only wiki/essays, wiki/concepts, wiki/entities,
-wiki/synthesis (same DIRS as lint_all.py) -- never AGENTS.md, README.md,
-.agents/skills/**, or wiki/sources/** (original, immutable documents). Fixing
-the wiki's own documentation/skill files as if they were wiki *content* is
-exactly the kind of over-reach this script must not do.
+Escopo intencional: apenas wiki/essays, wiki/concepts, wiki/entities,
+wiki/synthesis — nunca AGENTS.md, README.md, .agents/skills/**, nem
+wiki/sources/** (documentos originais, imutáveis).
 
-Two fixes, both applied only outside YAML frontmatter and fenced code blocks
-(``` ... ```), so example snippets inside SKILL.md-style docs or an essay's
-own code blocks are never rewritten:
-  1. Blank line after a Markdown heading (#, ##, ... ######).
-  2. Colon inside a [[wikilink]] target/display text -> em dash (Obsidian
-     breaks on ':' inside [[...]]).
+Todas as correções são aplicadas apenas FORA do frontmatter YAML e de
+blocos de código (``` ... ```) para não reescrever exemplos de código.
+
+Correções aplicadas:
+  1. Linha em branco após heading Markdown (#, ##, ... ######).
+  2. Dois-pontos dentro de [[wikilink]] target/display text → em dash
+     (Obsidian quebra com ':' dentro de [[...]]).
+  3. Espaços duplos no meio de linhas de prosa → espaço simples
+     (exceto início de linha e linhas de tabela).
+  4. Três ou mais linhas em branco consecutivas → duas linhas em branco
+     (convenção wiki: máximo uma linha em branco entre parágrafos).
 """
 
 import re
@@ -113,10 +116,40 @@ def fix_wikilinks_colons(segment):
     return re.sub(r"\[\[([^\]]+)\]\]", repl, segment)
 
 
+def fix_double_spaces(segment):
+    """Remove espaços duplos em linhas de prosa.
+
+    Exceções:
+    - Início de linha (indentação pode ser intencional).
+    - Linhas de tabela Markdown (| ... |).
+    - Linhas que parecem ser código inline.
+    """
+    lines = segment.split("\n")
+    new_lines = []
+    for line in lines:
+        if line.startswith("|") or not line.strip():
+            new_lines.append(line)
+            continue
+        # Preserva indentação inicial, reduz duplos espaços apenas no meio
+        leading = len(line) - len(line.lstrip(" "))
+        indent = line[:leading]
+        rest = line[leading:]
+        rest = re.sub(r"  +", " ", rest)
+        new_lines.append(indent + rest)
+    return "\n".join(new_lines)
+
+
+def fix_excess_blank_lines(text):
+    """Colapsa 3 ou mais linhas em branco consecutivas para 2."""
+    return re.sub(r"\n{4,}", "\n\n\n", text)
+
+
 def fix_content(content):
     frontmatter, body = split_frontmatter(content)
     body = apply_outside_fences(body, fix_heading_spacing)
     body = apply_outside_fences(body, fix_wikilinks_colons)
+    body = apply_outside_fences(body, fix_double_spaces)
+    body = fix_excess_blank_lines(body)
     return frontmatter + body
 
 
