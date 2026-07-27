@@ -133,8 +133,6 @@ Todos vivem em `conventions/SKILL.md` — a fonte única de verdade, para nunca 
 
 Campo `tags:` do frontmatter — 2 a 5 tags por essay, Title Case em Português, tema (não tipo).
 
-**Tags atuais**: Vida Pessoal · Produtividade · Finanças · Saúde · Aprendizado · Projetos · Diário · Filosofia · Aerodinâmica · Dinâmica de Vôo · Engenharia · Xadrez
-
 Uma tag nova só entra quando um essay genuinamente não se encaixa em nenhuma existente — `/organize` audita quase-duplicadas (acento, plural, sinônimo) e propõe consolidação.
 
 ### Status de essay
@@ -145,16 +143,16 @@ Campo `status:` do frontmatter, só em `wiki/essays/` (nunca em concepts/entitie
 
 Campo `Tipo:` do manifesto (`wiki/sources/manifest.md`) — cada tipo determina a subpasta física em `wiki/sources/`:
 
-| Tipo (manifesto)          | Subpasta                  | O que entra aqui                                                                    |
-| -------------------------- | -------------------------- | ------------------------------------------------------------------------------------ |
-| Ensaio Completo Importado  | `ensaio-importado/`        | Ensaio/white paper pronto vindo de fora, que virou essay preservando o texto integral |
-| Web Clipping                | `web-clipping/`             | Recorte de página web: post, thread, matéria online                                |
-| Artigo Acadêmico           | `artigo-academico/`        | Paper com peer review, DOI, ou publicado em periódico/conferência                  |
-| Livro                       | `livro/`                    | Livro ou capítulo, inteiro ou em trecho relevante                                   |
-| Documentação Técnica     | `documentacao-tecnica/`    | Manuais, specs, normas, documentação de ferramenta ou API                          |
-| Transcrição               | `transcricao/`              | Palestra, podcast, entrevista, aula                                                 |
-| Ideias                      | `ideias/`                    | Texto curto e não estruturado, ainda não é ensaio, artigo ou clipping formal      |
-| Outro                       | `outro/`                     | Só quando genuinamente nenhuma categoria acima cobre o caso                        |
+| Tipo (manifesto)          | Subpasta                  | O que entra aqui                                                                      |
+| ------------------------- | ------------------------- | ------------------------------------------------------------------------------------- |
+| Ensaio Completo Importado | `ensaio-importado/`     | Ensaio/white paper pronto vindo de fora, que virou essay preservando o texto integral |
+| Web Clipping              | `web-clipping/`         | Recorte de página web: post, thread, matéria online                                 |
+| Artigo Acadêmico         | `artigo-academico/`     | Paper com peer review, DOI, ou publicado em periódico/conferência                   |
+| Livro                     | `livro/`                | Livro ou capítulo, inteiro ou em trecho relevante                                    |
+| Documentação Técnica   | `documentacao-tecnica/` | Manuais, specs, normas, documentação de ferramenta ou API                           |
+| Transcrição             | `transcricao/`          | Palestra, podcast, entrevista, aula                                                   |
+| Ideias                    | `ideias/`               | Texto curto e não estruturado, ainda não é ensaio, artigo ou clipping formal       |
+| Outro                     | `outro/`                | Só quando genuinamente nenhuma categoria acima cobre o caso                          |
 
 Toda fonte processada também gera uma entrada em `wiki/sources/manifest.md` (proveniência, append-only) e uma linha em `wiki/sources/map.md` (mapa por assunto); ambos são auditados por `/organize`.
 

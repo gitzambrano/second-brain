@@ -14,7 +14,6 @@ description: >
   X" ou "onde isso deveria ficar" sobre a wiki.
 allowed-tools: Read
 ---
-
 # Conventions
 
 Fonte única das regras de formatação e estilo — não executa nada.
@@ -26,15 +25,15 @@ Toda skill que grava ou edita conteúdo segue o que está aqui. Mudou uma regra,
 Toda skill que grava em disco decide onde salvar consultando esta tabela, não por analogia. `/organize` e `/sweep` também a usam para auditar desconexões.
 
 | Pasta | Contém | Quem escreve | Quando |
-| --- | --- | --- | --- |
-| `wiki/essays/` | Ensaios/white papers completos, tese sustentada do início ao fim | `/essay`, `/import` | A ideia já é (ou virou, via `/insight promote`) um argumento completo |
+| ------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| `wiki/essays/` | Ensaios/white papers completos, tese sustentada do início ao fim | `/essay`, `/import` | A ideia já é (ou virou, via`/insight promote`) um argumento completo |
 | `wiki/concepts/` | Definição/explicação curta de um conceito, sem tese própria | `/essay`, `/expand`, `/absorb`, `/digest`, `/chapter` | Um termo é citado mas ainda não tem página própria |
 | `wiki/entities/` | Página curta sobre pessoa/obra/instituição nomeada | mesmas skills que concepts | Uma entidade nomeada é citada mas ainda não tem página própria |
 | `wiki/insights/` | Fragmentos densos de ideia — sementes, sínteses, observações, mini-argumentos | `/insight` (também via `/query`, que passa a ideia para `/insight add`) | Insight novo que ainda não tem lar, não é essay nem concept/entity |
-| `wiki/sources/<tipo>/` | Cópia/referência do documento original, por tipo (vocabulário em `AGENTS.md`) | `/import`, `/digest`, `/absorb` (via `/scout` como triagem) | Toda fonte processada, sempre |
+| `wiki/sources/<tipo>/` | Cópia/referência do documento original, por tipo (vocabulário em`AGENTS.md`) | `/import`, `/digest`, `/absorb` (via `/scout` como triagem) | Toda fonte processada, sempre |
 | `wiki/sources/resumos/` | Resumo de uma página por fonte processada | `/digest` | Toda vez que uma fonte é resumida |
-| `wiki/handouts/` | Versão de uma página de um essay **já existente** | `/handout` | Sempre derivado, sob demanda |
-| `wiki/assets/` | Imagens/figuras referenciadas pelos essays | `/import`, `/digest`, `/absorb` | Fonte processada tem figura embutida (ver `## Tratamento de imagens`) |
+| `wiki/handouts/` | Versão de uma página de um essay**já existente** | `/handout` | Sempre derivado, sob demanda |
+| `wiki/assets/` | Imagens/figuras referenciadas pelos essays | `/import`, `/digest`, `/absorb` | Fonte processada tem figura embutida (ver`## Tratamento de imagens`) |
 | `wiki/book-chapters/` | Reservado para projeto de livro futuro | — | Não usar ainda |
 | `plan/plano.md` | Pendência de longo prazo | `/plan` | Nunca conteúdo de wiki — só intenção de trabalhar algo depois |
 | `wiki/status.md` | Snapshot do estado da sessão atual | `/status` | Ponte entre sessões, não confundir com o plano |
@@ -64,7 +63,7 @@ Campo `tags:` do frontmatter, vocabulário fechado — evita tags quase-duplicad
 
 **Tags atuais** (fonte da verdade — adicione uma nova aqui só quando um essay não se encaixa em nenhuma existente):
 
-Vida Pessoal · Produtividade · Finanças · Saúde · Aprendizado · Projetos · Diário · Filosofia · Aerodinâmica · Dinâmica de Vôo · Engenharia · Xadrez
+Vida Pessoal · Produtividade · Finanças · Saúde · Aprendizado · Projetos · Diário · Filosofia · Aerodinâmica · Dinâmica de Vôo · Asas Rotativas · Engenharia · Xadrez · Quoridor · Cosmologia · Física · Matemática · Estatística · Epistemologia · Ontologia · Metafísica · Biologia · Psicologia · Consciência · Inteligência Artificial · Computação · Ética · Gestão
 
 1. **Reuse antes de criar** — busque em `wiki/index.md` e nos frontmatters já usados.
 2. **Uma tag, uma grafia** — Title Case em Português, nunca uma variante (singular/plural, acento, sinônimo) de tag existente.
