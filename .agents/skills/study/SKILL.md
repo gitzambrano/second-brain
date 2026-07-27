@@ -10,6 +10,9 @@ description: >
   assunto", "não entendo bem Z, me ajuda a entender", ou quando /plan
   estiver retomando um item da seção Estudos.
 allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch AskUserQuestion
+---
+
+# Study
 
 Estudar não é ler passivamente — é o ciclo de buscar material, confrontar com o que o Usuário já pensa, e deixar a compreensão ficar mais precisa a cada volta. Essa skill conduz esse ciclo dentro da sessão atual.
 
@@ -23,8 +26,8 @@ Ela não decide sozinha quando um assunto "acabou de ser estudado" e virou conte
    - `WebFetch` o conteúdo de verdade, não só o snippet de busca.
    - Escreva um resumo real nas próprias palavras (3-6 frases: claim principal, um dado ou argumento que sustenta, e onde a fonte é fraca ou controversa) — mesma disciplina de paráfrase de `/digest`, nunca reproduza parágrafos.
    - Sempre com o link da fonte junto do resumo, não separado numa lista à parte.
-   - Comece pequeno (2-3 fontes lidas e resumidas) e escale se o tema pedir mais. Se o objetivo virar "preciso de uma lista mais ampla pra escolher o que ler", aí sim rode `/scout` — ele é mais raso de propósito (título + por que é relevante, sem ler o conteúdo inteiro), pensado pra triagem antes de decidir o que aprofundar aqui.
-   - Se, ao longo da sessão, uma fonte se mostrar central o bastante pra merecer arquivamento permanente (não só o resumo efêmero desta conversa), ofereça formalizar via `/digest` — isso grava o resumo em `wiki/sources/resumos/` e registra em `manifest.md`/`map.md`, o que o resumo em conversa não faz sozinho.
+   - Comece pequeno (2-3 fontes lidas e resumidas) e escale se o tema pedir mais. Se o objetivo virar "preciso de uma lista mais ampla para escolher o que ler", aí sim rode `/scout` — ele é mais raso de propósito (título + por que é relevante, sem ler o conteúdo inteiro), pensado para triagem antes de decidir o que aprofundar aqui.
+   - Se, ao longo da sessão, uma fonte se mostrar central o bastante para merecer arquivamento permanente (não só o resumo efêmero desta conversa), ofereça formalizar via `/digest` — isso grava o resumo em `wiki/sources/resumos/` e registra em `manifest.md`/`map.md`, o que o resumo em conversa não faz sozinho.
 
 3. **Leia com ceticismo produtivo.** Não pare no resumo por fonte do passo 2 — cruze os resumos: aponte onde as fontes discordam entre si, onde um argumento é mais fraco que o outro, onde falta evidência. Isso é o que diferencia "estudar" de só empilhar resumos.
 
@@ -36,11 +39,11 @@ Ela não decide sozinha quando um assunto "acabou de ser estudado" e virou conte
    - Virou uma ideia solta, ainda sem tese? → `/atom add`.
    - Virou uma fonte específica que vale preservar? → `/digest` ou `/absorb`, dependendo do uso.
    - Já virou uma tese completa? → `/essay`.
-   - Ainda não deu pra concluir nada, mas vale continuar depois? → deixe (ou crie, via `/plan add`) o item na seção Estudos do plano, com uma `Nota:` atualizada sobre até onde chegou.
+   - Ainda não deu para concluir nada, mas vale continuar depois? → deixe (ou crie, via `/plan add`) o item na seção Estudos do plano, com uma `Nota:` atualizada sobre até onde chegou.
 
 ## Exemplo
 
-> **Usuário:** quero estudar mais sobre dynamic stall models pra decidir qual usar no zBEMT.
+> **Usuário:** quero estudar mais sobre dynamic stall models para decidir qual usar no zBEMT.
 >
 > **Claude:** Você já tem o modelo de Øye implementado — a dúvida é se vale trocar, ou se é sobre entender melhor as alternativas antes de decidir? [pergunta socrática de ancoragem]
 >
@@ -50,13 +53,13 @@ Ela não decide sozinha quando um assunto "acabou de ser estudado" e virou conte
 >
 > **Usuário:** boa pergunta, não tinha pensado nisso.
 >
-> **Claude:** [ao final] Isso virou uma posição clara o suficiente pra virar uma nota atômica — "Leishman-Beddoes tem fidelidade maior mas o custo computacional pode não valer a pena dado o uso em near-real-time do zBEMT GUI" é uma ideia com tese própria. Quer que eu capture isso via `/atom add`?
+> **Claude:** [ao final] Isso virou uma posição clara o suficiente para virar uma nota atômica — "Leishman-Beddoes tem fidelidade maior mas o custo computacional pode não valer a pena dado o uso em near-real-time do zBEMT GUI" é uma ideia com tese própria. Quer que eu capture isso via `/atom add`?
 
 ## O que não fazer
 
 Não decida sozinho quando "encerrar" o estudo de um tema — isso é sempre negociado com o Usuário no fechamento do ciclo.
 
-Não pule direto pra `/essay` só porque o tema é rico — a maioria das sessões de estudo não produz um essay inteiro, e forçar isso é pior do que deixar a ideia decantar como nota atômica ou item de plano.
+Não pule direto para `/essay` só porque o tema é rico — a maioria das sessões de estudo não produz um essay inteiro, e forçar isso é pior do que deixar a ideia decantar como nota atômica ou item de plano.
 
 Não confunda `/study` com `/query` — `/query` responde uma pergunta pontual usando o que **já está** na wiki; `/study` é uma sessão de exploração que pode trazer material **novo**, de fora da wiki.
 

@@ -106,7 +106,7 @@ Registre em `wiki/log.md`:
 
 ```
 ## [YYYY-MM-DD] format | N essays verificados
-Auto-corrigidos: X arquivos. Issues restantes: Y (Z CRITICAL/ERROR, W WARNING).
+Auto-corrigidos: X arquivos. Issues restantes: Y (Z ERROR, W WARNING).
 ```
 
 Atualize `updated:` no frontmatter de cada arquivo tocado pelo `auto_fix_lint.py`.

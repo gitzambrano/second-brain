@@ -5,7 +5,7 @@ description: >
   já existente, ou cria uma página nova de conceito/entidade ligada a
   ele. Use quando o Usuário disser "adiciona um capítulo sobre X",
   "junta essas duas seções", "divide esse capítulo em dois", "move
-  essa seção pra depois da 3", "cria uma página de conceito pra Y", ou
+  essa seção para depois da 3", "cria uma página de conceito para Y", ou
   quiser mudanças estruturais no essay em vez de mudança de conteúdo
   dentro de seções já existentes.
 allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion

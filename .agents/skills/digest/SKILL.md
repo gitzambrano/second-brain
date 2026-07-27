@@ -10,9 +10,10 @@ description: >
   conceitos já existentes, isso é /absorb, executado depois deste.
 allowed-tools: Bash Read Write Glob Grep WebSearch WebFetch AskUserQuestion
 ---
+
 # Digest
 
-Lê uma fonte que não é um ensaio completo do próprio Usuário, escreve um resumo pra ele e arquiva a fonte organizadamente. **Nunca gera essay.** Se o material for denso o bastante para merecer um essay próprio, avise o Usuário e sugira `/essay` ou `/import` em vez de fazer isso aqui.
+Lê uma fonte que não é um ensaio completo do próprio Usuário, escreve um resumo para ele e arquiva a fonte organizadamente. **Nunca gera essay.** Se o material for denso o bastante para merecer um essay próprio, avise o Usuário e sugira `/essay` ou `/import` em vez de fazer isso aqui.
 
 ## Quando usar (e quando não)
 

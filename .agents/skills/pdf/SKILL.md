@@ -3,20 +3,21 @@ name: pdf
 description: >
   Exporta um ou todos os essays de wiki/essays/ para PDF via
   scripts/export_essay.py (Pandoc + LuaLaTeX). Use quando o
-  Usuário disser "exporta esse essay pra PDF", "gera o PDF de X",
-  "exporta tudo pra PDF", ou quiser uma versão compartilhável/
+  Usuário disser "exporta esse essay para PDF", "gera o PDF de X",
+  "exporta tudo para PDF", ou quiser uma versão compartilhável/
   imprimível de um essay.
 allowed-tools: Bash Read Glob
 ---
+
 # PDF
 
 Gera PDF a partir de um ou mais essays em `wiki/essays/`, via `scripts/export_essay.py` (Pandoc + LuaLaTeX). Este skill só invoca o script existente e interpreta o resultado — a lógica de conversão vive no script, não aqui.
 
 ## Quando usar
 
-- "exporta [essay] pra PDF"
+- "exporta [essay] para PDF"
 - "gera os PDFs de todos os essays"
-- "manda esse ensaio pra alguém em PDF"
+- "manda esse ensaio para alguém em PDF"
 
 Para HTML, use `/html` em vez deste skill — não duplique lógica de exportação aqui.
 

@@ -45,12 +45,12 @@ Dashboard **read-only**. Só relata, nunca corrige — esse é o trabalho de `/o
    python scripts/graph.py
    ```
 
-   Gera `output/graph/graph.html` (visualização interativa: zoom, arraste, clique num nó pra destacar vizinhos, busca por título/tag) e `output/graph/graph.md` (versão Mermaid, sem precisar abrir navegador). É a forma mais rápida de enxergar clusters isolados — por exemplo, se os ensaios de filosofia nunca se conectam aos de engenharia, isso aparece visualmente como dois blobs separados no grafo. Ofereça isso sempre que o Usuário perguntar algo como "como as coisas se conectam" ou depois de um `/organize` substancial.
+   Gera `output/graph/graph.html` (visualização interativa: zoom, arraste, clique num nó para destacar vizinhos, busca por título/tag) e `output/graph/graph.md` (versão Mermaid, sem precisar abrir navegador). É a forma mais rápida de enxergar clusters isolados — por exemplo, se os ensaios de filosofia nunca se conectam aos de engenharia, isso aparece visualmente como dois blocos separados no grafo. Ofereça isso sempre que o Usuário perguntar algo como "como as coisas se conectam" ou depois de um `/organize` substancial.
 
 ## O que o script cobre
 
 - **Essays**: contagem total, por `Tipo` (Ensaio/White Paper/Estudo/etc), por categoria temática da byline, e distribuição de tags do vocabulário controlado.
-- **Sinais de lint rápidos**: essays com `## Resumo Executivo` residual (não deveria existir mais, ver `conventions/SKILL.md`), essays com mais de 2 travessões, essays sem `## Sumário`/`## Referências`/`## Conexões`. Isso é uma varredura rasa (regex), não substitui `deep_format_check.py` nem o julgamento humano do lint completo.
+- **Sinais de lint rápidos**: essays com `## Resumo Executivo` residual (não deveria existir mais, ver `conventions/SKILL.md`), essays com mais de 2 travessões, essays sem `## Sumário`/`## Referências`/`## Conexões`. Isso é uma varredura rasa (regex), não substitui `format_check.py` nem o julgamento humano do lint completo.
 - **Órfãos**: concepts/entities em `wiki/concepts/` e `wiki/entities/` que não aparecem em nenhuma seção `## Conexões` de essay.
 - **Sources**: total de arquivos em `wiki/sources/**`, distribuição por subpasta de tipo, quantos não têm entrada em `manifest.md`, e quantos estão em uma subpasta fora do vocabulário controlado (ver `## Sources, Tags e Vocabulários Controlados` no AGENTS.md).
 - **Handouts**: quantos existem em `wiki/handouts/`.

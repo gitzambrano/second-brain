@@ -9,7 +9,7 @@ description: >
   virar essay novo ou capítulo de um essay existente). Use quando o
   Usuário disser "tive uma ideia sobre X mas não é um essay ainda",
   "anota esse insight solto", "essa nota já está madura o bastante
-  pra virar essay?", ou trouxer um fragmento de pensamento que não se
+  para virar essay?", ou trouxer um fragmento de pensamento que não se
   encaixa em nenhum essay hoje.
 allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion
 ---
@@ -18,7 +18,7 @@ allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion
 
 Segura o espaço entre "um insight solto" e "um essay completo": a nota atômica. Uma nota atômica trata de **uma ideia só**, densa o bastante para ser útil, mas sem o aparato de um essay (sem `## Sumário`, sem mínimo de 10 links, sem tese sustentada do início ao fim).
 
-Existe para não forçar toda ideia nova a nascer como capítulo de algo ou como página de concept — muita ideia boa fica meses "rondando" antes de encontrar seu essay, e sem um lugar pra isso ela se perde entre sessões ou é forçada cedo demais numa estrutura que ainda não cabe nela.
+Existe para não forçar toda ideia nova a nascer como capítulo ou como página de concept. Muita ideia boa leva meses até encontrar seu essay; sem um lugar para isso, ela se perde entre sessões ou é forçada cedo demais numa estrutura que ainda não cabe.
 
 Vive em `wiki/synthesis/`, ao lado das comparações curtas que `/query` gera — mas com `tipo: nota-atomica` no frontmatter para não confundir os dois (ver `## Formato de páginas em wiki/synthesis/` em `conventions/SKILL.md`).
 
@@ -27,7 +27,7 @@ Vive em `wiki/synthesis/`, ao lado das comparações curtas que `/query` gera �
 Toda nota atômica carrega `maturidade:` no frontmatter, um de três estados:
 
 1. **`solta`** — acabou de ser capturada. Pode ser uma frase, uma pergunta, uma intuição ainda não articulada por inteiro. Pode não ter nenhum link ainda.
-2. **`germinando`** — já foi revisitada ao menos uma vez (via `/atom develop`), ganhou corpo, e está ligada a pelo menos um essay/concept/entity/outra nota via `## Conexões`. Ainda não é densa o bastante pra virar essay sozinha, mas está a caminho.
+2. **`germinando`** — já foi revisitada ao menos uma vez (via `/atom develop`), ganhou corpo, e está ligada a pelo menos um essay/concept/entity/outra nota via `## Conexões`. Ainda não é densa o bastante para virar essay sozinha, mas está a caminho.
 3. **`madura`** — densa, bem conectada, com uma tese ou insight central articulado com clareza. Pronta para `/atom promote`. `/stats` sinaliza toda nota `madura` como candidata a promoção, mas a promoção em si nunca é automática.
 
 Não pule estados retroativamente sem justificativa (uma nota não vira `madura` só porque cresceu em tamanho — precisa ter uma ideia central clara, não um parágrafo grande e difuso).
@@ -75,7 +75,7 @@ Leia todas as notas em `wiki/synthesis/` com `tipo: nota-atomica` e mostre agrup
 
 ## `/atom promote <nota>`
 
-Leva uma nota `madura` para o conteúdo de fato da wiki. Nunca promove uma nota `solta` ou `germinando` sem antes perguntar se o Usuário tem certeza — a maturidade existe pra evitar promoção prematura.
+Leva uma nota `madura` para o conteúdo de fato da wiki. Nunca promove uma nota `solta` ou `germinando` sem antes perguntar se o Usuário tem certeza — a maturidade existe para evitar promoção prematura.
 
 1. Pergunte (se não estiver óbvio pela nota) se ela vira:
    - **Essay novo**: quando a ideia sustenta um argumento inteiro por si só. Rode o fluxo completo de `/essay` — a nota atômica serve de ponto de partida (a tese já pode estar praticamente pronta), não de rascunho a copiar sem desenvolver.

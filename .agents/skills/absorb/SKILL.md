@@ -4,13 +4,14 @@ description: >
   Enriquece essays, conceitos ou entidades já existentes usando uma
   fonte já processada (importada, resumida via digest, ou apenas
   arquivada em wiki/sources/) — só quando pedido explicitamente pelo
-  Usuário. Use quando o Usuário disser "usa essa fonte pra enriquecer
+  Usuário. Use quando o Usuário disser "usa essa fonte para enriquecer
   o essay sobre X", "atualiza o conceito Y com o que tá nesse paper",
   ou apontar para uma fonte já em wiki/sources/ pedindo que ela seja
   incorporada ao conteúdo da wiki, em vez de só resumida (isso é
   /digest) ou virar um essay próprio (isso é /essay ou /import).
 allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion
 ---
+
 # Absorb
 
 Incorpora o conteúdo de uma fonte já processada às páginas existentes da wiki — essays, conceitos, entidades. **Só roda quando pedido explicitamente.** `/digest` nunca chama isso sozinho; se o Usuário só queria o resumo, a fonte fica arquivada e parada até ele pedir esse passo.

@@ -8,6 +8,7 @@ description: >
   conteúdo ou argumento.
 allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion
 ---
+
 # Proofread
 
 Passada geral de português: gramática, ortografia, concordância, pontuação. Não toca em conteúdo ou argumento — só na língua.

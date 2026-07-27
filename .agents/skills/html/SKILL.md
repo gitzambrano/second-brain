@@ -3,19 +3,20 @@ name: html
 description: >
   Exporta um ou todos os essays de wiki/essays/ para um arquivo HTML
   standalone e responsivo via scripts/export_essay_html.py
-  (Pandoc). Use quando o Usuário disser "exporta esse essay pra HTML",
+  (Pandoc). Use quando o Usuário disser "exporta esse essay para HTML",
   "manda um link/arquivo HTML desse ensaio", ou quiser uma versão
   web-friendly que abre bem em desktop ou celular sem precisar de
   LaTeX.
 allowed-tools: Bash Read Glob
 ---
+
 # HTML
 
 Gera um `.html` autocontido (CSS e imagens embutidos, um único arquivo) a partir de um ou mais essays, via `scripts/export_essay_html.py`. Este skill só invoca o script existente — a lógica de conversão vive no script, não aqui.
 
 ## Quando usar
 
-- "exporta [essay] pra HTML"
+- "exporta [essay] para HTML"
 - "gera uma versão web desse ensaio"
 - "manda esse essay num formato que abre bem no celular"
 
@@ -46,7 +47,7 @@ python scripts/export_essay_html.py nome-do-essay --output caminho/custom
 3. `## Sumário` vira um painel de navegação clicável (âncoras internas via IDs de heading gerados pelo Pandoc).
 4. Blockquotes (epígrafes, callouts) ganham estilo de caixa com borda lateral.
 5. Blocos de código com syntax highlighting (Pygments via Pandoc) e tabelas estilizadas.
-6. **MathJax só é incluído se o essay tiver LaTeX** (`$...$`) — checagem automática por regex antes de montar o comando Pandoc, pra não inflar o HTML de essays sem matemática.
+6. **MathJax só é incluído se o essay tiver LaTeX** (`$...$`) — checagem automática por regex antes de montar o comando Pandoc, para não inflar o HTML de essays sem matemática.
 7. `--embed-resources` embute imagens locais e CSS no próprio arquivo — o `.html` resultante é uma única página que funciona offline e pode ser mandada como anexo.
 
 ## Limitação a citar ao Usuário

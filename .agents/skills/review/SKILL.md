@@ -13,6 +13,7 @@ description: >
   antes de marcar um essay como maduro ou finalizado.
 allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch AskUserQuestion
 ---
+
 # Review
 
 Funciona como um revisor de paper acadêmico: lê o essay com olhar crítico e construtivo, identifica problemas de argumentação, profundidade e rigor, e — diferente de um revisor puramente negativo — sugere ativamente o que enriqueceria o texto. Só edita após o Usuário aprovar um plano de modificação explícito.
@@ -146,7 +147,7 @@ Após aplicar as modificações:
   ```
 
 - Se o essay estava `draft` e todos os críticos foram resolvidos, **pergunte** ao Usuário se quer promovê-lo para `maduro` — não faça isso automaticamente.
-- Oferença `/continuity` se detectar gaps que exigem a intervenção desse skill.
+- Ofereça `/continuity` se detectar gaps que exigem a intervenção desse skill.
 - Ofereça `/status update` se a sessão for encerrada após o review.
 
 ## Regras e limites

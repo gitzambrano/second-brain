@@ -27,7 +27,7 @@ Auditoria de coerência lógica e narrativa do essay do início ao fim. **Só di
 
 Para cada problema encontrado, indique a seção onde está, qual é exatamente o salto/inconsistência, e proponha a correção — mas não a aplique sem confirmação. Formato sugerido:
 
-> **Capítulo 4 → 5**: o capítulo 5 usa "acomodação neural" sem que o termo tenha sido definido antes. Sugestão: uma frase de transição no início do capítulo 5, ou mover a definição do capítulo 6 pra cá.
+> **Capítulo 4 → 5**: o capítulo 5 usa "acomodação neural" sem que o termo tenha sido definido antes. Sugestão: uma frase de transição no início do capítulo 5, ou mover a definição do capítulo 6 para cá.
 
 Se o essay passar limpo, diga isso também — não é preciso inventar problemas para justificar a auditoria.
 

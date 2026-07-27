@@ -12,6 +12,9 @@ description: >
   não duplica a lógica deles.
 allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch AskUserQuestion
 ---
+
+# Sweep
+
 Roda a bateria completa de revisão — `/format` → `/continuity` → `/proofread` → `/polish` → `/linkify` — em qualquer escopo pedido pelo Usuário, e consolida os resultados num único relatório. É um **orquestrador**: toda a lógica de cada correção vive no skill correspondente.
 
 ## O que é e o que não é
@@ -98,7 +101,7 @@ Ao final de **todos** os essays do escopo, apresente o relatório único:
 
 Não exponha cada correção individual durante a execução — acumule e apresente só ao final.
 
-Ofereça `/review`, `/expand` ou`/chapter`ao final da sessão.
+Ofereça `/review`, `/expand` ou `/chapter` ao final da sessão.
 
 ## Log
 

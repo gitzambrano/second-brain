@@ -24,7 +24,7 @@ Produz e itera o esqueleto de um essay — nunca prosa. `/essay` agora exige ess
 
 Se a tese central ainda não está clara, pergunte antes de propor qualquer esqueleto: tema não é tese — "quero escrever sobre livre-arbítrio" é tema, "quero argumentar que o compatibilismo dissolve o problema, não o resolve" é tese. Se a tese já emergiu de uma sessão de `/study` ou já está no plano (`plan/plano.md`, seção Essays Futuros), use isso como ponto de partida em vez de perguntar de novo.
 
-Confirme rapidamente: **Tipo** (`Ensaio` | `White Paper` | `Brainstorm` | `Estudo` | `Análise`), **Categoria temática**, **Domínio** (filosófico | técnico | misto) — `/essay` depende desses três campos pra saber que seção de redação aplicar, então ficam gravados no frontmatter do esboço.
+Confirme rapidamente: **Tipo** (`Ensaio` | `White Paper` | `Brainstorm` | `Estudo` | `Análise`), **Categoria temática**, **Domínio** (filosófico | técnico | misto) — `/essay` depende desses três campos para saber que seção de redação aplicar, então ficam gravados no frontmatter do esboço.
 
 ## 2. Pesquisa leve — o suficiente para estruturar, não para redigir
 
@@ -39,15 +39,15 @@ Estrutura mínima, sempre:
 - **Capítulos de desenvolvimento** — sem teto artificial de quantidade. Um tema denso pode passar de 10 capítulos; o que importa é que cada um avance um passo real do argumento e prepare o seguinte. Prefira mais capítulos focados a poucos capítulos genéricos: divida quando um capítulo tenta cobrir mais de uma ideia central.
 - **Conclusão** — fecha o argumento aberto na introdução, não introduz ideia nova não preparada antes.
 
-Cada capítulo deve se encadear logicamente com o anterior e com o seguinte — nunca uma sequência de seções independentes sob o mesmo título. Se o esboço crescer para muitos capítulos, releia a cadeia inteira antes de apresentar; se ficou longa e complexa o bastante pra dúvida, ofereça `/continuity` depois que `/essay` gerar a prosa, pra confirmar que a progressão sobreviveu à redação.
+Cada capítulo deve se encadear logicamente com o anterior e com o seguinte — nunca uma sequência de seções independentes sob o mesmo título. Se o esboço crescer para muitos capítulos, releia a cadeia inteira antes de apresentar; se ficou longa e complexa o bastante para dúvida, ofereça `/continuity` depois que `/essay` gerar a prosa, para confirmar que a progressão sobreviveu à redação.
 
 Para cada capítulo:
 
 - **Título do capítulo**.
 - **Papel argumentativo em uma frase**: o que ele estabelece e o que prepara para o capítulo seguinte — essa cadeia explícita é o motivo de existir do esboço, não um parágrafo de passagem dentro de um texto maior.
-- **3 a 6 bullets** do conteúdo que entra: um argumento, uma fonte/pensador a citar, um experimento mental, um dado técnico — o suficiente para o Usuário avaliar se aquele capítulo é o que ele quer, sem precisar ler prosa pra descobrir.
+- **3 a 6 bullets** do conteúdo que entra: um argumento, uma fonte/pensador a citar, um experimento mental, um dado técnico — o suficiente para o Usuário avaliar se aquele capítulo é o que ele quer, sem precisar ler prosa para descobrir.
 
-Não escreva nenhuma frase de prosa corrida nos bullets — eles são notas telegráficas, não rascunho de parágrafo. Se um bullet já está saindo como parágrafo, é sinal de que virou prosa antes da hora; corte de volta pra nota.
+Não escreva nenhuma frase de prosa corrida nos bullets — eles são notas telegráficas, não rascunho de parágrafo. Se um bullet já está saindo como parágrafo, é sinal de que virou prosa antes da hora; corte de volta para nota.
 
 ## 4. Salvar como artefato próprio
 
@@ -87,11 +87,11 @@ Papel: ...
 
 Mostre o esqueleto inteiro (é curto, cabe numa resposta) e pergunte o que ajustar. Rodadas de iteração são o ponto central desta skill — trate cada uma como edição direta do arquivo, não como conversa que se perde:
 
-- Reordenar, fundir, dividir, adicionar ou remover capítulo → edite a estrutura, renumere se necessário, releia a cadeia de papéis pra confirmar que a transição ainda faz sentido (mesmo cuidado de `/chapter` ao mover seção).
+- Reordenar, fundir, dividir, adicionar ou remover capítulo → edite a estrutura, renumere se necessário, releia a cadeia de papéis para confirmar que a transição ainda faz sentido (mesmo cuidado de `/chapter` ao mover seção).
 - Adicionar/remover/ajustar bullet dentro de um capítulo → edição pontual.
 - Mudar a tese → releia se a estrutura inteira ainda serve a essa tese nova, não só o capítulo onde ela foi mencionada.
 
-Depois de cada rodada, reapresente o esqueleto completo atualizado (não um diff) — o Usuário precisa ver o todo pra continuar ajustando. Atualize `updated:` no frontmatter a cada rodada.
+Depois de cada rodada, reapresente o esqueleto completo atualizado (não um diff) — o Usuário precisa ver o todo para continuar ajustando. Atualize `updated:` no frontmatter a cada rodada.
 
 ## 6. Aprovado — entregar para `/essay`
 
@@ -101,7 +101,7 @@ Se o Usuário preferir deixar para depois em vez de escrever agora, ofereça `/p
 
 ## Esboço implicitamente aprovado
 
-Se o pedido do Usuário já trouxer tese e capítulos com detalhe suficiente (título, papel de cada um, conteúdo que dá pra virar bullets sem inventar nada), não force uma rodada de aprovação separada: monte o esqueleto (passo 4), mostre-o rapidamente numa única mensagem confirmando o que foi capturado, e já ofereça `/essay` na mesma resposta, em vez de esperar o Usuário aprovar antes de seguir. Só pare para perguntar se algo ficou genuinamente ambíguo — capítulo sem direção clara, tese ainda soando como tema. Pedidos curtos ou vagos continuam pelo fluxo normal dos passos 5 e 6.
+Se o pedido do Usuário já trouxer tese e capítulos com detalhe suficiente (título, papel de cada um, conteúdo que dá para virar bullets sem inventar nada), não force uma rodada de aprovação separada: monte o esqueleto (passo 4), mostre-o rapidamente numa única mensagem confirmando o que foi capturado, e já ofereça `/essay` na mesma resposta, em vez de esperar o Usuário aprovar antes de seguir. Só pare para perguntar se algo ficou genuinamente ambíguo — capítulo sem direção clara, tese ainda soando como tema. Pedidos curtos ou vagos continuam pelo fluxo normal dos passos 5 e 6.
 
 ## Retomar um esboço em andamento
 

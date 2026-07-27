@@ -2,13 +2,13 @@
 name: plan
 description: >
   Orquestra plan/plano.md, o plano de longo prazo do Usuário: tarefas,
-  fontes pra ingerir, revisões, estudos e essays futuros — tudo que
+  fontes para ingerir, revisões, estudos e essays futuros — tudo que
   não é para agora, mas não pode ser esquecido entre sessões. Comandos:
   add (registrar um item novo em qualquer uma das 5 categorias), work
   (retomar um item e conduzir o fluxo certo, chamando /study, /essay,
   /import, /digest, /absorb, /continuity ou /expand conforme o caso),
   done (marcar concluído), list (mostrar o plano). Use quando o
-  Usuário disser "anota isso pra depois", "o que falta fazer",
+  Usuário disser "anota isso para depois", "o que falta fazer",
   "retoma aquele item do plano", "tira isso do plano", ou trouxer
   qualquer pendência de longo prazo — de estudar algo a revisar um
   essay a uma tarefa qualquer que não seja sobre a wiki.
@@ -99,7 +99,7 @@ As 5 seções (`##`) sempre existem, mesmo vazias, para o Índice não quebrar. 
 
 1. Pergunte (ou infira do que o Usuário disse) em qual das 5 categorias o item entra. Se ambíguo entre Estudo e Essay Futuro, pergunte: "já tem uma tese em mente, ou ainda é exploração?" — tese esboçada é Essay Futuro, exploração é Estudo. Se ambíguo entre Tarefa e Fonte para Ingerir, pergunte se já existe material identificado.
 2. Colete os campos daquela categoria (ver formato acima).
-3. Se `Fontes para Ingerir`, sugira `Skill sugerida:` com base no tipo de material (ensaio completo do autor → `/import`; artigo/vídeo/PDF pra resumir → `/digest`; fonte que só embasa claims específicos → `/absorb`). Se não estiver claro, deixe em branco — `/plan work` decide na hora.
+3. Se `Fontes para Ingerir`, sugira `Skill sugerida:` com base no tipo de material (ensaio completo do autor → `/import`; artigo/vídeo/PDF para resumir → `/digest`; fonte que só embasa claims específicos → `/absorb`). Se não estiver claro, deixe em branco — `/plan work` decide na hora.
 4. Adicione sob a seção certa. Não gera entrada em `wiki/log.md` — só `/plan done` e `/plan work` (quando resultam em algo concreto) geram.
 
 ## `/plan work <item>`
