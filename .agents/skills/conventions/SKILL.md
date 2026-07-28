@@ -30,9 +30,9 @@ Toda skill que grava em disco decide onde salvar consultando esta tabela, não p
 | `wiki/concepts/` | Definição/explicação curta de um conceito, sem tese própria | `/essay`, `/expand`, `/absorb`, `/digest`, `/chapter` | Um termo é citado mas ainda não tem página própria |
 | `wiki/entities/` | Página curta sobre pessoa/obra/instituição nomeada | mesmas skills que concepts | Uma entidade nomeada é citada mas ainda não tem página própria |
 | `wiki/insights/` | Fragmentos densos de ideia — sementes, sínteses, observações, mini-argumentos | `/insight` (também via `/query`, que passa a ideia para `/insight add`) | Insight novo que ainda não tem lar, não é essay nem concept/entity |
-| `wiki/sources/<tipo>/` | Cópia/referência do documento original, por tipo (vocabulário em`AGENTS.md`) | `/import`, `/digest`, `/absorb` (via `/scout` como triagem) | Toda fonte processada, sempre |
+| `wiki/sources/<tipo>/` | Cópia/referência do documento original, por tipo (vocabulário em `AGENTS.md`) | `/import`, `/digest`, `/absorb` (via `/scout` como triagem) | Toda fonte processada, sempre |
 | `wiki/sources/resumos/` | Resumo de uma página por fonte processada | `/digest` | Toda vez que uma fonte é resumida |
-| `wiki/handouts/` | Versão de uma página de um essay**já existente** | `/handout` | Sempre derivado, sob demanda |
+| `wiki/handouts/` | Versão de uma página de um essay **já existente** | `/handout` | Sempre derivado, sob demanda |
 | `wiki/assets/` | Imagens/figuras referenciadas pelos essays | `/import`, `/digest`, `/absorb` | Fonte processada tem figura embutida (ver`## Tratamento de imagens`) |
 | `wiki/book-chapters/` | Reservado para projeto de livro futuro | — | Não usar ainda |
 | `plan/plano.md` | Pendência de longo prazo | `/plan` | Nunca conteúdo de wiki — só intenção de trabalhar algo depois |
@@ -59,12 +59,12 @@ Essays têm um campo a mais, `status: draft | maduro | finalizado` — ver `## S
 
 ## Tags — Vocabulário Controlado
 
-Campo `tags:` do frontmatter de essay/concept/entity/insight, e campo `Tags:` do manifesto de sources (`wiki/sources/manifest.md`) e do mapa (`wiki/sources/map.md`). **Uma única lista, um único vocabulário fechado** para a wiki inteira em `tags_in_use` em `wiki/index.json`, evitando tags quase-duplicadas que fragmentam a navegação.
+Campo `tags:` do frontmatter de essay/concept/entity/insight, e campo `Tags:` do manifesto de sources (`wiki/sources/manifest.md`) e do mapa (`wiki/sources/map.md`). **Uma única lista, um único vocabulário fechado** para a wiki inteira — consolidado em `tags_in_use` em `wiki/index.json` — evitando tags quase-duplicadas que fragmentam a navegação.
 
 1. **Reuse antes de criar** — cheque `tags_in_use` em `wiki/index.json` (gerado por `build_index.py`) antes de escrever uma tag nova. Rode `python scripts/build_index.py` primeiro se o índice estiver desatualizado.
 2. **Uma tag, uma grafia** — Title Case em Português, nunca uma variante (singular/plural, acento, sinônimo) de tag existente.
 3. **Tags são temas, não tipos** — o tipo do essay (`Ensaio`, `White Paper`, etc.) ou da source (`Artigo Acadêmico`, `Livro`, etc.) já vive na byline/`Tipo:`, nunca em `tags`/`Tags:`.
-4. **2 a 5 tags por essay ou  source** .
+4. **2 a 5 tags por essay ou source**.
 5. `/organize` audita quase-duplicadas (nos dois campos, `tags:` e `Tags:`) e propõe consolidação.
 
 ## Tipos de Source — Vocabulário Controlado
@@ -192,7 +192,7 @@ Virou: [[Essay Resultante]] (essay novo) | enriqueceu [[Essay Existente]] | aind
 Verificação: [referências confirmadas | não verificado — checar antes de citar em outro essay].
 ```
 
-`Tags:` é obrigatório em toda entrada nova (`/import`, `/digest`, `/absorb`) — 1 a 5 tags do mesmo tema da fonte, reusando o vocabulário controlado de `## Tags — Vocabulário Controlado`. Existe **uma única fonte de tags para toda a wiki**: essay e source nunca têm vocabulários de tag separados — uma tag nova entra no mesmo lugar (a lista canônica abaixo) e vale para os dois. `build_index.py` consolida `tags_in_use` combinando essays e manifesto num só cômputo, exatamente por isso.
+`Tags:` é obrigatório em toda entrada nova (`/import`, `/digest`, `/absorb`) — 2 a 5 tags do mesmo tema da fonte, reusando o vocabulário controlado de `## Tags — Vocabulário Controlado`. Existe **uma única fonte de tags para toda a wiki**: essay e source nunca têm vocabulários de tag separados — uma tag nova entra no mesmo lugar (a lista canônica abaixo) e vale para os dois. `build_index.py` consolida `tags_in_use` combinando essays e manifesto num só cômputo, exatamente por isso.
 
 Antes de reutilizar uma citação em outro essay, confira `Verificação:` — se estiver "não verificado", confirme antes de propagar.
 

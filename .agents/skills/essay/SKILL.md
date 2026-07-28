@@ -59,7 +59,7 @@ Aplique as duas seções acima na proporção que o argumento pedir — um essay
 
 ### Checklist obrigatório (todo domínio)
 
-- **Frontmatter YAML**: `tags` (reuse do vocabulário controlado em  `tags_in_use` em `wiki/index.json`— só crie tag nova se nenhuma existente cobrir o tema), `sources`, `created`, `updated`, `status: draft` (ver `## Status de essay` em `conventions/SKILL.md`)
+- **Frontmatter YAML**: `tags` (reuse do vocabulário controlado — cheque `tags_in_use` em `wiki/index.json`, rode `python scripts/build_index.py` primeiro se estiver desatualizado; só crie tag nova se nenhuma existente cobrir o tema), `sources`, `created`, `updated`, `status: draft` (ver `## Status de essay` em `conventions/SKILL.md`)
 - **Título** `# Título do Essay`, linha em branco, byline (`> Tipo · Categoria`, `> Gustavo Zambrano · Mês de Ano`, sem `:`, sem `[[wikilinks]]`)
 - **Sem resumo condensado dentro do essay** — vai direto da byline pro `## Sumário`; a introdução (primeira seção `##`) cumpre esse papel. Resumo de uma página é handout (`/handout`), nunca seção do essay.
 - **`## Sumário`** logo após a byline, com links para cada seção `##` (exceto Referências e Conexões)
@@ -90,11 +90,11 @@ Depois de pronto, ofereça `/pdf` ou `/html` conforme o uso (imprimir/anexar vs.
 
 |                                  | `/import`                                        | `/digest`                        | `/essay`                                                 |
 | -------------------------------- | -------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------- |
-| Ponto de partida                 | Arquivo em`raw/`, já pronto                     | Arquivo em`raw/`, de terceiro    | Esboço aprovado via`/outline`                           |
+| Ponto de partida                 | Arquivo em `raw/`, já pronto                     | Arquivo em `raw/`, de terceiro    | Esboço aprovado via `/outline`                           |
 | Papel do Claude                  | Arquivista — processa fielmente                   | Leitor — resume, nunca gera essay | Coautor — pesquisa e escreve sobre o esboço já aprovado |
 | Texto preservado?                | Sim, intacto                                       | N/A (não vira essay)              | Não aplicável — texto é gerado                         |
-| Passa por`/outline`?           | Não — já é texto pronto, sem tese a estruturar | N/A — nunca vira essay            | Sim, sempre                                                |
-| Pode expandir livremente depois? | Sim, via`/expand` etc.                           | N/A                                | Sim                                                        |
+| Passa por `/outline`?           | Não — já é texto pronto, sem tese a estruturar | N/A — nunca vira essay            | Sim, sempre                                                |
+| Pode expandir livremente depois? | Sim, via `/expand` etc.                           | N/A                                | Sim                                                        |
 
 ## Convenções
 

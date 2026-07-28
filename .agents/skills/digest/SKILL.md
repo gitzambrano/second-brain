@@ -28,12 +28,12 @@ Não use para: um ensaio/white paper do próprio Usuário (isso é `/import`) ou
 4. Escreva um resumo de uma página em `wiki/sources/resumos/<slug>.md`: claim(s) principal(is), metodologia se aplicável, limitações, 2-3 citações-chave (parafraseadas, nunca copiadas verbatim além de trechos curtíssimos). Frontmatter simples: `fonte:` (nome do arquivo original), `tipo:`, `created:`.
 5. **Entregue o resumo ao Usuário na própria conversa** — não é suficiente só salvar o arquivo, ele quer ler agora.
 6. Arquive o original em `wiki/sources/<subpasta-do-tipo>/`, preservando o nome.
-7. Registre em `wiki/sources/manifest.md` e em `wiki/sources/map.md` , vide `conventions/SKILL.md`. Inclua`Tags:`, 2 a 5 tags do vocabulário controlado , vide`tags_in_use` em `wiki/index.json`, reuse antes de criar. Campo status: "Resumido — ver resumo", com link pro arquivo em `resumos/`.
+7. Registre em `wiki/sources/manifest.md` e em `wiki/sources/map.md`, vide `conventions/SKILL.md`. Inclua `Tags:`, 2 a 5 tags do vocabulário controlado, vide `tags_in_use` em `wiki/index.json`, reuse antes de criar. Campo status: "Resumido — ver resumo", com link pro arquivo em `resumos/`.
 8. Log: `## [YYYY-MM-DD] digest | Título da Fonte`
 
 ## Depois
 
-Pergunte se o Usuário quer usar essa fonte para enriquecer algum essay/conceito existente agora — se sim, é `/absorb`. Se ele quiser que ela vire um essay novo, é `/essay` (com a fonte como referência) ou, se ele reescrever o conteúdo como próprio, eventualmente `/import`. Também ofereça a opção de escrever um `/insight`a partir dessa fonte.
+Pergunte se o Usuário quer usar essa fonte para enriquecer algum essay/conceito existente agora — se sim, é `/absorb`. Se ele quiser que ela vire um essay novo, é `/essay` (com a fonte como referência) ou, se ele reescrever o conteúdo como próprio, eventualmente `/import`. Também ofereça a opção de escrever um `/insight` a partir dessa fonte.
 
 ## Convenções
 
