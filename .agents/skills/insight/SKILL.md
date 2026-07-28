@@ -17,7 +17,6 @@ description: >
   encaixa em nenhum essay hoje.
 allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion
 ---
-
 # Insight
 
 Segura o espaço entre "uma ideia solta" e "um essay completo": o insight. Um insight trata de **uma ideia só**, densa o bastante para ser útil, mas sem o aparato de um essay (sem `## Sumário`, sem mínimo de 10 links, sem tese sustentada do início ao fim).
@@ -53,7 +52,10 @@ Registre primeiro, converse depois — o Usuário pode só querer soltar a ideia
 
 1. Capture a ideia como o Usuário a trouxe e **grave imediatamente**, sem inflar artificialmente e sem exigir uma rodada de conversa antes de salvar. Um insight de 3 linhas é normal e não é um problema a corrigir.
 2. Busque na wiki (`python scripts/search.py "termo" --ignore-case`, cobre `wiki/index.md`-relevant essays, `concepts/`, `entities/`, e outros insights em `wiki/insights/` de uma vez) por algo relacionado — se a ideia já ecoa um essay ou concept existente, linke desde o início em `## Conexões`. Isso não deve atrasar o registro: é uma busca rápida, não uma pesquisa aprofundada.
-3. Título curto — antes de decidir o nome do arquivo, rode `python scripts/resolve_title.py "Título Da Ideia"` para não nascer um quase-duplicado de algo que já existe com outra grafia. Arquivo `wiki/insights/<slug>.md`:
+3. Título curto — antes de decidir o nome do arquivo, rode `python scripts/resolve_title.py "Título Da Ideia"` para não nascer um quase-duplicado de algo que já existe com outra grafia.
+4. `tags:` reusa o mesmo vocabulário controlado dos essays. Cheque `tags_in_use` em `wiki/index.json` (gerado por `python scripts/build_index.py`; rode-o primeiro se estiver desatualizado) e só crie tag nova se nenhuma existente cobrir o tema.
+
+   Arquivo `wiki/insights/<slug>.md`:
 
    ```markdown
    ---
@@ -73,8 +75,8 @@ Registre primeiro, converse depois — o Usuário pode só querer soltar a ideia
    ```
 
    `## Conexões` pode ficar vazia (`- (nenhuma ainda)`) se a ideia é genuinamente nova e solta — não force um link fraco só para preencher.
-4. Não gera entrada em `wiki/log.md` — captura de insight é leve demais para o log cronológico, ao contrário de `/essay`/`/import`/`/digest`.
-5. **Depois** de salvar, ofereça — sem insistir — desenvolver mais: perguntar se quer expandir a ideia, adicionar conexões, ou deixar exatamente como está. Uma frase curta basta ("Registrado. Quer desenvolver mais agora ou fica assim por enquanto?"). Se o Usuário não responder ou disser que só queria registrar, encerre por aí — não force `/insight develop` na mesma mensagem.
+5. Não gera entrada em `wiki/log.md` — captura de insight é leve demais para o log cronológico, ao contrário de `/essay`/`/import`/`/digest`.
+6. **Depois** de salvar, ofereça — sem insistir — desenvolver mais: perguntar se quer expandir a ideia, adicionar conexões, ou deixar exatamente como está. Uma frase curta basta ("Registrado. Quer desenvolver mais agora ou fica assim por enquanto?"). Se o Usuário não responder ou disser que só queria registrar, encerre por aí — não force `/insight develop` na mesma mensagem.
 
 ## `/insight develop <nota>`
 

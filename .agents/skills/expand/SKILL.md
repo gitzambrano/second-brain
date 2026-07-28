@@ -10,7 +10,6 @@ description: >
   num essay existente.
 allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch AskUserQuestion
 ---
-
 # Expand
 
 Adiciona ou corrige conteúdo substantivo — ideias, teses, exemplos, conceitos — num essay que já existe. Diferente de `/chapter` (que lida com a estrutura: onde um capítulo entra, sai, se funde), `/expand` lida com o conteúdo em si: o que está sendo dito, não a organização de onde é dito.
@@ -34,6 +33,7 @@ O Usuário quer incluir uma ideia, tese, conceito ou exemplo novo, sem tirar o q
 3. Se for uma expansão de um parágrafo ou ponto já existente, integre à prosa corrida, não como um adendo colado ao final.
 4. Se o conteúdo se apoia em fonte externa nova, adicione a `## Referências` e ao campo `sources:` do frontmatter, com link externo inline na primeira ocorrência do conceito.
 5. Se o novo conceito merece página própria (`wiki/concepts/` ou `wiki/entities/`), crie-a e linke em `## Conexões`.
+6. O frontmatter dessa página nova carrega `tags:` — reuse o vocabulário controlado (cheque `tags_in_use` em `wiki/index.json`, gerado por `python scripts/build_index.py`; rode-o primeiro se estiver desatualizado) e só crie tag nova se nenhuma existente cobrir o tema.
 
 ### 2. Correção conceitual/factual
 
@@ -47,10 +47,12 @@ O Usuário aponta um erro. Depois de ler o essay inteiro:
 ## Depois
 
 Atualize `updated:` no frontmatter. Se a mudança foi substancial, log:
+
 ```
 ## [YYYY-MM-DD] expand | Título do Essay
 Resumo do que foi adicionado/corrigido.
 ```
+
 Se `## Sumário` ou `## Conexões` ficaram desatualizados, atualize-os. Se existir handout em `wiki/handouts/<slug>.md` e a tese central mudou, avise o Usuário e ofereça regenerá-lo (`/handout`).
 
 ## Convenções

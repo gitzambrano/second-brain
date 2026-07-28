@@ -15,14 +15,10 @@ wiki/                        espaço de trabalho do LLM — tudo que é conteúd
   essays/                    o centro da wiki: ensaios, white papers, estudos aprofundados
   concepts/                  páginas curtas de apoio — ideias, frameworks, teorias
   entities/                  páginas curtas de apoio — pessoas, organizações, ferramentas
-  insights/                  pasta atomizadora de ideias — sementes, sínteses/pontes,
-                              observações e mini-argumentos, tudo pelo mesmo /insight
+  insights/                  pasta atomizadora de ideias 
   handouts/                  resumo de uma página de um essay específico, sob demanda (/handout)
   assets/                    imagens e figuras referenciadas pelos essays/resumos
-                              (../assets/nome.png); alimentada por /import, /digest, /absorb
-                              sempre que a fonte processada tem figura embutida
   book-chapters/             reservada para um projeto de livro futuro — não usar ainda
-
   sources/                   arquivo permanente dos documentos originais, por tipo
     ensaio-importado/        ensaio/white paper completo do autor, importado via /import
     web-clipping/            recorte de página web: post, thread, matéria online
@@ -35,16 +31,14 @@ wiki/                        espaço de trabalho do LLM — tudo que é conteúd
     resumos/                 resumo de uma página por fonte processada via /digest
     manifest.md              proveniência: uma entrada por fonte ingerida (append-only)
     map.md                   mapa de todas as fontes por assunto
-
   index.md                   catálogo mestre — apenas essays, organizados por categoria temática
+  index.json                 cache de metadados (título, tags, categoria, status/maturidade) 
   log.md                     log cronológico, append-only, de toda operação realizada na wiki
   status.md                  snapshot do estado atual — ponte entre uma sessão e a próxima
 
 plan/                        plano de longo prazo do Usuário (não confundir com wiki/status.md)
-  plano.md                   5 seções fixas: Tarefas, Fontes para Ingerir, Revisões, Estudos,
-                              Essays Futuros
-  drafts/                    esqueletos de essay gerados por /outline (plan/drafts/<slug>.md),
-                              apagados quando /essay termina de escrever todos os capítulos
+  plano.md                   tarefas, fontes para ingerir, revisões, estudos, essays futuros
+  drafts/                    esqueletos de essay 
 
 scripts/                     lint, stats, grafo de conexões, export (PDF/HTML), busca e índice
   format_check.py            auditoria mecânica de formatação (usado por /format)
@@ -53,16 +47,10 @@ scripts/                     lint, stats, grafo de conexões, export (PDF/HTML),
   stats.py                   dashboard read-only (usado por /stats)
   gap_candidates.py          heurística de cobertura conceitual (usado por /gaps)
   graph.py                   gera output/graph/graph.html (interativo) e graph.md (Mermaid)
-  search.py                  busca com trecho (grep -n com contexto) escopada à wiki, sem
-                              dependência externa — usado por /query, /study, /essay, /insight
-  build_index.py             gera output/index/wiki_index.json (título, tags, categoria,
-                              status/maturidade de essays/concepts/entities/insights + tags do
-                              manifesto de sources) — cache lido por várias skills, gerado por /organize
-  resolve_title.py           checagem exata/fuzzy de título contra essays/concepts/entities/
-                              insights de uma vez — usado antes de criar página nova
-                              (/insight, /chapter, /essay, /digest, /absorb)
-  backlinks.py               lookup reverso de [[wikilinks]] e detecção de órfãos — usado por
-                              /organize, /gaps, /essay, /chapter
+  search.py                  busca com trecho (grep -n com contexto) escopada à wiki
+  build_index.py             gera cache de metadados wiki/index.json 
+  resolve_title.py           checagem exata/fuzzy de títulos
+  backlinks.py               lookup reverso de [[wikilinks]] e detecção de órfãos 
   export_essay.py            export para PDF via Pandoc + LuaLaTeX (usado por /pdf)
   export_essay_html.py       export para HTML standalone via Pandoc (usado por /html)
   essay_template.html        template do HTML exportado
@@ -73,9 +61,6 @@ output/                      tudo que sai da wiki para compartilhamento externo
   handouts/                  cópia do handout (.md, e opcionalmente .pdf/.html) pronta pra enviar
   stats/                     snapshots salvos de /stats --save (stats-YYYY-MM-DD.md)
   graph/                     gerado sob demanda por /organize ou /stats — graph.html, graph.md
-  index/                     gerado por /organize ou sob demanda — wiki_index.json, cache de
-                              metadados (título, tags, categoria, status/maturidade) lido por
-                              /query, /stats, /gaps, /insight, /essay, /chapter, /resolve_title
 
 .agents/skills/               skills (slash commands) que operam sobre a wiki — ver seção abaixo
 ```
@@ -146,7 +131,9 @@ Todos vivem em `conventions/SKILL.md` — a fonte única de verdade, para nunca 
 
 Campo `tags:` do frontmatter de essay/concept/entity/insight, e campo `Tags:` do manifesto de sources (`wiki/sources/manifest.md`) — **uma única fonte de tags para a wiki inteira**, não duas listas separadas.
 
-Uma tag nova só entra quando um essay ou source genuinamente não se encaixa em nenhuma existente — `/organize` audita quase-duplicadas (acento, plural, sinônimo) nos dois campos e propõe consolidação. `output/index/wiki_index.json` cacheia `tags_in_use` já combinando essays e sources.
+Uma tag nova só entra quando um essay ou source genuinamente não se encaixa em nenhuma existente — `/organize` audita quase-duplicadas (acento, plural, sinônimo) nos dois campos e propõe consolidação.
+
+A lista de tags em uso é sempre extraída de `tags_in_use` em `wiki/index.json` (gerado por `python scripts/build_index.py`), a fonte da verdade.
 
 ### Status de essay
 

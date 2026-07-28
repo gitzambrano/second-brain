@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-build_index.py - Gera output/index/wiki_index.json: cache leve de metadados.
+build_index.py - Gera wiki/index.json: cache leve de metadados.
 
 Evita que /query, /stats, /gaps, /insight add, /resolve_title etc. precisem
 abrir e parsear o frontmatter de cada arquivo toda vez que precisam saber
@@ -36,8 +36,8 @@ ENTITIES_DIR = WIKI_ROOT / "entities"
 INSIGHTS_DIR = WIKI_ROOT / "insights"
 SOURCES_DIR = WIKI_ROOT / "sources"
 MANIFEST_PATH = SOURCES_DIR / "manifest.md"
-OUTPUT_DIR = ROOT_DIR / "output" / "index"
-OUTPUT_PATH = OUTPUT_DIR / "wiki_index.json"
+OUTPUT_DIR = WIKI_ROOT
+OUTPUT_PATH = OUTPUT_DIR / "index.json"
 
 
 def load(path):

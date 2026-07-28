@@ -17,16 +17,17 @@ A wiki tem cinco diretórios de topo, cada um com um papel definido:
   - `wiki/essays/` — **o centro da wiki.** Ensaios, white papers e estudos aprofundados. Veja `## Essays — Tema Central`.
   - `wiki/concepts/` e `wiki/entities/` — páginas curtas de apoio: concepts são ideias, frameworks e teorias; entities são pessoas, organizações e ferramentas. Não têm função própria, existem apenas para serem linkadas por essays via `[[wikilink]]`.
   - `wiki/sources/` — arquivo permanente dos documentos originais, organizado por tipo. Veja `## Sources, Tags e Vocabulários Controlados`.
-  - `wiki/insights/` — espaço para atomizar ideias: sementes de ideia, sínteses e pontes entre fontes, observações/intuições, e mini-argumentos. Guarda notas de insight (`/insight`), que ainda não sabem a que essay pertencem e podem crescer até virar um. `/query` também pode encaminhar uma síntese nova para cá via `/insight add`.
+  - `wiki/insights/` — espaço para atomizar ideias: sementes de ideia, sínteses e pontes entre fontes, observações/intuições, e mini-argumentos. Guarda notas de insight (`/insight`), que ainda não sabem a que essay pertencem e podem crescer até virar um.
   - `wiki/handouts/` — resumos de uma página de essays específicos, gerados sob demanda. Nunca são criados automaticamente; veja `/handout` para o fluxo completo.
-  - `wiki/assets/` — imagens e figuras referenciadas pelos essays (caminho relativo `../assets/nome.png`). Alimentada por `/import`, `/digest`, `/absorb` sempre que a fonte processada tem figura embutida. Veja `## Tratamento de imagens` em `conventions/SKILL.md`.
+  - `wiki/assets/` — imagens e figuras referenciadas pelos essays. Veja `## Tratamento de imagens` em `conventions/SKILL.md`.
   - `wiki/book-chapters/` — reservada para um projeto de livro futuro. Não usar ainda.
   - `wiki/index.md` — catálogo mestre, contendo apenas essays, organizado por categoria temática.
   - `wiki/log.md` — log cronológico, append-only, de toda operação realizada na wiki.
   - `wiki/status.md` — snapshot do estado atual: foco corrente, perguntas em aberto, pendências. Funciona como ponte entre uma sessão e outra; veja a skill `/status`.
+  - `wiki/index.json` — cache de metadados (título, tags, categoria, status/maturidade).
 - **`plan/`** — plano de longo prazo do Usuário.
-  - `plan/plano.md`: tem 5 seções fixas, descritas em `/plan`.
-  - `plan/drafts/`: esqueletos de essay gerados por `/outline`, antes de virarem texto por `/essay`.
+  - `plan/plano.md`— tem 5 seções fixas, descritas em `/plan`.
+  - `plan/drafts/`— esqueletos de essay gerados por `/outline`, antes de virarem texto por `/essay`.
 - **`output/`** — saídas da wiki para compartilhamento externo: `output/pdf/`, `output/html/`, `output/handouts/`, `output/stats/`, `output/graph/`.
 - **`scripts/`** — scripts de lint, estatísticas e exportação (PDF/HTML).
 
@@ -125,7 +126,7 @@ A wiki tem cinco diretórios de topo, cada um com um papel definido:
 
 O campo `tags:` do frontmatter de todo essay/concept/entity/insight, e o campo `Tags:` do manifesto de sources (`wiki/sources/manifest.md`), representam o tema — mesmo vocabulário fechado para os dois, para evitar que tags parecidas virem tags diferentes.
 
-Lista atual, as regras de reuso e os critérios para criar uma tag nova estão em `## Tags — Vocabulário Controlado`, em `conventions/SKILL.md`.
+Lista de tags em uso é sempre extraída de `tags_in_use` em `wiki/index.json` (gerado por `python scripts/build_index.py`). As regras de reuso e os critérios para criar uma tag nova estão em `## Tags — Vocabulário Controlado`, em `conventions/SKILL.md`.
 
 ### Tipos de Source
 

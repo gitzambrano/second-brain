@@ -59,16 +59,12 @@ Essays têm um campo a mais, `status: draft | maduro | finalizado` — ver `## S
 
 ## Tags — Vocabulário Controlado
 
-Campo `tags:` do frontmatter de essay/concept/entity/insight, e campo `Tags:` do manifesto de sources (`wiki/sources/manifest.md`) e do mapa (`wiki/sources/map.md`) — **uma única lista, um único vocabulário fechado** para a wiki inteira, evita tags quase-duplicadas (`Filosofia`, `filosofia`, `Filosofia da Mente`) que fragmentam a navegação. Uma fonte processada nunca inventa uma tag que não serviria também para um essay — é o mesmo tema, só um tipo de página diferente.
+Campo `tags:` do frontmatter de essay/concept/entity/insight, e campo `Tags:` do manifesto de sources (`wiki/sources/manifest.md`) e do mapa (`wiki/sources/map.md`). **Uma única lista, um único vocabulário fechado** para a wiki inteira em `tags_in_use` em `wiki/index.json`, evitando tags quase-duplicadas que fragmentam a navegação.
 
-**Tags atuais** (fonte da verdade — adicione uma nova aqui só quando um essay ou source não se encaixa em nenhuma existente):
-
-Vida Pessoal · Produtividade · Finanças · Saúde · Aprendizado · Projetos · Diário · Filosofia · Aerodinâmica · Dinâmica de Vôo · Asas Rotativas · Engenharia · Xadrez · Quoridor · Cosmologia · Física · Matemática · Estatística · Epistemologia · Ontologia · Metafísica · Biologia · Psicologia · Consciência · Inteligência Artificial · Computação · Ética · Gestão · Simulação · Lógica · Filosofia da Mente · Psicometria · Neurosciência · Termodinãmica
-
-1. **Reuse antes de criar** — busque em `wiki/index.md`, nos frontmatters já usados, e em `Tags:` do manifesto de sources. `output/index/wiki_index.json` (`build_index.py`, ver README) cacheia `tags_in_use` já combinando essays e sources, é a forma mais barata de checar.
+1. **Reuse antes de criar** — cheque `tags_in_use` em `wiki/index.json` (gerado por `build_index.py`) antes de escrever uma tag nova. Rode `python scripts/build_index.py` primeiro se o índice estiver desatualizado.
 2. **Uma tag, uma grafia** — Title Case em Português, nunca uma variante (singular/plural, acento, sinônimo) de tag existente.
 3. **Tags são temas, não tipos** — o tipo do essay (`Ensaio`, `White Paper`, etc.) ou da source (`Artigo Acadêmico`, `Livro`, etc.) já vive na byline/`Tipo:`, nunca em `tags`/`Tags:`.
-4. **2 a 5 tags por essay; 1 a 5 tags por source** — uma source geralmente cobre um tema só, então pode ter menos.
+4. **2 a 5 tags por essay ou  source** .
 5. `/organize` audita quase-duplicadas (nos dois campos, `tags:` e `Tags:`) e propõe consolidação.
 
 ## Tipos de Source — Vocabulário Controlado

@@ -8,7 +8,7 @@ quase-duplicados nascerem (ex: "Autopoiese" vs "Auto-poiese") sem precisar
 ler wiki/index.md e varrer concepts/entities manualmente pra saber se um
 wikilink já tem destino. Cobre os 4 tipos de página de uma vez.
 
-Usa o cache de output/index/wiki_index.json quando existir (gerado por
+Usa o cache de wiki/index.json quando existir (gerado por
 build_index.py); --force-scan ignora o cache e lê os arquivos direto —
 útil se o índice estiver desatualizado no meio de uma sessão.
 
@@ -39,7 +39,7 @@ ESSAYS_DIR = WIKI_ROOT / "essays"
 CONCEPTS_DIR = WIKI_ROOT / "concepts"
 ENTITIES_DIR = WIKI_ROOT / "entities"
 INSIGHTS_DIR = WIKI_ROOT / "insights"
-INDEX_CACHE = ROOT_DIR / "output" / "index" / "wiki_index.json"
+INDEX_CACHE = WIKI_ROOT / "index.json"
 
 DIRS_BY_TYPE = {
     "essay": ESSAYS_DIR,
@@ -139,7 +139,7 @@ def main():
     parser.add_argument("--threshold", type=float, default=DEFAULT_THRESHOLD,
                          help=f"Similaridade mínima 0-1 para considerar fuzzy match (default: {DEFAULT_THRESHOLD})")
     parser.add_argument("--force-scan", action="store_true",
-                         help="Ignora output/index/wiki_index.json e lê os arquivos direto do disco")
+                         help="Ignora wiki/index.json e lê os arquivos direto do disco")
     args = parser.parse_args()
 
     pages, used_cache = collect_pages(args.force_scan)
@@ -149,7 +149,7 @@ def main():
         return 0
 
     kind, matches = resolve(args.title, pages, args.threshold)
-    source = "cache (output/index/wiki_index.json)" if used_cache else "leitura direta do disco"
+    source = "cache (wiki/index.json)" if used_cache else "leitura direta do disco"
 
     if kind == "none":
         print(f'"{args.title}" — livre, nenhum match (fonte: {source}).')

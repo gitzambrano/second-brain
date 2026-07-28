@@ -10,7 +10,6 @@ description: >
   dentro de seções já existentes.
 allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion
 ---
-
 # Chapter
 
 Trabalha a **estrutura** de um essay: capítulos/seções que entram, saem, se movem, se fundem, se dividem, ou uma página nova de conceito/entidade que passa a ser referenciada por ele. Diferente de `/expand`, que lida com o conteúdo dentro de uma seção já existente.
@@ -24,12 +23,12 @@ Leia o essay inteiro antes de mover uma única linha. Reorganização é cara de
 1. Depois de ler o essay inteiro, decida a posição: onde a seção nova prepara o terreno para a seguinte e continua o que veio antes.
 2. Crie a seção com heading `##`, escreva o conteúdo seguindo o `## Estilo de prosa` de `conventions/SKILL.md`.
 3. Adicione a nova seção ao `## Sumário` com o link correspondente.
-4. Se a seção nova introduz um conceito/entidade que merece página própria, crie em `wiki/concepts/` ou `wiki/entities/` e linke em `## Conexões`.
+4. Se a seção nova introduz um conceito/entidade que merece página própria, crie em `wiki/concepts/` ou `wiki/entities/` e linke em `## Conexões` — `tags:` reusa o vocabulário controlado (mesma checagem em `wiki/index.json` descrita em `## Criar página de conceito/entidade` abaixo).
 
 ## Criar página de conceito/entidade
 
 1. Verifique primeiro se já não existe uma página equivalente: `python scripts/resolve_title.py "Título Candidato"` cobre essays, concepts, entities e insights de uma vez (exato e fuzzy) — não duplique.
-2. Crie o arquivo na subpasta certa, com frontmatter simples e conteúdo denso o bastante para justificar a página própria.
+2. Crie o arquivo na subpasta certa, com frontmatter simples e conteúdo denso o bastante para justificar a página própria. O campo `tags:` reusa o vocabulário controlado — cheque `tags_in_use` em `wiki/index.json` (gerado por `python scripts/build_index.py`; rode-o primeiro se estiver desatualizado) e só crie tag nova se nenhuma existente cobrir o tema.
 3. Linke a partir do essay em `## Conexões`, e a partir da página nova de volta para o essay.
 
 ## Mover, fundir, ou dividir seções
@@ -44,10 +43,12 @@ Depois de qualquer reorganização, atualize `## Sumário` para refletir a nova 
 ## Depois
 
 Atualize `updated:` no frontmatter. Se a mudança foi de peso (nova seção, reorganização geral, página nova criada), log:
+
 ```
 ## [YYYY-MM-DD] chapter | Título do Essay
 Resumo da mudança estrutural.
 ```
+
 Se existir handout para este essay e a reorganização mudou a tese ou o caminho argumentativo, avise o Usuário e ofereça regenerá-lo (`/handout`).
 
 ## Convenções
