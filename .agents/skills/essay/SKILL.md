@@ -64,7 +64,7 @@ Aplique as duas seções acima na proporção que o argumento pedir — um essay
 - **Sem resumo condensado dentro do essay** — vai direto da byline pro `## Sumário`; a introdução (primeira seção `##`) cumpre esse papel. Resumo de uma página é handout (`/handout`), nunca seção do essay.
 - **`## Sumário`** logo após a byline, com links para cada seção `##` (exceto Referências e Conexões)
 - **Corpo**: só links externos `[texto](url)` inline, nunca `[[wikilinks]]` fora de Conexões. **Mínimo 10 links externos**, cobrindo pensadores/correntes/obras (filosofia) ou normas/papers/conceitos técnicos (engenharia).
-- **`## Referências`** (heading exato) com a bibliografia usada — cite a fonte sempre que possível, nunca afirme um dado ou claim sem verificação. O formato de cada entrada é o de `## Formato de "## Referências" — padrão AIAA` em `conventions/SKILL.md`, e não é opcional:
+- **`## Referências`** (heading exato) com a bibliografia usada — cite a fonte sempre que possível, nunca afirme um dado ou claim sem verificação. Antes de escrever uma entrada nova, confira `wiki/references.md`: se a mesma obra já está catalogada (outro essay já cita), reuse a citação exata em vez de redigir uma versão nova — ver `## wiki/references.md e wiki/references.json` em `conventions/SKILL.md`. O formato de cada entrada é o de `## Formato de "## Referências" — padrão AIAA` em `conventions/SKILL.md`, e não é opcional:
 
   ```
   [1] Cheeseman, I. C., e Bennett, W. E., *The Effect of the Ground on a Helicopter Rotor in Forward Flight*, ARC R&M No. 3021, HMSO, London, 1955. — Nota curta opcional. [Link](https://…)

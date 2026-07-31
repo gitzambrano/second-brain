@@ -31,7 +31,7 @@ O Usuário quer incluir uma ideia, tese, conceito ou exemplo novo, sem tirar o q
 1. Depois de ler o essay inteiro, decida o melhor ponto de inserção — o lugar certo é onde o conteúdo novo se conecta ao que vem antes e prepara o que vem depois, não necessariamente o fim do documento.
 2. Se for grande o bastante para virar seção própria, isso é trabalho de `/chapter`, não deste skill — avise o Usuário e sugira.
 3. Se for uma expansão de um parágrafo ou ponto já existente, integre à prosa corrida, não como um adendo colado ao final.
-4. Se o conteúdo se apoia em fonte externa nova, adicione a `## Referências` e ao campo `sources:` do frontmatter, com link externo inline na primeira ocorrência do conceito.
+4. Se o conteúdo se apoia em fonte externa nova, adicione a `## Referências` e ao campo `sources:` do frontmatter, com link externo inline na primeira ocorrência do conceito. Antes de escrever a entrada, confira `wiki/references.md`: se a mesma obra já está catalogada, reuse a citação exata existente em vez de redigir uma nova.
 5. Se o novo conceito merece página própria (`wiki/concepts/` ou `wiki/entities/`), crie-a e linke em `## Conexões`.
 6. O frontmatter dessa página nova carrega `tags:` — reuse o vocabulário controlado (cheque `tags_in_use` em `wiki/index.json`, gerado por `python scripts/build_index.py`; rode-o primeiro se estiver desatualizado) e só crie tag nova se nenhuma existente cobrir o tema.
 

@@ -200,6 +200,8 @@ Mesmo padrão de `index.json`/`index.md`: artefatos na raiz de `wiki/`, **nunca 
 
 `domain_group` (só no JSON, para consultas): `doi`, `nasa`, `aiaa`, `sep`, `wikipedia`, `github`, `institucional`, ou nulo quando a entrada não tem link.
 
+**Antes de escrever uma entrada nova em `## Referências`, procure a mesma fonte em `wiki/references.md`** (por URL ou pelo título em itálico) — se ela já estiver catalogada, reuse a citação exata já existente em vez de redigir uma versão nova com palavras diferentes. É esse desvio, repetido essay a essay, que produz a classe 4 de `dedupe_check.py` (mesma obra, citação divergente entre essays): evitar na criação é mais barato do que consolidar depois. Só vale a pena uma citação diferente da já catalogada se a fonte real for outra edição/tradução genuinamente distinta, não apenas uma reformulação da mesma nota.
+
 `references.md` é **lista única em ordem alfabética**, sem agrupamento. Agrupar por domínio separaria o livro e o paper do mesmo autor, e criava um balde "Sem link" que falava de disponibilidade digital em vez de tipo de fonte. Bibliografia se lê por autor.
 
 `concepts/` e `entities/` **não ganham** seção `## Referências` própria — essas páginas continuam sendo frontmatter simples e conteúdo denso, sem bibliografia formal, e isso não muda. `references.json`/`.md` é alimentado só pelas `## Referências` de essays, com o mesmo rigor de regeneração automática que `build_index.py` já aplica a `tags_in_use`/`index.json`.
