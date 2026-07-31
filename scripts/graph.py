@@ -369,7 +369,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
      cobriria metade do grafo; e o modal do índice passa a ocupar a tela
      inteira, já que uma tabela em 92vw de largura fica ilegível. */
   @media (max-width: 720px), (pointer: coarse) and (max-width: 900px) {
-    #panel-toggle { display: flex; }
+    #panel-toggle {
+      display: flex;
+      top: calc(10px + env(safe-area-inset-top));
+      left: calc(10px + env(safe-area-inset-left));
+    }
     #panel {
       top: auto; bottom: 0; left: 0; width: 100vw; border-radius: 14px 14px 0 0;
       max-height: 58dvh; padding: 14px 16px calc(16px + env(safe-area-inset-bottom));
@@ -454,9 +458,22 @@ let width = window.innerWidth, height = window.innerHeight;
 const svg = d3.select("#graph").attr("viewBox", [0, 0, width, height]);
 const container = svg.append("g");
 
+// Fica marcado assim que o próprio usuário mexe no zoom/pan (toque, roda ou
+// arrasto), para nunca mais sobrescrever o enquadramento que ele escolheu —
+// nem no fit-to-screen inicial do mobile, nem numa rotação de tela depois.
+let userAdjustedView = false;
+
 const zoom = d3.zoom()
   .scaleExtent([0.1, 6])
   .filter((event) => {
+    // Toque (touchstart/touchmove/touchend/touchcancel) não tem `.button`
+    // — sem este ramo, todo evento de toque cai no `return event.button...`
+    // abaixo, que dá `undefined === 0`, ou seja `false`, e zoom/pan morrem
+    // por completo no celular. Toque sempre libera: pinça dá zoom e um dedo
+    // só dá pan; arrastar um nó continua funcionando porque o d3.drag do
+    // próprio nó intercepta o evento antes (nopropagation) e ele nem chega
+    // a subir até aqui.
+    if (event.type.startsWith("touch")) return true;
     // O filtro padrão do d3 aceita só o botão esquerdo (`!event.button`).
     // Liberar o botão do meio dá o pan por clique-na-rodinha sem tirar o
     // arrastar de nó, que continua no esquerdo: o d3.drag ignora o botão 1,
@@ -464,7 +481,13 @@ const zoom = d3.zoom()
     if (event.type === "wheel") return !event.ctrlKey;
     return event.button === 0 || event.button === 1;
   })
-  .on("zoom", (event) => container.attr("transform", event.transform));
+  .on("zoom", (event) => {
+    container.attr("transform", event.transform);
+    // `sourceEvent` só existe quando a transformação veio de uma interação
+    // real (toque, roda, arrasto) — chamadas programáticas como o
+    // fitToScreen() não têm, então não acionam esta marca.
+    if (event.sourceEvent) userAdjustedView = true;
+  });
 
 svg.call(zoom);
 
@@ -485,6 +508,9 @@ function ajustarViewport() {
   // da media query, mas deixar a classe pendurada faria o botão reaparecer
   // com o rótulo errado se a janela encolhesse de novo.
   if (!telaPequena()) definirPainel(true);
+  // Girar o celular muda completamente o que cabe na tela; reencaixa o
+  // grafo, a menos que o usuário já tenha escolhido o próprio enquadramento.
+  else fitToScreen(true);
 }
 window.addEventListener("resize", ajustarViewport);
 window.addEventListener("orientationchange", ajustarViewport);
@@ -618,9 +644,11 @@ function selectNode(d) {
   });
 
   const target = d.type === "reference" ? d.url : (d.file ? "../../" + d.file : null);
-  // O cartão de detalhe mora dentro do painel; num celular com o painel
-  // recolhido, selecionar um nó não mostraria nada.
-  if (telaPequena()) definirPainel(true);
+  // O cartão de detalhe mora dentro do painel, mas o painel só deve abrir
+  // por ação explícita no botão ☰ — nunca sozinho por causa de um toque no
+  // grafo. Num celular com o painel recolhido, o destaque no próprio grafo
+  // (nós vizinhos) já é o feedback da seleção; o cartão de detalhe fica
+  // pronto e some ao abrir o painel manualmente.
   detailEl.hidden = false;
   detailEl.innerHTML =
     `<div class="detail-title">${escapeHtml(d.title)}</div>` +
@@ -701,6 +729,48 @@ document.querySelectorAll(".legend-item[data-type]").forEach(el => {
 });
 
 updateVisibility();
+
+// ---- Fit-to-screen inicial (mobile) ------------------------------------
+// No desktop o grafo nasce em torno do centro e cabe razoavelmente numa
+// tela grande. No celular a viewport é estreita e a simulação de forças
+// espalha os nós livremente pelo espaço "de mundo" (que não tem relação
+// nenhuma com o tamanho da tela) — sem isto, quem abre o grafo no celular
+// vê só um pedaço cortado e precisa dar zoom out à mão antes de enxergar
+// qualquer estrutura.
+function fitToScreen(instant) {
+  if (userAdjustedView || !telaPequena()) return;
+  const visible = data.nodes.filter(n => n.x != null && n.y != null && isNodeVisible(n));
+  if (!visible.length) return;
+
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  visible.forEach(n => {
+    minX = Math.min(minX, n.x); maxX = Math.max(maxX, n.x);
+    minY = Math.min(minY, n.y); maxY = Math.max(maxY, n.y);
+  });
+  const bboxW = Math.max(1, maxX - minX);
+  const bboxH = Math.max(1, maxY - minY);
+  const padding = 48;
+  const [minScale, maxScale] = zoom.scaleExtent();
+  const scale = Math.max(minScale, Math.min(
+    maxScale,
+    0.92 / Math.max(bboxW / (width - padding * 2), bboxH / (height - padding * 2))
+  ));
+  const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+  const transform = d3.zoomIdentity.translate(width / 2, height / 2).scale(scale).translate(-cx, -cy);
+
+  (instant ? svg : svg.transition().duration(280)).call(zoom.transform, transform);
+}
+
+if (telaPequena()) {
+  // A simulação esfria e emite "end" sozinha (alphaDecay padrão) — nesse
+  // ponto os nós já pararam de se mexer e o bounding box é definitivo.
+  simulation.on("end.fit", () => fitToScreen(false));
+  // Rede de segurança: grafos grandes podem demorar mais que o usuário tem
+  // paciência de esperar olhando para um canto cortado do grafo. Reencaixa
+  // de qualquer jeito depois de 1.2s, mesmo que a simulação ainda não tenha
+  // acabado — melhor um enquadramento aproximado cedo do que o exato tarde.
+  setTimeout(() => fitToScreen(true), 1200);
+}
 
 // ---- Modal: Índice por tipo ----
 const modalOverlay = document.getElementById("modal-overlay");
