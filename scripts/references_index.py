@@ -297,8 +297,8 @@ def render_references_md(data):
             citation = f"{citation.rstrip()} [link]({ref['url']})"
         lines.append(f"- {citation}")
         lines.append(
-            '  <br><span style="font-size:0.82em; color:#8a8f96;">'
-            f"citada em: {', '.join(ref['cited_by'])}</span>"
+            '  <span style="font-size:0.82em; color:#8a8f96;">'
+            f"`{', '.join(ref['cited_by'])}`"
         )
         lines.append("")
 
