@@ -83,6 +83,7 @@ Em modo corpus inteiro, pula essays com `status: finalizado` ou `maduro` nos fix
    | Categoria | Códigos de issue |
    | --- | --- |
    | Estrutura obrigatória | `NO_FRONTMATTER`, `BAD_FRONTMATTER`, `FM_*`, `NO_H1`, `NO_SUMARIO`, `SUMARIO_NO_HR`, `SUMARIO_BROKEN_ANCHOR`, `NO_REFERENCIAS`, `NO_CONEXOES`, `CONEXOES_NOT_LAST` |
+   | Qualidade de referência | `EMPTY_REFERENCIAS` (corpo com links mas bibliografia vazia), `REF_BOLD_AUTHOR` (autor em negrito, nunca itálico), `REF_TITLE_IS_AUTHOR` (itálico é "Autor (Ano)" em vez do título real — confirme via WebFetch/DOI antes de aceitar), `REF_MISSING_TITLE` (só autor+ano+container, sem título) |
    | Resumo do índice | `FM_NO_SUMMARY`, `FM_BAD_SUMMARY`, `FM_LONG_SUMMARY` |
    | Byline | `BYLINE_*` |
    | Links | `WIKILINKS_IN_BODY`, `FEW_EXT_LINKS` |
@@ -92,7 +93,7 @@ Em modo corpus inteiro, pula essays com `status: finalizado` ou `maduro` nos fix
    | Residuais | `HTML_RESIDUAL`, `RESIDUAL_SYMBOL` |
    | Idioma | `ENGLISH_PARAGRAPH` |
    | Obsidian | `LOOSE_CHAPTER_LABEL` |
-   | Referências | `REFERENCIA_FORMATO_INVALIDO`, `DUPLICATE_REFERENCIA`, `LINK_NOT_IN_REFERENCIAS`, `REFERENCIA_SEM_LINK`, `REFERENCIA_NAO_USADA` |
+   | Referências | `REFERENCIA_FORMATO_INVALIDO`, `DUPLICATE_REFERENCIA`, `LINK_NOT_IN_REFERENCIAS`, `REFERENCIA_SEM_LINK`, `REFERENCIA_NAO_USADA`, `EMPTY_REFERENCIAS`, `REF_BOLD_AUTHOR`, `REF_TITLE_IS_AUTHOR`, `REF_MISSING_TITLE` |
 
 6. **Apresente o relatório final** com:
    - Contagem de essays limpos vs. com issues
@@ -100,6 +101,7 @@ Em modo corpus inteiro, pula essays com `status: finalizado` ou `maduro` nos fix
    - Lista de fixes auto-aplicados
    - Se houver `REFERENCIA_FORMATO_INVALIDO`, sugira `python scripts/linkify_check.py --fix-format` — mas não rode: reformatar bibliografia é `/linkify`, não `/format`
    - **Liste nominalmente os essays com `FM_NO_SUMMARY`.** Sem `summary:` a entrada do essay em `wiki/index.md` sai sem resumo, e não existe outro lugar de onde um script possa tirar essa linha. Escrever o resumo é conteúdo, então não invente aqui: reporte quais essays estão sem, e ofereça preencher via `/expand` ou numa passada dedicada.
+   - **`EMPTY_REFERENCIAS`, `REF_BOLD_AUTHOR`, `REF_TITLE_IS_AUTHOR` e `REF_MISSING_TITLE` nunca são auto-corrigíveis** — exigem descobrir o título/autor real de uma fonte externa, o que `auto_fix_lint.py` não pode fazer (script não navega a web). Para cada ocorrência, use `WebFetch` na URL da entrada (ou `WebSearch` por autor+ano+container quando o fetch falhar) para confirmar o título e autor reais antes de reescrever a entrada — nunca reescreva "de memória". Trate como oportunidade de auditoria: essas quatro categorias já revelaram, na prática, entradas com autor completamente errado (a fonte real, quando resolvida, era de outro autor), não só formatação.
 
 7. **Não pergunte ao Usuário** durante a execução — apenas reporte ao final. A única exceção é se o `--file <slug>` for ambíguo.
 

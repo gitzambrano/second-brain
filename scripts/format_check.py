@@ -319,6 +319,73 @@ def check_essay(filepath: Path) -> dict:
                 msg = f"Referências mal formatada: {desc} — use exatamente '## Referências'"
                 break
         add("ERROR", "NO_REFERENCIAS", msg)
+    else:
+        ref_match = re.search(
+            r"^## Referências$\n(.*?)(?=^## |\Z)", content, re.MULTILINE | re.DOTALL
+        )
+        ref_block = ref_match.group(1) if ref_match else ""
+        ref_entries = re.findall(r"^\[\d+\].*$", ref_block, re.MULTILINE)
+
+        # 5a. Referências vazia mas corpo tem links externos substanciais —
+        # sintoma real: essay inteiro sem bibliografia apesar de citar fontes.
+        body_before_ref = content.split("## Referências")[0]
+        body_ext_links = re.findall(r"\[([^\]]+)\]\((https?://[^\)]+)\)", body_before_ref)
+        if not ref_entries and len(body_ext_links) >= 5:
+            add("ERROR", "EMPTY_REFERENCIAS",
+                f"'## Referências' está vazia, mas o corpo tem {len(body_ext_links)} "
+                f"link(s) externo(s) — bibliografia provavelmente nunca foi construída")
+
+        # 5b. Nome de autor em **negrito** — convenção usa só itálico no título,
+        # autor em texto normal (ex.: bug visto em metodos-matematicos-*.md).
+        bold_entries = [e for e in ref_entries if "**" in e]
+        if bold_entries:
+            add("WARNING", "REF_BOLD_AUTHOR",
+                f"{len(bold_entries)} entrada(s) em '## Referências' com **negrito** "
+                f"— convenção não usa negrito, só itálico no título: "
+                f"{[e[:40] for e in bold_entries[:3]]}")
+
+        # 5c. Itálico envolvendo "Autor (Ano)" inteiro em vez do título real —
+        # sintoma de título nunca preenchido (bug visto em psicometria-*.md,
+        # entradas [11] e [18]: "*Haworth, C. M. A. et al. (2010)*.").
+        author_as_title = re.compile(
+            r"\*[A-ZÀ-Ú][a-zà-úãõçêé]+(?:,|\s&|\set al\.)[^*]{0,60}\(\d{4}\)[^*]*\*"
+        )
+        title_bug_entries = [e for e in ref_entries if author_as_title.search(e)]
+        if title_bug_entries:
+            add("ERROR", "REF_TITLE_IS_AUTHOR",
+                f"{len(title_bug_entries)} entrada(s) com 'Autor (Ano)' dentro do "
+                f"itálico — ou o título real nunca foi preenchido (itálico = só "
+                f"autor+ano), ou autor/ano foram incorretamente colados dentro do "
+                f"itálico do título. Confira manualmente (WebFetch/DOI) antes de "
+                f"aceitar: {[e[:50] for e in title_bug_entries[:3]]}")
+
+        # 5d-bis. Título com " — Autor (Ano)" colado dentro do próprio itálico —
+        # variante do mesmo bug: o título real está lá, mas autor/ano foram
+        # grudados no fim do span itálico em vez de ficarem fora (bug visto em
+        # etica-moralidade-*.md e mente-aumentada.md, ex.: "*Being No One —
+        # Thomas Metzinger (2003)*", "*W.D. Hamilton — Inclusive Fitness*").
+        embedded_author = re.compile(
+            r"\*[^*]+ — [A-ZÀ-Ú][\wÀ-ú.]*(?: [A-ZÀ-Ú][\wÀ-ú.]*){0,3}(?: \(\d{4}\))?\*"
+        )
+        embedded_entries = [e for e in ref_entries if embedded_author.search(e)]
+        if embedded_entries:
+            add("WARNING", "REF_EMBEDDED_AUTHOR_IN_TITLE",
+                f"{len(embedded_entries)} entrada(s) parecem ter autor/ano ou "
+                f"subtítulo inventado colado dentro do itálico do título (padrão "
+                f"'*Título — Nome (Ano)*') — confirme o título real da página/obra "
+                f"(WebFetch) e mova autor/ano para fora do itálico: "
+                f"{[e[:60] for e in embedded_entries[:3]]}")
+
+        # 5d. Entrada com itálico só do container (periódico/site) e nenhum
+        # título aparente antes dele — ex.: "Schmidt, F. L. (1998). *Psychological
+        # Bulletin*." sem o título real do artigo.
+        container_only = re.compile(
+            r"^\[\d+\]\s+[A-ZÀ-Ú][a-zà-úãõçêé]+.{0,80}\(\d{4}\)\.\s*\*[^*]+\*\.\s*(?:doi|https?|$)",
+        )
+        for e in ref_entries:
+            if container_only.search(e) and not author_as_title.search(e):
+                add("WARNING", "REF_MISSING_TITLE",
+                    f"Entrada sem título aparente, só autor+ano+container: {e[:70]}")
 
     # -----------------------------------------------------------------------
     # 6. ## Conexões — presente e última H2
