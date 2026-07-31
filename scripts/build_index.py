@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-build_index.py - Gera wiki/index.json: cache leve de metadados.
+build_index.py - Gera wiki/index.json e wiki/index.md: cache leve de
+metadados + índice navegável de essays.
 
 Evita que /query, /stats, /gaps, /insight add, /resolve_title etc. precisem
 abrir e parsear o frontmatter de cada arquivo toda vez que precisam saber
@@ -9,11 +10,17 @@ descartável e sempre regenerável — mesmo padrão de output/stats/ e
 output/graph/ (ver README.md). A fonte da verdade continua sendo os
 arquivos em disco; este índice é só cache.
 
-Indexa essays, concepts, entities, insights (título, path, tags, categoria,
+Indexa essays, concepts, entities, insights (título, path, tags, summary,
 status/maturidade) e também wiki/sources/manifest.md — toda fonte agora
 carrega Tags: no manifesto (mesmo vocabulário controlado dos essays, ver
 conventions/SKILL.md), então o índice consolida tags_in_use combinando as
 duas origens numa fonte única de contagem.
+
+`wiki/index.md` é gerado a partir da mesma varredura: lista plana de
+essays ordenada por `created` decrescente, com summary e tags por entrada
+(nunca editado à mão — ver conventions/SKILL.md, ## Formato do índice).
+Continua Markdown, não HTML — abre direto em qualquer editor/viewer sem
+depender de exportação prévia.
 
 Usage:
     python scripts/build_index.py
@@ -28,6 +35,8 @@ from pathlib import Path
 
 import yaml
 
+import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
+
 ROOT_DIR = Path(__file__).resolve().parent.parent
 WIKI_ROOT = ROOT_DIR / "wiki"
 ESSAYS_DIR = WIKI_ROOT / "essays"
@@ -38,6 +47,7 @@ SOURCES_DIR = WIKI_ROOT / "sources"
 MANIFEST_PATH = SOURCES_DIR / "manifest.md"
 OUTPUT_DIR = WIKI_ROOT
 OUTPUT_PATH = OUTPUT_DIR / "index.json"
+OUTPUT_MD_PATH = OUTPUT_DIR / "index.md"
 
 
 def load(path):
@@ -93,9 +103,9 @@ def index_pages(dir_path, node_type):
             "updated": as_str(fm.get("updated")),
         }
         if node_type == "essays":
-            m = re.search(r"(?m)^> (Ensaio|White Paper|Brainstorm|Estudo|Análise)\s*·\s*(.+)$", content)
+            m = re.search(r"(?m)^> (Ensaio|White Paper|Brainstorm|Estudo|Análise)\s*$", content)
             entry["type"] = m.group(1) if m else None
-            entry["category"] = m.group(2).strip() if m else None
+            entry["summary"] = as_str(fm.get("summary"))
             entry["status"] = as_str(fm.get("status"))
         if node_type == "insights":
             entry["maturidade"] = as_str(fm.get("maturidade"))
@@ -139,6 +149,47 @@ def index_sources():
     return entries
 
 
+def render_index_md(essays, generated):
+    """Renderiza wiki/index.md: lista plana de essays, sem agrupamento por
+    categoria — a classificação temática vem só de `tags` (ver
+    conventions/SKILL.md, ## Formato do índice). Nunca editado à mão.
+
+    Uma entrada por essay, ordenada por `created` decrescente:
+
+        - [Título do Essay](essays/nome-do-arquivo.md) — Resumo de uma linha.
+          `consciência` · `identidade-pessoal` · `filosofia-da-mente`
+    """
+    def sort_key(e):
+        # created ausente vai para o final da lista (ordenação decrescente)
+        return e["created"] or ""
+
+    ordered = sorted(essays, key=sort_key, reverse=True)
+
+    lines = [
+        "# Índice",
+        "",
+        f"{len(ordered)} essay(s) — gerado em {generated}, "
+        "ordenado por data de criação (mais recente primeiro). "
+        "Artefato gerado por `scripts/build_index.py`, nunca editado à mão.",
+        "",
+    ]
+
+    for e in ordered:
+        rel_path = Path(e["path"]).name  # wiki/essays/<arquivo>.md -> <arquivo>.md
+        title = e["title"] or rel_path
+        summary = e.get("summary") or ""
+        tags = " · ".join(f"`{t}`" for t in e.get("tags") or [])
+        entry = f"- [{title}](essays/{rel_path})"
+        if summary:
+            entry += f" — {summary}"
+        lines.append(entry)
+        if tags:
+            lines.append(f"  {tags}")
+
+    lines.append("")
+    return "\n".join(lines)
+
+
 def build():
     essays = index_pages(ESSAYS_DIR, "essays")
     concepts = index_pages(CONCEPTS_DIR, "concepts")
@@ -169,10 +220,15 @@ def main():
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         json.dump(index, f, ensure_ascii=False, indent=2)
 
+    index_md = render_index_md(index["essays"], index["generated"])
+    with open(OUTPUT_MD_PATH, "w", encoding="utf-8") as f:
+        f.write(index_md)
+
     total_pages = len(index["essays"]) + len(index["concepts"]) + len(index["entities"]) + len(index["insights"])
     print(f"Índice gerado: {total_pages} página(s) + {len(index['sources'])} source(s) "
           f"em manifest.md, {len(index['tags_in_use'])} tag(s) em uso.")
     print(f"  {OUTPUT_PATH.relative_to(ROOT_DIR)}")
+    print(f"  {OUTPUT_MD_PATH.relative_to(ROOT_DIR)}")
     return 0
 
 

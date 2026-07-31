@@ -31,8 +31,10 @@ wiki/                        espaço de trabalho do LLM — tudo que é conteúd
     resumos/                 resumo de uma página por fonte processada via /digest
     manifest.md              proveniência: uma entrada por fonte ingerida (append-only)
     map.md                   mapa de todas as fontes por assunto
-  index.md                   catálogo mestre — apenas essays, organizados por categoria temática
-  index.json                 cache de metadados (título, tags, categoria, status/maturidade) 
+  index.md                   catálogo mestre gerado — apenas essays, lista plana com summary e tags
+  index.json                 cache de metadados (título, tags, summary, status/maturidade) 
+  references.md              bibliografia consolidada gerada, agrupada por tipo de fonte
+  references.json            mesma bibliografia em JSON (url, citação AIAA, quem cita) 
   log.md                     log cronológico, append-only, de toda operação realizada na wiki
   status.md                  snapshot do estado atual — ponte entre uma sessão e a próxima
 
@@ -48,12 +50,17 @@ scripts/                     lint, stats, grafo de conexões, export (PDF/HTML),
   gap_candidates.py          heurística de cobertura conceitual (usado por /gaps)
   graph.py                   gera output/graph/graph.html (interativo) e graph.md (Mermaid)
   search.py                  busca com trecho (grep -n com contexto) escopada à wiki
-  build_index.py             gera cache de metadados wiki/index.json 
+  build_index.py             gera wiki/index.md e wiki/index.json a partir do frontmatter
+  references_index.py        gera wiki/references.md e .json das ## Referências dos essays
+  linkify_check.py           valida ## Referências no padrão AIAA (usado por /linkify)
+  dedupe_check.py            candidatos a quase-duplicata: títulos, tags, referências
   resolve_title.py           checagem exata/fuzzy de títulos
   backlinks.py               lookup reverso de [[wikilinks]] e detecção de órfãos 
   export_essay.py            export para PDF via Pandoc + LuaLaTeX (usado por /pdf)
   export_essay_html.py       export para HTML standalone via Pandoc (usado por /html)
   essay_template.html        template do HTML exportado
+  sync_skills.py             espelha .agents/skills/ em .claude/skills/ (hook SessionStart)
+  console_encoding.py        força UTF-8 na saída dos scripts (console Windows é cp1252)
 
 output/                      tudo que sai da wiki para compartilhamento externo
   pdf/                       essays/handouts exportados em PDF (/pdf)
@@ -63,6 +70,25 @@ output/                      tudo que sai da wiki para compartilhamento externo
   graph/                     gerado sob demanda por /organize ou /stats — graph.html, graph.md
 
 .agents/skills/               skills (slash commands) que operam sobre a wiki — ver seção abaixo
+.claude/skills/               espelho gerado do anterior, para o Claude Code — nunca editar
+.claude/settings.json         hook SessionStart que mantém o espelho sincronizado
+AGENTS.md                     regras operacionais — fonte única para todos os agentes
+CLAUDE.md                     só um `@AGENTS.md`; existe porque o Claude Code procura por ele
+```
+
+### Um conteúdo, dois caminhos
+
+Cada agente procura a configuração num lugar diferente, então há dois pares de caminhos — e, em cada par, só um lado se edita:
+
+| Fonte única (edite aqui) | Espelho gerado (nunca edite) | Mecanismo                                                     |
+| ------------------------ | ---------------------------- | ------------------------------------------------------------- |
+| `AGENTS.md`              | `CLAUDE.md`                  | `CLAUDE.md` contém só `@AGENTS.md`; o import resolve sozinho  |
+| `.agents/skills/`        | `.claude/skills/`            | `scripts/sync_skills.py`, via hook `SessionStart`             |
+
+O espelho de skills é regenerado no início de cada sessão do Claude Code, então qualquer edição feita direto em `.claude/skills/` é perdida. Para ver se os dois lados divergiram, sem escrever nada:
+
+```bash
+python scripts/sync_skills.py --check
 ```
 
 ## Skills
@@ -75,7 +101,7 @@ As skills estão agrupadas pela mesma lógica de `AGENTS.md`: da ideação de um
 
 ### Criação
 
-- **Outline** · `/outline` — gera o esqueleto de um essay futuro (título, tipo, categoria, capítulos com papel argumentativo e bullets), salvo em `plan/drafts/<slug>.md`. **Passo obrigatório antes de `/essay`** para todo essay novo, exceto quando a fonte já é `/import`. Permite quantas rodadas de revisão o Usuário quiser antes de qualquer prosa ser escrita.
+- **Outline** · `/outline` — gera o esqueleto de um essay futuro (título, tipo, capítulos com papel argumentativo e bullets), salvo em `plan/drafts/<slug>.md`. **Passo obrigatório antes de `/essay`** para todo essay novo, exceto quando a fonte já é `/import`. Permite quantas rodadas de revisão o Usuário quiser antes de qualquer prosa ser escrita.
 - **Essay** · `/essay` — escreve um essay/white paper novo do zero a partir de um esboço já aprovado por `/outline`. Claude atua como coautor: pesquisa, estrutura e escreve seguindo as convenções de prosa, links e formatação da wiki. Nunca escreve sem esboço aprovado (única exceção: `/import`).
 
 ### Iteração em essay existente
@@ -105,8 +131,8 @@ As skills estão agrupadas pela mesma lógica de `AGENTS.md`: da ideação de um
 - **Sweep** · `/sweep` — orquestra a bateria completa de revisão num essay ou no corpus inteiro: `/format` → `/continuity` → `/proofread` → `/polish` → `/linkify`, com relatório consolidado. Aceita `/sweep` (corpus) ou `/sweep <slug>` (essay único).
 - **Format** · `/format` — auditoria mecânica de formatação: estrutura obrigatória, byline, LaTeX, aspas, espaçamento, compatibilidade Obsidian. Aplica fixes automáticos inequívocos via `auto_fix_lint.py` e reporta o restante. Não toca em prosa nem argumento.
 - **Organize** · `/organize` — organiza a base inteira na camada de metadados: índice, log, manifesto de sources, tags, plano, insights, estrutura de pastas, e gera o grafo de conexões. A skill mais importante para comunicar com clareza — nunca cola o relatório bruto do lint.
-- **Gaps** · `/gaps` — audita cobertura conceitual: termo citado repetidamente na prosa mas sem página própria, página existente sem link em `## Conexões`, e desbalanço temático entre categorias. Prospectivo e opt-in — nunca cria página nem insere link sozinho.
-- **Stats** · `/stats` — dashboard read-only de saúde da wiki: essays por tag/tipo/categoria, órfãos, sources sem manifesto, itens do plano, notas atômicas por maturidade. Não corrige nada, só relata; rápido o bastante para rodar com frequência.
+- **Gaps** · `/gaps` — audita cobertura conceitual: termo citado repetidamente na prosa mas sem página própria, página existente sem link em `## Conexões`, e desbalanço entre tags. Prospectivo e opt-in — nunca cria página nem insere link sozinho.
+- **Stats** · `/stats` — dashboard read-only de saúde da wiki: essays por tag/tipo, órfãos, sources sem manifesto, itens do plano, notas atômicas por maturidade. Não corrige nada, só relata; rápido o bastante para rodar com frequência.
 - **Status** · `/status` — mantém `wiki/status.md`, o snapshot que liga uma sessão à próxima: foco atual, perguntas em aberto, decisões recentes, pendências (raw/, plano, sources não verificados). `/status` mostra; `/status update` recalcula e reescreve.
 
 ### Saída
@@ -167,5 +193,5 @@ Toda fonte processada também gera uma entrada em `wiki/sources/manifest.md` (pr
 
 ## Notas
 
-- **Tudo o que é pessoal fica fora do controle de versão, por design.** `raw/`, `plan/` e a `wiki/` inteira (essays, concepts, entities, insights, handouts, assets, sources, `manifest.md`, `map.md`, `index.md`, `log.md`, `status.md`) estão no `.gitignore` — só a estrutura de pastas é versionada (via `.gitkeep`), nunca o conteúdo. `output/` também fica fora, é sempre derivado. O que de fato é versionado no Git é a camada operacional: `AGENTS.md`, `README.md`, `.agents/skills/**` e `scripts/**`.
+- **Tudo o que é pessoal fica fora do controle de versão, por design.** `raw/`, `plan/` e a `wiki/` inteira (essays, concepts, entities, insights, handouts, assets, sources, `manifest.md`, `map.md`, `index.md`, `references.md`, `log.md`, `status.md`) estão no `.gitignore` — só a estrutura de pastas é versionada (via `.gitkeep`), nunca o conteúdo. `output/` também fica fora, é sempre derivado. O que de fato é versionado no Git é a camada operacional: `AGENTS.md`, `CLAUDE.md`, `README.md`, `.agents/skills/**`, `scripts/**` e `.claude/settings.json`. O espelho `.claude/skills/**` fica de fora, por ser derivado.
 - Todo o conteúdo é em Português do Brasil.

@@ -139,6 +139,7 @@ Aplique **apenas** as modificações aprovadas, na ordem do plano. Para cada mod
 Após aplicar as modificações:
 
 - Atualize `updated:` no frontmatter do essay
+- Se alguma modificação aplicada tocou `## Referências` (citação nova ou corrigida), rode `python scripts/references_index.py` para regenerar `wiki/references.json`/`.md`.
 - Registre em `wiki/log.md`:
 
   ```

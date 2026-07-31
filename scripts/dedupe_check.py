@@ -1,0 +1,311 @@
+#!/usr/bin/env python3
+"""
+dedupe_check.py — Relatório de quase-duplicatas na wiki inteira.
+
+Quatro classes num relatório único, chamado por `/organize`:
+
+    1. Títulos de essays              — a mesma heurística que `resolve_title.py`
+                                        aplica na criação (para nada nascer
+                                        duplicado), agora retroativa ao corpus
+    2. Títulos de concepts/entities   — mesma heurística, mesmo threshold
+    3. Tags                           — normalização de acento/caixa/hífen mais
+                                        singular-plural, sobre `tags_in_use`
+    4. Referências entre essays       — mesma URL normalizada, ou citação AIAA
+                                        quase-idêntica, aparecendo em essays
+                                        DIFERENTES com grafia distinta
+
+A classe 4 não é a mesma coisa que `DUPLICATE_REFERENCIA` do `linkify_check.py`:
+lá é duplicata **dentro do mesmo essay** (erro de formatação); aqui é a mesma
+fonte catalogada duas vezes **em essays diferentes**, com citação ligeiramente
+diferente — sinal de bibliografia divergindo, não de arquivo malformado.
+
+**Nunca decide, nunca funde, nunca deleta.** Só lista candidatos, para
+`/organize` perguntar ao Usuário caso a caso.
+
+Categoria saiu do escopo: o campo não existe mais na wiki (a classificação
+temática vem só de `tags`), então não há o que deduplicar ali.
+
+Uso:
+    python dedupe_check.py                 # relatório completo
+    python dedupe_check.py --json          # saída JSON para a skill parsear
+    python dedupe_check.py --threshold 0.9 # similaridade mínima (padrão 0.85)
+"""
+
+import argparse
+import difflib
+import json
+import re
+import sys
+import unicodedata
+from collections import defaultdict
+from pathlib import Path
+
+import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
+from references_index import (
+    collect_essay_references,
+    normalize_citation,
+    normalize_url,
+)
+from resolve_title import normalize as normalize_title
+
+ROOT_DIR = Path(__file__).resolve().parent.parent
+WIKI_ROOT = ROOT_DIR / "wiki"
+ESSAYS_DIR = WIKI_ROOT / "essays"
+CONCEPTS_DIR = WIKI_ROOT / "concepts"
+ENTITIES_DIR = WIKI_ROOT / "entities"
+INDEX_JSON = WIKI_ROOT / "index.json"
+
+DEFAULT_THRESHOLD = 0.85
+
+
+def load(path):
+    with open(path, "r", encoding="utf-8-sig") as f:
+        return f.read()
+
+
+def get_h1(content):
+    m = re.search(r"(?m)^# (.+)", content)
+    return m.group(1).strip() if m else None
+
+
+def titles_in(directory):
+    """(título, caminho relativo) de cada página de um diretório."""
+    if not directory.is_dir():
+        return []
+    out = []
+    for path in sorted(directory.glob("*.md")):
+        title = get_h1(load(path)) or path.stem
+        out.append((title, path.relative_to(ROOT_DIR).as_posix()))
+    return out
+
+
+def normalize_tag(tag):
+    """Acento, caixa, hífen e plural — a heurística que era aplicada a Categoria."""
+    t = unicodedata.normalize("NFKD", tag)
+    t = "".join(c for c in t if not unicodedata.combining(c))
+    t = t.lower().replace("-", " ").replace("_", " ")
+    t = re.sub(r"\s+", " ", t).strip()
+    # Plural do português: -oes/-aes/-ais/-eis/-is/-ns/-es/-s, do mais
+    # específico para o mais geral, para "razoes" e "razao" colidirem.
+    for suffix, singular in (("oes", "ao"), ("aes", "ao"), ("ais", "al"), ("eis", "el")):
+        if t.endswith(suffix):
+            return t[: -len(suffix)] + singular
+    if t.endswith("ns"):
+        return t[:-2] + "m"
+    if t.endswith("es") and len(t) > 4:
+        return t[:-2]
+    if t.endswith("s") and len(t) > 3:
+        return t[:-1]
+    return t
+
+
+ORDINAL_RE = re.compile(r"\b([ivx]+|\d+)\b")
+
+
+def differ_only_by_ordinal(a, b):
+    """"Erro Tipo I" e "Erro Tipo II" são conceitos distintos, não duplicatas.
+
+    Numeral romano ou arábico é justamente o que separa páginas de uma série
+    (Erro Tipo I/II, Lei 1/2, Parte 3), e é também a diferença de menor peso
+    para o difflib — a combinação produz falso positivo com alta similaridade.
+    """
+    ordinals_a = ORDINAL_RE.findall(a)
+    ordinals_b = ORDINAL_RE.findall(b)
+    if ordinals_a == ordinals_b:
+        return False
+    return ORDINAL_RE.sub("#", a) == ORDINAL_RE.sub("#", b)
+
+
+def near_duplicate_pairs(items, key, threshold):
+    """Pares (a, b) cujas chaves normalizadas batem ou passam do threshold."""
+    pairs = []
+    normalized = [(key(item), item) for item in items]
+    for i in range(len(normalized)):
+        norm_a, item_a = normalized[i]
+        if not norm_a:
+            continue
+        for j in range(i + 1, len(normalized)):
+            norm_b, item_b = normalized[j]
+            if not norm_b:
+                continue
+            if norm_a == norm_b:
+                pairs.append((item_a, item_b, 1.0))
+                continue
+            if differ_only_by_ordinal(norm_a, norm_b):
+                continue
+            ratio = difflib.SequenceMatcher(None, norm_a, norm_b).ratio()
+            if ratio >= threshold:
+                pairs.append((item_a, item_b, round(ratio, 3)))
+    return pairs
+
+
+def check_titles(directory_pairs, threshold):
+    """Quase-duplicatas de título dentro de cada grupo de diretórios."""
+    items = []
+    for directory in directory_pairs:
+        items.extend(titles_in(directory))
+    pairs = near_duplicate_pairs(items, lambda it: normalize_title(it[0]), threshold)
+    return [
+        {
+            "a": {"title": a[0], "path": a[1]},
+            "b": {"title": b[0], "path": b[1]},
+            "similarity": ratio,
+        }
+        for a, b, ratio in pairs
+    ]
+
+
+def load_tags_in_use():
+    if not INDEX_JSON.exists():
+        return None
+    data = json.loads(load(INDEX_JSON))
+    tags = data.get("tags_in_use")
+    if isinstance(tags, dict):
+        return sorted(tags.keys())
+    return sorted(tags or [])
+
+
+def check_tags(threshold):
+    tags = load_tags_in_use()
+    if tags is None:
+        return None
+    pairs = near_duplicate_pairs(tags, normalize_tag, threshold)
+    return [{"a": a, "b": b, "similarity": ratio} for a, b, ratio in pairs]
+
+
+def check_references(threshold):
+    """Mesma fonte citada em essays diferentes com grafia distinta."""
+    by_url = defaultdict(list)   # url normalizada -> [(slug, citação)]
+    citations = []               # (slug, citação) para o fuzzy sem URL
+
+    for path in sorted(ESSAYS_DIR.glob("*.md")):
+        slug, _title, refs = collect_essay_references(path)
+        for ref in refs:
+            citation = ref["citation_aiaa"]
+            if ref["url"]:
+                by_url[normalize_url(ref["url"])].append((slug, citation))
+            else:
+                citations.append((slug, citation))
+
+    findings = []
+
+    # Mesma URL, essays diferentes, citação escrita de forma diferente.
+    for url, occurrences in sorted(by_url.items()):
+        slugs = {slug for slug, _ in occurrences}
+        variants = {normalize_citation(c): c for _, c in occurrences}
+        if len(slugs) > 1 and len(variants) > 1:
+            findings.append(
+                {
+                    "kind": "mesma-url",
+                    "url": url,
+                    "essays": sorted(slugs),
+                    "variants": sorted(variants.values()),
+                }
+            )
+
+    # Sem URL: citação quase-idêntica em essays diferentes.
+    for a, b, ratio in near_duplicate_pairs(
+        citations, lambda it: normalize_citation(it[1]), threshold
+    ):
+        if a[0] == b[0]:
+            continue  # mesmo essay é DUPLICATE_REFERENCIA, do linkify_check.py
+        findings.append(
+            {
+                "kind": "citacao-parecida",
+                "url": None,
+                "essays": sorted({a[0], b[0]}),
+                "variants": [a[1], b[1]],
+                "similarity": ratio,
+            }
+        )
+
+    return findings
+
+
+def run(threshold):
+    return {
+        "threshold": threshold,
+        "essay_titles": check_titles([ESSAYS_DIR], threshold),
+        "support_titles": check_titles([CONCEPTS_DIR, ENTITIES_DIR], threshold),
+        "tags": check_tags(threshold),
+        "references": check_references(threshold),
+    }
+
+
+def print_report(result):
+    def header(title, count):
+        print(f"\n{'─' * 60}")
+        print(f"{title}: {count} candidato(s)")
+
+    header("1. Títulos de essays", len(result["essay_titles"]))
+    for item in result["essay_titles"]:
+        print(f"   • {item['a']['title']}")
+        print(f"     {item['b']['title']}   (similaridade {item['similarity']})")
+        print(f"     {item['a']['path']}  |  {item['b']['path']}")
+
+    header("2. Títulos de concepts/entities", len(result["support_titles"]))
+    for item in result["support_titles"]:
+        print(f"   • {item['a']['title']}")
+        print(f"     {item['b']['title']}   (similaridade {item['similarity']})")
+        print(f"     {item['a']['path']}  |  {item['b']['path']}")
+
+    if result["tags"] is None:
+        print(f"\n{'─' * 60}")
+        print("3. Tags: wiki/index.json não existe — rode `python scripts/build_index.py`")
+    else:
+        header("3. Tags", len(result["tags"]))
+        for item in result["tags"]:
+            print(f"   • {item['a']}  ~  {item['b']}   (similaridade {item['similarity']})")
+
+    header("4. Referências entre essays diferentes", len(result["references"]))
+    for item in result["references"]:
+        if item["kind"] == "mesma-url":
+            print(f"   • mesma URL, citações divergentes: {item['url']}")
+        else:
+            print(f"   • citações quase-idênticas (similaridade {item['similarity']})")
+        print(f"     essays: {', '.join(item['essays'])}")
+        for variant in item["variants"]:
+            print(f"       - {variant}")
+
+    total = (
+        len(result["essay_titles"])
+        + len(result["support_titles"])
+        + len(result["tags"] or [])
+        + len(result["references"])
+    )
+    print(f"\n{'=' * 60}")
+    print(f"{total} candidato(s) a quase-duplicata no total.")
+    print(
+        "Este script não funde nem deleta nada. Cada candidato precisa de "
+        "decisão do Usuário, caso a caso, via /organize."
+    )
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument("--json", action="store_true", help="saída JSON para a skill parsear")
+    parser.add_argument(
+        "--threshold",
+        type=float,
+        default=DEFAULT_THRESHOLD,
+        help=f"similaridade mínima para reportar um par (padrão {DEFAULT_THRESHOLD})",
+    )
+    args = parser.parse_args()
+
+    if not ESSAYS_DIR.is_dir():
+        print(f"ERRO: {ESSAYS_DIR} não existe", file=sys.stderr)
+        sys.exit(1)
+
+    result = run(args.threshold)
+
+    if args.json:
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return
+
+    print_report(result)
+
+
+if __name__ == "__main__":
+    main()

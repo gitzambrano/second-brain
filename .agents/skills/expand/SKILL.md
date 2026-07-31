@@ -55,6 +55,8 @@ Resumo do que foi adicionado/corrigido.
 
 Se `## Sumário` ou `## Conexões` ficaram desatualizados, atualize-os. Se existir handout em `wiki/handouts/<slug>.md` e a tese central mudou, avise o Usuário e ofereça regenerá-lo (`/handout`).
 
+Se `## Referências` mudou (modo Adição, passo 4), rode `python scripts/references_index.py` para regenerar `wiki/references.json`/`.md`.
+
 ## Convenções
 
 Segue a regra de status (batch vs específico) de `## Status de essay` em `conventions/SKILL.md`.

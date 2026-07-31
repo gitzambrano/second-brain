@@ -21,7 +21,7 @@ Leia o essay inteiro antes de reescrever qualquer trecho — estilo é sobre coe
 ## O que corrigir
 
 1. **Bullets no corpo argumentativo.** Ideias em lista devem virar prosa corrida com transições explícitas entre elas. Bullets ficam só em `## Sumário`, `## Referências`, e tabelas genuinamente mais claras que prosa (comparações numéricas).
-2. **Travessões.** Conte quantos `—` existem no essay inteiro, excluindo a byline (`Tipo · Categoria`) e os separadores de display text de wikilinks no index. **Máximo 2 no essay inteiro.** Se passar, reescreva os excedentes com vírgula, dois-pontos, parênteses ou reestruturação da frase — nunca troque um travessão por outro em outro ponto do texto.
+2. **Travessões.** Conte quantos `—` existem no essay inteiro, excluindo a byline (`Tipo`) e os separadores de display text de wikilinks no index. **Máximo 2 no essay inteiro.** Se passar, reescreva os excedentes com vírgula, dois-pontos, parênteses ou reestruturação da frase — nunca troque um travessão por outro em outro ponto do texto.
 3. **Ritmo e variação de frase.** Frases muito uniformes em tamanho/estrutura cansam — varie, mas sem sacrificar clareza.
 
 ## O que preservar

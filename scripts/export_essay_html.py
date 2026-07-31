@@ -18,10 +18,11 @@ Features (mirrors export_essay.py so PDF and HTML stay in sync):
       single file to share, on desktop or mobile (responsive CSS, no JS
       required except the MathJax CDN script for essays that use math)
 
-This script imports its markdown-preparation helpers from export_essay.py
-(same folder) instead of duplicating them, so both exporters always agree on
-how frontmatter, byline, Conexões-stripping, and wikilinks are handled. If
-you change that logic, change it once in export_essay.py.
+This script imports its frontmatter/Conexões/wikilink helpers from
+export_essay.py (same folder) instead of duplicating them. Byline parsing
+(`parse_byline`) is NOT shared — it's a local duplicate kept in sync by
+hand with `prepare_for_pandoc` in export_essay.py; if you change the byline
+format, update both.
 """
 
 import re
@@ -33,6 +34,8 @@ from pathlib import Path
 # Reuse the shared preparation logic from the PDF exporter.
 sys.path.insert(0, str(Path(__file__).parent))
 from export_essay import (
+
+import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
     extract_frontmatter,
     strip_conexoes_section,
     clean_residual_wikilinks,
@@ -55,7 +58,7 @@ def parse_byline(body):
     author_date = ''
     for line in body.split('\n'):
         line_stripped = line.strip()
-        if line_stripped.startswith('>') and '·' in line_stripped:
+        if line_stripped.startswith('>'):
             clean = line_stripped.lstrip('> ').strip()
             if any(kw in clean for kw in ['Ensaio', 'White Paper', 'Estudo', 'Análise', 'Brainstorm']):
                 subtitle = clean

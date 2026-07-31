@@ -16,7 +16,7 @@ Responde perguntas buscando e sintetizando conhecimento da wiki. **Essays são a
 
 ### 1. Comece pelo índice
 
-Leia `wiki/index.md` — ele contém **apenas essays**, organizados por categoria temática. Identifique os essays mais relevantes para a pergunta.
+Leia `wiki/index.json` (ou `wiki/index.md` para navegação humana) — contém **apenas essays**, com `summary` e `tags` por entrada, sem agrupamento por categoria (a classificação temática vem só de `tags`). Identifique os essays mais relevantes para a pergunta.
 
 ### 2. Use search.py para buscar no conteúdo, não só nos títulos do index
 
@@ -60,7 +60,7 @@ Antes de criar a página nova (essay ou insight), rode `python scripts/resolve_t
 
 - **Se for profunda o bastante para ser um essay**: siga o fluxo completo de `/essay` (frontmatter, byline, Sumário, mínimo 10 links externos, Referências, Conexões) e salve em `wiki/essays/`.
 - **Se for mais curta — uma síntese, uma ponte entre coisas que já existem na wiki, ou uma ideia nova que a pergunta provocou**: isso não é `/query` salvando direto — é `/insight add`. Passe a ideia para lá; não existe mais uma pasta/tipo separado para comparações.
-- Em ambos os casos: atualize `wiki/index.md` (se for essay) e registre em `wiki/log.md`:
+- Em ambos os casos: se for essay, preencha `summary:` no frontmatter e rode `python scripts/build_index.py` para regenerar `wiki/index.json`/`wiki/index.md`; registre em `wiki/log.md`:
   ```
   ## [YYYY-MM-DD] query | Resumo da pergunta
   ```

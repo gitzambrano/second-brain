@@ -1,6 +1,12 @@
 __pycache__/
 .obsidian/
 *.code-workspace
+
+# .claude/skills/ é espelho gerado de .agents/skills/ (scripts/sync_skills.py).
+# Só .claude/settings.json é versionado, porque carrega o hook que gera o espelho.
+.claude/*
+!.claude/settings.json
+.claude/settings.local.json
 raw/**
 !raw/**/
 !raw/**/.gitkeep

@@ -55,7 +55,7 @@ updated: YYYY-MM-DD
 ---
 ```
 
-Essays têm um campo a mais, `status: draft | maduro | finalizado` — ver `## Status de essay` abaixo.
+Essays têm dois campos a mais: `status: draft | maduro | finalizado` — ver `## Status de essay` abaixo — e `summary:`, resumo de uma linha (até 120 caracteres) usado por `build_index.py` para montar a entrada em `wiki/index.md`. Escrito por quem cria o essay (`/essay`, `/import`, ou `/query` quando salva uma síntese como essay novo).
 
 ## Tags — Vocabulário Controlado
 
@@ -104,12 +104,11 @@ Logo após o `# Título`, com uma linha vazia entre título e byline:
 ```
 # Título do Essay
 
-> Tipo · Categoria Temática
+> Tipo
 > Gustavo Zambrano · Mês de Ano
 ```
 
 - **Tipo**: `Ensaio`, `White Paper`, `Brainstorm`, `Estudo` ou `Análise`.
-- **Categoria**: área temática (ex: `Filosofia da Ciência & Biologia`).
 - **Mês de Ano**: por extenso (ex: `Maio de 2026`).
 - **Nunca** `[[wikilinks]]` (exportada a PDF como texto puro) nem dois-pontos (`:`) — Obsidian interpreta como separador de bloco.
 
@@ -128,15 +127,16 @@ Logo após o `# Título`, com uma linha vazia entre título e byline:
    ```
 
 3. **Links externos** para todo conceito/entidade/termo técnico, ao menos na primeira ocorrência.
-4. **`## Referências` obrigatória** — bibliografia com links externos. Heading exato (nunca H1, nunca "Referências Bibliográficas", nunca numerado).
+4. **`## Referências` obrigatória** — bibliografia com links externos, no formato AIAA (ver `## Formato de "## Referências" — padrão AIAA` abaixo). Heading exato (nunca H1, nunca "Referências Bibliográficas", nunca numerado). Todo conceito/claim de fonte externa não arquivada em `wiki/sources/` precisa de entrada aqui.
 5. **`## Conexões` obrigatória** no final — `[[wikilinks]]` bidirecionais para páginas relacionadas. Não exportada a PDF.
 
 ## Regra de links — exportabilidade para PDF
 
 - **Corpo (inline)**: só links externos `[texto](url)`. Nunca `[[wikilinks]]` inline.
 - **`## Conexões`**: só `[[wikilinks]]` — metadata interna, não exportada.
-- **`## Referências`**: links externos bibliográficos, exportados.
+- **`## Referências`**: links externos bibliográficos, exportados, no formato AIAA (ver `## Formato de "## Referências" — padrão AIAA` abaixo).
 - Motivo: essays são documentos autocontidos, compartilháveis como PDF sem perda de informação.
+- **Trabalho de bibliografia não toca no corpo.** Uma passada sobre `## Referências` (formato, numeração, link da obra, dedup) mexe só na seção do fim do arquivo. Os links inline do corpo ficam exatamente onde estão, com o texto-âncora que já têm. Quando um check acusa uma obra citada no corpo e ausente da bibliografia, a correção é **acrescentar a entrada em `## Referências`** — nunca mexer no link do corpo para silenciar o aviso. Alterar links inline é trabalho de `/linkify` no modo `## Adicionar links`, e só sob pedido explícito do Usuário.
 - Mínimo prático: ~10 links externos no corpo — abaixo disso, faltam links.
 
 ## Dois tipos de essay
@@ -144,25 +144,79 @@ Logo após o `# Título`, com uma linha vazia entre título e byline:
 - **Originais** (de `raw/`, via `/import`): texto integral preservado, traduzido se necessário. Só recebem link/formatação/`## Referências`/`## Conexões` — nunca alteração do texto original no momento da ingestão. Podem ser expandidos depois, sob pedido explícito.
 - **Criados** (pela wiki, via `/essay`): livremente modificáveis, expandidos, enriquecidos.
 
+## Formato de `## Referências` — padrão AIAA
+
+Um item por linha, numerado `[N]` em ordem de citação no corpo:
+
+```
+## Referências
+
+[1] Cheeseman, I. C., e Bennett, W. E., *The Effect of the Ground on a Helicopter Rotor in Forward Flight* [link](https://example.org/arc-rm-3021), Aeronautical Research Council Reports and Memoranda, No. 3021, HMSO, London, 1955. — Referência seminal: derivou a equação fechada do ganho IGE em função da altura normalizada e do ângulo de skew da esteira.
+
+[2] Glauert, H., *The Elements of Aerofoil and Airscrew Theory*, Cambridge University Press, Cambridge, 1926. — Base da Teoria do Momento em escoamento oblíquo; sem edição digital confiável, sem link.
+
+[3] *Blade Element Momentum Theory* [link](https://en.wikipedia.org/wiki/Blade_element_momentum_theory), Wikipedia, The Free Encyclopedia. — Verbete de apoio para a definição geral do método.
+
+[4] Zambrano, G., *zbemt* [link](https://github.com/gustavo/zbemt), GitHub repository, 2026. — Repositório do solver referenciado neste white paper.
+```
+
+Regras:
+
+- **Título sempre em itálico**, sem exceção por tipo de fonte (artigo, livro, capítulo, verbete web, repositório).
+- **O link é a palavra `link`, clicável, imediatamente depois do título em itálico.** A citação em si permanece texto limpo: o itálico do título fica legível, e a única coisa colorida e sublinhada na página de referências é a palavra `link`. Nunca envolva a citação inteira num hyperlink — no PDF exportado isso pinta o parágrafo todo e transforma a bibliografia num bloco azul.
+- Entrada sem link nenhum é entrada normal, na mesma lista das outras: ausência de edição digital não é um tipo de fonte.
+- Sem autor identificável (verbete, repositório institucional, site): começa direto pelo título em itálico.
+- Container troca conforme o tipo de fonte: periódico, editora + cidade, série + órgão (relatório técnico), site/wiki, plataforma + tipo (GitHub, YouTube).
+- Ordem de preferência de link: (1) DOI/link permanente do editor; (2) site institucional primário (NASA/NTRS, AIAA, ARC/NACA, universidade, GitHub do projeto); (3) SEP para verbetes filosóficos; (4) Wikipedia, só para conceito geral.
+- Data de acesso obrigatória só para fontes sem versão fixa (Wikipedia, GitHub README, página institucional sem data). Formato `(acesso em DD Mês. AAAA)` ao final da nota.
+- Nota curta opcional depois do link.
+- Exceção "sem link" só para caso genuíno (livro impresso sem edição digital) — sinalizado como aviso pelo lint, nunca erro bloqueante.
+- Nunca duas entradas com a mesma URL normalizada no mesmo essay.
+
+## `wiki/references.md` e `wiki/references.json`
+
+Mesmo padrão de `index.json`/`index.md`: artefatos na raiz de `wiki/`, **nunca editados à mão**, regenerados por `scripts/references_index.py` ao final de `/essay`, `/expand`, `/absorb`, `/digest`, `/import`, `/linkify`, `/review`, `/organize`.
+
+```json
+{
+  "references": [
+    {
+      "url": "https://doi.org/xxxx",
+      "citation_aiaa": "Sobrenome, I., *Título*, Fonte, Ano.",
+      "domain_group": "doi",
+      "cited_by": ["essay-slug-a", "essay-slug-b"],
+      "has_link": true
+    }
+  ]
+}
+```
+
+`domain_group` (só no JSON, para consultas): `doi`, `nasa`, `aiaa`, `sep`, `wikipedia`, `github`, `institucional`, ou nulo quando a entrada não tem link.
+
+`references.md` é **lista única em ordem alfabética**, sem agrupamento. Agrupar por domínio separaria o livro e o paper do mesmo autor, e criava um balde "Sem link" que falava de disponibilidade digital em vez de tipo de fonte. Bibliografia se lê por autor.
+
+`concepts/` e `entities/` **não ganham** seção `## Referências` própria — essas páginas continuam sendo frontmatter simples e conteúdo denso, sem bibliografia formal, e isso não muda. `references.json`/`.md` é alimentado só pelas `## Referências` de essays, com o mesmo rigor de regeneração automática que `build_index.py` já aplica a `tags_in_use`/`index.json`.
+
 ## Estilo de prosa
 
 Vale para todo trecho **escrito ou reescrito pela wiki** — não retroage sobre texto original de `raw/`, a menos que `/polish` ou `/proofread` seja pedido explicitamente.
 
 1. **Evitar bullets no corpo.** Prosa argumentativa em parágrafos com transições explícitas. Bullets só em `## Sumário`, `## Referências`, e tabelas genuinamente mais claras que prosa (dados numéricos/técnicos).
-2. **Travessões (—) extremamente raros**: no máximo 1 a 2 no essay inteiro, não por parágrafo. Prefira vírgula, dois-pontos, parênteses, ou reestruture a frase. Não contam o `·` da byline nem o `—` de display text em wikilinks do índice.
+2. **Travessões (—) extremamente raros**: no máximo 1 a 2 no essay inteiro, não por parágrafo. Prefira vírgula, dois-pontos, parênteses, ou reestruture a frase. Não conta o `·` da byline.
 
 ## Formato do índice (`wiki/index.md`)
 
-Apenas essays, por categoria temática:
+Apenas essays. **Artefato gerado, nunca editado à mão** — regenerado por `python scripts/build_index.py` (que emite `index.json` e `index.md` juntos, a partir da mesma varredura de frontmatter) toda vez que um essay é criado, editado ou removido. Nenhuma skill insere linha nele diretamente.
 
-```
-## Filosofia & Consciência
-- [[filename|Título do Essay]] — resumo de uma linha
+Lista plana, ordenada por `created` decrescente, sem agrupamento por categoria — a classificação temática vem só de `tags`:
+
+```markdown
+- [Título do Essay](essays/nome-do-arquivo.md) — Resumo de uma linha.
+  `consciência` · `identidade-pessoal` · `filosofia-da-mente`
 ```
 
-- Formato `[[filename|Display Title]]`.
-- **Nunca** dois-pontos no display text (quebra o link no Obsidian) — substitua `:` por `—`. Correto: `[[filename|Título — Subtítulo]]`.
-- Título do arquivo: `# Índice`.
+- Cada entrada usa o campo `summary:` do frontmatter (ver `## Frontmatter`) como resumo de uma linha, e `tags` para a lista de temas.
+- Continua Markdown, não HTML — sem template visual separado, gerado direto pela função de renderização de `build_index.py`.
 
 ## Formato de páginas em `wiki/insights/`
 
@@ -200,15 +254,14 @@ Atualize o manifesto e `wiki/sources/map.md` no mesmo momento em que o arquivo �
 
 ## Formato do mapa de sources (`wiki/sources/map.md`)
 
-Visão por assunto de tudo já processado ou pendente:
+Lista plana de tudo já processado ou pendente, sem agrupamento por categoria — a classificação temática vem só de `Tags:`:
 
 ```
-## <Categoria Temática>
 - [[Nome do Source]] — Tipo · Tags: tag1, tag2 · Status
   - Status: Importado como [[Essay]] | Resumido — ver wiki/sources/resumos/<slug>.md | Absorvido em [[Essay X]] | Pendente em raw/
 ```
 
-`Tags:` aqui espelha o que já está em `manifest.md` para a mesma fonte (nunca uma lista divergente) — repetido no mapa só porque o mapa é organizado por assunto e a tag ajuda a confirmar que a fonte está na categoria certa.
+`Tags:` aqui espelha o que já está em `manifest.md` para a mesma fonte (nunca uma lista divergente) — repetido no mapa só como referência rápida ao ler a lista.
 
 Atualizado por `/import`, `/digest` e `/absorb` durante o processamento, e revisado por inteiro por `/organize`.
 
@@ -232,7 +285,6 @@ Atualizado por `/import`, `/digest` e `/absorb` durante o processamento, e revis
 Reforça regras já definidas acima:
 
 - `[[wikilinks]]` só em `## Conexões` e em páginas de concept/entity/source, nunca inline (ver `## Regra de links`).
-- Nunca dois-pontos no display text (ver `## Formato do índice`).
 - Imagens em caminho relativo (ver `## Tratamento de imagens`).
 
 Regra específica desta seção: wikilinks em `## Conexões` usam `[[Título da Página]]` — Obsidian resolve pelo caminho mais curto até a página (shortest path).

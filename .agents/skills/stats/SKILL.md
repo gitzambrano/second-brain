@@ -2,7 +2,7 @@
 name: stats
 description: >
   Dashboard read-only de saúde da wiki: contagem de essays por tag/
-  tipo/categoria, conceitos/entidades órfãos, sources sem entrada no
+  tipo, conceitos/entidades órfãos, sources sem entrada no
   manifesto ou na subpasta errada, sinais de travessão/formatação,
   contagem de handouts, itens do plano por seção, notas atômicas por
   maturidade. Pode também gerar o grafo visual de conexões
@@ -49,7 +49,7 @@ Dashboard **read-only**. Só relata, nunca corrige — esse é o trabalho de `/o
 
 ## O que o script cobre
 
-- **Essays**: contagem total, por `Tipo` (Ensaio/White Paper/Estudo/etc), por categoria temática da byline, e distribuição de tags do vocabulário controlado.
+- **Essays**: contagem total, por `Tipo` (Ensaio/White Paper/Estudo/etc), e distribuição de tags do vocabulário controlado — que é a única classificação temática da wiki, já que `Categoria` não existe mais.
 - **Sinais de lint rápidos**: essays com `## Resumo Executivo` residual (não deveria existir mais, ver `conventions/SKILL.md`), essays com mais de 2 travessões, essays sem `## Sumário`/`## Referências`/`## Conexões`. Isso é uma varredura rasa (regex), não substitui `format_check.py` nem o julgamento humano do lint completo.
 - **Órfãos**: concepts/entities em `wiki/concepts/` e `wiki/entities/` que não aparecem em nenhuma seção `## Conexões` de essay.
 - **Sources**: total de arquivos em `wiki/sources/**`, distribuição por subpasta de tipo, quantos não têm entrada em `manifest.md`, quantos estão em uma subpasta fora do vocabulário controlado, quantas entradas do manifesto não têm `Tags:` preenchido, e a distribuição de tags em uso no manifesto — mesmo vocabulário controlado dos essays (ver `## Sources, Tags e Vocabulários Controlados` no AGENTS.md).

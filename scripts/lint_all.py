@@ -6,6 +6,8 @@ import argparse
 import subprocess
 from pathlib import Path
 
+import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
+
 ROOT_DIR = Path(__file__).resolve().parent.parent
 WIKI_ROOT = ROOT_DIR / "wiki"
 ESSAYS_DIR = WIKI_ROOT / "essays"
@@ -33,7 +35,7 @@ def build_parser():
         help=(
             "Checa apenas este essay (slug, nome do arquivo, ou caminho completo), "
             "em vez do corpus inteiro. As seções que são inerentemente de corpus "
-            "inteiro (índice, manifesto, plano, categorias, órfãos) são puladas "
+            "inteiro (índice, manifesto, plano, tags, órfãos) são puladas "
             "nesse modo, exceto a checagem de wikilinks mortos, que é filtrada "
             "para mostrar apenas links originados neste essay."
         ),
@@ -210,14 +212,14 @@ def main():
                 report.append(f"ERROR: {rel_path} must have a standardized byline with exactly 2 blockquote lines (found {len(byline_lines)}).")
             else:
                 line1, line2 = byline_lines[0], byline_lines[1]
-                # Line 1 format: > Tipo · Categoria Temática
+                # Line 1 format: > Tipo
                 # Line 2 format: > Gustavo Zambrano · Mês de Ano
                 # Tipo is: Ensaio, White Paper, Brainstorm, Estudo ou Análise
-                match1 = re.match(r"^>\s*(Ensaio|White Paper|Brainstorm|Estudo|Análise)\s*·\s*(.+)$", line1)
+                match1 = re.match(r"^>\s*(Ensaio|White Paper|Brainstorm|Estudo|Análise)\s*$", line1)
                 match2 = re.match(r"^>\s*Gustavo Zambrano\s*·\s*([A-Za-z]+ de \d{4})$", line2)
                 
                 if not match1:
-                    report.append(f"ERROR: {rel_path} byline line 1 invalid format: '{line1}'. Expected '> [Tipo] · [Categoria]' where Tipo is Ensaio|White Paper|Brainstorm|Estudo|Análise")
+                    report.append(f"ERROR: {rel_path} byline line 1 invalid format: '{line1}'. Expected '> [Tipo]' where Tipo is Ensaio|White Paper|Brainstorm|Estudo|Análise")
                 if not match2:
                     report.append(f"ERROR: {rel_path} byline line 2 invalid format: '{line2}'. Expected '> Gustavo Zambrano · [Mês de Ano]' (e.g. '> Gustavo Zambrano · Junho de 2026')")
                     
@@ -436,20 +438,21 @@ def main():
             
         # Build essay stems
         essay_stems = {file.stem for file in ESSAYS_DIR.glob("*.md")}
-        
-        # Extract all wikilinks in index.md
-        index_links = re.findall(r"\[\[([^\]]+)\]\]", index_content)
-        for idx_link in index_links:
-            target = idx_link.split("|")[0].strip()
-            display = idx_link.split("|")[1].strip() if "|" in idx_link else target
-            
-            # Check Obsidian compatibility: no colons in display text
-            if ":" in display:
-                report.append(f"ERROR: index.md wikilink display text has a colon: '{idx_link}'")
-                
-            # index.md contains ONLY essays
+
+        # index.md é artefato gerado por build_index.py: lista plana com link
+        # markdown `[Título](essays/arquivo.md)`, não mais `[[wikilink]]`.
+        index_links = re.findall(r"\]\(essays/([^\)]+?)\.md\)", index_content)
+        for target in index_links:
+            # index.md contém APENAS essays
             if target not in essay_stems:
                 report.append(f"ERROR: index.md contains non-essay or dead link: '{target}'")
+
+        # Wikilink em index.md é resíduo do formato antigo, editado à mão.
+        if re.search(r"\[\[[^\]]+\]\]", index_content):
+            report.append(
+                "ERROR: index.md tem [[wikilinks]] — formato antigo. "
+                "Rode `python scripts/build_index.py` para regenerar."
+            )
                 
         # Check if any actual essay is NOT in index.md
         essay_titles_to_check = {get_h1(load_file_content(target_essay))} if target_essay else sorted(essay_titles)
@@ -459,15 +462,18 @@ def main():
             # Get filename for essay_title
             filename = title_to_file[essay_title].split("/")[-1]
             stem = filename.replace(".md", "")
-            pattern_stem = re.compile(r"\[\[" + re.escape(stem) + r"\|")
+            pattern_stem = re.compile(r"\]\(essays/" + re.escape(stem) + r"\.md\)")
             if not pattern_stem.search(index_content):
-                report.append(f"ERROR: Essay '{essay_title}' (essays/{filename}) is missing or incorrectly linked in index.md! (Expected target: [[{stem}|...]])")
+                report.append(
+                    f"ERROR: Essay '{essay_title}' (essays/{filename}) não aparece em "
+                    f"index.md — rode `python scripts/build_index.py` para regenerar."
+                )
     else:
         report.append("ERROR: index.md does not exist!")
         
-    # 7-10. Sources & manifest, plano, insights, categorias temáticas — audits de corpo inteiro
+    # 7-9. Sources & manifest, plano, insights — audits de corpo inteiro
     if target_essay:
-        report.append("\n=== SOURCES & MANIFEST / PLANO / INSIGHTS / CATEGORIAS ===")
+        report.append("\n=== SOURCES & MANIFEST / PLANO / INSIGHTS ===")
         report.append("(pulado — modo --essay: essas seções auditam o corpus inteiro, não um essay isolado.)")
     else:
         # 7. Sources & manifest audit (genérico: pega tudo que falta, nos dois sentidos)
@@ -599,26 +605,6 @@ def main():
                 conexoes_match = re.search(r"## Conexões\s*\n(.*?)(?=\n##|\Z)", content, re.DOTALL)
                 if conexoes_match and not re.search(r"\[\[", conexoes_match.group(1)):
                     report.append(f"WARNING: insights/{file.name} não tem nenhum [[wikilink]] em Conexões — candidata a ficar órfã.")
-
-        # 10. Categorias temáticas quase-duplicadas (heurística: normaliza acento/caixa)
-        report.append("\n=== CATEGORIAS TEMÁTICAS (heurística de quase-duplicata) ===")
-        import unicodedata
-
-        def normalize(s):
-            s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode().lower().strip()
-            return re.sub(r"\s+", " ", s)
-
-        categorias_por_norm = {}
-        for file in ESSAYS_DIR.glob("*.md") if ESSAYS_DIR.exists() else []:
-            content = load_file_content(file)
-            m = re.search(r"(?m)^>\s*(?:Ensaio|White Paper|Brainstorm|Estudo|Análise)\s*·\s*(.+)$", content)
-            if m:
-                cat = m.group(1).strip()
-                categorias_por_norm.setdefault(normalize(cat), set()).add(cat)
-        for norm, variants in categorias_por_norm.items():
-            if len(variants) > 1:
-                report.append(f"WARNING: categorias possivelmente duplicadas (grafias diferentes da mesma categoria): {', '.join(sorted(variants))}")
-
 
     output_report_path = ROOT_DIR / "output" / "comprehensive_lint_output.txt"
     with open(output_report_path, "w", encoding="utf-8") as f:

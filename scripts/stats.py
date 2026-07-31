@@ -20,6 +20,8 @@ import datetime
 from pathlib import Path
 from collections import Counter, defaultdict
 
+import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
+
 ROOT_DIR = Path(__file__).resolve().parent.parent
 WIKI_ROOT = ROOT_DIR / "wiki"
 PLAN_DIR = ROOT_DIR / "plan"
@@ -105,7 +107,6 @@ def essay_stats():
     essays = sorted(ESSAYS_DIR.glob("*.md")) if ESSAYS_DIR.exists() else []
     tag_counts = Counter()
     type_counts = Counter()
-    category_counts = Counter()
     travessao_offenders = []
     missing_referencias = []
     missing_conexoes = []
@@ -123,10 +124,9 @@ def essay_stats():
         for t in tags:
             tag_counts[t] += 1
 
-        m = re.search(r"(?m)^> (Ensaio|White Paper|Brainstorm|Estudo|Análise)\s*·\s*(.+)$", content)
+        m = re.search(r"(?m)^> (Ensaio|White Paper|Brainstorm|Estudo|Análise)\s*$", content)
         if m:
             type_counts[m.group(1)] += 1
-            category_counts[m.group(2).strip()] += 1
 
         n_dash = count_travessoes(content)
         if n_dash > 2:
@@ -145,7 +145,6 @@ def essay_stats():
         "count": len(essays),
         "tag_counts": tag_counts,
         "type_counts": type_counts,
-        "category_counts": category_counts,
         "travessao_offenders": travessao_offenders,
         "missing_referencias": missing_referencias,
         "missing_conexoes": missing_conexoes,
@@ -317,10 +316,6 @@ def format_report(essay, orphans, sources, handouts, insights, plan):
     lines.append(f"- Total: {essay['count']}")
     if essay["type_counts"]:
         lines.append("- Por tipo: " + ", ".join(f"{k} ({v})" for k, v in essay["type_counts"].most_common()))
-    if essay["category_counts"]:
-        lines.append("- Por categoria temática:")
-        for cat, n in essay["category_counts"].most_common():
-            lines.append(f"  - {cat}: {n}")
     lines.append("")
 
     lines.append("## Tags (vocabulário controlado)")

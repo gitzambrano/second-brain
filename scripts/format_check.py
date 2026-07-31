@@ -6,7 +6,7 @@ Substitui deep_format_check.py. Cobre todas as regras de formatação de
 essay definidas em conventions/SKILL.md:
 
     1.  Frontmatter YAML: campos obrigatórios e status válido
-    2.  H1 + byline: formato exato, separador ·, autor, tipo, categoria
+    2.  H1 + byline: formato exato, separador ·, autor, tipo
     3.  Byline: sem [[wikilinks]], sem dois-pontos, sem LaTeX chars perigosos
     4.  Espaço em branco após H1 e após cada heading
     5.  ## Sumário: presente, links internos batem com headings reais
@@ -25,7 +25,6 @@ essay definidas em conventions/SKILL.md:
    17.  Símbolos residuais (◆, replacement char, NBSP, &amp;, etc.)
    18.  Idioma: parágrafos possivelmente em inglês (não traduzidos)
    19.  Obsidian: wikilink display text sem dois-pontos
-   20.  Categorias temáticas quase-duplicadas (heurística de normalização)
 
 Uso:
     python format_check.py                   # todos os essays
@@ -39,8 +38,9 @@ import json
 import os
 import re
 import sys
-import unicodedata
 from pathlib import Path
+
+import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
 
 # ---------------------------------------------------------------------------
 # Configuração de caminhos
@@ -56,6 +56,10 @@ ESSAYS_DIR = WIKI_ROOT / "essays"
 
 VALID_TYPES  = {"Ensaio", "White Paper", "Brainstorm", "Estudo", "Análise"}
 VALID_STATUS = {"draft", "maduro", "finalizado"}
+
+# `summary:` é resumo de uma linha; acima disto vira parágrafo e quebra o
+# layout de wiki/index.md (ver `## Frontmatter` em conventions/SKILL.md).
+SUMMARY_MAX_CHARS = 120
 
 ENGLISH_ONLY_WORDS = {
     "the", "and", "with", "this", "that", "these", "those", "from", "have",
@@ -104,11 +108,6 @@ def strip_fences(text: str) -> str:
         else:
             out.append("" if in_fence else line)
     return "\n".join(out)
-
-
-def normalize(s: str) -> str:
-    s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode().lower()
-    return re.sub(r"\s+", " ", s).strip()
 
 
 def heading_anchor(heading_text: str) -> str:
@@ -161,6 +160,20 @@ def check_essay(filepath: Path) -> dict:
         elif field in ("tags", "sources") and not isinstance(fm_data[field], list):
             add("ERROR", "FM_BAD_TYPE", f"Campo '{field}' deve ser lista")
 
+    # `summary:` alimenta cada entrada de wiki/index.md (ver `## Formato do
+    # índice` em conventions/SKILL.md). Sem ele o índice sai sem resumo, e não
+    # há outro lugar de onde um script possa tirar essa linha.
+    summary = fm_data.get("summary")
+    if summary is None:
+        add("ERROR", "FM_NO_SUMMARY",
+            "Frontmatter sem campo 'summary' — wiki/index.md sai sem resumo desta entrada")
+    elif not isinstance(summary, str) or not summary.strip():
+        add("ERROR", "FM_BAD_SUMMARY", "Campo 'summary' vazio ou não é texto")
+    elif len(summary.strip()) > SUMMARY_MAX_CHARS:
+        add("WARNING", "FM_LONG_SUMMARY",
+            f"'summary' com {len(summary.strip())} caracteres "
+            f"(máximo {SUMMARY_MAX_CHARS}) — é um resumo de uma linha, não um parágrafo")
+
     status = fm_data.get("status")
     if status is None:
         add("ERROR", "FM_NO_STATUS",
@@ -204,7 +217,7 @@ def check_essay(filepath: Path) -> dict:
             bl1, bl2 = byline_lines[0], byline_lines[1]
 
             m1 = re.match(
-                r"^>\s*(Ensaio|White Paper|Brainstorm|Estudo|Análise)\s*·\s*(.+)$",
+                r"^>\s*(Ensaio|White Paper|Brainstorm|Estudo|Análise)\s*$",
                 bl1,
             )
             m2 = re.match(
@@ -215,7 +228,7 @@ def check_essay(filepath: Path) -> dict:
             if not m1:
                 add("ERROR", "BYLINE_LINE1",
                     f"Byline linha 1 formato inválido: '{bl1}' "
-                    f"(esperado: '> [Tipo] · [Categoria]', Tipo ∈ {sorted(VALID_TYPES)})")
+                    f"(esperado: '> [Tipo]', Tipo ∈ {sorted(VALID_TYPES)})")
             if not m2:
                 add("ERROR", "BYLINE_LINE2",
                     f"Byline linha 2 formato inválido: '{bl2}' "
@@ -459,7 +472,11 @@ def check_essay(filepath: Path) -> dict:
     # 16. Idioma — parágrafos possivelmente em inglês
     # -----------------------------------------------------------------------
     body_no_fm = re.sub(r"^---.*?---\n", "", content, count=1, flags=re.DOTALL)
-    body_no_code = re.sub(r"```.*?```", "", body_no_fm, flags=re.DOTALL)
+    # `## Referências` fica de fora: título de obra estrangeira é para ficar no
+    # original, não para ser traduzido, e a bibliografia inteira disparava o
+    # aviso de "parágrafo não traduzido" por isso.
+    body_no_refs = re.split(r"(?m)^## Referências\s*$", body_no_fm)[0]
+    body_no_code = re.sub(r"```.*?```", "", body_no_refs, flags=re.DOTALL)
     body_no_urls = re.sub(r"\[([^\]]*)\]\([^\)]*\)", r"\1", body_no_code)
     for para in body_no_urls.split("\n\n"):
         words = re.findall(r"[A-Za-zÀ-ÿ']+", para.lower())
@@ -481,28 +498,6 @@ def check_essay(filepath: Path) -> dict:
                 f"Possível label de capítulo solto (linha {i+1}): '{line.strip()}'")
 
     return {"name": name, "issues": issues}
-
-
-# ---------------------------------------------------------------------------
-# Verificação cross-essay: categorias temáticas quase-duplicadas
-# ---------------------------------------------------------------------------
-
-def check_category_duplicates(essay_paths):
-    cats_by_norm = {}
-    for path in essay_paths:
-        content = load(path)
-        m = re.search(
-            r"(?m)^>\s*(?:Ensaio|White Paper|Brainstorm|Estudo|Análise)\s*·\s*(.+)$",
-            content,
-        )
-        if m:
-            cat = m.group(1).strip()
-            cats_by_norm.setdefault(normalize(cat), set()).add(cat)
-    return [
-        sorted(variants)
-        for variants in cats_by_norm.values()
-        if len(variants) > 1
-    ]
 
 
 # ---------------------------------------------------------------------------
@@ -559,13 +554,8 @@ def main():
 
     results = [check_essay(p) for p in essay_paths]
 
-    # categorias quase-duplicadas (só faz sentido com múltiplos essays)
-    cat_dupes = []
-    if not args.file:
-        cat_dupes = check_category_duplicates(essay_paths)
-
     if args.json:
-        output = {"essays": results, "category_duplicates": cat_dupes}
+        output = {"essays": results}
         print(json.dumps(output, ensure_ascii=False, indent=2))
         return
 
@@ -592,20 +582,12 @@ def main():
             print(f"   {icon} [{issue['code']}] {issue['message']}")
         total_issues += len(issues)
 
-    if cat_dupes:
-        print(f"\n{'─'*60}")
-        print("⚠️  CATEGORIAS TEMÁTICAS QUASE-DUPLICADAS")
-        for group in cat_dupes:
-            print(f"   • {' / '.join(group)}")
-
     print(f"\n{'='*60}")
     total = len(results)
     print(
         f"Resultado: {clean}/{total} essay(s) limpo(s), "
         f"{total_issues} issue(s) no total"
     )
-    if cat_dupes:
-        print(f"           {len(cat_dupes)} grupo(s) de categorias quase-duplicadas")
 
 
 if __name__ == "__main__":

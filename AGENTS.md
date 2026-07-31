@@ -21,15 +21,27 @@ A wiki tem cinco diretórios de topo, cada um com um papel definido:
   - `wiki/handouts/` — resumos de uma página de essays específicos, gerados sob demanda. Nunca são criados automaticamente; veja `/handout` para o fluxo completo.
   - `wiki/assets/` — imagens e figuras referenciadas pelos essays. Veja `## Tratamento de imagens` em `conventions/SKILL.md`.
   - `wiki/book-chapters/` — reservada para um projeto de livro futuro. Não usar ainda.
-  - `wiki/index.md` — catálogo mestre, contendo apenas essays, organizado por categoria temática.
+  - `wiki/index.md` — catálogo mestre, contendo apenas essays. **Artefato gerado**, nunca editado à mão: lista plana ordenada por data de criação, com `summary` e `tags` por entrada.
   - `wiki/log.md` — log cronológico, append-only, de toda operação realizada na wiki.
   - `wiki/status.md` — snapshot do estado atual: foco corrente, perguntas em aberto, pendências. Funciona como ponte entre uma sessão e outra; veja a skill `/status`.
-  - `wiki/index.json` — cache de metadados (título, tags, categoria, status/maturidade).
+  - `wiki/index.json` — cache de metadados (título, tags, summary, status/maturidade), gerado junto com `index.md` por `scripts/build_index.py`.
+  - `wiki/references.md` e `wiki/references.json` — bibliografia consolidada de todos os essays, agrupada por tipo de fonte. Também artefatos gerados, por `scripts/references_index.py`.
 - **`plan/`** — plano de longo prazo do Usuário.
   - `plan/plano.md` — tem 5 seções fixas, descritas em `/plan`.
   - `plan/drafts/` — esqueletos de essay gerados por `/outline`, antes de virarem texto por `/essay`.
 - **`output/`** — saídas da wiki para compartilhamento externo: `output/pdf/`, `output/html/`, `output/handouts/`, `output/stats/`, `output/graph/`.
 - **`scripts/`** — scripts de lint, estatísticas e exportação (PDF/HTML).
+
+### Fonte única para múltiplos agentes
+
+Cada agente procura a configuração num lugar diferente, então o repositório mantém dois pares de caminhos — mas apenas um lado de cada par é editável:
+
+| Fonte única (edite aqui) | Espelho gerado (nunca edite) | Como se mantém sincronizado                                  |
+| ------------------------ | ---------------------------- | ------------------------------------------------------------ |
+| `AGENTS.md`              | `CLAUDE.md`                  | `CLAUDE.md` contém só `@AGENTS.md`; o import resolve sozinho |
+| `.agents/skills/`        | `.claude/skills/`            | `scripts/sync_skills.py`, disparado pelo hook `SessionStart` |
+
+Editar o espelho é trabalho perdido: a próxima sessão sobrescreve. Para checar se os dois lados divergiram sem escrever nada, use `python scripts/sync_skills.py --check`.
 
 ## Skills Disponíveis
 
@@ -81,8 +93,8 @@ A wiki tem cinco diretórios de topo, cada um com um papel definido:
 | Sweep    | `/sweep`    | Orquestrar a bateria completa de revisão num essay ou no corpus inteiro:`/format` → `/continuity` → `/proofread` → `/polish` → `/linkify`. Aceita `/sweep` (corpus) ou `/sweep <slug>` (essay único) |
 | Format   | `/format`   | Auditoria mecânica de formatação: estrutura, byline, LaTeX, aspas, espaçamento, Obsidian-compat. Aplica fixes automáticos via `auto_fix_lint.py` e reporta o restante                                              |
 | Organize | `/organize` | Verificar a saúde da base inteira: índice, log, mapa de sources, tags, links                                                                                                                                           |
-| Gaps     | `/gaps`     | Checar cobertura conceitual: termo citado sem página própria, página sem link em Conexões, desbalanço temático entre categorias                                                                                    |
-| Stats    | `/stats`    | Gerar um dashboard read-only: essays por tag/categoria, órfãos, sources sem manifest, estado do plano, insights, grafo                                                                                                 |
+| Gaps     | `/gaps`     | Checar cobertura conceitual: termo citado sem página própria, página sem link em Conexões, desbalanço entre tags                                                                                    |
+| Stats    | `/stats`    | Gerar um dashboard read-only: essays por tag/tipo, órfãos, sources sem manifest, estado do plano, insights, grafo                                                                                                 |
 | Status   | `/status`   | Ver ou atualizar `wiki/status.md`, a ponte entre sessões                                                                                                                                                               |
 
 **Saída**
@@ -109,7 +121,7 @@ A wiki tem cinco diretórios de topo, cada um com um papel definido:
 ## Essays — Tema Central
 
 1. **Todo caminho leva a um essay.** Concepts e entities não têm função própria, existem só para serem linkados por essays. Se uma página não é referenciada por nenhum essay, ela é órfã e precisa de um essay-pai.
-2. **`wiki/index.md` contém apenas essays**, organizados por categoria temática (Filosofia & Consciência, Engenharia Aeronáutica, Física & Cosmologia, etc.). O formato exato está em `conventions/SKILL.md`.
+2. **`wiki/index.md` contém apenas essays**, como lista plana ordenada por data de criação, com um resumo de uma linha (`summary:`) e as tags de cada um. É artefato gerado por `scripts/build_index.py`, nunca editado à mão, e não tem agrupamento temático: a classificação temática da wiki inteira vem só de `tags`. O formato exato está em `conventions/SKILL.md`.
 3. **Existem dois tipos de essay**: originais, vindos de `raw/` com o texto intacto além de links e formatação; e criados, escritos pela wiki e livremente editáveis. Detalhes em `conventions/SKILL.md`.
 4. **Todo essay carrega**: frontmatter YAML completo, byline padronizada, `## Sumário`, links externos inline, `## Referências` e `## Conexões`. O formato exato de cada peça está em `conventions/SKILL.md`.
 5. **A prosa deve ser corrida, não listas.** Exceções e formato exato em `conventions/SKILL.md`.
@@ -162,7 +174,7 @@ A pendência de curto prazo (o que ficou em aberto na sessão atual) fica regist
 ## Regras Gerais
 
 1. **Nunca modifique arquivos em `wiki/sources/`.**
-2. Atualize `wiki/index.md` sempre que um essay for criado ou removido.
+2. Rode `python scripts/build_index.py` sempre que um essay for criado, editado ou removido, para regenerar `wiki/index.md` e `wiki/index.json`. Nunca edite o índice à mão. Se `## Referências` foi tocada, rode também `python scripts/references_index.py`.
 3. Registre toda operação de conteúdo em `wiki/log.md` (append-only); o formato está em `conventions/SKILL.md`.
 4. Toda página da wiki tem frontmatter YAML completo (`tags`, `sources`, `created`, `updated`); o formato está em `conventions/SKILL.md`.
 5. **Em caso de contradição entre fontes**: nunca escolha um lado sozinho, nem tire a média entre elas. Pare e pergunte ao Usuário, citando as duas fontes com localização exata, e só edite depois de receber a resposta dele. O detalhe e o escopo dessa regra para `/absorb`, `/digest`, `/expand` e `/continuity` estão em `conventions/SKILL.md`.
@@ -174,6 +186,6 @@ A pendência de curto prazo (o que ficou em aberto na sessão atual) fica regist
 Ferramentas de linha de comando disponíveis; use quando fizer sentido:
 
 - **summarize** — resume links, arquivos e mídia. Veja `summarize --help`.
-- **scripts/search.py** — busca com trecho (grep -n com contexto) escopada às pastas da wiki, sem dependência externa; primeira opção para `/query`, `/study`, `/insight`, `/essay` buscarem conteúdo sem abrir arquivo inteiro. Veja `README.md` (seção Estrutura de pastas → `scripts/`) para os outros scripts auxiliares (`build_index.py`, `resolve_title.py`, `backlinks.py`).
+- **scripts/search.py** — busca com trecho (grep -n com contexto) escopada às pastas da wiki, sem dependência externa; primeira opção para `/query`, `/study`, `/insight`, `/essay` buscarem conteúdo sem abrir arquivo inteiro. Veja `README.md` (seção Estrutura de pastas → `scripts/`) para os outros scripts auxiliares (`build_index.py`, `references_index.py`, `linkify_check.py`, `dedupe_check.py`, `resolve_title.py`, `backlinks.py`).
 - **qmd** — motor de busca local para markdown, alternativa externa quando instalada e a wiki crescer além do que `search.py`/`index.md` conseguem navegar bem sozinhos. Veja `qmd --help`.
 - **agent-browser** — automação de navegador para pesquisa web, para quando `web_search`/`web_fetch` falharem.

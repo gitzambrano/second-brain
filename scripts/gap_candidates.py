@@ -14,6 +14,7 @@ sozinho. Falsos positivos são esperados e ok; falso negativo silencioso é o
 que queremos evitar.
 """
 
+import json
 import re
 import sys
 from collections import defaultdict
@@ -21,12 +22,14 @@ from pathlib import Path
 
 import yaml
 
+import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
+
 ROOT_DIR = Path(__file__).resolve().parent.parent
 WIKI_ROOT = ROOT_DIR / "wiki"
 ESSAYS_DIR = WIKI_ROOT / "essays"
 CONCEPTS_DIR = WIKI_ROOT / "concepts"
 ENTITIES_DIR = WIKI_ROOT / "entities"
-INDEX_PATH = WIKI_ROOT / "index.md"
+INDEX_JSON_PATH = WIKI_ROOT / "index.json"
 
 MIN_ESSAY_HITS = 2      # termo precisa aparecer em pelo menos N essays distintos
 MIN_TOTAL_HITS = 3      # ou N vezes no total (mesmo essay repetindo)
@@ -60,7 +63,7 @@ def get_frontmatter(content):
 def strip_code_and_urls(body):
     body = re.sub(r"```.*?```", "", body, flags=re.DOTALL)
     body = re.sub(r"`[^`]*`", "", body)
-    # byline ("> Tipo · Categoria") e qualquer blockquote — estrutural, não prosa
+    # byline ("> Tipo") e qualquer blockquote — estrutural, não prosa
     body = re.sub(r"(?m)^>.*$", "", body)
     # links internos de âncora ([Texto](#secao)) — Sumário aponta pra dentro do
     # próprio essay, não é um termo citado; mata o par inteiro pra não sobrar
@@ -208,21 +211,23 @@ def analyze_unlinked_existing_pages(essays, existing_pages):
     return findings
 
 
-def analyze_category_balance():
-    if not INDEX_PATH.exists():
+def analyze_tag_balance():
+    """Balanço de cobertura por tag, lido direto de wiki/index.json
+    (essays[].tags) — substitui o antigo parse de `## Categoria` em
+    wiki/index.md, que deixou de existir como agrupamento (ver
+    conventions/SKILL.md, ## Tags — Vocabulário Controlado).
+    """
+    if not INDEX_JSON_PATH.exists():
         return {}
-    content = load_content(INDEX_PATH)
-    counts = {}
-    current = None
-    for line in content.splitlines():
-        h2 = re.match(r"^## (.+)", line)
-        if h2:
-            current = h2.group(1).strip()
-            counts[current] = 0
-            continue
-        if current and re.match(r"^- \[\[", line):
-            counts[current] += 1
-    return counts
+    try:
+        index = json.loads(load_content(INDEX_JSON_PATH))
+    except (json.JSONDecodeError, OSError):
+        return {}
+    counts = defaultdict(int)
+    for essay in index.get("essays", []):
+        for tag in essay.get("tags") or []:
+            counts[tag] += 1
+    return dict(counts)
 
 
 def main():
@@ -258,14 +263,15 @@ def main():
 
     print()
     print("=" * 70)
-    print("PARTE 3 — balanço de cobertura por categoria (wiki/index.md)")
+    print("PARTE 3 — balanço de cobertura por tag (wiki/index.json)")
     print("=" * 70)
-    balance = analyze_category_balance()
+    balance = analyze_tag_balance()
     if not balance:
-        print("wiki/index.md não encontrado ou sem categorias.")
+        print("wiki/index.json não encontrado, desatualizado, ou sem tags "
+              "(rode 'python scripts/build_index.py').")
     else:
-        for cat, n in sorted(balance.items(), key=lambda x: x[1]):
-            print(f"- {cat}: {n} essay(s)")
+        for tag, n in sorted(balance.items(), key=lambda x: x[1]):
+            print(f"- {tag}: {n} essay(s)")
 
 
 if __name__ == "__main__":

@@ -54,10 +54,17 @@ Em modo corpus inteiro, pula essays com `status: finalizado` ou `maduro` nos fix
    {
      "essays": [
        {"name": "...", "issues": [{"severity": "ERROR|WARNING|INFO", "code": "...", "message": "..."}]}
-     ],
-     "category_duplicates": [["Variante A", "Variante B"]]
+     ]
    }
    ```
+
+   **Rode também o script de referências**, com o mesmo escopo:
+
+   ```bash
+   python scripts/linkify_check.py [--file <slug>] --json
+   ```
+
+   Mesma estrutura de saída, com os códigos de `## Referências` (`REFERENCIA_FORMATO_INVALIDO`, `DUPLICATE_REFERENCIA`, `LINK_NOT_IN_REFERENCIAS`, `REFERENCIA_SEM_LINK`, `REFERENCIA_NAO_USADA`). `/format` só **reporta** esses achados: quem corrige é `/linkify`.
 
 4. **Aplique os fixes automáticos** para achados mecânicos e inequívocos (sem interação com o Usuário):
 
@@ -76,6 +83,7 @@ Em modo corpus inteiro, pula essays com `status: finalizado` ou `maduro` nos fix
    | Categoria | Códigos de issue |
    | --- | --- |
    | Estrutura obrigatória | `NO_FRONTMATTER`, `BAD_FRONTMATTER`, `FM_*`, `NO_H1`, `NO_SUMARIO`, `SUMARIO_NO_HR`, `SUMARIO_BROKEN_ANCHOR`, `NO_REFERENCIAS`, `NO_CONEXOES`, `CONEXOES_NOT_LAST` |
+   | Resumo do índice | `FM_NO_SUMMARY`, `FM_BAD_SUMMARY`, `FM_LONG_SUMMARY` |
    | Byline | `BYLINE_*` |
    | Links | `WIKILINKS_IN_BODY`, `FEW_EXT_LINKS` |
    | LaTeX / aspas | `ASCII_QUOTES`, `BYLINE_LATEX_CHAR`, `TITLE_LATEX_CHAR` |
@@ -84,12 +92,14 @@ Em modo corpus inteiro, pula essays com `status: finalizado` ou `maduro` nos fix
    | Residuais | `HTML_RESIDUAL`, `RESIDUAL_SYMBOL` |
    | Idioma | `ENGLISH_PARAGRAPH` |
    | Obsidian | `LOOSE_CHAPTER_LABEL` |
+   | Referências | `REFERENCIA_FORMATO_INVALIDO`, `DUPLICATE_REFERENCIA`, `LINK_NOT_IN_REFERENCIAS`, `REFERENCIA_SEM_LINK`, `REFERENCIA_NAO_USADA` |
 
 6. **Apresente o relatório final** com:
    - Contagem de essays limpos vs. com issues
    - Issues agrupados por categoria e por essay
    - Lista de fixes auto-aplicados
-   - Categorias temáticas quase-duplicadas (se houver)
+   - Se houver `REFERENCIA_FORMATO_INVALIDO`, sugira `python scripts/linkify_check.py --fix-format` — mas não rode: reformatar bibliografia é `/linkify`, não `/format`
+   - **Liste nominalmente os essays com `FM_NO_SUMMARY`.** Sem `summary:` a entrada do essay em `wiki/index.md` sai sem resumo, e não existe outro lugar de onde um script possa tirar essa linha. Escrever o resumo é conteúdo, então não invente aqui: reporte quais essays estão sem, e ofereça preencher via `/expand` ou numa passada dedicada.
 
 7. **Não pergunte ao Usuário** durante a execução — apenas reporte ao final. A única exceção é se o `--file <slug>` for ambíguo.
 

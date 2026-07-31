@@ -24,6 +24,8 @@ import tempfile
 import argparse
 from pathlib import Path
 
+import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
+
 ROOT_DIR = Path(__file__).resolve().parent.parent
 ESSAYS_DIR = ROOT_DIR / "wiki" / "essays"
 HANDOUTS_DIR = ROOT_DIR / "wiki" / "handouts"
@@ -148,9 +150,9 @@ def prepare_for_pandoc(filepath):
     author_date = ''
     for line in body.split('\n'):
         line_stripped = line.strip()
-        if line_stripped.startswith('>') and '·' in line_stripped:
+        if line_stripped.startswith('>'):
             clean = line_stripped.lstrip('> ').strip()
-            # First byline: "Ensaio · Categoria"
+            # First byline: "Ensaio" (sem categoria — ver conventions/SKILL.md)
             if any(kw in clean for kw in ['Ensaio', 'White Paper', 'Estudo', 'Análise', 'Brainstorm']):
                 subtitle = clean
             # Second byline: "Gustavo Zambrano · Mês de Ano"

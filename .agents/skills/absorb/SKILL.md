@@ -23,7 +23,8 @@ Incorpora o conteúdo de uma fonte já processada às páginas existentes da wik
 4. Ajuste `[[wikilinks]]` em `## Conexões` das páginas tocadas, nos dois sentidos quando fizer sentido.
 5. Se a fonte revelar um conceito/entidade sem página própria e central o bastante, crie a página (mesma lógica de `/chapter`) — `tags:` reusa o vocabulário controlado, checando `tags_in_use` em `wiki/index.json` antes de criar tag nova (ver passo 6).
 6. Atualize `wiki/sources/map.md` (status: "Absorvido em [[Página A]], [[Página B]]") e `manifest.md` se a fonte ainda não tiver entrada — raro, mas possível se foi arquivada manualmente. Se `manifest.md` já tiver a entrada mas faltar `Tags:` (fonte antiga, de antes desse campo existir), aproveite e preencha — vocabulário controlado, cheque `tags_in_use` em `wiki/index.json` (gerado por `python scripts/build_index.py`; rode-o primeiro se estiver desatualizado) e só use tag nova se nenhuma existente cobrir o tema.
-7. Log: `## [YYYY-MM-DD] absorb | Fonte → páginas afetadas`
+7. Se o passo 3 acrescentou entrada em `## Referências` de algum essay, rode `python scripts/references_index.py` para regenerar `wiki/references.json`/`.md`.
+8. Log: `## [YYYY-MM-DD] absorb | Fonte → páginas afetadas`
 
 Uma única fonte pode tocar 10-15 páginas. Isso é normal.
 

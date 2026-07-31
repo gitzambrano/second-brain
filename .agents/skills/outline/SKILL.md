@@ -1,7 +1,7 @@
 ---
 name: outline
 description: >
-  Gera o esqueleto de um essay futuro — título, tipo, categoria, e
+  Gera o esqueleto de um essay futuro — título, tipo, e
   cada capítulo com uma frase de papel argumentativo e bullets do
   conteúdo que entra — sem escrever texto corrido. Salva como
   artefato próprio em plan/drafts/ para o Usuário aprovar e iterar
@@ -24,7 +24,7 @@ Produz e itera o esqueleto de um essay — nunca prosa. `/essay` agora exige ess
 
 Se a tese central ainda não está clara, pergunte antes de propor qualquer esqueleto: tema não é tese — "quero escrever sobre livre-arbítrio" é tema, "quero argumentar que o compatibilismo dissolve o problema, não o resolve" é tese. Se a tese já emergiu de uma sessão de `/study` ou já está no plano (`plan/plano.md`, seção Essays Futuros), use isso como ponto de partida em vez de perguntar de novo.
 
-Confirme rapidamente: **Tipo** (`Ensaio` | `White Paper` | `Brainstorm` | `Estudo` | `Análise`), **Categoria temática**, **Domínio** (filosófico | técnico | misto) — `/essay` depende desses três campos para saber que seção de redação aplicar, então ficam gravados no frontmatter do esboço.
+Confirme rapidamente: **Tipo** (`Ensaio` | `White Paper` | `Brainstorm` | `Estudo` | `Análise`), **Domínio** (filosófico | técnico | misto) — `/essay` depende desses dois campos para saber que seção de redação aplicar, então ficam gravados no frontmatter do esboço.
 
 ## 2. Pesquisa leve — o suficiente para estruturar, não para redigir
 
@@ -57,7 +57,6 @@ Escreva em `plan/drafts/<slug>.md`:
 ---
 tese: uma frase com a posição central
 tipo: Ensaio | White Paper | Brainstorm | Estudo | Análise
-categoria: Categoria Temática
 dominio: filosófico | técnico | misto
 status: rascunho
 created: YYYY-MM-DD

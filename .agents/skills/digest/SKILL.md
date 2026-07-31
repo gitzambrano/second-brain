@@ -29,7 +29,8 @@ Não use para: um ensaio/white paper do próprio Usuário (isso é `/import`) ou
 5. **Entregue o resumo ao Usuário na própria conversa** — não é suficiente só salvar o arquivo, ele quer ler agora.
 6. Arquive o original em `wiki/sources/<subpasta-do-tipo>/`, preservando o nome.
 7. Registre em `wiki/sources/manifest.md` e em `wiki/sources/map.md`, vide `conventions/SKILL.md`. Inclua `Tags:`, 2 a 5 tags do vocabulário controlado, vide `tags_in_use` em `wiki/index.json`, reuse antes de criar. Campo status: "Resumido — ver resumo", com link pro arquivo em `resumos/`.
-8. Log: `## [YYYY-MM-DD] digest | Título da Fonte`
+8. Se este digest tiver sido encadeado com um `/absorb` que editou `## Referências` de algum essay, rode `python scripts/references_index.py` para regenerar `wiki/references.json`/`.md` (o resumo em si não tem `## Referências` formal — ver `## Convenções`).
+9. Log: `## [YYYY-MM-DD] digest | Título da Fonte`
 
 ## Depois
 

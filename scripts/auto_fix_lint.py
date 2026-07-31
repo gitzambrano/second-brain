@@ -21,6 +21,8 @@ Correções aplicadas:
 import re
 from pathlib import Path
 
+import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
+
 ROOT_DIR = Path(__file__).resolve().parent.parent
 WIKI_ROOT = ROOT_DIR / "wiki"
 ESSAYS_DIR = WIKI_ROOT / "essays"
