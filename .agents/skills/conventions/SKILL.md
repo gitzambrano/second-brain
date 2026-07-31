@@ -151,19 +151,20 @@ Um item por linha, numerado `[N]` em ordem de citação no corpo:
 ```
 ## Referências
 
-[1] Cheeseman, I. C., e Bennett, W. E., *The Effect of the Ground on a Helicopter Rotor in Forward Flight* [link](https://example.org/arc-rm-3021), Aeronautical Research Council Reports and Memoranda, No. 3021, HMSO, London, 1955. — Referência seminal: derivou a equação fechada do ganho IGE em função da altura normalizada e do ângulo de skew da esteira.
+[1] Cheeseman, I. C., e Bennett, W. E., *The Effect of the Ground on a Helicopter Rotor in Forward Flight*, Aeronautical Research Council Reports and Memoranda, No. 3021, HMSO, London, 1955. — Referência seminal: derivou a equação fechada do ganho IGE em função da altura normalizada e do ângulo de skew da esteira. [Link](https://example.org/arc-rm-3021)
 
 [2] Glauert, H., *The Elements of Aerofoil and Airscrew Theory*, Cambridge University Press, Cambridge, 1926. — Base da Teoria do Momento em escoamento oblíquo; sem edição digital confiável, sem link.
 
-[3] *Blade Element Momentum Theory* [link](https://en.wikipedia.org/wiki/Blade_element_momentum_theory), Wikipedia, The Free Encyclopedia. — Verbete de apoio para a definição geral do método.
+[3] *Blade Element Momentum Theory*, Wikipedia, The Free Encyclopedia. — Verbete de apoio para a definição geral do método. [Link](https://en.wikipedia.org/wiki/Blade_element_momentum_theory)
 
-[4] Zambrano, G., *zbemt* [link](https://github.com/gustavo/zbemt), GitHub repository, 2026. — Repositório do solver referenciado neste white paper.
+[4] Zambrano, G., *zbemt*, GitHub repository, 2026. — Repositório do solver referenciado neste white paper. [Link](https://github.com/gustavo/zbemt)
 ```
 
 Regras:
 
 - **Título sempre em itálico**, sem exceção por tipo de fonte (artigo, livro, capítulo, verbete web, repositório).
-- **O link é a palavra `link`, clicável, imediatamente depois do título em itálico.** A citação em si permanece texto limpo: o itálico do título fica legível, e a única coisa colorida e sublinhada na página de referências é a palavra `link`. Nunca envolva a citação inteira num hyperlink — no PDF exportado isso pinta o parágrafo todo e transforma a bibliografia num bloco azul.
+- **O link é a palavra `Link`, clicável, como última coisa da entrada**, depois do ponto final. Nunca no título, nunca no periódico, nunca envolvendo a citação inteira: o texto da citação é texto limpo do começo ao fim, e a única coisa colorida é a palavra `Link`, sempre no mesmo lugar. Isso mantém o itálico do título legível (sublinhado de hyperlink o estragaria), evita que o PDF exportado vire um bloco azul, e deixa a coluna de links alinhada para varrer com o olho.
+- Link de glossário **dentro da nota** (um verbete para um termo comentado ali) pode ficar onde está: ele não é o endereço da obra.
 - Entrada sem link nenhum é entrada normal, na mesma lista das outras: ausência de edição digital não é um tipo de fonte.
 - Sem autor identificável (verbete, repositório institucional, site): começa direto pelo título em itálico.
 - Container troca conforme o tipo de fonte: periódico, editora + cidade, série + órgão (relatório técnico), site/wiki, plataforma + tipo (GitHub, YouTube).

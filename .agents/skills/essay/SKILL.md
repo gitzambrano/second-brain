@@ -64,7 +64,16 @@ Aplique as duas seções acima na proporção que o argumento pedir — um essay
 - **Sem resumo condensado dentro do essay** — vai direto da byline pro `## Sumário`; a introdução (primeira seção `##`) cumpre esse papel. Resumo de uma página é handout (`/handout`), nunca seção do essay.
 - **`## Sumário`** logo após a byline, com links para cada seção `##` (exceto Referências e Conexões)
 - **Corpo**: só links externos `[texto](url)` inline, nunca `[[wikilinks]]` fora de Conexões. **Mínimo 10 links externos**, cobrindo pensadores/correntes/obras (filosofia) ou normas/papers/conceitos técnicos (engenharia).
-- **`## Referências`** (heading exato) com a bibliografia usada — cite a fonte sempre que possível, nunca afirme um dado ou claim sem verificação.
+- **`## Referências`** (heading exato) com a bibliografia usada — cite a fonte sempre que possível, nunca afirme um dado ou claim sem verificação. O formato de cada entrada é o de `## Formato de "## Referências" — padrão AIAA` em `conventions/SKILL.md`, e não é opcional:
+
+  ```
+  [1] Cheeseman, I. C., e Bennett, W. E., *The Effect of the Ground on a Helicopter Rotor in Forward Flight*, ARC R&M No. 3021, HMSO, London, 1955. — Nota curta opcional. [Link](https://…)
+  [2] *Blade Element Momentum Theory*, Wikipedia, The Free Encyclopedia. [Link](https://…)
+  ```
+
+  Três erros que o corpus antigo acumulou e que **não** devem se repetir: título fora do itálico (todo título vai em itálico, inclusive verbete de enciclopédia e norma técnica); link em qualquer lugar que não seja a palavra `Link` no fim da entrada — nem no título, nem no periódico, nem envolvendo a citação inteira; e entrada que é só um link de glossário sem obra, autor nem container — se o alvo é um verbete, escreva-o como verbete (`*Título do verbete*, Wikipedia. [Link](url)`), e se não é fonte de nada, ele pertence ao corpo do texto, não à bibliografia.
+
+  Confira com `python scripts/linkify_check.py --file <slug>` antes de encerrar.
 - **`## Conexões`** como última seção, só `[[wikilinks]]` para essays/conceitos/entidades relacionados
 
 ## 3. Criar/atualizar conceitos e entidades

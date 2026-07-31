@@ -15,13 +15,24 @@ Outputs:
     output/graph/graph.json  - raw node/edge data, for reuse by other tools
 
 Recursos do HTML interativo:
-  - Legenda clicável (Essay/Concept/Entity/Insight/Reference por
-    domain_group): clique simples isola aquele tipo/grupo; clique de novo
-    remove o filtro.
+  - Legenda clicável (Essay/Concept/Entity/Insight/Reference): cada tipo
+    entra e sai da tela. Reference começa oculto — são centenas de nós-folha
+    que afogam a estrutura entre essays, concepts e entities.
+  - O raio de cada bolinha reflete o grau **visível**: ocultar um tipo
+    recalcula os graus e reduz as bolinhas que perderam vizinhos, para o
+    tamanho não mentir sobre a centralidade no grafo que está na tela.
   - Duplo clique num nó: abre o arquivo (file:// + caminho relativo) ou,
     para referência, a própria URL, em nova aba.
-  - Botão "Índice" no painel lateral: modal com lista completa por tipo
-    (título, tags, contagem de conexões), ordenável por coluna.
+  - Botão "Índice": modal com abas por tipo, busca por título, filtro por
+    tag (chips combináveis por E) e ordenação por coluna. Clicar numa linha
+    fecha o modal e seleciona o nó no grafo.
+  - Navegação: roda do mouse dá zoom, arrastar com o botão esquerdo move um
+    nó, e arrastar com o botão do meio (clique na rodinha) faz pan do grafo
+    inteiro, inclusive começando em cima de um nó.
+  - Responsivo: em tela pequena o painel vira folha inferior recolhível por
+    um botão, o modal do índice ocupa a tela toda e a tabela vira lista de
+    cartões com barra de ordenação. Nada disso altera o desktop — mora todo
+    dentro de media query.
   - Painel de Gaps: componentes conectados (union-find) sobre nós+arestas,
     cruzado com `tags` de cada nó — reporta pares de tags cujos essays
     nunca caem no mesmo componente conectado (silo temático).
@@ -253,6 +264,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Grafo — Second Brain</title>
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <style>
@@ -272,16 +284,29 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   }
   * { box-sizing: border-box; }
   body { margin:0; font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; background: var(--bg); color: var(--ink); overflow: hidden; }
-  #graph { width: 100vw; height: 100vh; display: block; }
+  /* `dvh` acompanha a barra de endereço do navegador móvel, que muda de altura
+     ao rolar; `vh` deixaria o grafo cortado atrás dela. */
+  #graph { width: 100vw; height: 100vh; height: 100dvh; display: block; touch-action: none; }
+
+  /* Botão de recolher o painel. Só aparece em tela pequena, onde o painel
+     compete com o grafo pelo espaço todo. */
+  #panel-toggle {
+    display: none; position: fixed; z-index: 12; top: 10px; left: 10px;
+    width: 40px; height: 40px; border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--panel-border); background: var(--panel); color: var(--ink);
+    font-size: 17px; line-height: 1; align-items: center; justify-content: center;
+    box-shadow: 0 4px 14px rgba(0,0,0,.4);
+  }
   #panel {
     position: fixed; top: 16px; left: 16px; width: 320px; max-height: calc(100vh - 32px);
     overflow-y: auto; background: var(--panel); border: 1px solid var(--panel-border);
     border-radius: 10px; padding: 16px; box-shadow: 0 8px 24px rgba(0,0,0,.35);
   }
-  #panel h1 { font-size: 15px; margin: 0 0 4px 0; letter-spacing: .02em; color: var(--instrument-blue); }
-  #panel .sub { font-size: 11px; color: var(--ink-dim); margin-bottom: 12px; }
+  #panel h1 { font-size: 13px; margin: 0 0 12px 0; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ink-dim); font-weight: 600; }
   #search { width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--panel-border);
     background: #1b1e21; color: var(--ink); font-size: 13px; margin-bottom: 12px; }
+  #search:focus { outline: none; border-color: var(--instrument-blue); }
   .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; margin: 4px 0; color: var(--ink-dim);
     cursor: pointer; padding: 3px 6px; border-radius: 5px; user-select: none; }
   .legend-item:hover { background: rgba(255,255,255,.05); }
@@ -289,14 +314,18 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   .legend-item.disabled { opacity: 0.5; text-decoration: line-through; }
   .legend-item.disabled .dot { background: #000000 !important; border: 1px solid var(--panel-border); }
   .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-  #ref-groups { margin-left: 18px; display: none; }
-  #ref-groups.open { display: block; }
   .btn { width: 100%; padding: 7px 10px; margin-top: 6px; border-radius: 6px; border: 1px solid var(--panel-border);
     background: #1b1e21; color: var(--ink); font-size: 12px; cursor: pointer; text-align: left; }
-  .btn:hover { background: rgba(255,255,255,.06); }
-  #info { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--panel-border); font-size: 12px; color: var(--ink-dim); }
-  #info b { color: var(--ink); }
-  #stats { font-size: 11px; color: var(--ink-dim); margin-top: 10px; line-height: 1.6; }
+  .btn:hover { background: rgba(255,255,255,.06); border-color: var(--instrument-blue); }
+  #detail { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--panel-border); }
+  .detail-title { font-size: 13px; color: var(--ink); line-height: 1.35; }
+  .detail-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+  .detail-tags span, .idx-tagcell span {
+    font-size: 10px; color: var(--ink-dim); background: rgba(255,255,255,.05);
+    border-radius: 4px; padding: 2px 6px; white-space: nowrap; }
+  .detail-open { display: inline-block; margin-top: 10px; font-size: 11px;
+    color: var(--instrument-blue); text-decoration: none; }
+  .detail-open:hover { text-decoration: underline; }
   .node-title { font-size: 10px; fill: var(--ink); pointer-events: none; opacity: .85; }
   .link { stroke: var(--edge); stroke-width: 1.2px; }
   .link.reference { stroke: var(--edge-ref); stroke-dasharray: 3,3; }
@@ -306,18 +335,89 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   #modal-overlay.open { display: flex; align-items: center; justify-content: center; }
   #modal { width: min(760px, 92vw); max-height: 82vh; overflow-y: auto; background: var(--panel);
     border: 1px solid var(--panel-border); border-radius: 10px; padding: 18px; }
-  #modal h2 { margin: 0 0 10px 0; font-size: 15px; color: var(--instrument-blue); }
+  #modal h2 { margin: 0 0 14px 0; font-size: 13px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ink-dim); font-weight: 600; }
   #modal table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  #modal th { text-align: left; color: var(--ink-dim); cursor: pointer; padding: 6px 8px; border-bottom: 1px solid var(--panel-border); position: sticky; top:0; background: var(--panel); }
-  #modal td { padding: 6px 8px; border-bottom: 1px solid #2b2f33; vertical-align: top; }
-  #modal tr:hover td { background: rgba(255,255,255,.03); }
-  #modal .close { float: right; cursor: pointer; color: var(--ink-dim); }
+  #modal th { text-align: left; color: var(--ink-dim); cursor: pointer; padding: 6px 8px; border-bottom: 1px solid var(--panel-border); position: sticky; top:0; background: var(--panel); font-weight: 500; }
+  #modal th:hover { color: var(--ink); }
+  #modal th.sorted { color: var(--instrument-blue); }
+  #modal td { padding: 7px 8px; border-bottom: 1px solid #2b2f33; vertical-align: top; }
+  #modal tbody tr { cursor: pointer; }
+  #modal tbody tr:hover td { background: rgba(79,168,255,.08); }
+  #modal .close { float: right; cursor: pointer; color: var(--ink-dim); font-size: 11px; }
+  #modal .close:hover { color: var(--ink); }
+
+  .idx-tabs { display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; }
+  .idx-tab { padding: 5px 12px; border-radius: 999px; border: 1px solid var(--panel-border);
+    background: transparent; color: var(--ink-dim); font-size: 11px; cursor: pointer; font-family: inherit; }
+  .idx-tab:hover { color: var(--ink); }
+  .idx-tab.active { background: var(--instrument-blue); border-color: var(--instrument-blue); color: #0b1220; font-weight: 600; }
+  #idx-search { width: 100%; padding: 7px 10px; border-radius: 6px; border: 1px solid var(--panel-border);
+    background: #1b1e21; color: var(--ink); font-size: 12px; margin-bottom: 10px; font-family: inherit; }
+  #idx-search:focus { outline: none; border-color: var(--instrument-blue); }
+  .idx-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 14px; }
+  .idx-chip { font-size: 10px; padding: 3px 9px; border-radius: 999px; cursor: pointer; font-family: inherit;
+    border: 1px solid var(--panel-border); background: transparent; color: var(--ink-dim); }
+  .idx-chip:hover { color: var(--ink); border-color: var(--ink-dim); }
+  .idx-chip.on { background: rgba(79,168,255,.18); border-color: var(--instrument-blue); color: var(--instrument-blue); }
+  .idx-tagcell { display: flex; flex-wrap: wrap; gap: 3px; }
+  .idx-empty { font-size: 12px; color: var(--ink-dim); padding: 18px 4px; }
+
+  /* ---- Tela pequena ----------------------------------------------------
+     Nada aqui altera o desktop: tudo mora dentro da media query. O painel
+     lateral vira folha inferior recolhível, porque numa tela de celular ele
+     cobriria metade do grafo; e o modal do índice passa a ocupar a tela
+     inteira, já que uma tabela em 92vw de largura fica ilegível. */
+  @media (max-width: 720px), (pointer: coarse) and (max-width: 900px) {
+    #panel-toggle { display: flex; }
+    #panel {
+      top: auto; bottom: 0; left: 0; width: 100vw; border-radius: 14px 14px 0 0;
+      max-height: 58dvh; padding: 14px 16px calc(16px + env(safe-area-inset-bottom));
+      border-left: none; border-right: none; border-bottom: none;
+    }
+    /* Esconder é `display: none`, não `transform` nem `visibility`: o painel
+       precisa sumir de fato, inclusive parar de receber toque, e é a única
+       forma que não depende de o renderizador resolver porcentagem de
+       transform. O JS também aplica isto inline, para não ficar refém da
+       cascata. Sem animação de deslizar, de propósito. */
+    #panel.collapsed { display: none; }
+    #panel h1 { display: none; }
+    /* 16px evita o zoom automático que o iOS aplica em campo de texto menor. */
+    #search, #idx-search { font-size: 16px; padding: 10px 12px; }
+    .legend-item { font-size: 13px; padding: 7px 8px; }
+    .dot { width: 12px; height: 12px; }
+    .btn { padding: 10px 12px; font-size: 13px; }
+    #modal-overlay.open { align-items: stretch; justify-content: stretch; }
+    #modal {
+      width: 100vw; max-width: none; max-height: 100dvh; height: 100dvh;
+      border-radius: 0; border: none; padding: 14px 14px calc(14px + env(safe-area-inset-bottom));
+    }
+    #modal .close { font-size: 14px; padding: 4px 8px; }
+    .idx-tab { padding: 8px 14px; font-size: 12px; }
+    .idx-chip { padding: 6px 11px; font-size: 11px; }
+    /* A lista de tags pode ficar longa; limita a altura e rola só ela. */
+    .idx-tags { max-height: 22dvh; overflow-y: auto; }
+    /* Tabela em coluna: cabeçalho de tabela não cabe em tela estreita. */
+    #modal table, #modal tbody, #modal tbody tr, #modal td { display: block; width: 100%; }
+    /* O cabeçalho vira barra de ordenação em vez de sumir: sem ele o índice
+       perderia a ordenação por coluna justamente onde a lista é mais longa. */
+    #modal thead { display: block; }
+    #modal thead tr { display: flex; gap: 6px; }
+    #modal th { flex: 1; text-align: center; font-size: 10px; padding: 9px 4px;
+      border-radius: 6px; background: rgba(255,255,255,.05); border-bottom: none; position: static; }
+    #modal tbody tr { border-bottom: 1px solid #2b2f33; padding: 10px 2px; }
+    #modal td { border: none; padding: 2px; }
+    #modal td:last-child { color: var(--ink-dim); font-size: 11px; }
+    #modal td:last-child::before { content: "conexões: "; }
+    .node-title { font-size: 12px; }
+  }
   .gap-item { font-size: 12px; margin: 4px 0; color: var(--ink-dim); }
   .gap-item b { color: var(--ink); }
 </style>
 </head>
 <body>
 <svg id="graph"></svg>
+<button id="panel-toggle" aria-label="Mostrar ou esconder o painel" aria-expanded="true">☰</button>
 <div id="panel">
   <h1>Grafo da Wiki</h1>
   <input id="search" type="text" placeholder="Buscar por título ou tag…">
@@ -350,13 +450,44 @@ const typeColor = (n) => {
   return "#888";
 };
 
-const width = window.innerWidth, height = window.innerHeight;
+let width = window.innerWidth, height = window.innerHeight;
 const svg = d3.select("#graph").attr("viewBox", [0, 0, width, height]);
 const container = svg.append("g");
 
-svg.call(d3.zoom().scaleExtent([0.1, 6]).on("zoom", (event) => {
-  container.attr("transform", event.transform);
-}));
+const zoom = d3.zoom()
+  .scaleExtent([0.1, 6])
+  .filter((event) => {
+    // O filtro padrão do d3 aceita só o botão esquerdo (`!event.button`).
+    // Liberar o botão do meio dá o pan por clique-na-rodinha sem tirar o
+    // arrastar de nó, que continua no esquerdo: o d3.drag ignora o botão 1,
+    // então o evento sobe até aqui e vira pan mesmo começando sobre um nó.
+    if (event.type === "wheel") return !event.ctrlKey;
+    return event.button === 0 || event.button === 1;
+  })
+  .on("zoom", (event) => container.attr("transform", event.transform));
+
+svg.call(zoom);
+
+// Sem isto o navegador entra em auto-scroll (aquele ícone de setas) no
+// clique do meio, e o pan nunca chega a acontecer.
+svg.on("mousedown", (event) => { if (event.button === 1) event.preventDefault(); });
+svg.on("auxclick", (event) => { if (event.button === 1) event.preventDefault(); });
+
+// Rotação de tela e troca de janela: sem isto o viewBox fica com a dimensão
+// de carregamento e o grafo aparece cortado ou centralizado fora da tela.
+function ajustarViewport() {
+  width = window.innerWidth;
+  height = window.innerHeight;
+  svg.attr("viewBox", [0, 0, width, height]);
+  simulation.force("center", d3.forceCenter(width / 2, height / 2));
+  simulation.alpha(0.15).restart();
+  // Ao voltar para tela grande o painel reaparece: `collapsed` é inerte fora
+  // da media query, mas deixar a classe pendurada faria o botão reaparecer
+  // com o rótulo errado se a janela encolhesse de novo.
+  if (!telaPequena()) definirPainel(true);
+}
+window.addEventListener("resize", ajustarViewport);
+window.addEventListener("orientationchange", ajustarViewport);
 
 const linkSel = container.append("g").selectAll("line")
   .data(data.edges).join("line")
@@ -435,6 +566,29 @@ const neighborsOf = (id) => {
   return s;
 };
 
+// ---- Painel recolhível (tela pequena) ----
+const panelEl = document.getElementById("panel");
+const toggleEl = document.getElementById("panel-toggle");
+const telaPequena = () => getComputedStyle(toggleEl).display !== "none";
+
+function definirPainel(aberto) {
+  const esconder = !aberto && telaPequena();
+  panelEl.classList.toggle("collapsed", !aberto);
+  // O inline vence a cascata e não depende de a media query ser reavaliada.
+  panelEl.style.display = esconder ? "none" : "";
+  toggleEl.setAttribute("aria-expanded", String(aberto));
+  toggleEl.textContent = aberto ? "✕" : "☰";
+}
+
+toggleEl.addEventListener("click", () => {
+  definirPainel(panelEl.classList.contains("collapsed"));
+});
+
+// Em tela pequena o painel começa fechado: quem abre o grafo no celular quer
+// ver o grafo, não a legenda. No desktop a media query esconde o botão e a
+// classe `collapsed` não tem efeito nenhum, então nada muda.
+if (telaPequena()) definirPainel(false);
+
 const detailEl = document.getElementById("detail");
 
 function resetHighlight() {
@@ -464,6 +618,9 @@ function selectNode(d) {
   });
 
   const target = d.type === "reference" ? d.url : (d.file ? "../../" + d.file : null);
+  // O cartão de detalhe mora dentro do painel; num celular com o painel
+  // recolhido, selecionar um nó não mostraria nada.
+  if (telaPequena()) definirPainel(true);
   detailEl.hidden = false;
   detailEl.innerHTML =
     `<div class="detail-title">${escapeHtml(d.title)}</div>` +
@@ -679,8 +836,7 @@ document.getElementById("btn-index").addEventListener("click", () => {
 // ---- Painel de Gaps (calculado no Python, embutido nos dados) ----
 document.getElementById("btn-gaps").addEventListener("click", () => {
   const gaps = data.tag_gaps || [];
-  let html = `<h2>Painel de Gaps — tags que nunca se conectam</h2>`;
-  html += `<div style="font-size:12px; color: var(--ink-dim); margin-bottom:10px;">Pares de tags cujos essays nunca caem no mesmo componente conectado do grafo (nem transitivamente via outros essays/conceitos/referências) — sinal de silo temático. Calculado sobre componentes conexos (union-find) de todos os nós e arestas.</div>`;
+  let html = `<h2>Gaps entre tags</h2>`;
   if (!gaps.length) {
     html += "<div class=\\"gap-item\\">Nenhum par de tags isolado — todo o grafo conectado por tags está num único componente (or não há tags suficientes ainda).</div>";
   } else {

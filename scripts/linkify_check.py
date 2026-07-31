@@ -92,17 +92,23 @@ CITATION_LIKE = (
     "royalsocietypublishing.org",
 )
 
-# Padrão do link da obra: a palavra "link", clicável, logo depois do título em
-# itálico. Mantém a citação inteira como texto limpo — só a palavra "link" fica
-# azul — e preserva o itálico do título, que sublinhado de hyperlink estragaria.
-LINK_ANCHOR = "link"
-CANONICAL_LINK_RE = re.compile(r"\[link\]\((?P<url>https?://[^\)\s]+)\)")
-TITLE_THEN_LINK_RE = re.compile(r"(?<!\*)\*[^*\n]+\*\s*\[link\]\(https?://[^\)\s]+\)")
-LINKED_TITLE_RE = re.compile(r"\[(?P<title>\*[^*\n]+\*)\]\((?P<url>https?://[^\)\s]+)\)")
+# Padrão do link da obra: a palavra "Link", clicável, como **última coisa da
+# entrada**, depois do ponto final. A citação inteira fica texto limpo — nenhum
+# pedaço dela vira hyperlink — e o itálico do título fica legível, que
+# sublinhado de link estragaria. Tudo num lugar só, fácil de varrer com o olho.
+LINK_ANCHOR = "Link"
+URL_PAT = r"https?://(?:[^()\s]|\([^()\s]*\))+"
+# Aceita o "link" minúsculo de passadas anteriores, para o --fix-format migrar.
+CANONICAL_LINK_RE = re.compile(r"\[[Ll]ink\]\((?P<url>" + URL_PAT + r")\)")
+TAIL_LINK_RE = re.compile(r"\[Link\]\((?P<url>" + URL_PAT + r")\)\s*$")
+# Link envolvendo o título: `[*Título*](url)` e também `*[Título](url)*`.
+LINKED_TITLE_RE = re.compile(r"\[(?P<title>\*[^*\n]+\*)\]\((?P<url>" + URL_PAT + r")\)")
+ITALIC_WRAPPED_LINK_RE = re.compile(r"\*\[(?P<title>[^\]]+)\]\((?P<url>" + URL_PAT + r")\)\*")
+ANY_MD_LINK_RE = re.compile(r"\[(?P<text>[^\]]*)\]\((?P<url>" + URL_PAT + r")\)")
 
 NUMBERED_RE = re.compile(r"^\[(\d+)\]\s+(.+)$")
 BULLET_RE = re.compile(r"^[-*]\s+(.+)$")
-MD_LINK_RE = re.compile(r"\[(?P<text>[^\]]*)\]\((?P<url>https?://[^\)\s]+)\)")
+MD_LINK_RE = re.compile(r"\[(?P<text>[^\]]*)\]\((?P<url>https?://(?:[^()\s]|\([^()\s]*\))+)\)")
 # Itálico de verdade: um asterisco de cada lado, nunca dois. Sem os lookarounds
 # esta regex entra dentro de `**negrito**` — casa o segundo `*` da abertura com
 # o primeiro `*` do fechamento — e aí qualquer reescrita corrompe o texto.
@@ -131,10 +137,18 @@ def citation_and_note(rest_of_line):
     citação ao nome do autor. O título em itálico desempata — se o pedaço antes
     do travessão não tem itálico, ele não é uma citação completa.
     """
-    head, sep, tail = rest_of_line.partition(" — ")
-    if sep and ITALIC_RE.search(head):
-        return head.strip(), tail.strip()
-    return rest_of_line.strip(), None
+    # O travessão candidato tem que estar FORA do itálico: títulos como
+    # "*Aeronautical Design Standard — Performance Specification*" contêm um,
+    # e cortar ali partiria o título ao meio e trataria metade dele como nota.
+    procura = 0
+    while True:
+        pos = rest_of_line.find(" — ", procura)
+        if pos == -1:
+            return rest_of_line.strip(), None
+        head = rest_of_line[:pos]
+        if head.count("*") % 2 == 0 and ITALIC_RE.search(head):
+            return head.strip(), rest_of_line[pos + 3 :].strip()
+        procura = pos + 3
 
 
 def normalize_italics(text):
@@ -300,15 +314,15 @@ def check_essay(path):
                 }
             )
 
-        # A URL da obra é a do âncora `[link](...)`. Qualquer outro link na
-        # entrada é de glossário, dentro da nota, e não identifica a fonte.
-        canonical = CANONICAL_LINK_RE.search(entry["rest"])
-        url = canonical.group("url") if canonical else None
+        # A URL da obra é a do âncora `[Link]` no fim da entrada. A citação em
+        # si não pode ter link nenhum; o que houver na nota é glossário.
+        no_fim = TAIL_LINK_RE.search(entry["rest"])
+        url = no_fim.group("url") if no_fim else None
         has_link = bool(url)
-        outros_links = [
+        citacao_sem_nota, _nota = citation_and_note(entry["rest"])
+        links_na_citacao = [
             m.group("url")
-            for m in MD_LINK_RE.finditer(entry["rest"])
-            if m.group("text").strip().lower() != LINK_ANCHOR
+            for m in ANY_MD_LINK_RE.finditer(TAIL_LINK_RE.sub("", citacao_sem_nota))
         ]
 
         if not has_italic_title(entry["rest"]):
@@ -320,32 +334,21 @@ def check_essay(path):
                     "message": f"entrada [{entry['number']}] sem título em itálico: {label}",
                 }
             )
-        elif has_link and not TITLE_THEN_LINK_RE.search(entry["rest"]):
+        elif links_na_citacao:
             issues.append(
                 {
                     "code": "REFERENCIA_FORMATO_INVALIDO",
                     "severity": "ERROR",
                     "fixable": True,
                     "message": (
-                        f"entrada [{entry['number']}]: o `[link]` não vem logo depois do "
-                        f"título em itálico  (corrigível com --fix-format): {label}"
-                    ),
-                }
-            )
-        elif not has_link and outros_links:
-            issues.append(
-                {
-                    "code": "REFERENCIA_FORMATO_INVALIDO",
-                    "severity": "ERROR",
-                    "fixable": True,
-                    "message": (
-                        f"entrada [{entry['number']}] tem URL, mas fora do âncora `[link]` "
-                        f"(corrigível com --fix-format): {label}"
+                        f"entrada [{entry['number']}]: link dentro da citação; o link é a "
+                        f"palavra `[Link]` no fim da entrada  (corrigível com "
+                        f"--fix-format): {label}"
                     ),
                 }
             )
 
-        if not has_link and not outros_links:
+        if not has_link and not links_na_citacao:
             issues.append(
                 {
                     "code": "REFERENCIA_SEM_LINK",
@@ -417,44 +420,86 @@ def check_essay(path):
     return {"name": path.name, "slug": path.stem, "issues": issues, "skipped": False}
 
 
-def promote_link(citation):
-    """Move a URL da obra para o âncora `[link]` logo depois do título.
+def mover_link_para_o_fim(entrada):
+    """Desmarca todo link do texto e devolve a URL da obra como `[Link]` no fim.
 
-    Cobre os três arranjos que o corpus acumulou:
+    Cobre todos os arranjos que o corpus acumulou — link envolvendo a citação
+    inteira, envolvendo o título (`[*T*](u)` ou `*[T](u)*`), pendurado no
+    container (`*Título*, [Physical Review Letters](u), 59(22)`) ou já num
+    âncora `[link]` no meio da linha. Em todos, o texto do link permanece como
+    texto e a URL vai para o fim.
 
-    - `[Autor, *Título*, Editora, Ano.](url)` — link envolvendo a citação inteira
-    - `Autor — [*Título*](url). Editora, Ano.` — link envolvendo só o título
-    - `Autor, *Título*, Editora, Ano.` sem link — fica como está
-
-    A URL nunca é inventada: se a entrada não tem link, sai sem link, e o aviso
-    `REFERENCIA_SEM_LINK` é o lugar certo para isso aparecer.
+    A URL nunca é inventada: entrada sem link nenhum sai sem link, e é o
+    `REFERENCIA_SEM_LINK` que reporta isso.
     """
-    if CANONICAL_LINK_RE.search(citation):
-        return citation  # já está no padrão
-
     url = None
 
-    # Link envolvendo a citação inteira: desembrulha e guarda a URL.
-    m = LINKED_RE.match(citation)
+    # O âncora explícito, quando existe, é a URL da obra — tem prioridade
+    # sobre um link de glossário que apareça antes dele na mesma entrada.
+    m = CANONICAL_LINK_RE.search(entrada)
     if m:
-        url = m.group("url").strip()
-        citation = m.group("text").strip() + m.group("trailing")
+        url = m.group("url")
+        entrada = CANONICAL_LINK_RE.sub("", entrada)
 
-    # Link envolvendo só o título: `[*Título*](url)` -> `*Título*`.
-    if url is None:
-        m = LINKED_TITLE_RE.search(citation)
-        if m:
-            url = m.group("url")
-            citation = citation[: m.start()] + m.group("title") + citation[m.end() :]
+    # `*[Título](url)*` -> `*Título*`; `[*Título*](url)` -> `*Título*`.
+    # O itálico tem que sobreviver ao desembrulho: é ele que marca o título.
+    def desembrulhar(regex, texto, formatar):
+        nonlocal url
+        mm = regex.search(texto)
+        if not mm:
+            return texto
+        if url is None:
+            url = mm.group("url")
+        return texto[: mm.start()] + formatar(mm.group("title")) + texto[mm.end() :]
 
-    if url is None:
-        return citation
+    entrada = desembrulhar(ITALIC_WRAPPED_LINK_RE, entrada, lambda t: f"*{t}*")
+    entrada = desembrulhar(LINKED_TITLE_RE, entrada, lambda t: t)
 
-    # O âncora entra logo depois do primeiro título em itálico.
-    m = ITALIC_RE.search(citation)
-    if m:
-        return f"{citation[: m.end()]} [{LINK_ANCHOR}]({url}){citation[m.end() :]}"
-    return f"{citation} [{LINK_ANCHOR}]({url})"
+    # Qualquer link restante vira texto puro; o primeiro deles serve de URL da
+    # obra se nenhum candidato melhor apareceu antes.
+    def sem_marcacao(mm):
+        nonlocal url
+        if url is None:
+            url = mm.group("url")
+        return mm.group("text")
+
+    entrada = ANY_MD_LINK_RE.sub(sem_marcacao, entrada)
+
+    entrada = re.sub(r"\s{2,}", " ", entrada).strip()
+    entrada = re.sub(r"\s+([,.;:])", r"\1", entrada)
+    # Título que já termina em `?` ou `!` não leva ponto depois do itálico:
+    # `*Is Our Universe Likely to Decay?*. 2006.` vira `*...?* 2006.`
+    entrada = re.sub(r"([?!]\*)\.", r"\1", entrada)
+    return entrada, url
+
+
+def montar_entrada(numero, resto_da_linha):
+    """`[N] Citação. — Nota. [Link](url)` — o link sempre por último.
+
+    Só a **citação** é varrida atrás da URL da obra. Links que estejam na nota
+    são de glossário (um verbete para um termo comentado ali) e continuam onde
+    estão: promovê-los faria a bibliografia apontar para o lugar errado.
+    """
+    # O `[Link]` do fim sai primeiro, senão a divisão citação/nota o jogaria
+    # dentro da nota e a função não seria idempotente.
+    cauda = TAIL_LINK_RE.search(resto_da_linha)
+    url_da_cauda = cauda.group("url") if cauda else None
+    resto_da_linha = TAIL_LINK_RE.sub("", resto_da_linha).rstrip()
+
+    citacao, nota = citation_and_note(resto_da_linha)
+    citacao, url = mover_link_para_o_fim(normalize_italics(citacao))
+    url = url_da_cauda or url
+
+    linha = f"{numero} {citacao}"
+    if nota:
+        linha += f" — {nota}"
+    if url:
+        # A palavra "Link" vem depois do ponto final, separada da prosa.
+        linha = linha.rstrip()
+        if not linha.endswith((".", "!", "?")):
+            linha += "."
+        linha = f"{linha} [{LINK_ANCHOR}]({url})"
+    return linha
 
 
 def rebuild_section(section):
@@ -466,12 +511,7 @@ def rebuild_section(section):
 
     lines = []
     for number, entry in enumerate(entries, start=1):
-        citation, note = citation_and_note(entry["rest"])
-        citation = promote_link(normalize_italics(citation))
-        line = f"[{number}] {citation}"
-        if note:
-            line += f" — {note}"
-        lines.append(line)
+        lines.append(montar_entrada(f"[{number}]", entry["rest"]))
 
     return "\n\n" + "\n\n".join(lines) + "\n\n", len(entries)
 

@@ -12,7 +12,7 @@ Chamado ao final de /essay, /expand, /absorb, /digest, /import, /linkify,
 Formato esperado de cada entrada (padrão AIAA, ver conventions/SKILL.md,
 ## Formato de "## Referências" — padrão AIAA):
 
-    [1] [Sobrenome, I., *Título*, Fonte, Ano.](https://exemplo.org/x) — nota opcional.
+    [1] Sobrenome, I., *Título*, Fonte, Ano. — nota opcional. [Link](https://exemplo.org/x)
     [2] Sobrenome, I., *Título*, Editora, Cidade, Ano. — sem link, caso genuíno.
 
 Este script só agrega o que já está escrito nos essays — não valida
@@ -61,9 +61,11 @@ DOMAIN_GROUP_LABELS = {
 }
 
 REFERENCE_LINE_RE = re.compile(r"^\[(\d+)\]\s+(.+)$")
-LINKED_RE = re.compile(r"^\[(?P<text>.+?)\]\((?P<url>[^\)]+)\)(?P<trailing>.*)$")
-CANONICAL_LINK_RE = re.compile(r"\[link\]\((?P<url>https?://[^\)\s]+)\)")
-LINKED_TITLE_RE = re.compile(r"\[(?P<title>\*[^*\n]+\*)\]\((?P<url>https?://[^\)\s]+)\)")
+LINKED_RE = re.compile(r"^\[(?P<text>.+?)\]\((?P<url>(?:[^()\s]|\([^()\s]*\))+)\)(?P<trailing>.*)$")
+CANONICAL_LINK_RE = re.compile(r"\[[Ll]ink\]\((?P<url>https?://(?:[^()\s]|\([^()\s]*\))+)\)")
+LINKED_TITLE_RE = re.compile(r"\[(?P<title>\*[^*\n]+\*)\]\((?P<url>https?://(?:[^()\s]|\([^()\s]*\))+)\)")
+ANY_MD_LINK_RE = re.compile(r"\[[^\]]*\]\(https?://")
+FIRST_ITALIC_RE = re.compile(r"(?<!\*)\*([^*\n]+)\*(?!\*)")
 
 # Nome do autor para ordenação: o que vem antes da primeira vírgula, sem
 # artigo inicial e sem marcação, para "Barrow, J. D." cair em B.
@@ -126,6 +128,7 @@ def parse_reference_line(rest_of_line):
     if m:
         return rest_of_line.strip(), m.group("url").strip(), True
 
+
     # Formatos anteriores, ainda presentes no corpus até `/linkify --fix-format`
     # passar: link envolvendo a citação inteira, ou envolvendo só o título.
     m = LINKED_RE.match(rest_of_line)
@@ -170,11 +173,61 @@ def collect_essay_references(path):
 
 def sort_key(citation):
     """Chave alfabética estável: acento e marcação não deslocam a entrada."""
-    t = re.sub(r"\[link\]\([^\)]*\)", "", citation)
+    t = re.sub(r"\[[Ll]ink\]\([^\)]*\)", "", citation)
     t = SORT_KEY_STRIP_RE.sub("", t).strip()
     t = unicodedata.normalize("NFKD", t)
     t = "".join(c for c in t if not unicodedata.combining(c))
     return re.sub(r"[^a-z0-9 ]", "", t.lower()).strip()
+
+
+def title_key(citation):
+    """Título da obra, normalizado — a chave que identifica a mesma obra.
+
+    A dedup por URL não basta: a mesma obra costuma aparecer com link num
+    essay e sem link em outro, o que gera duas chaves e duas linhas no
+    arquivo gerado, com grafias diferentes. O título em itálico é o que as
+    duas versões têm em comum.
+    """
+    m = FIRST_ITALIC_RE.search(re.sub(r"\[[Ll]ink\]\([^\)]*\)", "", citation))
+    if not m:
+        return None
+    t = re.sub(r"\[([^\]]*)\]\([^\)]*\)", r"\1", m.group(1))
+    t = unicodedata.normalize("NFKD", t)
+    t = "".join(c for c in t if not unicodedata.combining(c))
+    t = re.sub(r"[^a-z0-9]", "", t.lower())
+    return t if len(t) > 12 else None
+
+
+def merge_by_title(references):
+    """Funde entradas que são a mesma obra, mantendo a versão mais informativa.
+
+    Só o artefato gerado é consolidado; os essays continuam como estão. Uniformizar
+    a citação na origem é decisão editorial, e sai por `/linkify`.
+    """
+    por_titulo = {}
+    saida = []
+    for ref in references:
+        chave = title_key(ref["citation_aiaa"])
+        if chave is None:
+            saida.append(ref)
+            continue
+        anterior = por_titulo.get(chave)
+        if anterior is None:
+            por_titulo[chave] = ref
+            saida.append(ref)
+            continue
+        for slug in ref["cited_by"]:
+            if slug not in anterior["cited_by"]:
+                anterior["cited_by"].append(slug)
+        # A versão que vence é a que tem link; empatando, a mais completa.
+        melhor = (bool(ref["url"]), len(ref["citation_aiaa"]))
+        atual = (bool(anterior["url"]), len(anterior["citation_aiaa"]))
+        if melhor > atual:
+            anterior["citation_aiaa"] = ref["citation_aiaa"]
+            anterior["url"] = ref["url"] or anterior["url"]
+            anterior["has_link"] = anterior["has_link"] or ref["has_link"]
+            anterior["domain_group"] = ref["domain_group"] or anterior["domain_group"]
+    return saida
 
 
 def build():
@@ -211,7 +264,8 @@ def build():
                 if slug not in entry["cited_by"]:
                     entry["cited_by"].append(slug)
 
-    references = sorted(entries.values(), key=lambda e: sort_key(e["citation_aiaa"]))
+    references = merge_by_title(list(entries.values()))
+    references.sort(key=lambda e: sort_key(e["citation_aiaa"]))
     return {
         "generated": datetime.date.today().isoformat(),
         "essays_scanned": essays_seen,
@@ -235,12 +289,17 @@ def render_references_md(data):
     # tipo de fonte. Bibliografia se lê por autor.
     for ref in data["references"]:
         citation = ref["citation_aiaa"]
-        if ref["url"] and not CANONICAL_LINK_RE.search(citation):
-            # Entrada ainda num formato antigo: o âncora entra no fim, para o
-            # arquivo gerado não ficar sem o link que a entrada de fato tem.
+        # O âncora `[link]` só entra quando a citação não traz link nenhum.
+        # Antes esta condição olhava só para `[link](...)`, e uma entrada cujo
+        # título já era hyperlink recebia o âncora de novo, com a mesma URL —
+        # o que produzia 93 linhas com o link repetido duas vezes.
+        if ref["url"] and not ANY_MD_LINK_RE.search(citation):
             citation = f"{citation.rstrip()} [link]({ref['url']})"
         lines.append(f"- {citation}")
-        lines.append(f"  <br>_citada em: {', '.join(ref['cited_by'])}_")
+        lines.append(
+            '  <br><span style="font-size:0.82em; color:#8a8f96;">'
+            f"citada em: {', '.join(ref['cited_by'])}</span>"
+        )
         lines.append("")
 
     return "\n".join(lines).rstrip() + "\n"
