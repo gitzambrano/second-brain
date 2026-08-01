@@ -92,6 +92,17 @@ O espelho de skills é regenerado no início de cada sessão do Claude Code, ent
 python scripts/sync_skills.py --check
 ```
 
+### Ritual de fechamento
+
+Dois artefatos da wiki são derivados e não se regeneram sozinhos: o índice do `qmd` (busca semântica) e o espelho `.claude/skills/`. As skills de fechamento — `/organize`, `/sweep`, `/stats` e `/status update` — cuidam dos dois no fim do trabalho:
+
+| Artefato            | Comando                          | Comportamento                                                    |
+| ------------------- | -------------------------------- | ---------------------------------------------------------------- |
+| Índice do qmd      | `qmd update && qmd embed`        | Sempre **oferecido**, nunca rodado sozinho (pode ser demorado)    |
+| `.claude/skills/`   | `python scripts/sync_skills.py`  | Checado com `--check`; o sync é mecânico e aplicado direto        |
+
+`/stats` é a exceção: sendo read-only por definição, ele só reporta o drift do espelho, sem corrigir.
+
 ## Skills
 
 As skills estão agrupadas pela mesma lógica de `AGENTS.md`: da ideação de uma ideia solta até a exportação de um essay pronto. Cada uma é um arquivo `.agents/skills/<nome>/SKILL.md` — a fonte de verdade é sempre o arquivo, isto aqui é um resumo para orientação humana.
@@ -129,7 +140,7 @@ As skills estão agrupadas pela mesma lógica de `AGENTS.md`: da ideação de um
 
 ### Manutenção
 
-- **Sweep** · `/sweep` — orquestra a bateria completa de revisão num essay ou no corpus inteiro: `/format` → `/continuity` → `/proofread` → `/polish` → `/linkify`, com relatório consolidado. Aceita `/sweep` (corpus) ou `/sweep <slug>` (essay único).
+- **Sweep** · `/sweep` — orquestra a bateria completa de revisão num essay ou no corpus inteiro: `/format` → `/continuity` → `/proofread` → `/polish` → `/linkify`, com relatório consolidado. Aceita `/sweep` (corpus) ou `/sweep <slug>` (essay único). Fecha regenerando índice e bibliografia, e passando pelo ritual de fechamento acima.
 - **Format** · `/format` — auditoria mecânica de formatação: estrutura obrigatória, byline, LaTeX, aspas, espaçamento, compatibilidade Obsidian. Aplica fixes automáticos inequívocos via `auto_fix_lint.py` e reporta o restante. Não toca em prosa nem argumento.
 - **Organize** · `/organize` — organiza a base inteira na camada de metadados: índice, log, manifesto de sources, tags, plano, insights, estrutura de pastas, e gera o grafo de conexões. A skill mais importante para comunicar com clareza — nunca cola o relatório bruto do lint.
 - **Gaps** · `/gaps` — audita cobertura conceitual: termo citado repetidamente na prosa mas sem página própria, página existente sem link em `## Conexões`, e desbalanço entre tags. Prospectivo e opt-in — nunca cria página nem insere link sozinho.

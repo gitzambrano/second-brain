@@ -169,7 +169,7 @@ A pendência de curto prazo (o que ficou em aberto na sessão atual) fica regist
 `wiki/log.md` é histórico, não estado atual.
 
 - **Abertura**: se o pedido envolve trabalho substancial (e não apenas uma pergunta pontual), leia `wiki/status.md` primeiro, e sempre leia `conventions/SKILL.md` para as regras de formatação.
-- **Fechamento**: depois de trabalho substancial (`/essay`, `/import`, `/digest`, `/absorb`, `/organize`, `/study`, `/plan work`), ofereça `/status update`.
+- **Fechamento**: depois de trabalho substancial (`/essay`, `/import`, `/digest`, `/absorb`, `/organize`, `/sweep`, `/study`, `/plan work`), ofereça `/status update`. As skills de fechamento (`/organize`, `/sweep`, `/stats`, `/status update`) também acertam os dois artefatos derivados que ninguém regenera sozinho: reindexar a busca semântica (`qmd update && qmd embed`, sempre oferecido, nunca automático) e sincronizar o espelho `.claude/skills/` (`python scripts/sync_skills.py --check`, e o sync direto se houver drift — isso é mecânico). `/stats` é a exceção: sendo read-only, apenas reporta o drift em vez de corrigi-lo.
 
 ## Regras Gerais
 

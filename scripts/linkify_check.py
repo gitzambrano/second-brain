@@ -122,11 +122,31 @@ def load(path):
         return f.read()
 
 
+def strip_fences(text):
+    """Esvazia o interior de blocos ```...```, preservando a contagem de linhas.
+
+    Sem isso, indexação Python (`q[0]`, `x[2]`) dentro de um bloco de código é
+    lida como citação numérica `[N]`, e a bibliografia inteira acima daquele
+    número aparece como `REFERENCIA_NAO_USADA`. Mesmo tratamento que
+    `format_check.py` aplica às regras de prosa.
+    """
+    out, in_fence = [], False
+    for line in text.splitlines():
+        if line.strip().startswith("```"):
+            in_fence = not in_fence
+            out.append("")
+        else:
+            out.append("" if in_fence else line)
+    return "\n".join(out)
+
+
 def split_body(content):
-    """Corpo argumentativo: sem frontmatter e sem `## Referências` em diante."""
+    """Corpo argumentativo: sem frontmatter, sem `## Referências` em diante e
+    sem o interior de blocos de código."""
     body = re.sub(r"(?s)\A---\r?\n.*?\r?\n---\r?\n", "", content, count=1)
     m = re.search(r"(?m)^## Referências\s*$", body)
-    return body[: m.start()] if m else body
+    body = body[: m.start()] if m else body
+    return strip_fences(body)
 
 
 def citation_and_note(rest_of_line):

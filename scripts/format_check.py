@@ -138,6 +138,10 @@ def check_essay(filepath: Path) -> dict:
     fm_text, body = split_frontmatter(content)
     body_clean = strip_fences(body)  # sem blocos de código
     lines = content.splitlines()
+    # Mesmo alinhamento de linhas que `lines`, mas com o interior das fences em
+    # branco. Regra de prosa não se aplica a código: um comentário Python `# x`
+    # não é heading, `q[0]` não é citação, e aspas ASCII são obrigatórias lá.
+    lines_clean = strip_fences(content).splitlines()
     name = filepath.name
 
     # -----------------------------------------------------------------------
@@ -256,7 +260,7 @@ def check_essay(filepath: Path) -> dict:
     # 3. Espaçamento de headings
     # -----------------------------------------------------------------------
     heading_spacing_errors = []
-    for i, line in enumerate(lines):
+    for i, line in enumerate(lines_clean):
         if re.match(r"^#{1,6} ", line):
             # pula H1 — a regra do H1 é: linha em branco, depois byline
             if i == h1_idx:
@@ -401,7 +405,9 @@ def check_essay(filepath: Path) -> dict:
     # -----------------------------------------------------------------------
     # 7. Wikilinks fora de Conexões
     # -----------------------------------------------------------------------
-    body_before_conex = content.split("## Conexões")[0]
+    # Sem as fences: `np.array([[1.0, 0.0], ...])` num exemplo de código não é
+    # wikilink, é lista aninhada.
+    body_before_conex = strip_fences(content).split("## Conexões")[0]
     wikilinks_in_body = re.findall(r"\[\[([^\]]+)\]\]", body_before_conex)
     if wikilinks_in_body:
         add("ERROR", "WIKILINKS_IN_BODY",
@@ -445,7 +451,7 @@ def check_essay(filepath: Path) -> dict:
     # 10. Espaços duplos
     # -----------------------------------------------------------------------
     double_spaces = []
-    for i, line in enumerate(lines):
+    for i, line in enumerate(lines_clean):
         if "  " in line and not line.startswith("```") and not line.startswith("|"):
             double_spaces.append(i + 1)
     if double_spaces:
@@ -512,7 +518,7 @@ def check_essay(filepath: Path) -> dict:
         r"</?(?:div|span|p|br|hr|img|a|h[1-6]|ul|ol|li|table|tr|td|th|"
         r"thead|tbody|iframe|button|input|label|form|select|option)"
         r"(?:\s|/|>)[^>]*>|class=|style=",
-        content,
+        strip_fences(content),
         re.IGNORECASE,
     )
     if html_tags:
@@ -530,7 +536,7 @@ def check_essay(filepath: Path) -> dict:
         ("&amp;",   "&amp;"),
     ]
     for sym, desc in RESIDUAL_SYMS:
-        occurrences = [i + 1 for i, l in enumerate(lines) if sym in l]
+        occurrences = [i + 1 for i, l in enumerate(lines_clean) if sym in l]
         if occurrences:
             add("ERROR", "RESIDUAL_SYMBOL",
                 f"Símbolo residual '{desc}' em {len(occurrences)} linha(s): {occurrences[:5]}")
@@ -559,7 +565,7 @@ def check_essay(filepath: Path) -> dict:
     # -----------------------------------------------------------------------
     # 17. Loose chapter labels (ex: "01 — Introdução" como linha solta)
     # -----------------------------------------------------------------------
-    for i, line in enumerate(lines):
+    for i, line in enumerate(lines_clean):
         if re.match(r"^\d+\s*[-—.]\s*\w+", line.strip()):
             add("WARNING", "LOOSE_CHAPTER_LABEL",
                 f"Possível label de capítulo solto (linha {i+1}): '{line.strip()}'")

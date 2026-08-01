@@ -101,7 +101,14 @@ Ao final de **todos** os essays do escopo, apresente o relatório único:
 
 Não exponha cada correção individual durante a execução — acumule e apresente só ao final.
 
-Ofereça `/review`, `/expand` ou `/chapter` ao final da sessão.
+### Passo 8 — Fechamento
+
+Um sweep mexe em muita prosa de uma vez, então feche a sessão deixando os artefatos derivados em dia:
+
+- Se algum essay foi tocado, rode `python scripts/build_index.py`; se `## Referências` mudou (Passo 6 quase sempre muda), rode também `python scripts/references_index.py`.
+- **qmd**: se estiver disponível (`qmd status`), **ofereça** `qmd update && qmd embed` — sem isso a busca semântica continua vendo o texto anterior ao sweep. Não rode sozinho; sem qmd, pule sem avisar.
+- **Espelho de skills**: rode `python scripts/sync_skills.py --check`. Se acusar drift, rode `python scripts/sync_skills.py` — é mecânico, aplique direto.
+- Ofereça `/status update` (o sweep é trabalho substancial), e depois `/review`, `/expand` ou `/chapter` como próximos passos de conteúdo.
 
 ## Log
 

@@ -25,7 +25,7 @@ Dashboard **read-only**. Só relata, nunca corrige — esse é o trabalho de `/o
 
 ## Passo a passo
 
-1. Se `qmd` estiver disponível (`qmd status`), rode `qmd update && qmd embed` primeiro — mantém a busca semântica em dia com o estado atual da wiki; sem qmd, pule sem avisar. Depois, rode o script:
+1. Se `qmd` estiver disponível (`qmd status`), rode `qmd update && qmd embed` primeiro — mantém a busca semântica em dia com o estado atual da wiki; sem qmd, pule sem avisar. Rode também `python scripts/sync_skills.py --check`: se acusar drift, **reporte no dashboard e sugira** `python scripts/sync_skills.py`, sem rodar — `/stats` é read-only por definição, e quem corrige o espelho é `/organize`. Depois, rode o script:
 
    ```bash
    python scripts/stats.py

@@ -57,6 +57,24 @@ def resolve_essay(slug):
         f"Essay '{slug}' não encontrado em {ESSAYS_DIR} nem como caminho direto"
     )
 
+def strip_fences(text):
+    """Esvazia o interior de blocos ```...```, preservando a contagem de linhas.
+
+    As regras de prosa (heading, label de capítulo, símbolo residual, HTML) não
+    valem dentro de código: um comentário Python `# nota` na coluna zero não é
+    heading, e `<div` num exemplo de template não é HTML residual do essay.
+    Mesmo tratamento de `format_check.py` e `linkify_check.py`.
+    """
+    out, in_fence = [], False
+    for line in text.splitlines():
+        if line.strip().startswith("```"):
+            in_fence = not in_fence
+            out.append("")
+        else:
+            out.append("" if in_fence else line)
+    return "\n".join(out)
+
+
 def load_file_content(path):
     with open(path, "r", encoding="utf-8-sig") as f:
         return f.read()
@@ -153,6 +171,7 @@ def main():
         rel_path = f"essays/{file.name}"
         content = load_file_content(file)
         lines = content.splitlines()
+        lines_clean = strip_fences(content).splitlines()
         
         # Check Frontmatter
         has_fm = content.startswith("---")
@@ -267,13 +286,15 @@ def main():
         # Wikilinks outside of Conexões
         # Let's split content by "## Conexões" to look at body before Conexões
         parts = content.split("## Conexões")
-        body_before_conex = parts[0]
+        # Sem as fences: `np.array([[1.0, 0.0], ...])` num exemplo de código não
+        # é wikilink, é lista aninhada.
+        body_before_conex = strip_fences(parts[0])
         wikilinks_in_body = re.findall(r"\[\[([^\]]+)\]\]", body_before_conex)
         if wikilinks_in_body:
             report.append(f"ERROR: {rel_path} contains {len(wikilinks_in_body)} wikilinks inline in the body. Only external links are allowed in the body. Found: {wikilinks_in_body[:5]}...")
             
         # Spacing: blank line between every heading and text following it
-        for idx, line in enumerate(lines):
+        for idx, line in enumerate(lines_clean):
             if re.match(r"^#{1,6} ", line):
                 if idx + 1 < len(lines) and lines[idx+1].strip() != "" and not lines[idx+1].strip().startswith("#"):
                     # Check if byline or sumario is exception. Byline has blank line before it. Sumario has list.
@@ -285,20 +306,20 @@ def main():
                     report.append(f"ERROR: {rel_path} heading '{line}' on line {idx+1} is not followed by a blank line.")
 
         # Loose chapter labels (e.g. "01 — Introdução" or "01. Introdução")
-        for idx, line in enumerate(lines):
+        for idx, line in enumerate(lines_clean):
             if re.match(r"^\d+\s*[-—.]\s*\w+", line.strip()):
                 report.append(f"WARNING: {rel_path} has possible loose chapter label on line {idx+1}: '{line}'")
                 
         # Residual symbols
         residual_symbols = ["◆", "\ufffd", " ", "&nbsp;", "&amp;"] # note the second space is NBSP in some files
-        for idx, line in enumerate(lines):
+        for idx, line in enumerate(lines_clean):
             for sym in residual_symbols:
                 if sym in line:
                     report.append(f"ERROR: {rel_path} contains residual symbol '{sym}' on line {idx+1}: '{line.strip()}'")
                     
         # Residual HTML
         # Looking for things like <div, <span, <p, </div, etc.
-        html_matches = re.findall(r"</?(?:div|span|p|br|hr|img|a|h[1-6]|ul|ol|li|table|tr|td|th|thead|tbody|iframe|button|input|label|form|select|option)(?:\s|/|>)[^>]*>|class=|style=", content, re.IGNORECASE)
+        html_matches = re.findall(r"</?(?:div|span|p|br|hr|img|a|h[1-6]|ul|ol|li|table|tr|td|th|thead|tbody|iframe|button|input|label|form|select|option)(?:\s|/|>)[^>]*>|class=|style=", strip_fences(content), re.IGNORECASE)
         # Allow alerts like > [!NOTE] but block standard html tags
         for match in html_matches:
             report.append(f"ERROR: {rel_path} contains residual HTML tag/attribute: '{match}'")
@@ -329,6 +350,7 @@ def main():
                 rel_path = f"{category}/{file.name}"
                 content = load_file_content(file)
                 lines = content.splitlines()
+                lines_clean = strip_fences(content).splitlines()
             
                 # Check Frontmatter
                 has_fm = content.startswith("---")
@@ -356,13 +378,13 @@ def main():
                 report.extend(check_language_ptbr(content, rel_path))
 
                 # Check for spacing between headings and text
-                for idx, line in enumerate(lines):
+                for idx, line in enumerate(lines_clean):
                     if re.match(r"^#{1,6} ", line):
                         if idx + 1 < len(lines) and lines[idx+1].strip() != "" and not lines[idx+1].strip().startswith("#"):
                             report.append(f"ERROR: {rel_path} heading '{line}' on line {idx+1} is not followed by a blank line.")
                         
                 # Residual symbols/HTML
-                for idx, line in enumerate(lines):
+                for idx, line in enumerate(lines_clean):
                     for sym in ["◆", "\ufffd", " ", "&nbsp;", "&amp;"]:
                         if sym in line:
                             report.append(f"ERROR: {rel_path} contains residual symbol '{sym}' on line {idx+1}: '{line.strip()}'")
