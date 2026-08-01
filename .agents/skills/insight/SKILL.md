@@ -38,11 +38,12 @@ As quatro entram pelo mesmo fluxo (`/insight add`) e seguem a mesma escala de ma
 
 ## Maturidade — vocabulário fechado
 
-Todo insight carrega `maturidade:` no frontmatter, um de três estados:
+Todo insight carrega `maturidade:` no frontmatter, um de quatro estados:
 
 1. **`solta`** — acabou de ser capturada. Pode ser uma frase, uma pergunta, uma intuição ainda não articulada por inteiro. Pode não ter nenhum link ainda.
 2. **`germinando`** — já foi revisitada ao menos uma vez (via `/insight develop`), ganhou corpo, e está ligada a pelo menos um essay/concept/entity/outro insight via `## Conexões`. Ainda não é densa o bastante para virar essay sozinha, mas está a caminho.
 3. **`madura`** — densa, bem conectada, com uma tese ou insight central articulado com clareza. Pronta para `/insight promote`. `/stats` sinaliza todo insight `madura` como candidato a promoção, mas a promoção em si nunca é automática.
+4. **`absorvida`** — o insight já foi promovido: seu conteúdo virou essay/capítulo via `/insight promote`. A nota permanece na wiki (nunca é deletada), mas passa a ser um registro histórico da origem da ideia, não mais candidata a nova promoção.
 
 Não pule estados retroativamente sem justificativa (um insight não vira `madura` só porque cresceu em tamanho — precisa ter uma ideia central clara, não um parágrafo grande e difuso).
 

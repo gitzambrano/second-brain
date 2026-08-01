@@ -47,4 +47,4 @@ Segue a regra de status (batch vs específico) de `## Status de essay` em `conve
 
 - `/chapter` — para aplicar correções de reordenação apontadas aqui
 - `/expand` — para aplicar pontes/transições de conteúdo apontadas aqui
-- `/sweep` — roda `/continuity` como primeiro passo de cada essay, antes de proofread/polish/linkify
+- `/sweep` — roda `/continuity` como segundo passo de cada essay (depois da passada mecânica de `/format`, e antes de proofread/polish/linkify)
