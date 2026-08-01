@@ -216,6 +216,15 @@ HEADER_TEX = r"""\usepackage{fancyhdr}
 \usepackage{microtype}
 \microtypesetup{spacing=false}
 \usepackage{graphicx}
+% Figura fica ONDE foi escrita, não flutuando: por padrão o LaTeX empurra
+% floats para onde couber, e os plots de um anexo no fim do essay acabavam
+% caindo no meio de `## Referências`, longe do texto que os descreve.
+\usepackage{float}
+\floatplacement{figure}{H}
+% Teto de altura para a imagem: os plots de anexo são quase tão altos quanto a
+% mancha e, em tamanho natural, ocupavam a página inteira, empurrando a legenda
+% escrita pelo autor ("Fig. 2 - ...") para a página seguinte, órfã do gráfico.
+\setkeys{Gin}{width=\linewidth,height=0.78\textheight,keepaspectratio}
 \usepackage{setspace}
 \usepackage{fontspec}
 \usepackage{fvextra}
@@ -494,7 +503,12 @@ def export_essay(filepath, output_dir=None, source_dir=None):
         # (`## 1. Visão Geral` -> `#1-visão-geral`). A regra nativa do Pandoc
         # descarta tudo antes da primeira letra e geraria `#visão-geral`,
         # quebrando silenciosamente todos os links internos no export.
-        '-f', 'markdown+smart+tex_math_dollars+pipe_tables+strikeout+superscript+subscript+implicit_figures+hard_line_breaks+gfm_auto_identifiers',
+        # -implicit_figures: o autor escreve a própria legenda em prosa
+        # (`Fig. 2 - Variação do flapping...`). Com a extensão ligada, o Pandoc
+        # ainda envolvia a imagem num float com legenda automática tirada do alt
+        # (`Figure 7: Rotor Analysis 3`), duplicando a legenda e soltando o float
+        # para longe do texto — os plots do anexo caíam dentro de `## Referências`.
+        '-f', 'markdown+smart+tex_math_dollars+pipe_tables+strikeout+superscript+subscript-implicit_figures+hard_line_breaks+gfm_auto_identifiers',
     ]
     
     print(f"  Exporting: {filepath.name} -> {pdf_path.name}")

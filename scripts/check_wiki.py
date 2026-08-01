@@ -206,6 +206,10 @@ def heading_anchor(heading_text: str) -> str:
     s = MD_LINK_IN_HEADING_RE.sub(lambda m: m.group(1), heading_text)
     s = s.lower()
     s = re.sub(r"(?<!\w)[*_]+|[*_]+(?!\w)", "", s)
+    # `_` sai sempre: como ênfase (`_Teetering_`) ele não sobrevive à
+    # renderização, e como subscrito LaTeX (`$I_{xz}$`) o Pandoc renderiza a
+    # fórmula e gera `ixz`. Mantê-lo produzia `i_xz`, que não bate com id nenhum.
+    s = s.replace("_", "")
     s = re.sub(r"[^\w\s-]", "", s)
     s = re.sub(r"\s", "-", s.strip())
     return s
