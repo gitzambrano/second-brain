@@ -439,7 +439,7 @@ def main():
         dead_link_scope = {cat: sorted(d.glob("*.md")) for cat, d in DIRS.items() if d.exists()}
     for category, files in dead_link_scope.items():
         for file in files:
-            content = load_file_content(file)
+            content = strip_fences(load_file_content(file))
             # Find all [[wikilink]] or [[wikilink|display]]
             links = re.findall(r"\[\[([^\]]+)\]\]", content)
             for raw_link in links:
