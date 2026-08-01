@@ -189,27 +189,25 @@ MD_LINK_IN_HEADING_RE = re.compile(r"\[([^\]]*)\]\([^\)]*\)")
 
 
 def heading_anchor(heading_text: str) -> str:
-    """Converte texto de heading no anchor que GitHub/Obsidian/Pandoc geram.
+    """Converte texto de heading no anchor que Pandoc/GitHub/Obsidian geram.
 
-    Replica `gfm_auto_identifiers`, que é a regra usada tanto pelo Obsidian
-    quanto pelo nosso export (os dois exportadores passam
-    `+gfm_auto_identifiers` ao Pandoc justamente para casar com o Sumário):
+    Replica `gfm_auto_identifiers`, a regra usada pelo Obsidian e pelos dois
+    exportadores (que passam `+gfm_auto_identifiers` ao Pandoc justamente para
+    casar com o Sumário). Os quatro pontos que já causaram anchor quebrado:
 
-    1. o anchor vem do texto RENDERIZADO, então link vira o texto-âncora e
-       marcador de ênfase (`*`, `_`) some;
-    2. tudo que não for letra/número/espaço/hífen/underscore é removido;
-    3. **cada** espaço vira um hífen, sem colapsar runs — `Tradicional — Ernst`
-       perde o travessão e fica com dois espaços, gerando `tradicional--ernst`.
-       Colapsar aqui foi um erro anterior: escondeu links de Sumário
-       genuinamente quebrados no HTML e no PDF exportados.
+    1. o anchor vem do texto RENDERIZADO: link vira o texto-âncora, e marcador
+       de ênfase (`*`, `_`) desaparece — `(_Pitch-Flap_)` vira `pitch-flap`;
+    2. dentro de math, porém, `_` é subscrito e SOBREVIVE: `$K_{att}$` vira
+       `k_att` e `$\delta_3$` vira `delta_3`. Só `$`, `\`, `{` e `}` saem;
+    3. tudo que não for letra/número/espaço/hífen/underscore é removido;
+    4. **cada** espaço vira um hífen, sem colapsar runs — `Tradicional — Ernst`
+       perde o travessão e deixa dois espaços, gerando `tradicional--ernst`.
     """
     s = MD_LINK_IN_HEADING_RE.sub(lambda m: m.group(1), heading_text)
+    s = re.sub(r"\$([^$]*)\$", lambda m: re.sub(r"[\{}]", "", m.group(1)), s)
     s = s.lower()
-    s = re.sub(r"(?<!\w)[*_]+|[*_]+(?!\w)", "", s)
-    # `_` sai sempre: como ênfase (`_Teetering_`) ele não sobrevive à
-    # renderização, e como subscrito LaTeX (`$I_{xz}$`) o Pandoc renderiza a
-    # fórmula e gera `ixz`. Mantê-lo produzia `i_xz`, que não bate com id nenhum.
-    s = s.replace("_", "")
+    s = s.replace("*", "")
+    s = re.sub(r"(?<!\w)_+|_+(?!\w)", "", s)
     s = re.sub(r"[^\w\s-]", "", s)
     s = re.sub(r"\s", "-", s.strip())
     return s
@@ -229,7 +227,7 @@ def anchor_key(anchor: str) -> str:
       escreve `i_xz`). Distinguir os dois casos exigiria parsear math;
       igualar os dois lados resolve sem ambiguidade.
     """
-    return anchor.replace("_", "")
+    return anchor
 
 
 def detect_english_paragraphs(content: str, exclude_referencias: bool = True):
