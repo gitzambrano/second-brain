@@ -204,7 +204,7 @@ def heading_anchor(heading_text: str) -> str:
        perde o travessão e deixa dois espaços, gerando `tradicional--ernst`.
     """
     s = MD_LINK_IN_HEADING_RE.sub(lambda m: m.group(1), heading_text)
-    s = re.sub(r"\$([^$]*)\$", lambda m: re.sub(r"[\{}]", "", m.group(1)), s)
+    s = re.sub(r"\$([^$]*)\$", lambda m: re.sub(r"[^\w\s]", "", m.group(1)), s)
     s = s.lower()
     s = s.replace("*", "")
     s = re.sub(r"(?<!\w)_+|_+(?!\w)", "", s)
