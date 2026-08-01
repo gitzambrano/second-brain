@@ -85,6 +85,24 @@ def clean_residual_wikilinks(text):
     return text
 
 
+def strip_italic_from_headings(text):
+    """Remove italic/bold markers from H2/H3 titles so the PDF TOC gets plain text.
+
+    LuaLaTeX collapses the space between a colon and a following \\textit{} in
+    TOC entries (e.g. 'Título: *Subtítulo*' becomes 'Título:Subtítulo').
+    Stripping the markers at the Markdown level avoids the issue entirely.
+    """
+    def _strip_heading(m):
+        hashes = m.group(1)   # e.g. '##'
+        title  = m.group(2)   # everything after '## '
+        # Remove **bold** and *italic* markers (but not inside inline code)
+        title = re.sub(r'\*{1,2}([^*]+)\*{1,2}', r'\1', title)
+        title = re.sub(r'_{1,2}([^_]+)_{1,2}', r'\1', title)
+        return f'{hashes} {title}'
+
+    return re.sub(r'^(#{2,3}) (.+)$', _strip_heading, text, flags=re.MULTILINE)
+
+
 def extract_title(body):
     """Extract H1 title from markdown body."""
     for line in body.split('\n'):
@@ -149,6 +167,9 @@ def prepare_for_pandoc(filepath):
     subtitle = ''
     author_date = ''
     for line in body.split('\n'):
+        # Byline is always in the preamble — stop at first section heading
+        if re.match(r'^##', line):
+            break
         line_stripped = line.strip()
         if line_stripped.startswith('>'):
             clean = line_stripped.lstrip('> ').strip()
@@ -173,6 +194,174 @@ def prepare_for_pandoc(filepath):
     # Clean residual wikilinks
     body = clean_residual_wikilinks(body)
     
+    # Strip italic/bold markers from headings to fix TOC spacing in LuaLaTeX
+    body = strip_italic_from_headings(body)
+    
+    # Remove H1 and byline (Pandoc will generate from metadata)
+    body = remove_h1_and_byline(body)
+    
+    # Replace --- horizontal rules with *** to avoid Pandoc YAML block parsing
+    body = re.sub(r'^---\s*$', '***', body, flags=re.MULTILINE)
+    
+    # Resolve image paths to absolute
+    body = resolve_image_paths(body, Path(filepath).parent)
+    
+    # Escape quotes in title for YAML
+HEADER_TEX = r"""\usepackage{fancyhdr}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{enumitem}
+\setlist{topsep=0.3em, parsep=0em, itemsep=0.2em}
+\setlength{\listparindent}{0pt}
+\usepackage{microtype}
+\microtypesetup{spacing=false}
+\usepackage{graphicx}
+\usepackage{setspace}
+\usepackage{fontspec}
+\usepackage{fvextra}
+\usepackage[most]{tcolorbox}
+\usepackage{hyperref}
+
+\directlua{
+luaotfload.add_fallback
+  ("mainfallback",
+   {
+     "Segoe UI Symbol:mode=node;",
+     "Segoe UI Emoji:mode=node;"
+   }
+  )
+}
+\setmainfont{Segoe UI}[RawFeature={fallback=mainfallback}]
+\setmonofont{Consolas}[RawFeature={fallback=mainfallback}]
+
+\definecolor{linkblue}{HTML}{2563EB}
+\definecolor{titleblue}{HTML}{1E3A5F}
+\definecolor{subtlegray}{HTML}{6B7280}
+\definecolor{codebg}{HTML}{F8FAFC}
+\definecolor{codeframe}{HTML}{CBD5E1}
+\definecolor{blockquotebg}{HTML}{F8FAFC}
+\definecolor{blockquoteborder}{HTML}{2563EB}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=linkblue,
+  urlcolor=linkblue,
+  citecolor=linkblue
+}
+
+\fvset{
+  breaklines=true,
+  breakanywhere=true,
+  fontsize=\small
+}
+
+\renewenvironment{Shaded}{%
+  \begin{tcolorbox}[
+    enhanced,
+    breakable,
+    colback=codebg,
+    colframe=codeframe,
+    boxrule=0.6pt,
+    arc=4pt,
+    outer arc=4pt,
+    top=6pt,
+    bottom=6pt,
+    left=10pt,
+    right=10pt
+  ]%
+}{%
+  \end{tcolorbox}%
+}
+
+\RecustomizeVerbatimEnvironment{verbatim}{Verbatim}{%
+  breaklines=true,%
+  breakanywhere=true,%
+  fontsize=\small%
+}
+
+\renewenvironment{quote}{%
+  \begin{tcolorbox}[
+    enhanced,
+    breakable,
+    frame hidden,
+    interior hidden,
+    boxrule=0pt,
+    leftrule=3.5pt,
+    colback=blockquotebg,
+    colframe=blockquoteborder,
+    arc=0pt,
+    outer arc=0pt,
+    top=6pt,
+    bottom=6pt,
+    left=12pt,
+    right=10pt,
+    parbox=false
+  ]%
+}{%
+  \end{tcolorbox}%
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textcolor{subtlegray}{AUTHOR_PLACEHOLDER}}
+\fancyhead[R]{\small\textcolor{subtlegray}{\thepage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\titleformat{\section}{\Large\bfseries\color{titleblue}}{}{0em}{}
+\titleformat{\subsection}{\large\bfseries\color{titleblue!80}}{}{0em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries\color{titleblue!60}}{}{0em}{}
+\titlespacing*{\section}{0pt}{2em}{0.8em}
+\titlespacing*{\subsection}{0pt}{1.5em}{0.5em}
+\titlespacing*{\subsubsection}{0pt}{1em}{0.3em}
+\setlength{\parskip}{0.6em}
+\setlength{\parindent}{0pt}
+\onehalfspacing
+"""
+
+
+def prepare_for_pandoc(filepath):
+    """Prepare a markdown file for Pandoc PDF conversion."""
+    with open(filepath, 'r', encoding='utf-8') as f:
+        content = f.read()
+    
+    meta, body = extract_frontmatter(content)
+    
+    # Extract title from H1
+    title = extract_title(body)
+    
+    # Parse byline from the body to get subtitle and author/date line
+    subtitle = ''
+    author_date = ''
+    for line in body.split('\n'):
+        # Byline is always in the preamble — stop at first section heading
+        if re.match(r'^##', line):
+            break
+        line_stripped = line.strip()
+        if line_stripped.startswith('>'):
+            clean = line_stripped.lstrip('> ').strip()
+            # First byline: "Ensaio" (sem categoria — ver conventions/SKILL.md)
+            if any(kw in clean for kw in ['Ensaio', 'White Paper', 'Estudo', 'Análise', 'Brainstorm']):
+                subtitle = clean
+            # Second byline: "Gustavo Zambrano · Mês de Ano"
+            elif 'Zambrano' in clean or 'Gustavo' in clean:
+                author_date = clean
+    
+    # Fallback: use frontmatter date if no byline date found
+    if not author_date:
+        date = meta.get('updated', meta.get('created', ''))
+        if date:
+            author_date = f"{AUTHOR} · {date}"
+        else:
+            author_date = AUTHOR
+    
+    # Strip Conexões section
+    body = strip_conexoes_section(body)
+    
+    # Clean residual wikilinks
+    body = clean_residual_wikilinks(body)
+    
+    # Strip italic/bold markers from headings to fix TOC spacing in LuaLaTeX
+    body = strip_italic_from_headings(body)
+    
     # Remove H1 and byline (Pandoc will generate from metadata)
     body = remove_h1_and_byline(body)
     
@@ -185,6 +374,8 @@ def prepare_for_pandoc(filepath):
     # Escape quotes in title for YAML
     safe_title = title.replace('"', '\\"')
     
+    header_indented = "\n".join("    " + line for line in HEADER_TEX.replace("AUTHOR_PLACEHOLDER", AUTHOR).strip().split("\n"))
+
     # Build new YAML frontmatter for Pandoc
     # NOTE: subtitle is injected as body text below, not in YAML, to control spacing
     pandoc_meta = f"""---
@@ -201,30 +392,7 @@ geometry:
   - right=25mm
 header-includes:
   - |
-    \\usepackage{{fancyhdr}}
-    \\usepackage{{xcolor}}
-    \\usepackage{{titlesec}}
-    \\usepackage{{enumitem}}
-    \\usepackage{{microtype}}
-    \\usepackage{{graphicx}}
-    \\usepackage{{setspace}}
-    \\definecolor{{linkblue}}{{HTML}}{{2563EB}}
-    \\definecolor{{titleblue}}{{HTML}}{{1E3A5F}}
-    \\definecolor{{subtlegray}}{{HTML}}{{6B7280}}
-    \\pagestyle{{fancy}}
-    \\fancyhf{{}}
-    \\fancyhead[L]{{\\small\\textcolor{{subtlegray}}{{{AUTHOR}}}}}
-    \\fancyhead[R]{{\\small\\textcolor{{subtlegray}}{{\\thepage}}}}
-    \\renewcommand{{\\headrulewidth}}{{0.4pt}}
-    \\titleformat{{\\section}}{{\\Large\\bfseries\\color{{titleblue}}}}{{}}{{0em}}{{}}
-    \\titleformat{{\\subsection}}{{\\large\\bfseries\\color{{titleblue!80}}}}{{}}{{0em}}{{}}
-    \\titleformat{{\\subsubsection}}{{\\normalsize\\bfseries\\color{{titleblue!60}}}}{{}}{{0em}}{{}}
-    \\titlespacing*{{\\section}}{{0pt}}{{2em}}{{0.8em}}
-    \\titlespacing*{{\\subsection}}{{0pt}}{{1.5em}}{{0.5em}}
-    \\titlespacing*{{\\subsubsection}}{{0pt}}{{1em}}{{0.3em}}
-    \\setlength{{\\parskip}}{{0.6em}}
-    \\setlength{{\\parindent}}{{0pt}}
-    \\onehalfspacing
+{header_indented}
 ---
 
 """
@@ -282,17 +450,13 @@ def export_essay(filepath, output_dir=None, source_dir=None):
         str(temp_path),
         '-o', str(pdf_path),
         '--pdf-engine=lualatex',
-        '-V', 'mainfont=Segoe UI',
-        '-V', 'monofont=Consolas',
-        '-V', 'mathfont=Cambria Math',
+        '--syntax-highlighting=pygments',
         '-V', 'colorlinks=true',
         '-V', 'urlcolor=blue',
         '-V', 'linkcolor=blue',
         '-V', 'citecolor=blue',
-        '--toc',
-        '--toc-depth=3',
         f'--resource-path={filepath.parent}',
-        '-f', 'markdown+smart+tex_math_dollars+pipe_tables+strikeout+superscript+subscript+implicit_figures',
+        '-f', 'markdown+smart+tex_math_dollars+pipe_tables+strikeout+superscript+subscript+implicit_figures+hard_line_breaks',
     ]
     
     print(f"  Exporting: {filepath.name} -> {pdf_path.name}")

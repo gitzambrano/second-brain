@@ -31,11 +31,11 @@ import subprocess
 import argparse
 from pathlib import Path
 
+import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
+
 # Reuse the shared preparation logic from the PDF exporter.
 sys.path.insert(0, str(Path(__file__).parent))
 from export_essay import (
-
-import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
     extract_frontmatter,
     strip_conexoes_section,
     clean_residual_wikilinks,
@@ -57,6 +57,9 @@ def parse_byline(body):
     subtitle = ''
     author_date = ''
     for line in body.split('\n'):
+        # Byline is always in the preamble — stop at first section heading
+        if re.match(r'^##', line):
+            break
         line_stripped = line.strip()
         if line_stripped.startswith('>'):
             clean = line_stripped.lstrip('> ').strip()
@@ -158,7 +161,8 @@ def export_essay(filepath, output_dir=None, source_dir=None):
         '-V', f'subtitle={safe_subtitle}',
         '-V', f'author={safe_author}',
         f'--resource-path={filepath.parent}',
-        '-f', 'markdown+smart+tex_math_dollars+pipe_tables+strikeout+superscript+subscript+implicit_figures',
+        '-f', 'markdown+smart+tex_math_dollars+pipe_tables+strikeout+superscript+subscript+implicit_figures+hard_line_breaks',
+
     ]
 
     # Only pull in MathJax (CDN, ~3MB once embedded) for essays that actually use math.
