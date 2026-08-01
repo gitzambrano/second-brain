@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-backlinks.py - Lookup reverso de [[wikilinks]]: quem já linka essa página.
+find_backlinks.py - Lookup reverso de [[wikilinks]]: quem já linka essa página.
 
 Sem isso, saber quem referencia uma página exige reler wiki/essays/*.md
 inteiro toda vez (o que /organize passo 2 e stats.py já fazem do zero a
@@ -10,14 +10,14 @@ contexto real — "esses 3 essays já citam esse concept"), /gaps.
 
 Escaneia o corpo inteiro de essays/concepts/entities/insights (depois de
 tirar o frontmatter) por [[Target]] ou [[Target|Display]], igual
-graph.py — wikilinks só aparecem em ## Conexões e em páginas de
+build_graph.py — wikilinks só aparecem em ## Conexões e em páginas de
 concept/entity, nunca inline no corpo do essay (ver conventions/SKILL.md),
 então isso não pega falso positivo de link externo.
 
 Usage:
-    python scripts/backlinks.py "Autopoiese"
-    python scripts/backlinks.py --orphans
-    python scripts/backlinks.py --orphans --scope concepts entities
+    python scripts/find_backlinks.py "Autopoiese"
+    python scripts/find_backlinks.py --orphans
+    python scripts/find_backlinks.py --orphans --scope concepts entities
 """
 
 import argparse

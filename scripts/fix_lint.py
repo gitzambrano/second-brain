@@ -1,5 +1,6 @@
+#!/usr/bin/env python3
 """
-auto_fix_lint.py — Aplica correções mecânicas e inequívocas à formatação da wiki.
+fix_lint.py — Aplica correções mecânicas e inequívocas à formatação da wiki.
 
 Escopo intencional: apenas wiki/essays, wiki/concepts, wiki/entities,
 wiki/insights — nunca AGENTS.md, README.md, .agents/skills/**, nem
@@ -30,7 +31,7 @@ CONCEPTS_DIR = WIKI_ROOT / "concepts"
 ENTITIES_DIR = WIKI_ROOT / "entities"
 INSIGHTS_DIR = WIKI_ROOT / "insights"
 
-# Same set of directories lint_all.py treats as "wiki content" -- sources are
+# Same set of directories check_wiki.py treats as "wiki content" -- sources are
 # original/immutable documents and are excluded on purpose.
 DIRS = [ESSAYS_DIR, CONCEPTS_DIR, ENTITIES_DIR, INSIGHTS_DIR]
 

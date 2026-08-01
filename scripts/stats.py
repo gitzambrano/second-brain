@@ -3,7 +3,7 @@
 stats.py - Read-only health dashboard for the Second Brain wiki.
 
 Reports counts and integrity signals. Never modifies anything —
-that is the job of lint_all.py / auto_fix_lint.py. This script only
+that is the job of check_wiki.py / fix_lint.py. This script only
 reads and reports, inspired by the PROJECT_MAP.md pattern (a generated,
 always-current snapshot of the workspace) but scoped to counts and
 gaps rather than a full file tree.

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-format_check.py — Verificador unificado de formatação de essays.
+check_format.py — Verificador unificado de formatação de essays.
 
 Substitui deep_format_check.py. Cobre todas as regras de formatação de
 essay definidas em conventions/SKILL.md:
@@ -27,10 +27,10 @@ essay definidas em conventions/SKILL.md:
    19.  Obsidian: wikilink display text sem dois-pontos
 
 Uso:
-    python format_check.py                   # todos os essays
-    python format_check.py --file meu-essay  # essay único (slug ou nome .md)
-    python format_check.py --json            # saída JSON para parsear no skill
-    python format_check.py --file X --json   # combinado
+    python check_format.py                   # todos os essays
+    python check_format.py --file meu-essay  # essay único (slug ou nome .md)
+    python check_format.py --json            # saída JSON para parsear no skill
+    python check_format.py --file X --json   # combinado
 """
 
 import argparse
@@ -254,7 +254,7 @@ def check_essay(filepath: Path) -> dict:
     for bad_char in ("&", "%"):
         if bad_char in title:
             add("WARNING", "TITLE_LATEX_CHAR",
-                f"Título H1 contém '{bad_char}' — verifique o escape no export_essay.py")
+                f"Título H1 contém '{bad_char}' — verifique o escape no export_essay_pdf.py")
 
     # -----------------------------------------------------------------------
     # 3. Espaçamento de headings

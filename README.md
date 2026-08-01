@@ -43,21 +43,21 @@ plan/                        plano de longo prazo do Usuário (não confundir co
   drafts/                    esqueletos de essay 
 
 scripts/                     lint, stats, grafo de conexões, export (PDF/HTML), busca e índice
-  format_check.py            auditoria mecânica de formatação (usado por /format)
-  auto_fix_lint.py           aplica fixes mecânicos inequívocos
-  lint_all.py                lint completo: wikilinks mortos, órfãos, manifesto, plano, insights
+  check_format.py            auditoria mecânica de formatação (usado por /format)
+  fix_lint.py                aplica fixes mecânicos inequívocos
+  check_wiki.py              lint completo: wikilinks mortos, órfãos, manifesto, plano, insights
   stats.py                   dashboard read-only (usado por /stats)
-  gap_candidates.py          heurística de cobertura conceitual (usado por /gaps)
-  graph.py                   gera output/graph/graph.html (interativo) e graph.md (Mermaid)
-  search.py                  busca com trecho (grep -n com contexto) escopada à wiki
+  check_gaps.py              heurística de cobertura conceitual (usado por /gaps)
+  build_graph.py             gera output/graph/graph.html (interativo) e graph.md (Mermaid)
+  find_text.py               busca com trecho (grep -n com contexto) escopada à wiki
   build_index.py             gera wiki/index.md e wiki/index.json a partir do frontmatter
-  references_index.py        gera wiki/references.md e .json das ## Referências dos essays
-  linkify_check.py           valida ## Referências no padrão AIAA (usado por /linkify)
-  dedupe_check.py            candidatos a quase-duplicata: títulos, tags, referências
-  resolve_title.py           checagem exata/fuzzy de títulos
-  update_qmd.bat             reindexa a wiki no qmd (collection "secondbrain") — dois cliques, ou rode no terminal
-  backlinks.py               lookup reverso de [[wikilinks]] e detecção de órfãos 
-  export_essay.py            export para PDF via Pandoc + LuaLaTeX (usado por /pdf)
+  build_references.py        gera wiki/references.md e .json das ## Referências dos essays
+  check_references.py        valida ## Referências no padrão AIAA (usado por /linkify)
+  check_dedupe.py            candidatos a quase-duplicata: títulos, tags, referências
+  check_title.py             checagem exata/fuzzy de títulos
+  sync_qmd.bat               reindexa a wiki no qmd (collection "secondbrain") — dois cliques, ou rode no terminal
+  find_backlinks.py          lookup reverso de [[wikilinks]] e detecção de órfãos 
+  export_essay_pdf.py        export para PDF via Pandoc + LuaLaTeX (usado por /pdf)
   export_essay_html.py       export para HTML standalone via Pandoc (usado por /html)
   essay_template.html        template do HTML exportado
   sync_skills.py             espelha .agents/skills/ em .claude/skills/ (hook SessionStart)
@@ -141,7 +141,7 @@ As skills estão agrupadas pela mesma lógica de `AGENTS.md`: da ideação de um
 ### Manutenção
 
 - **Sweep** · `/sweep` — orquestra a bateria completa de revisão num essay ou no corpus inteiro: `/format` → `/continuity` → `/proofread` → `/polish` → `/linkify`, com relatório consolidado. Aceita `/sweep` (corpus) ou `/sweep <slug>` (essay único). Fecha regenerando índice e bibliografia, e passando pelo ritual de fechamento acima.
-- **Format** · `/format` — auditoria mecânica de formatação: estrutura obrigatória, byline, LaTeX, aspas, espaçamento, compatibilidade Obsidian. Aplica fixes automáticos inequívocos via `auto_fix_lint.py` e reporta o restante. Não toca em prosa nem argumento.
+- **Format** · `/format` — auditoria mecânica de formatação: estrutura obrigatória, byline, LaTeX, aspas, espaçamento, compatibilidade Obsidian. Aplica fixes automáticos inequívocos via `fix_lint.py` e reporta o restante. Não toca em prosa nem argumento.
 - **Organize** · `/organize` — organiza a base inteira na camada de metadados: índice, log, manifesto de sources, tags, plano, insights, estrutura de pastas, e gera o grafo de conexões. A skill mais importante para comunicar com clareza — nunca cola o relatório bruto do lint.
 - **Gaps** · `/gaps` — audita cobertura conceitual: termo citado repetidamente na prosa mas sem página própria, página existente sem link em `## Conexões`, e desbalanço entre tags. Prospectivo e opt-in — nunca cria página nem insere link sozinho.
 - **Stats** · `/stats` — dashboard read-only de saúde da wiki: essays por tag/tipo, órfãos, sources sem manifesto, itens do plano, notas atômicas por maturidade. Não corrige nada, só relata; rápido o bastante para rodar com frequência.
@@ -150,7 +150,7 @@ As skills estão agrupadas pela mesma lógica de `AGENTS.md`: da ideação de um
 ### Saída
 
 - **Handout** · `/handout` — gera `wiki/handouts/<slug>.md`: uma versão de uma página do essay (linha de tese + 3 a 5 conclusões em prosa), para o Usuário mandar rápido a alguém que não vai ler o white paper inteiro. Nunca automático — só sob pedido explícito.
-- **PDF** · `/pdf` — exporta um ou todos os essays (ou um handout, via `--handout`) para PDF, usando `scripts/export_essay.py` (Pandoc + **LuaLaTeX**).
+- **PDF** · `/pdf` — exporta um ou todos os essays (ou um handout, via `--handout`) para PDF, usando `scripts/export_essay_pdf.py` (Pandoc + **LuaLaTeX**).
 - **HTML** · `/html` — exporta um ou todos os essays (ou um handout) para um `.html` standalone, responsivo, com CSS/imagens embutidos, usando `scripts/export_essay_html.py`.
 
 ### Consulta
@@ -202,7 +202,7 @@ Toda fonte processada também gera uma entrada em `wiki/sources/manifest.md` (pr
 
 - Python 3 com `pyyaml`, para os scripts em `scripts/`.
 - Pandoc + **LuaLaTeX** (não XeLaTeX — o `dvipdfmx` do MiKTeX não gera anotações de link) para exportação em PDF.
-- `qmd` (opcional, mas recomendado) para busca semântica sobre a wiki — ver `## Ferramentas` em `AGENTS.md`. Sem ele, tudo continua funcionando via `scripts/search.py` (sem dependência externa). `scripts/update_qmd.bat` reindexa com um clique.
+- `qmd` (opcional, mas recomendado) para busca semântica sobre a wiki — ver `## Ferramentas` em `AGENTS.md`. Sem ele, tudo continua funcionando via `scripts/find_text.py` (sem dependência externa). `scripts/sync_qmd.bat` reindexa com um clique.
 
 ## Notas
 

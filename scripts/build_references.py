@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-references_index.py - Gera wiki/references.json e wiki/references.md a
+build_references.py - Gera wiki/references.json e wiki/references.md a
 partir da seção `## Referências` de todos os essays.
 
 Mesmo padrão de build_index.py (wiki/index.json + wiki/index.md):
@@ -16,11 +16,11 @@ Formato esperado de cada entrada (padrão AIAA, ver conventions/SKILL.md,
     [2] Sobrenome, I., *Título*, Editora, Cidade, Ano. — sem link, caso genuíno.
 
 Este script só agrega o que já está escrito nos essays — não valida
-formato (isso é `linkify_check.py`) e não decide quase-duplicatas entre
-essays diferentes (isso é `dedupe_check.py`).
+formato (isso é `check_references.py`) e não decide quase-duplicatas entre
+essays diferentes (isso é `check_dedupe.py`).
 
 Usage:
-    python scripts/references_index.py
+    python scripts/build_references.py
 """
 
 import datetime
@@ -277,7 +277,7 @@ def render_references_md(data):
     lines = [
         "# Referências",
         "",
-        f"_Artefato gerado — nunca edite à mão, rode `python scripts/references_index.py`. "
+        f"_Artefato gerado — nunca edite à mão, rode `python scripts/build_references.py`. "
         f"{len(data['references'])} referência(s) única(s) em {data['essays_scanned']} essay(s), "
         f"gerado em {data['generated']}._",
         "",

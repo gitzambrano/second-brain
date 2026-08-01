@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-export_essay.py - Export Second Brain essays to beautiful PDFs via Pandoc.
+export_essay_pdf.py - Export Second Brain essays to beautiful PDFs via Pandoc.
 
 Usage:
-    python export_essay.py <essay_filename_or_path>    # Export single essay
-    python export_essay.py --all                        # Export all essays
-    python export_essay.py --list                       # List available essays
+    python export_essay_pdf.py <essay_filename_or_path>    # Export single essay
+    python export_essay_pdf.py --all                        # Export all essays
+    python export_essay_pdf.py --list                       # List available essays
 
 Features:
     - Strips ## Conexões section (internal wiki links, not for PDF)
@@ -255,25 +255,51 @@ luaotfload.add_fallback
   fontsize=\small
 }
 
-\renewenvironment{Shaded}{%
-  \begin{tcolorbox}[
-    enhanced,
-    breakable,
-    colback=codebg,
-    colframe=codeframe,
-    boxrule=0.6pt,
-    arc=4pt,
-    outer arc=4pt,
-    top=6pt,
-    bottom=6pt,
-    left=10pt,
-    right=10pt
-  ]%
-}{%
-  \end{tcolorbox}%
-}
+% Pandoc only defines the "Shaded" environment (via highlighting-macros)
+% when the document actually contains a fenced code block. For essays with
+% no code, it is never defined, so \renewenvironment would fail with
+% "Environment Shaded undefined". \ifdefined\Shaded checks whether Pandoc
+% already created it and falls back to \newenvironment otherwise, so this
+% works whether or not the essay has code blocks.
+\ifdefined\Shaded
+  \renewenvironment{Shaded}{%
+    \begin{tcolorbox}[
+      enhanced,
+      breakable,
+      colback=codebg,
+      colframe=codeframe,
+      boxrule=0.6pt,
+      arc=4pt,
+      outer arc=4pt,
+      top=6pt,
+      bottom=6pt,
+      left=10pt,
+      right=10pt
+    ]%
+  }{%
+    \end{tcolorbox}%
+  }
+\else
+  \newenvironment{Shaded}{%
+    \begin{tcolorbox}[
+      enhanced,
+      breakable,
+      colback=codebg,
+      colframe=codeframe,
+      boxrule=0.6pt,
+      arc=4pt,
+      outer arc=4pt,
+      top=6pt,
+      bottom=6pt,
+      left=10pt,
+      right=10pt
+    ]%
+  }{%
+    \end{tcolorbox}%
+  }
+\fi
 
-\RecustomizeVerbatimEnvironment{verbatim}{Verbatim}{%
+\RecustomVerbatimEnvironment{verbatim}{Verbatim}{%
   breaklines=true,%
   breakanywhere=true,%
   fontsize=\small%
@@ -374,7 +400,14 @@ def prepare_for_pandoc(filepath):
     # Escape quotes in title for YAML
     safe_title = title.replace('"', '\\"')
     
-    header_indented = "\n".join("    " + line for line in HEADER_TEX.replace("AUTHOR_PLACEHOLDER", AUTHOR).strip().split("\n"))
+    # Wrapped in a ```{=latex} fence so Pandoc's Markdown reader treats this
+    # YAML block-scalar as raw LaTeX verbatim, instead of parsing it as
+    # Markdown first. Without the fence, sequences like `}[...]` right after
+    # a closing brace (e.g. \setmainfont{X}[RawFeature={...}]) get
+    # misread as a Markdown link reference and come out corrupted
+    # (stray {[} / {]} / escaped braces) in the final LaTeX.
+    header_body = "```{=latex}\n" + HEADER_TEX.replace("AUTHOR_PLACEHOLDER", AUTHOR).strip() + "\n```"
+    header_indented = "\n".join("    " + line for line in header_body.split("\n"))
 
     # Build new YAML frontmatter for Pandoc
     # NOTE: subtitle is injected as body text below, not in YAML, to control spacing
@@ -450,7 +483,7 @@ def export_essay(filepath, output_dir=None, source_dir=None):
         str(temp_path),
         '-o', str(pdf_path),
         '--pdf-engine=lualatex',
-        '--syntax-highlighting=pygments',
+        '--highlight-style=pygments',
         '-V', 'colorlinks=true',
         '-V', 'urlcolor=blue',
         '-V', 'linkcolor=blue',
@@ -495,8 +528,8 @@ def list_essays():
                     title = line[2:].strip()
                     print(f"  {e.stem:<50s} {title}")
                     break
-    print(f"\nUsage: python export_essay.py <filename>")
-    print(f"       python export_essay.py --all")
+    print(f"\nUsage: python export_essay_pdf.py <filename>")
+    print(f"       python export_essay_pdf.py --all")
 
 
 def list_handouts():
@@ -510,7 +543,7 @@ def list_handouts():
                     title = line[2:].strip()
                     print(f"  {h.stem:<50s} {title}")
                     break
-    print(f"\nUsage: python export_essay.py <slug> --handout")
+    print(f"\nUsage: python export_essay_pdf.py <slug> --handout")
 
 
 def main():

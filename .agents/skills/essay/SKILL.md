@@ -31,7 +31,7 @@ O essay resultante deve ser **extenso, profundo e criativo**, não um resumo nem
 
 ## 1. Pesquisar o terreno antes de escrever
 
-1. **Busque na wiki existente** por temas relacionados — prefira `qmd query "tema"` (busca semântica, ver `## Ferramentas` no AGENTS.md); sem qmd disponível/indexado, use `python scripts/search.py "tema" --ignore-case` (cobre essays, `wiki/concepts/`, `wiki/entities/` de uma vez). Um essay novo deve **linkar e construir sobre** essays/conceitos anteriores do Usuário quando fizer sentido — o esboço aprovado já deve ter listado candidatos em `## Conexões candidatas`, confirme e complete.
+1. **Busque na wiki existente** por temas relacionados — prefira `qmd query "tema"` (busca semântica, ver `## Ferramentas` no AGENTS.md); sem qmd disponível/indexado, use `python scripts/find_text.py "tema" --ignore-case` (cobre essays, `wiki/concepts/`, `wiki/entities/` de uma vez). Um essay novo deve **linkar e construir sobre** essays/conceitos anteriores do Usuário quando fizer sentido — o esboço aprovado já deve ter listado candidatos em `## Conexões candidatas`, confirme e complete.
 2. Use `WebSearch`/`WebFetch` para embasamento externo, agora capítulo a capítulo, com a profundidade que `/outline` deliberadamente não fez: dados, citações, referências acadêmicas, e — se o domínio for filosófico — as correntes e pensadores relevantes ao argumento. Parafraseie sempre, nunca reproduza trechos longos de fontes de terceiros.
 
 ## 2. Redigir com profundidade real
@@ -73,17 +73,17 @@ Aplique as duas seções acima na proporção que o argumento pedir — um essay
 
   Três erros que o corpus antigo acumulou e que **não** devem se repetir: título fora do itálico (todo título vai em itálico, inclusive verbete de enciclopédia e norma técnica); link em qualquer lugar que não seja a palavra `Link` no fim da entrada — nem no título, nem no periódico, nem envolvendo a citação inteira; e entrada que é só um link de glossário sem obra, autor nem container — se o alvo é um verbete, escreva-o como verbete (`*Título do verbete*, Wikipedia. [Link](url)`), e se não é fonte de nada, ele pertence ao corpo do texto, não à bibliografia.
 
-  Confira com `python scripts/linkify_check.py --file <slug>` antes de encerrar.
+  Confira com `python scripts/check_references.py --file <slug>` antes de encerrar.
 - **`## Conexões`** como última seção, só `[[wikilinks]]` para essays/conceitos/entidades relacionados
 
 ## 3. Criar/atualizar conceitos e entidades
 
-Todo conceito, pensador, ou entidade central ao argumento que ainda não tem página própria ganha uma em `wiki/concepts/` ou `wiki/entities/`, linkada de volta ao essay (não no corpo do texto). Antes de criar, rode `python scripts/resolve_title.py "Título Do Conceito"` — evita nascer um quase-duplicado de página que já existe com outra grafia. Nenhum conceito relevante fica sem página só porque "nasceu" num essay criado agora.
+Todo conceito, pensador, ou entidade central ao argumento que ainda não tem página própria ganha uma em `wiki/concepts/` ou `wiki/entities/`, linkada de volta ao essay (não no corpo do texto). Antes de criar, rode `python scripts/check_title.py "Título Do Conceito"` — evita nascer um quase-duplicado de página que já existe com outra grafia. Nenhum conceito relevante fica sem página só porque "nasceu" num essay criado agora.
 
 ## 4. Indexar e logar
 
 - Preencha `summary:` no frontmatter (resumo de uma linha, até 120 caracteres) e rode `python scripts/build_index.py` para regenerar `wiki/index.json`/`wiki/index.md` — nunca insira a entrada à mão (ver `## Formato do índice` em `conventions/SKILL.md`).
-- Rode `python scripts/references_index.py` para regenerar `wiki/references.json`/`.md` a partir da `## Referências` do essay novo (mesmo padrão de `build_index.py` — artefato gerado, nunca editado à mão).
+- Rode `python scripts/build_references.py` para regenerar `wiki/references.json`/`.md` a partir da `## Referências` do essay novo (mesmo padrão de `build_index.py` — artefato gerado, nunca editado à mão).
 - `wiki/log.md`:
 
   ```

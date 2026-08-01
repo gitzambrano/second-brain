@@ -34,10 +34,10 @@ Só o **corpo do essay** (texto corrido) recebe links externos `[texto](url)`. `
 
 ## Checar e reformatar `## Referências`
 
-Além dos links inline do corpo, `/linkify` é a skill dona do formato das entradas de `## Referências` — o padrão AIAA de `## Formato de "## Referências" — padrão AIAA` em `conventions/SKILL.md`. Quem valida é `scripts/linkify_check.py`:
+Além dos links inline do corpo, `/linkify` é a skill dona do formato das entradas de `## Referências` — o padrão AIAA de `## Formato de "## Referências" — padrão AIAA` em `conventions/SKILL.md`. Quem valida é `scripts/check_references.py`:
 
 ```bash
-python scripts/linkify_check.py --file <slug>
+python scripts/check_references.py --file <slug>
 ```
 
 Os códigos que ele emite:
@@ -50,14 +50,14 @@ Os códigos que ele emite:
 | `REFERENCIA_SEM_LINK`         | WARNING    | entrada sem link                                                   |
 | `REFERENCIA_NAO_USADA`        | WARNING    | entrada `[N]` nunca citada no corpo                                |
 
-`NO_REFERENCIAS` (a seção não existe) é de `format_check.py`, não deste script.
+`NO_REFERENCIAS` (a seção não existe) é de `check_format.py`, não deste script.
 
 **Escopo desta seção: só a seção `## Referências`, no fim do arquivo.** Numa passada de bibliografia, os links inline do corpo não se tocam — nem para reescrever, nem para reposicionar, nem para remover. Isso vale inclusive quando um check aponta para o corpo: `LINK_NOT_IN_REFERENCIAS` significa que **falta uma entrada na bibliografia**, nunca que o link do corpo esteja sobrando. Adicionar links novos ao corpo é a seção `## Adicionar links` acima, e só acontece quando o Usuário pede isso explicitamente.
 
 A parte mecânica da migração do formato antigo (bullet `- Autor. *Título.* ...`) sai sozinha:
 
 ```bash
-python scripts/linkify_check.py --fix-format
+python scripts/check_references.py --fix-format
 ```
 
 Ele renumera para `[N]`, normaliza o itálico do título, repõe a vírgula separadora e **move qualquer link da citação para a palavra `Link` no fim da entrada** — venha ele do título, do periódico ou de um envelope em volta da citação inteira. **Ele não escolhe URL de fonte**: no formato antigo os links de uma entrada costumam ser de glossário, dentro da nota, e não o endereço da própria obra — promovê-los inventaria bibliografia. O que sobrar sai como `REFERENCIA_SEM_LINK`, e aí sim é trabalho seu:
@@ -67,7 +67,7 @@ Ele renumera para `[N]`, normaliza o itálico do título, repõe a vírgula sepa
 3. Se a fonte for genuinamente sem edição digital confiável (livro impresso antigo), deixe sem link: o WARNING é aceitável, não um erro a maquiar.
 4. Para `LINK_NOT_IN_REFERENCIAS`, a obra citada no corpo precisa virar entrada na bibliografia — não remova o link do corpo para calar o check.
 
-Ao final, rode `python scripts/references_index.py` para regenerar `wiki/references.json`/`.md`.
+Ao final, rode `python scripts/build_references.py` para regenerar `wiki/references.json`/`.md`.
 
 ## O que não fazer
 
@@ -85,7 +85,7 @@ Atualize `updated:` no frontmatter se algum link foi adicionado/corrigido. Log s
 N links adicionados, M links corrigidos.
 ```
 
-Se `## Referências` também foi tocada nesta passada, rode `python scripts/references_index.py` para regenerar `wiki/references.json`/`.md`.
+Se `## Referências` também foi tocada nesta passada, rode `python scripts/build_references.py` para regenerar `wiki/references.json`/`.md`.
 
 ## Convenções
 

@@ -139,7 +139,7 @@ Aplique **apenas** as modificações aprovadas, na ordem do plano. Para cada mod
 Após aplicar as modificações:
 
 - Atualize `updated:` no frontmatter do essay
-- Se alguma modificação aplicada tocou `## Referências` (citação nova ou corrigida), rode `python scripts/references_index.py` para regenerar `wiki/references.json`/`.md`.
+- Se alguma modificação aplicada tocou `## Referências` (citação nova ou corrigida), rode `python scripts/build_references.py` para regenerar `wiki/references.json`/`.md`.
 - Registre em `wiki/log.md`:
 
   ```
@@ -157,7 +157,7 @@ Após aplicar as modificações:
 2. **Não confunda review com reescrita** — o objetivo é melhorar o argumento e a profundidade, não mudar o estilo pessoal do Usuário. Em caso de dúvida, proponha e pergunte.
 3. **Em contradição entre fontes**: siga a regra de `conventions/SKILL.md` — apresente as duas versões e aguarde o Usuário decidir qual prevalece.
 4. **Não invente citações**: se uma citação parece necessária mas você não tem certeza da fonte exata, sinalize como "verificar" e deixe para o Usuário confirmar via `/scout` ou busca manual.
-5. **Busque na wiki primeiro**: antes de sugerir uma fonte externa, verifique se a ideia já foi desenvolvida em outro essay ou concept da wiki (`qmd query "tema"`, ou `search.py` como fallback — ver `## Ferramentas` no AGENTS.md) — prefira uma conexão interna se ela existir.
+5. **Busque na wiki primeiro**: antes de sugerir uma fonte externa, verifique se a ideia já foi desenvolvida em outro essay ou concept da wiki (`qmd query "tema"`, ou `find_text.py` como fallback — ver `## Ferramentas` no AGENTS.md) — prefira uma conexão interna se ela existir.
 
 ## Skills relacionadas
 

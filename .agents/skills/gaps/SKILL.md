@@ -19,7 +19,7 @@ allowed-tools: Bash Read Write Edit Glob Grep
 
 Audita **cobertura**: o que devia existir na wiki e não existe, ou o que já existe e não está conectado. Três lacunas que nada mais cobre:
 
-1. **Termo sem página**: um conceito/pensador/entidade citado repetidamente na prosa (link externo, negrito, ou nome próprio) em vários essays, claramente relevante, mas nunca promovido a `[[wikilink]]` — porque a convenção do corpo do essay é só link externo (ver `## Regra de links` em `conventions/SKILL.md`), então isso nunca aparece como "wikilink morto" em `lint_all.py`.
+1. **Termo sem página**: um conceito/pensador/entidade citado repetidamente na prosa (link externo, negrito, ou nome próprio) em vários essays, claramente relevante, mas nunca promovido a `[[wikilink]]` — porque a convenção do corpo do essay é só link externo (ver `## Regra de links` em `conventions/SKILL.md`), então isso nunca aparece como "wikilink morto" em `check_wiki.py`.
 2. **Página sem link**: o inverso — já existe `concepts/X.md` ou `entities/X.md`, um essay cita X na prosa, mas não linka em `## Conexões`. Diferente do "órfão" que `/organize` passo 2 já cobre (página sem *nenhum* essay que a referencie); aqui a página tem essay relevante, só falta o link.
 3. **Desbalanço de tag**: uma tag em `tags_in_use` (`wiki/index.json`) com um essay só, comparado a outras com dez — sinal de área subexplorada, não um bug de formatação.
 
@@ -27,12 +27,12 @@ Audita **cobertura**: o que devia existir na wiki e não existe, ou o que já ex
 
 ## Passo a passo
 
-1. Rode `python scripts/gap_candidates.py`. O script é heurístico (regex sobre nomes próprios capitalizados, texto em negrito, e âncoras de link externo) — trata falso positivo como esperado, não como bug. Não existe extração perfeita de "conceito relevante" sem NLP de verdade; o valor está em levantar candidatos plausíveis pro seu julgamento, não em acertar 100%.
+1. Rode `python scripts/check_gaps.py`. O script é heurístico (regex sobre nomes próprios capitalizados, texto em negrito, e âncoras de link externo) — trata falso positivo como esperado, não como bug. Não existe extração perfeita de "conceito relevante" sem NLP de verdade; o valor está em levantar candidatos plausíveis pro seu julgamento, não em acertar 100%.
 2. **Parte 1 do output (termo sem página)**: para cada candidato acima do threshold, decida com o Usuário:
    - Vira página nova em `concepts/` ou `entities/` → delega para `/chapter` (seção "Criar página de conceito/entidade").
    - Já é coberto o suficiente inline, não merece página própria → descarte, sem ação.
    - É ruído do heurístico (nome comum, falso positivo de capitalização) → descarte, e se for um padrão recorrente, considere adicionar à lista `NOISE_TERMS` do script.
-3. **Parte 2 do output (página sem link)**: para cada par (essay, página existente), confirme que a menção no essay de fato se refere à página (não homônimo nem falso positivo) e, se sim, adicione o `[[wikilink]]` em `## Conexões` do essay — mecânico, pode aplicar direto depois de confirmar que não é falso positivo. `python scripts/backlinks.py "Título Da Página"` mostra rápido quem já linka essa página, útil para decidir se o wikilink novo é redundante com algo que já existe por outro caminho.
+3. **Parte 2 do output (página sem link)**: para cada par (essay, página existente), confirme que a menção no essay de fato se refere à página (não homônimo nem falso positivo) e, se sim, adicione o `[[wikilink]]` em `## Conexões` do essay — mecânico, pode aplicar direto depois de confirmar que não é falso positivo. `python scripts/find_backlinks.py "Título Da Página"` mostra rápido quem já linka essa página, útil para decidir se o wikilink novo é redundante com algo que já existe por outro caminho.
 4. **Parte 3 do output (balanço por tag)**: não é uma correção — é um sinal para `/plan` ou `/scout`. Se uma tag estiver muito rasa e o Usuário quiser agir, ofereça `/plan add` (item de tipo Essay futuro) ou `/scout` (buscar fontes candidatas pro tema).
 5. Para candidatos ambíguos das Partes 1 e 2 que o Usuário não quer decidir agora, ofereça registrar como item `Revisão` em `plan/plano.md` via `/plan add` — mesmo padrão que `/organize` usa para contradição não resolvida na hora.
 6. **Comunique priorizado, nunca cole o output bruto do script**: agrupe por "vira página", "só falta linkar", "ruído/descartado", "desbalanço de tag" — não uma lista plana na ordem que o script imprimiu.

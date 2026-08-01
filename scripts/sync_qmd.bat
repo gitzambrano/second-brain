@@ -1,6 +1,6 @@
 @echo off
 REM Reindexa a wiki na busca semantica do qmd (collection "secondbrain").
-REM Uso: so dar dois cliques neste arquivo, ou rodar `scripts\update_qmd.bat` do terminal.
+REM Uso: so dar dois cliques neste arquivo, ou rodar `scripts\sync_qmd.bat` do terminal.
 cd /d "%~dp0.."
 
 where qmd >nul 2>nul

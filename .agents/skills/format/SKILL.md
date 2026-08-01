@@ -5,7 +5,7 @@ description: >
   Sumário/Referências/Conexões, Obsidian-compat, espaçamentos, aspas,
   caracteres LaTeX perigosos, travessões, bullets fora do lugar, links
   externos, HTML residual e idioma PT-BR. Aplica correções mecânicas
-  automáticas via auto_fix_lint.py e reporta o restante. Aceita escopo
+  automáticas via fix_lint.py e reporta o restante. Aceita escopo
   corpus inteiro (/format) ou essay único (/format <slug>). Sweep chama
   este skill na passada mecânica.
 allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion
@@ -45,7 +45,7 @@ Em modo corpus inteiro, pula essays com `status: finalizado` ou `maduro` nos fix
 3. **Rode o script de formato**:
 
    ```bash
-   python scripts/format_check.py [--file <slug>] --json
+   python scripts/check_format.py [--file <slug>] --json
    ```
 
    O output JSON tem a estrutura:
@@ -61,7 +61,7 @@ Em modo corpus inteiro, pula essays com `status: finalizado` ou `maduro` nos fix
    **Rode também o script de referências**, com o mesmo escopo:
 
    ```bash
-   python scripts/linkify_check.py [--file <slug>] --json
+   python scripts/check_references.py [--file <slug>] --json
    ```
 
    Mesma estrutura de saída, com os códigos de `## Referências` (`REFERENCIA_FORMATO_INVALIDO`, `DUPLICATE_REFERENCIA`, `LINK_NOT_IN_REFERENCIAS`, `REFERENCIA_SEM_LINK`, `REFERENCIA_NAO_USADA`). `/format` só **reporta** esses achados: quem corrige é `/linkify`.
@@ -69,10 +69,10 @@ Em modo corpus inteiro, pula essays com `status: finalizado` ou `maduro` nos fix
 4. **Aplique os fixes automáticos** para achados mecânicos e inequívocos (sem interação com o Usuário):
 
    ```bash
-   python scripts/auto_fix_lint.py
+   python scripts/fix_lint.py
    ```
 
-   O `auto_fix_lint.py` corrige:
+   O `fix_lint.py` corrige:
    - Linha em branco faltando após heading
    - Dois-pontos em `[[wikilinks]]` → em dash
    - Espaços duplos no meio de parágrafos
@@ -99,9 +99,9 @@ Em modo corpus inteiro, pula essays com `status: finalizado` ou `maduro` nos fix
    - Contagem de essays limpos vs. com issues
    - Issues agrupados por categoria e por essay
    - Lista de fixes auto-aplicados
-   - Se houver `REFERENCIA_FORMATO_INVALIDO`, sugira `python scripts/linkify_check.py --fix-format` — mas não rode: reformatar bibliografia é `/linkify`, não `/format`
+   - Se houver `REFERENCIA_FORMATO_INVALIDO`, sugira `python scripts/check_references.py --fix-format` — mas não rode: reformatar bibliografia é `/linkify`, não `/format`
    - **Liste nominalmente os essays com `FM_NO_SUMMARY`.** Sem `summary:` a entrada do essay em `wiki/index.md` sai sem resumo, e não existe outro lugar de onde um script possa tirar essa linha. Escrever o resumo é conteúdo, então não invente aqui: reporte quais essays estão sem, e ofereça preencher via `/expand` ou numa passada dedicada.
-   - **`EMPTY_REFERENCIAS`, `REF_BOLD_AUTHOR`, `REF_TITLE_IS_AUTHOR` e `REF_MISSING_TITLE` nunca são auto-corrigíveis** — exigem descobrir o título/autor real de uma fonte externa, o que `auto_fix_lint.py` não pode fazer (script não navega a web). Para cada ocorrência, use `WebFetch` na URL da entrada (ou `WebSearch` por autor+ano+container quando o fetch falhar) para confirmar o título e autor reais antes de reescrever a entrada — nunca reescreva "de memória". Trate como oportunidade de auditoria: essas quatro categorias já revelaram, na prática, entradas com autor completamente errado (a fonte real, quando resolvida, era de outro autor), não só formatação.
+   - **`EMPTY_REFERENCIAS`, `REF_BOLD_AUTHOR`, `REF_TITLE_IS_AUTHOR` e `REF_MISSING_TITLE` nunca são auto-corrigíveis** — exigem descobrir o título/autor real de uma fonte externa, o que `fix_lint.py` não pode fazer (script não navega a web). Para cada ocorrência, use `WebFetch` na URL da entrada (ou `WebSearch` por autor+ano+container quando o fetch falhar) para confirmar o título e autor reais antes de reescrever a entrada — nunca reescreva "de memória". Trate como oportunidade de auditoria: essas quatro categorias já revelaram, na prática, entradas com autor completamente errado (a fonte real, quando resolvida, era de outro autor), não só formatação.
 
 7. **Não pergunte ao Usuário** durante a execução — apenas reporte ao final. A única exceção é se o `--file <slug>` for ambíguo.
 
@@ -121,7 +121,7 @@ Registre em `wiki/log.md`:
 Auto-corrigidos: X arquivos. Issues restantes: Y (Z ERROR, W WARNING).
 ```
 
-Atualize `updated:` no frontmatter de cada arquivo tocado pelo `auto_fix_lint.py`.
+Atualize `updated:` no frontmatter de cada arquivo tocado pelo `fix_lint.py`.
 
 ## Skills relacionadas
 

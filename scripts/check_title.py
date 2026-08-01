@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-resolve_title.py - Checagem exata/fuzzy de título antes de criar página nova.
+check_title.py - Checagem exata/fuzzy de título antes de criar página nova.
 
 Chamado por /insight add, /chapter, /essay, /digest, /absorb antes de criar
 uma página nova (essay, concept, entity ou insight) — evita títulos
@@ -18,9 +18,9 @@ Exit codes (uso programático):
     2 - match(es) fuzzy: possível quase-duplicata, revisar antes de criar
 
 Usage:
-    python scripts/resolve_title.py "Autopoiese e Sistemas Vivos"
-    python scripts/resolve_title.py "Auto-poiese" --threshold 0.8
-    python scripts/resolve_title.py "Novo Título" --force-scan
+    python scripts/check_title.py "Autopoiese e Sistemas Vivos"
+    python scripts/check_title.py "Auto-poiese" --threshold 0.8
+    python scripts/check_title.py "Novo Título" --force-scan
 """
 
 import argparse

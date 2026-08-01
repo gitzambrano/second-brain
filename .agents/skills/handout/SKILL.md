@@ -57,7 +57,7 @@ Leia o essay completo: [<Título do Essay>](../essays/<slug>.md)
 2. Pergunte se o Usuário quer também `.pdf` e/ou `.html`, mais apresentáveis para anexar ou mandar por link:
 
    ```bash
-   python scripts/export_essay.py <slug> --handout --output output/handouts
+   python scripts/export_essay_pdf.py <slug> --handout --output output/handouts
    python scripts/export_essay_html.py <slug> --handout --output output/handouts
    ```
 

@@ -51,8 +51,8 @@ Se o escopo for corpus inteiro e a wiki tiver mais de 5 essays, avise o Usuário
 Para cada essay:
 
 ```bash
-python scripts/format_check.py --file <slug> --json
-python scripts/auto_fix_lint.py
+python scripts/check_format.py --file <slug> --json
+python scripts/fix_lint.py
 ```
 
 Aplique os fixes automáticos (sem interação com o Usuário). Acumule os issues restantes no relatório do essay.
@@ -105,7 +105,7 @@ Não exponha cada correção individual durante a execução — acumule e apres
 
 Um sweep mexe em muita prosa de uma vez, então feche a sessão deixando os artefatos derivados em dia:
 
-- Se algum essay foi tocado, rode `python scripts/build_index.py`; se `## Referências` mudou (Passo 6 quase sempre muda), rode também `python scripts/references_index.py`.
+- Se algum essay foi tocado, rode `python scripts/build_index.py`; se `## Referências` mudou (Passo 6 quase sempre muda), rode também `python scripts/build_references.py`.
 - **qmd**: se estiver disponível (`qmd status`), **ofereça** `qmd update && qmd embed` — sem isso a busca semântica continua vendo o texto anterior ao sweep. Não rode sozinho; sem qmd, pule sem avisar.
 - **Espelho de skills**: rode `python scripts/sync_skills.py --check`. Se acusar drift, rode `python scripts/sync_skills.py` — é mecânico, aplique direto.
 - Ofereça `/status update` (o sweep é trabalho substancial), e depois `/review`, `/expand` ou `/chapter` como próximos passos de conteúdo.

@@ -174,15 +174,15 @@ Regras:
 - Exceção "sem link" só para caso genuíno (livro impresso sem edição digital) — sinalizado como aviso pelo lint, nunca erro bloqueante.
 - Nunca duas entradas com a mesma URL normalizada no mesmo essay.
 - **Verifique o título real antes de escrever a entrada.** Nunca escreva "Autor (Ano). *Nome do Periódico*." como se isso bastasse — se o título do trabalho não estiver explícito na fonte que você está usando, use WebFetch/WebSearch no DOI ou URL para confirmar título, autores completos e container reais antes de criar a entrada. Não "lembre de memória" um título de paper acadêmico: dois bugs reais já aconteceram por pular esse passo — (1) itálico envolvendo "Autor (Ano)" inteiro no lugar do título, porque o título nunca foi de fato buscado; (2) autor errado atribuído a uma URL (ex.: um DOI de Sackett et al. creditado a "Griebe et al.", um link do MDPI creditado a "Bowden et al." quando os autores reais eram outros) — só o fetch do próprio link/DOI pega esse tipo de erro, releitura visual não pega.
-- **Nome de autor nunca em negrito.** Só o título leva ênfase (itálico); autor e container são texto normal. `python scripts/format_check.py` sinaliza `REF_BOLD_AUTHOR` se isso escapar.
+- **Nome de autor nunca em negrito.** Só o título leva ênfase (itálico); autor e container são texto normal. `python scripts/check_format.py` sinaliza `REF_BOLD_AUTHOR` se isso escapar.
 - **Nunca negrito em nome de autor** — só o padrão acima (nome normal, título em itálico). Se encontrar `**Autor**` numa entrada existente, é desvio a corrigir, não uma variação de estilo aceitável.
 - **O itálico é sempre o título do trabalho, nunca "Autor (Ano)" nem o nome do container sozinho.** Antes de aceitar uma entrada como `[N] Schmidt, F. L., & Hunter, J. E. (1998). *Psychological Bulletin*.` — sem título real, com o container erroneamente em itálico — pare e busque o título verdadeiro do artigo (WebFetch no DOI/URL, ou WebSearch por autor+ano+container). Nunca deixe uma entrada cujo itálico seja só autor+ano ou só nome de periódico: isso significa que o título nunca foi preenchido.
 - **Autor errado é pior que autor ausente.** Ao criar ou revisar uma entrada com DOI/URL, confirme que o autor citado é de fato quem a fonte resolvida atribui — nomes garantidos "de memória" (ex.: um nome que soa plausível pelo tema) já produziram atribuições erradas nesta wiki (um paper atribuído a um autor que não é nenhum dos autores reais). Quando o essay cita explicitamente que o link aponta para uma fonte secundária (ex.: "citado em revisão contemporânea"), preserve essa distinção na referência — não troque pela obra original sem confirmar que é isso que o essay realmente pretende citar.
-- Essay com corpo rico em links externos e `## Referências` vazia é **sempre bug**, nunca estado válido — `format_check.py` sinaliza isso como `EMPTY_REFERENCIAS`.
+- Essay com corpo rico em links externos e `## Referências` vazia é **sempre bug**, nunca estado válido — `check_format.py` sinaliza isso como `EMPTY_REFERENCIAS`.
 
 ## `wiki/references.md` e `wiki/references.json`
 
-Mesmo padrão de `index.json`/`index.md`: artefatos na raiz de `wiki/`, **nunca editados à mão**, regenerados por `scripts/references_index.py` ao final de `/essay`, `/expand`, `/absorb`, `/digest`, `/import`, `/linkify`, `/review`, `/organize`.
+Mesmo padrão de `index.json`/`index.md`: artefatos na raiz de `wiki/`, **nunca editados à mão**, regenerados por `scripts/build_references.py` ao final de `/essay`, `/expand`, `/absorb`, `/digest`, `/import`, `/linkify`, `/review`, `/organize`.
 
 ```json
 {
@@ -200,7 +200,7 @@ Mesmo padrão de `index.json`/`index.md`: artefatos na raiz de `wiki/`, **nunca 
 
 `domain_group` (só no JSON, para consultas): `doi`, `nasa`, `aiaa`, `sep`, `wikipedia`, `github`, `institucional`, ou nulo quando a entrada não tem link.
 
-**Antes de escrever uma entrada nova em `## Referências`, procure a mesma fonte em `wiki/references.md`** (por URL ou pelo título em itálico) — se ela já estiver catalogada, reuse a citação exata já existente em vez de redigir uma versão nova com palavras diferentes. É esse desvio, repetido essay a essay, que produz a classe 4 de `dedupe_check.py` (mesma obra, citação divergente entre essays): evitar na criação é mais barato do que consolidar depois. Só vale a pena uma citação diferente da já catalogada se a fonte real for outra edição/tradução genuinamente distinta, não apenas uma reformulação da mesma nota.
+**Antes de escrever uma entrada nova em `## Referências`, procure a mesma fonte em `wiki/references.md`** (por URL ou pelo título em itálico) — se ela já estiver catalogada, reuse a citação exata já existente em vez de redigir uma versão nova com palavras diferentes. É esse desvio, repetido essay a essay, que produz a classe 4 de `check_dedupe.py` (mesma obra, citação divergente entre essays): evitar na criação é mais barato do que consolidar depois. Só vale a pena uma citação diferente da já catalogada se a fonte real for outra edição/tradução genuinamente distinta, não apenas uma reformulação da mesma nota.
 
 `references.md` é **lista única em ordem alfabética**, sem agrupamento. Agrupar por domínio separaria o livro e o paper do mesmo autor, e criava um balde "Sem link" que falava de disponibilidade digital em vez de tipo de fonte. Bibliografia se lê por autor.
 
@@ -307,7 +307,7 @@ Regra específica desta seção: wikilinks em `## Conexões` usam `[[Título da 
 5. **Símbolos residuais**: remover diamantes (◆), replacement chars, zero-width spaces, `&nbsp;`, `&amp;`, etc.
 6. **Verificar fidelidade**: comparar o `.md` gerado contra o original.
 
-## Exportação para PDF (`export_essay.py`, Pandoc + LuaLaTeX)
+## Exportação para PDF (`export_essay_pdf.py`, Pandoc + LuaLaTeX)
 
 - **LuaLaTeX, não XeLaTeX** — o dvipdfmx do MiKTeX não gera anotações de link.
 - `## Conexões` é removida do PDF. `## Sumário` e `## Referências` são preservadas.

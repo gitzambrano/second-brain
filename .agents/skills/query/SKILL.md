@@ -29,7 +29,7 @@ qmd query "termos da busca"
 Sem qmd disponível ou indexado (`qmd status` falha, ou a collection `secondbrain` não aparece), caia para busca literal, sem perguntar:
 
 ```bash
-python scripts/search.py "termos da busca" --ignore-case
+python scripts/find_text.py "termos da busca" --ignore-case
 ```
 
 Devolve só os trechos relevantes (com contexto) de cada arquivo, em vez de forçar `Read` no essay inteiro para descobrir se ele é relevante. Ajuste `--scope` se a pergunta também exigir olhar `handouts`, e `--regex` para termos com variação de grafia (ex: `"auto.?poiese"`).
@@ -40,7 +40,7 @@ Leia os essays identificados. Siga os `[[wikilinks]]` da seção `## Conexões` 
 
 ### 4. Consulte o acervo original só como último recurso
 
-`wiki/sources/` guarda os **arquivos originais** (PDFs, DOCX, HTML) que geraram os essays — não são páginas de resumo, e a maioria não é markdown, então `qmd` (que só indexa `wiki/**/*.md`) não os cobre. Se os essays não cobrirem algo que você sabe que está na fonte, `python scripts/search.py "termo" --scope sources` localiza o arquivo certo sem abrir cada um (pode ainda exigir extração de PDF/DOCX depois de achar). Prefira sempre responder a partir do essay já processado — ele já vem sintetizado, traduzido e cruzado.
+`wiki/sources/` guarda os **arquivos originais** (PDFs, DOCX, HTML) que geraram os essays — não são páginas de resumo, e a maioria não é markdown, então `qmd` (que só indexa `wiki/**/*.md`) não os cobre. Se os essays não cobrirem algo que você sabe que está na fonte, `python scripts/find_text.py "termo" --scope sources` localiza o arquivo certo sem abrir cada um (pode ainda exigir extração de PDF/DOCX depois de achar). Prefira sempre responder a partir do essay já processado — ele já vem sintetizado, traduzido e cruzado.
 
 ## Sintetizar a resposta
 
@@ -64,7 +64,7 @@ Se a resposta gerar algo que vale a pena guardar — uma síntese nova, uma cone
 
 > "Essa síntese pode valer a pena guardar. Quer que eu salve como um novo essay, ou como um insight curto?"
 
-Antes de criar a página nova (essay ou insight), rode `python scripts/resolve_title.py "Título Proposto"` — evita nascer um quase-duplicado de algo que já existe com outra grafia.
+Antes de criar a página nova (essay ou insight), rode `python scripts/check_title.py "Título Proposto"` — evita nascer um quase-duplicado de algo que já existe com outra grafia.
 
 - **Se for profunda o bastante para ser um essay**: siga o fluxo completo de `/essay` (frontmatter, byline, Sumário, mínimo 10 links externos, Referências, Conexões) e salve em `wiki/essays/`.
 - **Se for mais curta — uma síntese, uma ponte entre coisas que já existem na wiki, ou uma ideia nova que a pergunta provocou**: isso não é `/query` salvando direto — é `/insight add`. Passe a ideia para lá; não existe mais uma pasta/tipo separado para comparações.

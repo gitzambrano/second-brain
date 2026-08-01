@@ -3,7 +3,7 @@
 build_index.py - Gera wiki/index.json e wiki/index.md: cache leve de
 metadados + índice navegável de essays.
 
-Evita que /query, /stats, /gaps, /insight add, /resolve_title etc. precisem
+Evita que /query, /stats, /gaps, /insight add, /check_title etc. precisem
 abrir e parsear o frontmatter de cada arquivo toda vez que precisam saber
 "quais títulos já existem" ou "quais tags já estão em uso". Artefato
 descartável e sempre regenerável — mesmo padrão de output/stats/ e

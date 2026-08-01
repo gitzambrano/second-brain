@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-dedupe_check.py — Relatório de quase-duplicatas na wiki inteira.
+check_dedupe.py — Relatório de quase-duplicatas na wiki inteira.
 
 Quatro classes num relatório único, chamado por `/organize`:
 
-    1. Títulos de essays              — a mesma heurística que `resolve_title.py`
+    1. Títulos de essays              — a mesma heurística que `check_title.py`
                                         aplica na criação (para nada nascer
                                         duplicado), agora retroativa ao corpus
     2. Títulos de concepts/entities   — mesma heurística, mesmo threshold
@@ -14,7 +14,7 @@ Quatro classes num relatório único, chamado por `/organize`:
                                         quase-idêntica, aparecendo em essays
                                         DIFERENTES com grafia distinta
 
-A classe 4 não é a mesma coisa que `DUPLICATE_REFERENCIA` do `linkify_check.py`:
+A classe 4 não é a mesma coisa que `DUPLICATE_REFERENCIA` do `check_references.py`:
 lá é duplicata **dentro do mesmo essay** (erro de formatação); aqui é a mesma
 fonte catalogada duas vezes **em essays diferentes**, com citação ligeiramente
 diferente — sinal de bibliografia divergindo, não de arquivo malformado.
@@ -26,9 +26,9 @@ Categoria saiu do escopo: o campo não existe mais na wiki (a classificação
 temática vem só de `tags`), então não há o que deduplicar ali.
 
 Uso:
-    python dedupe_check.py                 # relatório completo
-    python dedupe_check.py --json          # saída JSON para a skill parsear
-    python dedupe_check.py --threshold 0.9 # similaridade mínima (padrão 0.85)
+    python check_dedupe.py                 # relatório completo
+    python check_dedupe.py --json          # saída JSON para a skill parsear
+    python check_dedupe.py --threshold 0.9 # similaridade mínima (padrão 0.85)
 """
 
 import argparse
@@ -41,12 +41,12 @@ from collections import defaultdict
 from pathlib import Path
 
 import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
-from references_index import (
+from build_references import (
     collect_essay_references,
     normalize_citation,
     normalize_url,
 )
-from resolve_title import normalize as normalize_title
+from check_title import normalize as normalize_title
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 WIKI_ROOT = ROOT_DIR / "wiki"
@@ -208,7 +208,7 @@ def check_references(threshold):
         citations, lambda it: normalize_citation(it[1]), threshold
     ):
         if a[0] == b[0]:
-            continue  # mesmo essay é DUPLICATE_REFERENCIA, do linkify_check.py
+            continue  # mesmo essay é DUPLICATE_REFERENCIA, do check_references.py
         findings.append(
             {
                 "kind": "citacao-parecida",

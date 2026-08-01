@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-graph.py - Generate a connection graph of the entire wiki.
+build_graph.py - Generate a connection graph of the entire wiki.
 
 Nodes: essays, concepts, entities, insights pages, e referências (a partir
-de wiki/references.json, geradas por references_index.py — uma por
+de wiki/references.json, geradas por build_references.py — uma por
 domain_group de origem, ver conventions/SKILL.md).
 Edges: todo [[wikilink]] encontrado no corpo de uma página, resolvido por
 título H1 (a convenção de link da própria wiki — ver conventions/SKILL.md);
@@ -38,7 +38,7 @@ Recursos do HTML interativo:
     nunca caem no mesmo componente conectado (silo temático).
 
 Usage:
-    python scripts/graph.py
+    python scripts/build_graph.py
 """
 
 import json

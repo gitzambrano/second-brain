@@ -1,3 +1,41 @@
+#!/usr/bin/env python3
+"""
+check_wiki.py — Lint estrutural completo da wiki (ou de um único essay).
+
+Complementa check_format.py (regras de formatação de prosa/byline/tipografia)
+e check_references.py (formato da seção ## Referências): aqui o foco é
+integridade estrutural e consistência entre arquivos, não formatação dentro
+de um único essay. Cobre, num relatório único:
+
+    - Frontmatter YAML de essays/concepts/entities/insights: campos
+      obrigatórios, status válido
+    - H1 + byline: presença, formato, blank line entre título e byline
+    - ## Sumário, ## Referências, ## Conexões: presença, ## Conexões deve
+      ser a última seção
+    - Wikilinks fora de ## Conexões (só é permitido inline em concepts/entities)
+    - Wikilinks mortos (target sem página correspondente) e órfãos
+    - Mínimo de links externos no corpo
+    - Blank line após heading, símbolos residuais, HTML residual
+    - wiki/index.md: título correto, links mortos, essays faltando no índice
+    - wiki/sources/manifest.md: entradas batendo com os arquivos em disco,
+      subpastas do vocabulário controlado, Tags: preenchido
+    - plan/plano.md: vocabulário fechado de seções e de Status
+    - insights/*.md: campo maturidade válido, ao menos um wikilink em Conexões
+
+Escreve o relatório completo em output/comprehensive_lint_output.txt e
+imprime um resumo (contagem de ERROR/WARNING) no console. Nota: sempre
+sai com exit code 0 (exceto se --essay apontar para um arquivo inexistente,
+sys.exit(1)) — o sinal de "há problemas" é o resumo impresso e o conteúdo
+do relatório, não o exit code.
+
+Usage:
+    python scripts/check_wiki.py                  # lint do corpus inteiro
+    python scripts/check_wiki.py --essay SLUG      # lint só deste essay (pula
+                                                    # seções que são inerentemente
+                                                    # de corpus inteiro: índice,
+                                                    # manifesto, plano, órfãos)
+"""
+
 import os
 import re
 import sys
@@ -63,7 +101,7 @@ def strip_fences(text):
     As regras de prosa (heading, label de capítulo, símbolo residual, HTML) não
     valem dentro de código: um comentário Python `# nota` na coluna zero não é
     heading, e `<div` num exemplo de template não é HTML residual do essay.
-    Mesmo tratamento de `format_check.py` e `linkify_check.py`.
+    Mesmo tratamento de `check_format.py` e `check_references.py`.
     """
     out, in_fence = [], False
     for line in text.splitlines():

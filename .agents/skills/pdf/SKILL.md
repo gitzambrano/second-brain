@@ -2,7 +2,7 @@
 name: pdf
 description: >
   Exporta um ou todos os essays de wiki/essays/ para PDF via
-  scripts/export_essay.py (Pandoc + LuaLaTeX). Use quando o
+  scripts/export_essay_pdf.py (Pandoc + LuaLaTeX). Use quando o
   Usuário disser "exporta esse essay para PDF", "gera o PDF de X",
   "exporta tudo para PDF", ou quiser uma versão compartilhável/
   imprimível de um essay.
@@ -11,7 +11,7 @@ allowed-tools: Bash Read Glob
 
 # PDF
 
-Gera PDF a partir de um ou mais essays em `wiki/essays/`, via `scripts/export_essay.py` (Pandoc + LuaLaTeX). Este skill só invoca o script existente e interpreta o resultado — a lógica de conversão vive no script, não aqui.
+Gera PDF a partir de um ou mais essays em `wiki/essays/`, via `scripts/export_essay_pdf.py` (Pandoc + LuaLaTeX). Este skill só invoca o script existente e interpreta o resultado — a lógica de conversão vive no script, não aqui.
 
 ## Quando usar
 
@@ -29,16 +29,16 @@ O script depende de **Pandoc** com o engine **LuaLaTeX** (não XeLaTeX — ver `
 
 ```bash
 # Listar essays disponíveis
-python scripts/export_essay.py --list
+python scripts/export_essay_pdf.py --list
 
 # Exportar um essay específico (nome do arquivo, com ou sem .md)
-python scripts/export_essay.py nome-do-essay
+python scripts/export_essay_pdf.py nome-do-essay
 
 # Exportar todos os essays
-python scripts/export_essay.py --all
+python scripts/export_essay_pdf.py --all
 
 # Diretório de saída customizado (padrão: output/pdf/)
-python scripts/export_essay.py nome-do-essay --output caminho/custom
+python scripts/export_essay_pdf.py nome-do-essay --output caminho/custom
 ```
 
 ## O que o script já garante (não precisa reimplementar)
@@ -55,7 +55,7 @@ python scripts/export_essay.py nome-do-essay --output caminho/custom
 O mesmo script exporta handouts de `wiki/handouts/` com a flag `--handout`:
 
 ```bash
-python scripts/export_essay.py <slug-do-essay> --handout --output output/handouts
+python scripts/export_essay_pdf.py <slug-do-essay> --handout --output output/handouts
 ```
 
 Use quando o Usuário quiser mandar o handout como PDF em vez de só o `.md` cru — ver skill `/handout` e `## Arquitetura` (bloco `output/`) no AGENTS.md.
@@ -71,4 +71,4 @@ O handout não tem `## Conexões`/`## Referências`/`## Sumário`, então esses 
 ## Skills relacionadas
 
 - `/html` — mesma essência, saída HTML standalone
-- `/organize` e `/sweep` — o checklist de organize/sweep testa `export_essay.py --all` como parte do health-check
+- `/organize` e `/sweep` — o checklist de organize/sweep testa `export_essay_pdf.py --all` como parte do health-check

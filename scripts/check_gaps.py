@@ -1,8 +1,9 @@
+#!/usr/bin/env python3
 """
-gap_candidates.py — candidatos a página (concept/entity) e a link ausentes.
+check_gaps.py — candidatos a página (concept/entity) e a link ausentes.
 
-Cobre a direção que lint_all.py e /organize (passo 2) NÃO cobrem:
-  - lint_all.py: wikilinks que já existem e apontam pra nada -> "link morto"
+Cobre a direção que check_wiki.py e /organize (passo 2) NÃO cobrem:
+  - check_wiki.py: wikilinks que já existem e apontam pra nada -> "link morto"
   - /organize passo 2: concept/entity que já existe sem essay que o linke -> "órfão reverso"
   - este script: termo citado repetidamente na prosa (via link externo, negrito,
     ou nome próprio capitalizado) que NUNCA foi promovido a wikilink nem tem

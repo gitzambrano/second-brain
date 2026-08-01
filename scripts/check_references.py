@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-linkify_check.py — Verificador da seção `## Referências` de essays.
+check_references.py — Verificador da seção `## Referências` de essays.
 
-Complementa `format_check.py`, que só checa se a seção existe (`NO_REFERENCIAS`);
+Complementa `check_format.py`, que só checa se a seção existe (`NO_REFERENCIAS`);
 aqui o conteúdo dela é validado contra o padrão AIAA definido em
 `conventions/SKILL.md`, seção `## Formato de "## Referências" — padrão AIAA`.
 Chamado por `/linkify`, e pela varredura mecânica de `/format` e `/organize`.
@@ -20,7 +20,7 @@ Códigos emitidos:
                                           fonte sem edição digital confiável
     REFERENCIA_NAO_USADA         WARNING  entrada `[N]` nunca citada no corpo
 
-`NO_REFERENCIAS` continua sendo emitido por `format_check.py` e não é duplicado
+`NO_REFERENCIAS` continua sendo emitido por `check_format.py` e não é duplicado
 aqui: este script assume que a seção existe e apenas pula o essay se não achar.
 
 O modo `--fix-format` faz só a parte **mecânica** da migração do formato antigo
@@ -39,10 +39,10 @@ inventaria bibliografia. Essas entradas saem do `--fix-format` sinalizadas com
 `REFERENCIA_SEM_LINK`, para tratamento editorial via `/linkify`.
 
 Uso:
-    python linkify_check.py                    # todos os essays
-    python linkify_check.py --file meu-essay   # essay único (slug ou .md)
-    python linkify_check.py --json             # saída JSON para a skill parsear
-    python linkify_check.py --fix-format       # aplica a migração mecânica
+    python check_references.py                    # todos os essays
+    python check_references.py --file meu-essay   # essay único (slug ou .md)
+    python check_references.py --json             # saída JSON para a skill parsear
+    python check_references.py --fix-format       # aplica a migração mecânica
 """
 
 import argparse
@@ -53,7 +53,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
-from references_index import (
+from build_references import (
     LINKED_RE,
     extract_referencias_section,
     normalize_url,
@@ -128,7 +128,7 @@ def strip_fences(text):
     Sem isso, indexação Python (`q[0]`, `x[2]`) dentro de um bloco de código é
     lida como citação numérica `[N]`, e a bibliografia inteira acima daquele
     número aparece como `REFERENCIA_NAO_USADA`. Mesmo tratamento que
-    `format_check.py` aplica às regras de prosa.
+    `check_format.py` aplica às regras de prosa.
     """
     out, in_fence = [], False
     for line in text.splitlines():
@@ -296,7 +296,7 @@ def check_essay(path):
     section = extract_referencias_section(content)
 
     if section is None:
-        # NO_REFERENCIAS é responsabilidade de format_check.py.
+        # NO_REFERENCIAS é responsabilidade de check_format.py.
         return {"name": path.name, "slug": path.stem, "issues": issues, "skipped": True}
 
     entries = parse_entries(section)
@@ -604,7 +604,7 @@ def main():
                 touched += 1
                 print(f"reescrito: {path.name} ({count} entrada(s))")
         print(f"\n{touched}/{len(essay_paths)} essay(s) tiveram `## Referências` reescrita.")
-        print("Rode `python scripts/references_index.py` para regenerar o índice de referências.")
+        print("Rode `python scripts/build_references.py` para regenerar o índice de referências.")
         if touched:
             print(
                 "A migração é só mecânica: entradas que continuarem sem link da própria "
@@ -645,7 +645,7 @@ def main():
     for code, count in sorted(by_code.items(), key=lambda kv: -kv[1]):
         print(f"  {code}: {count}")
     if by_code.get("REFERENCIA_FORMATO_INVALIDO"):
-        print("\nParte disso é mecânica: `python scripts/linkify_check.py --fix-format`.")
+        print("\nParte disso é mecânica: `python scripts/check_references.py --fix-format`.")
 
 
 if __name__ == "__main__":

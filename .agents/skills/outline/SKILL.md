@@ -80,7 +80,7 @@ Papel: ...
 - [[Essay ou Concept já existente]] — por quê
 ```
 
-`plan/drafts/` é rascunho de estrutura, não wiki de verdade — por isso fica em `plan/`, fora do escopo de `/organize`, `/sweep`, `/lint_all.py` e `/gaps` (essas skills tratam `wiki/essays/` como conteúdo publicado; um esqueleto de bullets ali quebraria a expectativa de prosa completa que elas assumem).
+`plan/drafts/` é rascunho de estrutura, não wiki de verdade — por isso fica em `plan/`, fora do escopo de `/organize`, `/sweep`, `/check_wiki.py` e `/gaps` (essas skills tratam `wiki/essays/` como conteúdo publicado; um esqueleto de bullets ali quebraria a expectativa de prosa completa que elas assumem).
 
 ## 5. Apresentar e iterar
 

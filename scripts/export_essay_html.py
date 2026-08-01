@@ -7,7 +7,7 @@ Usage:
     python export_essay_html.py --all                        # Export all essays
     python export_essay_html.py --list                       # List available essays
 
-Features (mirrors export_essay.py so PDF and HTML stay in sync):
+Features (mirrors export_essay_pdf.py so PDF and HTML stay in sync):
     - Strips ## Conexões section (internal wiki links, not for export)
     - Preserves ## Referências, ## Sumário
     - Converts YAML frontmatter into a title/subtitle/byline header block
@@ -19,9 +19,9 @@ Features (mirrors export_essay.py so PDF and HTML stay in sync):
       required except the MathJax CDN script for essays that use math)
 
 This script imports its frontmatter/Conexões/wikilink helpers from
-export_essay.py (same folder) instead of duplicating them. Byline parsing
+export_essay_pdf.py (same folder) instead of duplicating them. Byline parsing
 (`parse_byline`) is NOT shared — it's a local duplicate kept in sync by
-hand with `prepare_for_pandoc` in export_essay.py; if you change the byline
+hand with `prepare_for_pandoc` in export_essay_pdf.py; if you change the byline
 format, update both.
 """
 
@@ -35,7 +35,7 @@ import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
 
 # Reuse the shared preparation logic from the PDF exporter.
 sys.path.insert(0, str(Path(__file__).parent))
-from export_essay import (
+from export_essay_pdf import (
     extract_frontmatter,
     strip_conexoes_section,
     clean_residual_wikilinks,
@@ -167,7 +167,8 @@ def export_essay(filepath, output_dir=None, source_dir=None):
 
     # Only pull in MathJax (CDN, ~3MB once embedded) for essays that actually use math.
     # Keeps non-technical essays small and exportable without network access.
-    if body_has_math(body):
+    needs_math = body_has_math(body)
+    if needs_math:
         cmd.insert(6, '--mathjax=https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js')
 
     print(f"  Exporting: {filepath.name} -> {html_path.name}")
@@ -181,6 +182,17 @@ def export_essay(filepath, output_dir=None, source_dir=None):
             return False
         size_kb = html_path.stat().st_size / 1024
         print(f"  OK: {html_path.name} ({size_kb:.0f} KB)")
+        # --embed-resources fetches the MathJax script over the network at
+        # export time. If that fetch fails (offline, firewall, CDN down),
+        # Pandoc still exits 0 and silently drops the script -- the essay
+        # looks exported fine but formulas won't render in the browser.
+        # Catch that case here instead of leaving it to be discovered later.
+        if needs_math:
+            html_text = html_path.read_text(encoding='utf-8', errors='replace')
+            if 'mathjax' not in html_text.lower():
+                print(f"  WARNING: math detected in {filepath.name} but the MathJax script "
+                      f"was not embedded (likely no network access to the CDN at export time). "
+                      f"Formulas will show as raw LaTeX (e.g. \\(x\\)) instead of rendering.")
         return True
     except FileNotFoundError:
         print("  ERROR: Pandoc not found. Install from https://pandoc.org/installing.html")

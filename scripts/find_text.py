@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-search.py - Busca com trecho (não arquivo inteiro) na wiki.
+find_text.py - Busca com trecho (não arquivo inteiro) na wiki.
 
 Devolve só os trechos relevantes de cada arquivo (algumas linhas antes/
 depois do match, mescladas em blocos quando se sobrepõem), em vez de forçar
@@ -14,11 +14,11 @@ inclui originais grandes e às vezes binários, handouts porque é derivado
 sob demanda — inclua explicitamente via --scope quando precisar.
 
 Usage:
-    python scripts/search.py "termo da busca"
-    python scripts/search.py "termo" --scope essays concepts
-    python scripts/search.py "auto.?poiese" --regex
-    python scripts/search.py "termo" --list-only
-    python scripts/search.py "termo" --context 4 --ignore-case
+    python scripts/find_text.py "termo da busca"
+    python scripts/find_text.py "termo" --scope essays concepts
+    python scripts/find_text.py "auto.?poiese" --regex
+    python scripts/find_text.py "termo" --list-only
+    python scripts/find_text.py "termo" --context 4 --ignore-case
 """
 
 import argparse

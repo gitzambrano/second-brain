@@ -22,7 +22,7 @@ Gera um `.html` autocontido (CSS e imagens embutidos, um único arquivo) a parti
 
 Para PDF, use `/pdf` em vez deste skill — não duplique lógica de exportação aqui.
 
-Os dois scripts compartilham a mesma preparação de markdown (frontmatter, byline, remoção de Conexões) importando de `export_essay.py`, então qualquer inconsistência entre PDF e HTML normalmente é bug no script, não neste skill.
+Os dois scripts compartilham a mesma preparação de markdown (frontmatter, byline, remoção de Conexões) importando de `export_essay_pdf.py`, então qualquer inconsistência entre PDF e HTML normalmente é bug no script, não neste skill.
 
 ## Uso
 
