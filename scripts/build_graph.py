@@ -33,9 +33,20 @@ Recursos do HTML interativo:
     um botão, o modal do índice ocupa a tela toda e a tabela vira lista de
     cartões com barra de ordenação. Nada disso altera o desktop — mora todo
     dentro de media query.
+  - iPhone/Safari: pinch/pan tratados à parte do Android/Chrome — Safari
+    ignora `touch-action` de forma inconsistente e tem gesto próprio de
+    pinch-zoom de página (`gesturestart`/`gesturechange`) que não existe em
+    outros navegadores; sem neutralizar os dois, o grafo funciona no Android
+    e "trava" ou pula no iPhone. Ver comentários em torno de
+    `desligarGestoNativoIOS()` no HTML gerado.
   - Painel de Gaps: componentes conectados (union-find) sobre nós+arestas,
     cruzado com `tags` de cada nó — reporta pares de tags cujos essays
     nunca caem no mesmo componente conectado (silo temático).
+  - Painel de Estilo: cores por tipo de nó, cor/opacidade das arestas, raio
+    base e escala por grau, tamanho de rótulo — tudo ajustável ao vivo pelo
+    modal "Estilo" no HTML gerado (persistido em localStorage do navegador,
+    por wiki) ou, para um padrão permanente, editando `GRAPH_STYLE` abaixo
+    antes de rodar o script.
 
 Usage:
     python scripts/build_graph.py
@@ -64,6 +75,27 @@ DIRS = {
     "concept": CONCEPTS_DIR,
     "entity": ENTITIES_DIR,
     "insights": INSIGHTS_DIR,
+}
+
+# Aparência padrão do grafo. Editável aqui para um novo padrão permanente
+# (todo mundo que abrir o HTML do zero recebe estas cores/tamanhos), ou
+# ajustável ao vivo no navegador via o modal "Estilo" — nesse caso a escolha
+# fica salva em localStorage e sobrescreve este padrão só naquele navegador.
+GRAPH_STYLE = {
+    "colors": {
+        "essay": "#4fa8ff",
+        "concept": "#5fd3c4",
+        "entity": "#e8b657",
+        "insights": "#b48ce8",
+        "reference": "#8a8f96",
+        "edge": "#454b52",
+        "background": "#1b1e21",
+    },
+    "edgeOpacity": 0.55,
+    "radiusBase": 5,
+    "radiusScale": 3,
+    "labelSize": 10,
+    "glow": True,
 }
 
 
@@ -264,7 +296,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Grafo — Second Brain</title>
 <script src="https://d3js.org/d3.v7.min.js"></script>
 <style>
@@ -281,12 +313,26 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     --reference: #8a8f96;
     --edge: #454b52;
     --edge-ref: #5a5f66;
+    --edge-opacity: 0.55;
+    --radius-base: 5;
+    --radius-scale: 3;
+    --label-size: 10px;
+    --node-glow: drop-shadow(0 0 0 transparent);
   }
   * { box-sizing: border-box; }
-  body { margin:0; font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; background: var(--bg); color: var(--ink); overflow: hidden; }
+  /* `html` também precisa da trava de toque/scroll: no iPhone, sem isto, um
+     arrasto que começa fora do <svg> (ex.: numa fração de pixel da borda)
+     ainda faz o corpo da página fazer o "bounce" elástico do Safari, o que
+     no Android nunca acontece — Chrome não tem esse gesto de página. */
+  html, body {
+    margin: 0; height: 100%; overflow: hidden; overscroll-behavior: none;
+    touch-action: none; -webkit-user-select: none; user-select: none;
+    -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent;
+  }
+  body { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; background: var(--bg); color: var(--ink); }
   /* `dvh` acompanha a barra de endereço do navegador móvel, que muda de altura
      ao rolar; `vh` deixaria o grafo cortado atrás dela. */
-  #graph { width: 100vw; height: 100vh; height: 100dvh; display: block; touch-action: none; }
+  #graph { width: 100vw; height: 100vh; height: 100dvh; display: block; touch-action: none; -webkit-user-select: none; }
 
   /* Botão de recolher o painel. Só aparece em tela pequena, onde o painel
      compete com o grafo pelo espaço todo. */
@@ -326,9 +372,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   .detail-open { display: inline-block; margin-top: 10px; font-size: 11px;
     color: var(--instrument-blue); text-decoration: none; }
   .detail-open:hover { text-decoration: underline; }
-  .node-title { font-size: 10px; fill: var(--ink); pointer-events: none; opacity: .85; }
-  .link { stroke: var(--edge); stroke-width: 1.2px; }
+  .node-title { font-size: var(--label-size); fill: var(--ink); pointer-events: none; opacity: .85; }
+  .link { stroke: var(--edge); stroke-width: 1.2px; opacity: var(--edge-opacity); }
   .link.reference { stroke: var(--edge-ref); stroke-dasharray: 3,3; }
+  /* Vinheta sutil atrás do grafo — puramente decorativa, custa zero em JS/perf
+     porque é só um gradiente de fundo do body, não redesenha por nó. */
+  #graph { background: radial-gradient(ellipse at center, color-mix(in srgb, var(--bg) 92%, white) 0%, var(--bg) 72%); }
+  circle.node-glow { filter: var(--node-glow); }
   .dim { opacity: .08; }
   .hidden-node { display: none; }
   #modal-overlay { display:none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 20; }
@@ -417,6 +467,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   }
   .gap-item { font-size: 12px; margin: 4px 0; color: var(--ink-dim); }
   .gap-item b { color: var(--ink); }
+
+  .style-section { margin-bottom: 16px; }
+  .style-row { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    font-size: 12px; color: var(--ink-dim); padding: 7px 2px; border-bottom: 1px solid #2b2f33; }
+  .style-row span { flex: 1; }
+  .style-row input[type="color"] { width: 40px; height: 26px; padding: 0; border: 1px solid var(--panel-border);
+    border-radius: 6px; background: none; cursor: pointer; }
+  .style-slider input[type="range"] { flex: 1.4; accent-color: var(--instrument-blue); }
+  .style-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--instrument-blue); cursor: pointer; }
+  .style-actions { display: flex; gap: 8px; margin-top: 4px; }
+  .style-actions .btn { margin-top: 0; text-align: center; }
+  .style-primary { background: var(--instrument-blue) !important; color: #0b1220 !important; font-weight: 600;
+    border-color: var(--instrument-blue) !important; }
 </style>
 </head>
 <body>
@@ -434,6 +497,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
   <button class="btn" id="btn-index">Índice</button>
   <button class="btn" id="btn-gaps">Gaps entre tags</button>
+  <button class="btn" id="btn-style">Estilo</button>
 
   <div id="detail" hidden></div>
 </div>
@@ -444,6 +508,62 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 
 <script>
 const data = __DATA_JSON__;
+
+// ---- Estilo (cores, raio, rótulo) --------------------------------------
+// `defaultStyle` vem do Python (GRAPH_STYLE) — é o padrão "de fábrica" da
+// wiki. `localStorage` guarda só o que o usuário mudou neste navegador; se
+// o Python mudar o padrão depois, quem nunca customizou nada recebe o novo
+// padrão automaticamente (não fica preso a uma cópia congelada).
+const STYLE_VARS = {
+  essay: "--instrument-blue", concept: "--concept", entity: "--entity",
+  insights: "--insight", reference: "--reference", edge: "--edge", background: "--bg",
+};
+const STYLE_KEY = "sb-graph-style-v1";
+const defaultStyle = data.defaultStyle || {
+  colors: { essay: "#4fa8ff", concept: "#5fd3c4", entity: "#e8b657", insights: "#b48ce8",
+    reference: "#8a8f96", edge: "#454b52", background: "#1b1e21" },
+  edgeOpacity: 0.55, radiusBase: 5, radiusScale: 3, labelSize: 10, glow: true,
+};
+
+function loadSavedStyle() {
+  try {
+    const raw = localStorage.getItem(STYLE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function mergeWithDefaults(saved) {
+  return {
+    ...defaultStyle,
+    ...(saved || {}),
+    colors: { ...defaultStyle.colors, ...((saved || {}).colors || {}) },
+  };
+}
+
+let styleConfig = mergeWithDefaults(loadSavedStyle());
+
+function applyStyle(cfg, opts) {
+  styleConfig = cfg;
+  const root = document.documentElement.style;
+  Object.entries(STYLE_VARS).forEach(([key, cssVar]) => {
+    if (cfg.colors[key]) root.setProperty(cssVar, cfg.colors[key]);
+  });
+  root.setProperty("--edge-opacity", cfg.edgeOpacity);
+  root.setProperty("--radius-base", cfg.radiusBase);
+  root.setProperty("--radius-scale", cfg.radiusScale);
+  root.setProperty("--label-size", cfg.labelSize + "px");
+  root.setProperty("--node-glow", cfg.glow ? "drop-shadow(0 0 4px currentColor)" : "drop-shadow(0 0 0 transparent)");
+  if (!opts || !opts.silent) {
+    nodeSel.attr("r", radiusOf).classed("node-glow", !!cfg.glow).style("color", d => typeColorRaw(d));
+    labelSel.attr("dy", d => -(2 + radiusOf(d)));
+    simulation.force("collide", d3.forceCollide().radius(d => 7 + radiusOf(d)));
+    simulation.alpha(0.3).restart();
+  }
+}
+
+function typeColorRaw(n) {
+  return (styleConfig.colors && styleConfig.colors[n.type]) || "#888";
+}
 
 const typeColor = (n) => {
   if (n.type === "essay") return "var(--instrument-blue)";
@@ -536,7 +656,7 @@ function recomputeVisibleDegrees() {
   });
 }
 
-const radiusOf = (d) => 5 + Math.sqrt(d.visibleDegree ?? d.degree) * 3;
+const radiusOf = (d) => styleConfig.radiusBase + Math.sqrt(d.visibleDegree ?? d.degree) * styleConfig.radiusScale;
 
 const nodeSel = container.append("g").selectAll("circle")
   .data(data.nodes).join("circle")
@@ -545,6 +665,7 @@ const nodeSel = container.append("g").selectAll("circle")
   .attr("stroke", "#0b1220")
   .attr("stroke-width", 1)
   .style("cursor", "pointer")
+  .style("color", d => typeColorRaw(d))
   .call(d3.drag()
     .on("start", dragstarted)
     .on("drag", dragged)
@@ -570,6 +691,12 @@ simulation.on("tick", () => {
   nodeSel.attr("cx", d => d.x).attr("cy", d => d.y);
   labelSel.attr("x", d => d.x).attr("y", d => d.y);
 });
+
+// Aplica cores/raio/rótulo salvos (ou o padrão vindo do Python) agora que
+// nodeSel/labelSel/simulation existem — silencioso porque acabaram de
+// nascer já com os valores certos, não precisa re-simular ainda.
+applyStyle(styleConfig, { silent: true });
+nodeSel.classed("node-glow", !!styleConfig.glow);
 
 function dragstarted(event, d) {
   if (!event.active) simulation.alphaTarget(0.3).restart();
@@ -898,13 +1025,17 @@ function renderTypeIndex() {
   draw();
 }
 
+let styleModalOpen = false;
+
 document.getElementById("btn-index").addEventListener("click", () => {
+  styleModalOpen = false;
   renderTypeIndex();
   modalOverlay.classList.add("open");
 });
 
 // ---- Painel de Gaps (calculado no Python, embutido nos dados) ----
 document.getElementById("btn-gaps").addEventListener("click", () => {
+  styleModalOpen = false;
   const gaps = data.tag_gaps || [];
   let html = `<h2>Gaps entre tags</h2>`;
   if (!gaps.length) {
@@ -918,6 +1049,113 @@ document.getElementById("btn-gaps").addEventListener("click", () => {
   modalOverlay.classList.add("open");
 });
 
+// ---- Painel de Estilo (cores, raio, rótulo — ao vivo + salvo por navegador) ----
+const STYLE_LABELS = {
+  essay: "Essay", concept: "Concept", entity: "Entity", insights: "Insight",
+  reference: "Reference", edge: "Arestas",
+};
+
+function renderStylePanel() {
+  const draft = JSON.parse(JSON.stringify(styleConfig)); // rascunho — só grava de fato no "Salvar"
+
+  const colorRow = (key) => `
+    <label class="style-row">
+      <span>${STYLE_LABELS[key]}</span>
+      <input type="color" data-color="${key}" value="${draft.colors[key]}">
+    </label>`;
+
+  modalBody.innerHTML = `
+    <h2>Estilo do grafo</h2>
+    <div class="style-section">${Object.keys(STYLE_LABELS).map(colorRow).join("")}</div>
+    <div class="style-section">
+      <label class="style-row style-slider">
+        <span>Opacidade das arestas</span>
+        <input type="range" id="st-edge-opacity" min="0.1" max="1" step="0.05" value="${draft.edgeOpacity}">
+      </label>
+      <label class="style-row style-slider">
+        <span>Raio base da bolinha</span>
+        <input type="range" id="st-radius-base" min="2" max="14" step="1" value="${draft.radiusBase}">
+      </label>
+      <label class="style-row style-slider">
+        <span>Escala por conexões</span>
+        <input type="range" id="st-radius-scale" min="0" max="8" step="0.5" value="${draft.radiusScale}">
+      </label>
+      <label class="style-row style-slider">
+        <span>Tamanho do rótulo</span>
+        <input type="range" id="st-label-size" min="8" max="18" step="1" value="${draft.labelSize}">
+      </label>
+      <label class="style-row">
+        <span>Brilho (glow) nos nós</span>
+        <input type="checkbox" id="st-glow" ${draft.glow ? "checked" : ""}>
+      </label>
+    </div>
+    <div class="style-actions">
+      <button class="btn" id="st-reset">Restaurar padrão</button>
+      <button class="btn style-primary" id="st-save">Salvar</button>
+    </div>`;
+
+  const preview = () => applyStyle(draft); // aplica ao vivo no grafo por trás do modal, sem salvar ainda
+
+  modalBody.querySelectorAll("input[data-color]").forEach(inp => {
+    inp.addEventListener("input", () => { draft.colors[inp.getAttribute("data-color")] = inp.value; preview(); });
+  });
+  modalBody.querySelector("#st-edge-opacity").addEventListener("input", (e) => { draft.edgeOpacity = +e.target.value; preview(); });
+  modalBody.querySelector("#st-radius-base").addEventListener("input", (e) => { draft.radiusBase = +e.target.value; preview(); });
+  modalBody.querySelector("#st-radius-scale").addEventListener("input", (e) => { draft.radiusScale = +e.target.value; preview(); });
+  modalBody.querySelector("#st-label-size").addEventListener("input", (e) => { draft.labelSize = +e.target.value; preview(); });
+  modalBody.querySelector("#st-glow").addEventListener("change", (e) => { draft.glow = e.target.checked; preview(); });
+
+  modalBody.querySelector("#st-save").addEventListener("click", () => {
+    try { localStorage.setItem(STYLE_KEY, JSON.stringify(draft)); } catch {}
+    styleModalOpen = false;
+    modalOverlay.classList.remove("open");
+  });
+  modalBody.querySelector("#st-reset").addEventListener("click", () => {
+    try { localStorage.removeItem(STYLE_KEY); } catch {}
+    applyStyle(JSON.parse(JSON.stringify(defaultStyle)));
+    renderStylePanel(); // redesenha o modal já com os controles no padrão
+  });
+}
+
+document.getElementById("btn-style").addEventListener("click", () => {
+  styleModalOpen = true;
+  renderStylePanel();
+  modalOverlay.classList.add("open");
+});
+
+// Fechar o modal de Estilo sem clicar "Salvar" descarta o rascunho e volta
+// ao estilo realmente salvo (ou ao padrão, se nada foi salvo ainda) — sem
+// isto, um preview ao vivo cancelado ficaria "grudado" no grafo por engano.
+// Só se aplica quando era o modal de Estilo: fechar Índice/Gaps não deve
+// reiniciar a simulação à toa.
+function revertUnsavedStylePreview() {
+  if (!styleModalOpen) return;
+  applyStyle(mergeWithDefaults(loadSavedStyle()));
+}
+document.getElementById("modal-close").addEventListener("click", revertUnsavedStylePreview);
+modalOverlay.addEventListener("click", (e) => { if (e.target === modalOverlay) revertUnsavedStylePreview(); });
+
+// ---- Endurecimento para iPhone/Safari -----------------------------------
+// Safari tem um gesto de pinça PRÓPRIO da página (`gesturestart` etc, não
+// padrão, não existe no Chrome/Android) que compete com o pinça-zoom do
+// próprio grafo (d3.zoom). `touch-action: none` no CSS já resolve a maior
+// parte, mas esses eventos são a rede de segurança para versões de iOS que
+// os disparam mesmo assim — sem isto, no iPhone a página inteira "pula" de
+// zoom em vez de só o grafo.
+["gesturestart", "gesturechange", "gestureend"].forEach(evt => {
+  document.addEventListener(evt, (e) => e.preventDefault());
+});
+
+// Safari esconde/mostra a barra de endereço sem sempre disparar `resize` na
+// `window` — o evento confiável para isso é o do `visualViewport`. Sem ele,
+// o grafo pode ficar com o viewBox de um tamanho de tela que já não existe
+// mais depois de rolar uma vez no iPhone (sintoma: grafo "cortado" ou
+// deslocado, que não acontece no Android porque o Chrome sempre dispara
+// `resize` de qualquer forma).
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", ajustarViewport);
+}
+
 </script>
 </body>
 </html>
@@ -926,7 +1164,7 @@ document.getElementById("btn-gaps").addEventListener("click", () => {
 
 def render_html(nodes, edges, tag_gaps):
     data_json = json.dumps(
-        {"nodes": nodes, "edges": edges, "tag_gaps": tag_gaps},
+        {"nodes": nodes, "edges": edges, "tag_gaps": tag_gaps, "defaultStyle": GRAPH_STYLE},
         ensure_ascii=False,
     )
     html = HTML_TEMPLATE.replace("__DATA_JSON__", data_json)
