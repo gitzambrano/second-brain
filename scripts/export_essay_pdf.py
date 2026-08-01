@@ -583,7 +583,10 @@ def main():
         list_handouts() if args.handout else list_essays()
         return 0
 
-    if args.all:
+    # Sem argumento nenhum, o comportamento útil é exportar tudo — imprimir o
+    # help e sair com erro fazia o caso mais comum (`python export_essay_pdf.py`)
+    # não produzir nada. Mesmo default de check_wiki.py e fix_lint.py.
+    if args.all or not args.essay:
         items = sorted(source_dir.glob('*.md'))
         kind = "handouts" if args.handout else "essays"
         print(f"Exporting {len(items)} {kind} to PDF...\n")

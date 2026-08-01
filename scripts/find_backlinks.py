@@ -130,8 +130,11 @@ def main():
                          help="Restringe o escopo (para --orphans: quais tipos auditar)")
     args = parser.parse_args()
 
+    # Sem argumento, cai no relatório de órfãos: é a única pergunta que este
+    # script responde sobre o corpus inteiro, e sair com erro deixava o caso
+    # `python find_backlinks.py` sem utilidade nenhuma.
     if not args.title and not args.orphans:
-        parser.error("informe um título ou use --orphans")
+        args.orphans = True
 
     if args.orphans:
         found = orphans(args.scope)
