@@ -20,7 +20,7 @@ Ela não decide sozinha quando um assunto "acabou de ser estudado" e virou conte
 
 ## O ciclo
 
-1. **Ancore o ponto de partida.** O que o Usuário já sabe ou já pensa sobre isso? Pergunte antes de despejar informação — estudar em cima do que já existe na cabeça da pessoa rende mais do que uma exposição do zero. Se o tema já toca algo na wiki, `python scripts/search.py "tema" --ignore-case` acha os trechos relevantes sem precisar ler `wiki/index.md`/`wiki/concepts/`/`wiki/entities/` inteiros para checar; mencione o que aparecer e pergunte se aquilo é o ponto de partida.
+1. **Ancore o ponto de partida.** O que o Usuário já sabe ou já pensa sobre isso? Pergunte antes de despejar informação — estudar em cima do que já existe na cabeça da pessoa rende mais do que uma exposição do zero. Se o tema já toca algo na wiki, `qmd query "tema"` (busca semântica, ver `## Ferramentas` no AGENTS.md) ou, sem qmd disponível/indexado, `python scripts/search.py "tema" --ignore-case` acham os trechos relevantes sem precisar ler `wiki/index.md`/`wiki/concepts/`/`wiki/entities/` inteiros para checar; mencione o que aparecer e pergunte se aquilo é o ponto de partida.
 
 2. **Busque material e resuma com link — nunca devolva só uma lista de fontes.** Uma lista de títulos e links (o que `/scout` já produz sozinho) não é o produto de uma sessão de estudo — o valor de `/study` está em já ter lido. Para cada fonte que entrar na conversa:
    - `WebFetch` o conteúdo de verdade, não só o snippet de busca.

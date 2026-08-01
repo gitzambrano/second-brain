@@ -17,7 +17,7 @@ Incorpora o conteúdo de uma fonte já processada às páginas existentes da wik
 
 ## Passo a passo
 
-1. Confirme com o Usuário quais essays/conceitos/entidades a fonte deve enriquecer. Se ele não especificar, releia o resumo (`wiki/sources/resumos/<slug>.md`, se houver) ou a fonte original e proponha candidatos antes de editar.
+1. Confirme com o Usuário quais essays/conceitos/entidades a fonte deve enriquecer. Se ele não especificar, releia o resumo (`wiki/sources/resumos/<slug>.md`, se houver) ou a fonte original e proponha candidatos antes de editar — `qmd query` com os termos centrais da fonte acha candidatos mais rápido do que reler a wiki inteira (ver `## Ferramentas` no AGENTS.md).
 2. Leia a fonte: o original em `wiki/sources/<subpasta>/` se precisar do texto completo, ou o resumo em `wiki/sources/resumos/` se já for suficiente.
 3. Atualize as páginas relevantes com o conteúdo novo — seja profundo, não superficial. Uma frase genérica não cumpre o propósito de absorver a fonte. Se isso acrescentar uma entrada em `## Referências` de algum essay, confira `wiki/references.md` primeiro: se a fonte já está catalogada, reuse a citação exata em vez de redigir uma nova.
 4. Ajuste `[[wikilinks]]` em `## Conexões` das páginas tocadas, nos dois sentidos quando fizer sentido.

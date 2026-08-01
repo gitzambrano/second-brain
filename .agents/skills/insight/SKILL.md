@@ -51,7 +51,7 @@ Não pule estados retroativamente sem justificativa (um insight não vira `madur
 Registre primeiro, converse depois — o Usuário pode só querer soltar a ideia e seguir em frente, sem interagir.
 
 1. Capture a ideia como o Usuário a trouxe e **grave imediatamente**, sem inflar artificialmente e sem exigir uma rodada de conversa antes de salvar. Um insight de 3 linhas é normal e não é um problema a corrigir.
-2. Busque na wiki (`python scripts/search.py "termo" --ignore-case`, cobre `wiki/index.md`-relevant essays, `concepts/`, `entities/`, e outros insights em `wiki/insights/` de uma vez) por algo relacionado — se a ideia já ecoa um essay ou concept existente, linke desde o início em `## Conexões`. Isso não deve atrasar o registro: é uma busca rápida, não uma pesquisa aprofundada.
+2. Busque na wiki por algo relacionado — prefira `qmd query "termo"` (busca semântica, ver `## Ferramentas` no AGENTS.md); sem qmd disponível/indexado, `python scripts/search.py "termo" --ignore-case` (cobre essays, `concepts/`, `entities/`, e outros insights em `wiki/insights/` de uma vez). Se a ideia já ecoa um essay ou concept existente, linke desde o início em `## Conexões`. Isso não deve atrasar o registro: é uma busca rápida, não uma pesquisa aprofundada.
 3. Título curto — antes de decidir o nome do arquivo, rode `python scripts/resolve_title.py "Título Da Ideia"` para não nascer um quase-duplicado de algo que já existe com outra grafia.
 4. `tags:` reusa o mesmo vocabulário controlado dos essays. Cheque `tags_in_use` em `wiki/index.json` (gerado por `python scripts/build_index.py`; rode-o primeiro se estiver desatualizado) e só crie tag nova se nenhuma existente cobrir o tema.
 

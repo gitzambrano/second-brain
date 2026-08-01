@@ -55,6 +55,7 @@ scripts/                     lint, stats, grafo de conexões, export (PDF/HTML),
   linkify_check.py           valida ## Referências no padrão AIAA (usado por /linkify)
   dedupe_check.py            candidatos a quase-duplicata: títulos, tags, referências
   resolve_title.py           checagem exata/fuzzy de títulos
+  update_qmd.bat             reindexa a wiki no qmd (collection "secondbrain") — dois cliques, ou rode no terminal
   backlinks.py               lookup reverso de [[wikilinks]] e detecção de órfãos 
   export_essay.py            export para PDF via Pandoc + LuaLaTeX (usado por /pdf)
   export_essay_html.py       export para HTML standalone via Pandoc (usado por /html)
@@ -190,6 +191,7 @@ Toda fonte processada também gera uma entrada em `wiki/sources/manifest.md` (pr
 
 - Python 3 com `pyyaml`, para os scripts em `scripts/`.
 - Pandoc + **LuaLaTeX** (não XeLaTeX — o `dvipdfmx` do MiKTeX não gera anotações de link) para exportação em PDF.
+- `qmd` (opcional, mas recomendado) para busca semântica sobre a wiki — ver `## Ferramentas` em `AGENTS.md`. Sem ele, tudo continua funcionando via `scripts/search.py` (sem dependência externa). `scripts/update_qmd.bat` reindexa com um clique.
 
 ## Notas
 

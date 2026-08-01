@@ -18,13 +18,21 @@ Responde perguntas buscando e sintetizando conhecimento da wiki. **Essays são a
 
 Leia `wiki/index.json` (ou `wiki/index.md` para navegação humana) — contém **apenas essays**, com `summary` e `tags` por entrada, sem agrupamento por categoria (a classificação temática vem só de `tags`). Identifique os essays mais relevantes para a pergunta.
 
-### 2. Use search.py para buscar no conteúdo, não só nos títulos do index
+### 2. Busque no conteúdo, não só nos títulos do index
+
+Prefira busca semântica — acha o essay certo mesmo quando a pergunta usa vocabulário diferente do texto (ver `## Ferramentas` no AGENTS.md):
+
+```bash
+qmd query "termos da busca"
+```
+
+Sem qmd disponível ou indexado (`qmd status` falha, ou a collection `secondbrain` não aparece), caia para busca literal, sem perguntar:
 
 ```bash
 python scripts/search.py "termos da busca" --ignore-case
 ```
 
-Devolve só os trechos relevantes (com contexto) de cada arquivo, em vez de forçar `Read` no essay inteiro para descobrir se ele é relevante — mais barato em tokens quanto maior a wiki. Ajuste `--scope` se a pergunta também exigir olhar `sources` (fontes originais) ou `handouts`, e `--regex` para termos com variação de grafia (ex: `"auto.?poiese"`).
+Devolve só os trechos relevantes (com contexto) de cada arquivo, em vez de forçar `Read` no essay inteiro para descobrir se ele é relevante. Ajuste `--scope` se a pergunta também exigir olhar `handouts`, e `--regex` para termos com variação de grafia (ex: `"auto.?poiese"`).
 
 ### 3. Leia os essays relevantes e aprofunde via Conexões
 
@@ -32,7 +40,7 @@ Leia os essays identificados. Siga os `[[wikilinks]]` da seção `## Conexões` 
 
 ### 4. Consulte o acervo original só como último recurso
 
-`wiki/sources/` guarda os **arquivos originais** (PDFs, DOCX, HTML) que geraram os essays — não são páginas de resumo. Se os essays não cobrirem algo que você sabe que está na fonte, `python scripts/search.py "termo" --scope sources` localiza o arquivo certo sem abrir cada um (pode ainda exigir extração de PDF/DOCX depois de achar). Prefira sempre responder a partir do essay já processado — ele já vem sintetizado, traduzido e cruzado.
+`wiki/sources/` guarda os **arquivos originais** (PDFs, DOCX, HTML) que geraram os essays — não são páginas de resumo, e a maioria não é markdown, então `qmd` (que só indexa `wiki/**/*.md`) não os cobre. Se os essays não cobrirem algo que você sabe que está na fonte, `python scripts/search.py "termo" --scope sources` localiza o arquivo certo sem abrir cada um (pode ainda exigir extração de PDF/DOCX depois de achar). Prefira sempre responder a partir do essay já processado — ele já vem sintetizado, traduzido e cruzado.
 
 ## Sintetizar a resposta
 

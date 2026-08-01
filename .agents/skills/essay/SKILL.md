@@ -31,7 +31,7 @@ O essay resultante deve ser **extenso, profundo e criativo**, não um resumo nem
 
 ## 1. Pesquisar o terreno antes de escrever
 
-1. **Busque na wiki existente** (`python scripts/search.py "tema" --ignore-case`, cobre `wiki/index.md`-relevant essays, `wiki/concepts/`, `wiki/entities/` de uma vez) por temas relacionados. Um essay novo deve **linkar e construir sobre** essays/conceitos anteriores do Usuário quando fizer sentido — o esboço aprovado já deve ter listado candidatos em `## Conexões candidatas`, confirme e complete.
+1. **Busque na wiki existente** por temas relacionados — prefira `qmd query "tema"` (busca semântica, ver `## Ferramentas` no AGENTS.md); sem qmd disponível/indexado, use `python scripts/search.py "tema" --ignore-case` (cobre essays, `wiki/concepts/`, `wiki/entities/` de uma vez). Um essay novo deve **linkar e construir sobre** essays/conceitos anteriores do Usuário quando fizer sentido — o esboço aprovado já deve ter listado candidatos em `## Conexões candidatas`, confirme e complete.
 2. Use `WebSearch`/`WebFetch` para embasamento externo, agora capítulo a capítulo, com a profundidade que `/outline` deliberadamente não fez: dados, citações, referências acadêmicas, e — se o domínio for filosófico — as correntes e pensadores relevantes ao argumento. Parafraseie sempre, nunca reproduza trechos longos de fontes de terceiros.
 
 ## 2. Redigir com profundidade real
