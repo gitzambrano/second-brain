@@ -209,6 +209,14 @@ def check_references(threshold):
     ):
         if a[0] == b[0]:
             continue  # mesmo essay é DUPLICATE_REFERENCIA, do check_references.py
+        if a[1].strip() == b[1].strip():
+            # Mesma citação, caractere a caractere, em essays diferentes: é a
+            # mesma obra corretamente reutilizada (ver conventions/SKILL.md,
+            # "procure a mesma fonte em wiki/references.md antes de redigir
+            # uma nova"), não grafia divergente. build_references.py já funde
+            # isso numa entrada só via normalize_citation; reportar aqui de
+            # novo é ruído sem decisão nenhuma para o Usuário tomar.
+            continue
         findings.append(
             {
                 "kind": "citacao-parecida",

@@ -110,9 +110,21 @@ def strip_fences(text: str) -> str:
     return "\n".join(out)
 
 
+MD_LINK_IN_HEADING_RE = re.compile(r"\[([^\]]*)\]\([^\)]*\)")
+
+
 def heading_anchor(heading_text: str) -> str:
-    """Convert heading text to Obsidian/GitHub markdown anchor."""
-    s = heading_text.lower()
+    """Convert heading text to Obsidian/GitHub markdown anchor.
+
+    GitHub/Obsidian geram o anchor a partir do texto RENDERIZADO do heading,
+    não da sintaxe Markdown crua — um heading como `## 2. Definição
+    ([Termo](url))` vira o link clicável "Termo" na página, e o anchor sai de
+    "2-definição-termo", nunca com a URL colada no fim. Sem este passo, todo
+    heading com link embutido produz um anchor que nunca bate com nada
+    (SUMARIO_BROKEN_ANCHOR falso-positivo em ~10 essays do corpus).
+    """
+    s = MD_LINK_IN_HEADING_RE.sub(r"\1", heading_text)
+    s = s.lower()
     s = re.sub(r"[^\w\s-]", "", s)
     s = re.sub(r"\s+", "-", s.strip())
     return s
@@ -552,6 +564,13 @@ def check_essay(filepath: Path) -> dict:
     body_no_code = re.sub(r"```.*?```", "", body_no_refs, flags=re.DOTALL)
     body_no_urls = re.sub(r"\[([^\]]*)\]\([^\)]*\)", r"\1", body_no_code)
     for para in body_no_urls.split("\n\n"):
+        # Epígrafe em blockquote (`> "quote" — Autor`) é citação direta no
+        # idioma original — prática acadêmica padrão, não parágrafo esquecido
+        # de traduzir. Mesma exceção que `## Referências` já tem (título de
+        # obra estrangeira fica no original), aplicada a bloco de citação.
+        quote_lines = [l for l in para.splitlines() if l.strip()]
+        if quote_lines and all(l.strip().startswith(">") for l in quote_lines):
+            continue
         words = re.findall(r"[A-Za-zÀ-ÿ']+", para.lower())
         if len(words) < 12:
             continue
@@ -565,8 +584,13 @@ def check_essay(filepath: Path) -> dict:
     # -----------------------------------------------------------------------
     # 17. Loose chapter labels (ex: "01 — Introdução" como linha solta)
     # -----------------------------------------------------------------------
+    # Separador tem que ser traço (-, –, —), nunca ponto: "1. Texto" é item de
+    # lista ordenada Markdown padrão (## Estilo de prosa permite lista quando
+    # a numeração é passo-a-passo de um argumento), não o resíduo de import de
+    # PDF que esta regra tenta pegar. Incluir "." aqui gerava aviso em toda
+    # lista numerada do corpus — ruído puro, sem nenhum caso real capturado.
     for i, line in enumerate(lines_clean):
-        if re.match(r"^\d+\s*[-—.]\s*\w+", line.strip()):
+        if re.match(r"^\d+\s*[-–—]\s*\S", line.strip()):
             add("WARNING", "LOOSE_CHAPTER_LABEL",
                 f"Possível label de capítulo solto (linha {i+1}): '{line.strip()}'")
 

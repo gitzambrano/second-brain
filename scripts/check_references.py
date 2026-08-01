@@ -113,8 +113,18 @@ MD_LINK_RE = re.compile(r"\[(?P<text>[^\]]*)\]\((?P<url>https?://(?:[^()\s]|\([^
 # esta regex entra dentro de `**negrito**` — casa o segundo `*` da abertura com
 # o primeiro `*` do fechamento — e aí qualquer reescrita corrompe o texto.
 ITALIC_RE = re.compile(r"(?<!\*)\*([^*\n]+)\*(?!\*)")
+# Itálico Markdown com _underscore_ em vez de *asterisco* — variante válida do
+# Markdown, mas fora do padrão AIAA da wiki (## Formato de "## Referências").
+# Lookaround em `\w` (não em `_`) para não casar dentro de identificador tipo
+# `nome_var` ou `x_1`: ali o caractere antes/depois do underscore é letra/dígito,
+# então o boundary falha e a regex não entra.
+UNDERSCORE_ITALIC_RE = re.compile(r"(?<!\w)_([^_\n]+)_(?!\w)")
 INLINE_CITATION_RE = re.compile(r"\[(\d+)\]")
 QUOTE_CHARS = "\"'“”‘’"
+# Título entre aspas retas ou tipográficas *duplas* — nunca aspas simples: uma
+# aspa simples span captura contrações/genitivos ("d'Alembert's") como se
+# fossem um título inteiro, risco que dobrar em "duplas apenas" evita.
+DOUBLE_QUOTE_SPAN_RE = re.compile(r'["\u201c]([^"\u201d\n]+)["\u201d]')
 
 
 def load(path):
@@ -211,6 +221,38 @@ def is_citation_like(url):
 def has_italic_title(citation):
     """Todo título vai em itálico, sem exceção por tipo de fonte."""
     return any(m.group(1).strip() for m in ITALIC_RE.finditer(citation))
+
+
+def has_underscore_title(citation):
+    """Título marcado com `_underscore_` — itálico Markdown válido, mas fora
+    do padrão AIAA da wiki (asterisco). Mecanicamente corrigível."""
+    return any(m.group(1).strip() for m in UNDERSCORE_ITALIC_RE.finditer(citation))
+
+
+def convert_underscore_italics(text):
+    """`_Título_` -> `*Título*`. Não mexe em `nome_var`/`x_1` (ver UNDERSCORE_ITALIC_RE)."""
+    return UNDERSCORE_ITALIC_RE.sub(lambda m: f"*{m.group(1)}*", text)
+
+
+def try_fix_quoted_title(citacao):
+    """Converte um título entre aspas duplas para itálico — só quando é
+    inequívoco: nenhum itálico (`*` ou `_`) já presente na citação, e
+    EXATAMENTE um par de aspas duplas nela. Duas ou mais aspas na mesma
+    citação podem ser nota/citação direta embutida, não o título — nesse
+    caso retorna None e a entrada continua sinalizada para revisão manual.
+    Nunca aplicado à nota (só recebe `citacao`, já separada de `nota` por
+    `citation_and_note`), então uma aspa dentro da nota nunca é tocada aqui.
+    """
+    if has_italic_title(citacao) or has_underscore_title(citacao):
+        return None
+    spans = list(DOUBLE_QUOTE_SPAN_RE.finditer(citacao))
+    if len(spans) != 1:
+        return None
+    inner = spans[0].group(1).strip()
+    if not inner:
+        return None
+    m = spans[0]
+    return citacao[: m.start()] + f"*{inner}*" + citacao[m.end() :]
 
 
 BOLD_NUMBERED_RE = re.compile(r"^\*\*\[(\d+)\]\*\*\s+(.+)$")
@@ -346,14 +388,39 @@ def check_essay(path):
         ]
 
         if not has_italic_title(entry["rest"]):
-            issues.append(
-                {
-                    "code": "REFERENCIA_FORMATO_INVALIDO",
-                    "severity": "ERROR",
-                    "fixable": False,
-                    "message": f"entrada [{entry['number']}] sem título em itálico: {label}",
-                }
-            )
+            if has_underscore_title(entry["rest"]):
+                issues.append(
+                    {
+                        "code": "REFERENCIA_FORMATO_INVALIDO",
+                        "severity": "ERROR",
+                        "fixable": True,
+                        "message": (
+                            f"entrada [{entry['number']}] usa itálico com _underscore_ em vez de "
+                            f"*asterisco*: {label}  (corrigível com --fix-format)"
+                        ),
+                    }
+                )
+            elif try_fix_quoted_title(citacao_sem_nota) is not None:
+                issues.append(
+                    {
+                        "code": "REFERENCIA_FORMATO_INVALIDO",
+                        "severity": "ERROR",
+                        "fixable": True,
+                        "message": (
+                            f"entrada [{entry['number']}] tem título entre aspas em vez de "
+                            f"itálico: {label}  (corrigível com --fix-format)"
+                        ),
+                    }
+                )
+            else:
+                issues.append(
+                    {
+                        "code": "REFERENCIA_FORMATO_INVALIDO",
+                        "severity": "ERROR",
+                        "fixable": False,
+                        "message": f"entrada [{entry['number']}] sem título em itálico: {label}",
+                    }
+                )
         elif links_na_citacao:
             issues.append(
                 {
@@ -507,6 +574,14 @@ def montar_entrada(numero, resto_da_linha):
     resto_da_linha = TAIL_LINK_RE.sub("", resto_da_linha).rstrip()
 
     citacao, nota = citation_and_note(resto_da_linha)
+    # Ordem importa: aspas -> itálico antes de underscore -> asterisco, porque
+    # try_fix_quoted_title recusa mexer se já houver _underscore_ (evita duplo
+    # match improvável tipo `_"X"_`); e ambos rodam ANTES de normalize_italics,
+    # que só entende `*...*`. Nunca toca em `nota` — só a citação em si.
+    citacao_com_titulo = try_fix_quoted_title(citacao)
+    if citacao_com_titulo is not None:
+        citacao = citacao_com_titulo
+    citacao = convert_underscore_italics(citacao)
     citacao, url = mover_link_para_o_fim(normalize_italics(citacao))
     url = url_da_cauda or url
 

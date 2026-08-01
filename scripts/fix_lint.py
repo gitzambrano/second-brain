@@ -15,7 +15,8 @@ Correções aplicadas:
      (Obsidian quebra com ':' dentro de [[...]]).
   3. Espaços duplos no meio de linhas de prosa → espaço simples
      (exceto início de linha e linhas de tabela).
-  4. Três ou mais linhas em branco consecutivas → duas linhas em branco
+  4. `&amp;` residual (de import HTML/PDF) → `&`.
+  5. Três ou mais linhas em branco consecutivas → duas linhas em branco
      (convenção wiki: máximo uma linha em branco entre parágrafos).
 """
 
@@ -147,11 +148,18 @@ def fix_excess_blank_lines(text):
     return re.sub(r"\n{4,}", "\n\n\n", text)
 
 
+def fix_ampersand_entity(segment):
+    """`&amp;` residual (de import HTML/PDF) -> `&`. Nunca mexe em `&` que já
+    está sozinho, só no entity codificado por engano."""
+    return segment.replace("&amp;", "&")
+
+
 def fix_content(content):
     frontmatter, body = split_frontmatter(content)
     body = apply_outside_fences(body, fix_heading_spacing)
     body = apply_outside_fences(body, fix_wikilinks_colons)
     body = apply_outside_fences(body, fix_double_spaces)
+    body = apply_outside_fences(body, fix_ampersand_entity)
     body = fix_excess_blank_lines(body)
     return frontmatter + body
 
