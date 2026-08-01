@@ -165,4 +165,4 @@ Após aplicar as modificações:
 - `/expand` — aplicar uma adição específica decidida após o review
 - `/scout` — buscar fontes candidatas sugeridas no relatório
 - `/proofread`, `/polish` — revisão de língua e estilo após o review de conteúdo
-- `/sweep` — sequência completa de revisões (inclui `/format`, continuity, proofread, polish, linkify)
+- `/sweep` — sequência completa de revisões (inclui `/organize`, continuity, proofread, polish, linkify)

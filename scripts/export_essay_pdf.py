@@ -489,7 +489,12 @@ def export_essay(filepath, output_dir=None, source_dir=None):
         '-V', 'linkcolor=blue',
         '-V', 'citecolor=blue',
         f'--resource-path={filepath.parent}',
-        '-f', 'markdown+smart+tex_math_dollars+pipe_tables+strikeout+superscript+subscript+implicit_figures+hard_line_breaks',
+        # +gfm_auto_identifiers: o Sumário dos essays é escrito na convenção do
+        # GitHub/Obsidian, que preserva o número do capítulo no anchor
+        # (`## 1. Visão Geral` -> `#1-visão-geral`). A regra nativa do Pandoc
+        # descarta tudo antes da primeira letra e geraria `#visão-geral`,
+        # quebrando silenciosamente todos os links internos no export.
+        '-f', 'markdown+smart+tex_math_dollars+pipe_tables+strikeout+superscript+subscript+implicit_figures+hard_line_breaks+gfm_auto_identifiers',
     ]
     
     print(f"  Exporting: {filepath.name} -> {pdf_path.name}")

@@ -1,0 +1,228 @@
+=== ESSAY LINT ===
+
+────────────────────────────────────────────────────────────
+📄 autopoiese-consciencia-limites-do-vivo.md
+   ⚠️  [ASCII_QUOTES] 30 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [TOO_MANY_EM_DASHES] 133 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ⚠️  [BULLETS_IN_BODY] 12 linha(s) com bullet fora de Sumário/Referências — use prosa argumentativa: linhas [177, 178, 197, 198, 199]...
+
+────────────────────────────────────────────────────────────
+📄 campeoes-por-acaso.md
+   ⚠️  [ASCII_QUOTES] 10 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [TOO_MANY_EM_DASHES] 34 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ⚠️  [BULLETS_IN_BODY] 3 linha(s) com bullet fora de Sumário/Referências — use prosa argumentativa: linhas [94, 95, 96]
+   ℹ️  [ASCII_APOSTROPHES] 6 apóstrofos/aspas simples ASCII (') na prosa — ok se for contrações, verifique se intencional
+
+────────────────────────────────────────────────────────────
+📄 cerebros-de-boltzmann.md
+   ⚠️  [ASCII_QUOTES] 36 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [TOO_MANY_EM_DASHES] 101 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ⚠️  [BULLETS_IN_BODY] 15 linha(s) com bullet fora de Sumário/Referências — use prosa argumentativa: linhas [79, 80, 81, 126, 127]...
+
+────────────────────────────────────────────────────────────
+📄 chatgpts-e-zumbis-filosoficos.md
+   ⚠️  [ASCII_QUOTES] 108 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [TOO_MANY_EM_DASHES] 117 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ⚠️  [BULLETS_IN_BODY] 29 linha(s) com bullet fora de Sumário/Referências — use prosa argumentativa: linhas [79, 80, 81, 99, 100]...
+
+────────────────────────────────────────────────────────────
+📄 conceito-de-vida.md
+   ⚠️  [ASCII_QUOTES] 48 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [TOO_MANY_EM_DASHES] 65 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ⚠️  [BULLETS_IN_BODY] 4 linha(s) com bullet fora de Sumário/Referências — use prosa argumentativa: linhas [113, 114, 115, 116]
+
+────────────────────────────────────────────────────────────
+📄 definicoes-de-vida.md
+   ⚠️  [ASCII_QUOTES] 40 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [TOO_MANY_EM_DASHES] 79 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ⚠️  [BULLETS_IN_BODY] 17 linha(s) com bullet fora de Sumário/Referências — use prosa argumentativa: linhas [38, 39, 40, 41, 42]...
+
+────────────────────────────────────────────────────────────
+📄 dinamica-acoplada-corpos-girantes.md
+   ⚠️  [FEW_EXT_LINKS] Apenas 4 link(s) externos (mínimo recomendado: 10)
+   ⚠️  [ASCII_QUOTES] 4 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [DOUBLE_SPACES] Espaços duplos em 20 linha(s): [260, 262, 263, 264, 266]...
+   ⚠️  [TOO_MANY_EM_DASHES] 8 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ⚠️  [BULLETS_IN_BODY] 32 linha(s) com bullet fora de Sumário/Referências — use prosa argumentativa: linhas [27, 28, 29, 30, 90]...
+
+────────────────────────────────────────────────────────────
+📄 dinamica-de-voo-rotor-teetering.md
+   ⚠️  [FEW_EXT_LINKS] Apenas 6 link(s) externos (mínimo recomendado: 10)
+   ⚠️  [ASCII_QUOTES] 6 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [TOO_MANY_EM_DASHES] 30 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ⚠️  [BULLETS_IN_BODY] 7 linha(s) com bullet fora de Sumário/Referências — use prosa argumentativa: linhas [72, 74, 76, 78, 261]...
+
+────────────────────────────────────────────────────────────
+📄 dutch-roll-white-paper.md
+   ⚠️  [ASCII_QUOTES] 4 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [TOO_MANY_EM_DASHES] 25 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ⚠️  [BULLETS_IN_BODY] 2 linha(s) com bullet fora de Sumário/Referências — use prosa argumentativa: linhas [72, 73]
+
+────────────────────────────────────────────────────────────
+📄 engenharia-helicopteros-asas-rotativas.md
+   ⚠️  [ASCII_QUOTES] 22 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [TOO_MANY_EM_DASHES] 109 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ⚠️  [BULLETS_IN_BODY] 7 linha(s) com bullet fora de Sumário/Referências — use prosa argumentativa: linhas [75, 76, 77, 147, 148]...
+
+────────────────────────────────────────────────────────────
+📄 ensaio-sobre-diversidade-o-modelo-de-empresa-que-a-sociedade-merece.md
+   ⚠️  [ASCII_QUOTES] 71 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [TOO_MANY_EM_DASHES] 39 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ℹ️  [ASCII_APOSTROPHES] 9 apóstrofos/aspas simples ASCII (') na prosa — ok se for contrações, verifique se intencional
+
+────────────────────────────────────────────────────────────
+📄 ensaio-sobre-o-amor.md
+   ⚠️  [ASCII_QUOTES] 14 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [TOO_MANY_EM_DASHES] 48 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ℹ️  [ASCII_APOSTROPHES] 14 apóstrofos/aspas simples ASCII (') na prosa — ok se for contrações, verifique se intencional
+
+────────────────────────────────────────────────────────────
+📄 epistemologia-e-limites-do-conhecimento.md
+   ⚠️  [ASCII_QUOTES] 58 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [TOO_MANY_EM_DASHES] 117 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ⚠️  [BULLETS_IN_BODY] 13 linha(s) com bullet fora de Sumário/Referências — use prosa argumentativa: linhas [57, 58, 59, 76, 77]...
+
+────────────────────────────────────────────────────────────
+📄 estabilidade-controle-aeronaves.md
+   ⚠️  [ASCII_QUOTES] 20 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [TOO_MANY_EM_DASHES] 99 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ⚠️  [BULLETS_IN_BODY] 23 linha(s) com bullet fora de Sumário/Referências — use prosa argumentativa: linhas [48, 49, 97, 98, 99]...
+
+────────────────────────────────────────────────────────────
+📄 etica-moralidade-automacao-engenharia-aeronautica.md
+   ⚠️  [REF_EMBEDDED_AUTHOR_IN_TITLE] 1 entrada(s) parecem ter autor/ano ou subtítulo inventado colado dentro do itálico do título (padrão '*Título — Nome (Ano)*') — confirme o título real da página/obra (WebFetch) e mova autor/ano para fora do itálico: ['[57] *SC-242 — Aircraft Systems Safety Assessment*, RTCA. [L']
+   ⚠️  [ASCII_QUOTES] 86 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [TOO_MANY_EM_DASHES] 292 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ⚠️  [BULLETS_IN_BODY] 5 linha(s) com bullet fora de Sumário/Referências — use prosa argumentativa: linhas [144, 145, 146, 190, 191]
+
+────────────────────────────────────────────────────────────
+📄 forma-do-universo.md
+   ⚠️  [ASCII_QUOTES] 202 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [TOO_MANY_EM_DASHES] 318 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ℹ️  [ASCII_APOSTROPHES] 11 apóstrofos/aspas simples ASCII (') na prosa — ok se for contrações, verifique se intencional
+
+────────────────────────────────────────────────────────────
+📄 godel-turing-limites-da-computacao.md
+   ⚠️  [ASCII_QUOTES] 42 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [DOUBLE_SPACES] Espaços duplos em 6 linha(s): [80, 81, 123, 124, 136]...
+   ⚠️  [TOO_MANY_EM_DASHES] 116 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ⚠️  [BULLETS_IN_BODY] 22 linha(s) com bullet fora de Sumário/Referências — use prosa argumentativa: linhas [64, 65, 85, 86, 87]...
+
+────────────────────────────────────────────────────────────
+📄 ground-effect-asa-fixa-vs-rotativa.md
+   ⚠️  [TOO_MANY_EM_DASHES] 27 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ⚠️  [BULLETS_IN_BODY] 2 linha(s) com bullet fora de Sumário/Referências — use prosa argumentativa: linhas [30, 31]
+
+────────────────────────────────────────────────────────────
+📄 ia-gestao-projetos-brainstorm-v2.md
+   ⚠️  [ASCII_QUOTES] 140 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [TOO_MANY_EM_DASHES] 93 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ⚠️  [BULLETS_IN_BODY] 71 linha(s) com bullet fora de Sumário/Referências — use prosa argumentativa: linhas [49, 50, 51, 52, 53]...
+   ℹ️  [ASCII_APOSTROPHES] 12 apóstrofos/aspas simples ASCII (') na prosa — ok se for contrações, verifique se intencional
+
+────────────────────────────────────────────────────────────
+📄 livre-arbitrio-e-compatibilismo.md
+   ⚠️  [TOO_MANY_EM_DASHES] 64 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+
+────────────────────────────────────────────────────────────
+📄 mente-aumentada.md
+   ⚠️  [ASCII_QUOTES] 40 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [TOO_MANY_EM_DASHES] 228 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ⚠️  [BULLETS_IN_BODY] 36 linha(s) com bullet fora de Sumário/Referências — use prosa argumentativa: linhas [116, 117, 118, 119, 120]...
+
+────────────────────────────────────────────────────────────
+📄 metodos-matematicos-engenharia-aeroespacial.md
+   ⚠️  [ASCII_QUOTES] 18 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [TOO_MANY_EM_DASHES] 21 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ℹ️  [ASCII_APOSTROPHES] 19 apóstrofos/aspas simples ASCII (') na prosa — ok se for contrações, verifique se intencional
+
+────────────────────────────────────────────────────────────
+📄 modelagem-estatistica-copa-2026.md
+   ⚠️  [ASCII_QUOTES] 8 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [TOO_MANY_EM_DASHES] 59 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ⚠️  [BULLETS_IN_BODY] 12 linha(s) com bullet fora de Sumário/Referências — use prosa argumentativa: linhas [42, 43, 44, 45, 46]...
+
+────────────────────────────────────────────────────────────
+📄 modelagem-teorica-efeito-solo-multirotores.md
+   ⚠️  [TOO_MANY_EM_DASHES] 80 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ⚠️  [BULLETS_IN_BODY] 6 linha(s) com bullet fora de Sumário/Referências — use prosa argumentativa: linhas [58, 59, 350, 351, 352]...
+
+────────────────────────────────────────────────────────────
+📄 ontologia-e-metafisica.md
+   ⚠️  [ASCII_QUOTES] 82 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [TOO_MANY_EM_DASHES] 157 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ⚠️  [BULLETS_IN_BODY] 3 linha(s) com bullet fora de Sumário/Referências — use prosa argumentativa: linhas [67, 68, 69]
+
+────────────────────────────────────────────────────────────
+📄 paradoxo-de-fermi.md
+   ⚠️  [ASCII_QUOTES] 86 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [TOO_MANY_EM_DASHES] 51 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ℹ️  [ASCII_APOSTROPHES] 7 apóstrofos/aspas simples ASCII (') na prosa — ok se for contrações, verifique se intencional
+
+────────────────────────────────────────────────────────────
+📄 podem-as-maquinas-pensar.md
+   ⚠️  [ASCII_QUOTES] 234 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [TOO_MANY_EM_DASHES] 470 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+
+────────────────────────────────────────────────────────────
+📄 principio-antropico-v7.md
+   ⚠️  [ASCII_QUOTES] 190 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [TOO_MANY_EM_DASHES] 326 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ⚠️  [ENGLISH_PARAGRAPH] Parágrafo possivelmente em inglês: "Nick Bostrom, *Anthropic Bias: Observation Selection Effects in Science and Philosophy*, Routledge, ..."
+
+────────────────────────────────────────────────────────────
+📄 psicometria-o-que-os-testes-realmente-medem.md
+   ⚠️  [ASCII_QUOTES] 54 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [TOO_MANY_EM_DASHES] 138 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ⚠️  [BULLETS_IN_BODY] 6 linha(s) com bullet fora de Sumário/Referências — use prosa argumentativa: linhas [58, 59, 60, 354, 355]...
+
+────────────────────────────────────────────────────────────
+📄 quem-e-voce.md
+   ⚠️  [ASCII_QUOTES] 164 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [TOO_MANY_EM_DASHES] 351 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+
+────────────────────────────────────────────────────────────
+📄 rotores-e-giroscopios.md
+   ⚠️  [TOO_MANY_EM_DASHES] 28 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ⚠️  [BULLETS_IN_BODY] 7 linha(s) com bullet fora de Sumário/Referências — use prosa argumentativa: linhas [86, 87, 169, 170, 171]...
+   ℹ️  [ASCII_APOSTROPHES] 9 apóstrofos/aspas simples ASCII (') na prosa — ok se for contrações, verifique se intencional
+
+────────────────────────────────────────────────────────────
+📄 simular-e-instanciar-sobre-as-leis-da-natureza.md
+   ⚠️  [ASCII_QUOTES] 184 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [TOO_MANY_EM_DASHES] 481 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+
+────────────────────────────────────────────────────────────
+📄 teorema-biplano-munk-rotores-tandem.md
+   ⚠️  [TOO_MANY_EM_DASHES] 19 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ⚠️  [BULLETS_IN_BODY] 8 linha(s) com bullet fora de Sumário/Referências — use prosa argumentativa: linhas [41, 42, 43, 65, 66]...
+
+────────────────────────────────────────────────────────────
+📄 validacao-estocastica-dinamica-de-voo.md
+   ⚠️  [ASCII_QUOTES] 98 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [DOUBLE_SPACES] Espaços duplos em 13 linha(s): [21, 22, 23, 25, 26]...
+   ⚠️  [TOO_MANY_EM_DASHES] 162 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ⚠️  [BULLETS_IN_BODY] 17 linha(s) com bullet fora de Sumário/Referências — use prosa argumentativa: linhas [45, 46, 47, 131, 132]...
+   ⚠️  [ENGLISH_PARAGRAPH] Parágrafo possivelmente em inglês: ""Even after observing the constant conjunction of objects, we have no reason to draw any inference c..."
+   ⚠️  [ENGLISH_PARAGRAPH] Parágrafo possivelmente em inglês: ""It is easy to obtain confirmations, or verifications, for nearly every theory — if we look for conf..."
+
+────────────────────────────────────────────────────────────
+📄 xadrez-computacional.md
+   ⚠️  [ASCII_QUOTES] 80 aspas duplas ASCII (") na prosa — considere aspas tipográficas (“...”) ou verifique se não quebram LaTeX
+   ⚠️  [DOUBLE_SPACES] Espaços duplos em 3 linha(s): [364, 365, 367]
+   ⚠️  [TOO_MANY_EM_DASHES] 141 travessão(ões) (—) no essay (máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)
+   ⚠️  [BULLETS_IN_BODY] 55 linha(s) com bullet fora de Sumário/Referências — use prosa argumentativa: linhas [60, 61, 104, 105, 106]...
+
+============================================================
+Resultado essays: 0/35 limpo(s), 108 issue(s)
+
+
+--- SUPPORT_PAGES ---
+⚠️  [SUPPORT_ENGLISH_PARAGRAPH] entities/sean-carroll.md: parágrafo possivelmente não traduzido: "Defensor do naturalismo) e da interpretação de muitos mundos. Em *Why Is There Something, Rather Tha..."
+
+============================================================
+Resultado corpus: 1 issue(s)
+
+Relatório completo também salvo em C:\Users\gusta\OneDrive\Documentos\SecondBrain\output\comprehensive_lint_output.txt
+
+Resumo: 0 CRITICAL, 0 ERROR, 101 WARNING, 8 INFO

@@ -50,14 +50,14 @@ Os códigos que ele emite:
 | `REFERENCIA_SEM_LINK`         | WARNING    | entrada sem link                                                   |
 | `REFERENCIA_NAO_USADA`        | WARNING    | entrada `[N]` nunca citada no corpo                                |
 
-`NO_REFERENCIAS` (a seção não existe) é de `check_format.py`, não deste script.
+`NO_REFERENCIAS` (a seção não existe) é de `check_wiki.py`, não deste script.
 
 **Escopo desta seção: só a seção `## Referências`, no fim do arquivo.** Numa passada de bibliografia, os links inline do corpo não se tocam — nem para reescrever, nem para reposicionar, nem para remover. Isso vale inclusive quando um check aponta para o corpo: `LINK_NOT_IN_REFERENCIAS` significa que **falta uma entrada na bibliografia**, nunca que o link do corpo esteja sobrando. Adicionar links novos ao corpo é a seção `## Adicionar links` acima, e só acontece quando o Usuário pede isso explicitamente.
 
-A parte mecânica da migração do formato antigo (bullet `- Autor. *Título.* ...`) sai sozinha:
+A parte mecânica da migração do formato antigo (bullet `- Autor. *Título.* ...`) sai sozinha — é o único fixer mecânico da wiki, `fix_lint.py`, aplicando tudo que for inequívoco sem perguntar:
 
 ```bash
-python scripts/check_references.py --fix-format
+python scripts/fix_lint.py --file <slug>
 ```
 
 Ele renumera para `[N]`, normaliza o itálico do título, repõe a vírgula separadora e **move qualquer link da citação para a palavra `Link` no fim da entrada** — venha ele do título, do periódico ou de um envelope em volta da citação inteira. **Ele não escolhe URL de fonte**: no formato antigo os links de uma entrada costumam ser de glossário, dentro da nota, e não o endereço da própria obra — promovê-los inventaria bibliografia. O que sobrar sai como `REFERENCIA_SEM_LINK`, e aí sim é trabalho seu:
@@ -78,6 +78,15 @@ Não linke a mesma entidade duas vezes no mesmo parágrafo.
 Não transforme isso numa desculpa para reescrever a prosa (isso é `/polish`) — a única mudança de texto aqui é a inserção do markdown do link.
 
 ## Depois
+
+Rode a checagem mecânica do essay tocado — mais barato que acionar `/organize` inteiro para um arquivo só:
+
+```bash
+python scripts/check_wiki.py <slug>
+python scripts/fix_lint.py <slug>
+```
+
+Aplique os achados automáticos e reporte o restante. Reserve `/organize <slug>` para quando o Usuário pedir a auditoria completa daquele essay.
 
 Atualize `updated:` no frontmatter se algum link foi adicionado/corrigido. Log só se for uma passada grande (essay com poucos links recebendo vários):
 ```

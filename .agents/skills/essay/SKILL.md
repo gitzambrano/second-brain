@@ -82,6 +82,14 @@ Todo conceito, pensador, ou entidade central ao argumento que ainda não tem pá
 
 ## 4. Indexar e logar
 
+- Feche com uma checagem de formato do essay recém-criado, sem acionar `/organize` inteiro (caro e desproporcional para um único arquivo):
+
+  ```bash
+  python scripts/check_wiki.py <slug>
+  python scripts/fix_lint.py <slug>
+  ```
+
+  Aplique os achados mecânicos e reporte o restante. Só rode `/organize <slug>` se o Usuário pedir a auditoria completa daquele essay.
 - Preencha `summary:` no frontmatter (resumo de uma linha, até 120 caracteres) e rode `python scripts/build_index.py` para regenerar `wiki/index.json`/`wiki/index.md` — nunca insira a entrada à mão (ver `## Formato do índice` em `conventions/SKILL.md`).
 - Rode `python scripts/build_references.py` para regenerar `wiki/references.json`/`.md` a partir da `## Referências` do essay novo (mesmo padrão de `build_index.py` — artefato gerado, nunca editado à mão).
 - `wiki/log.md`:

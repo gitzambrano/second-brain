@@ -129,8 +129,8 @@ def parse_reference_line(rest_of_line):
         return rest_of_line.strip(), m.group("url").strip(), True
 
 
-    # Formatos anteriores, ainda presentes no corpus até `/linkify --fix-format`
-    # passar: link envolvendo a citação inteira, ou envolvendo só o título.
+    # Formatos anteriores, ainda presentes no corpus até `fix_lint.py` passar:
+    # link envolvendo a citação inteira, ou envolvendo só o título.
     m = LINKED_RE.match(rest_of_line)
     if m:
         citation = m.group("text").strip()

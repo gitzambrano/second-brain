@@ -33,7 +33,7 @@ Se o essay passar limpo, diga isso também — não é preciso inventar problema
 
 ## Depois
 
-Se o Usuário aprovar as correções propostas, aplique-as usando `/expand` (conteúdo) ou `/chapter` (estrutura), conforme o caso — este skill não edita o essay diretamente. Log só se a auditoria motivou mudanças de fato:
+Se o Usuário aprovar as correções propostas, aplique-as usando `/expand` (conteúdo) ou `/chapter` (estrutura), conforme o caso — este skill não edita o essay diretamente (cada um deles já roda `check_wiki.py <slug>`/`fix_lint.py <slug>` no próprio fechamento). Log só se a auditoria motivou mudanças de fato:
 ```
 ## [YYYY-MM-DD] continuity | Título do Essay
 Problemas encontrados e correções aplicadas (ou "nenhum problema encontrado").
@@ -47,4 +47,4 @@ Segue a regra de status (batch vs específico) de `## Status de essay` em `conve
 
 - `/chapter` — para aplicar correções de reordenação apontadas aqui
 - `/expand` — para aplicar pontes/transições de conteúdo apontadas aqui
-- `/sweep` — roda `/continuity` como segundo passo de cada essay (depois da passada mecânica de `/format`, e antes de proofread/polish/linkify)
+- `/sweep` — roda `/continuity` como segundo passo de cada essay (depois da passada mecânica de `/organize`, e antes de proofread/polish/linkify)

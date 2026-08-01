@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """
-fix_lint.py — Aplica correções mecânicas e inequívocas à formatação da wiki.
+fix_lint.py — único fixer mecânico da wiki. Aplica tudo que for inequívoco,
+sem perguntar.
 
 Escopo intencional: apenas wiki/essays, wiki/concepts, wiki/entities,
 wiki/insights — nunca AGENTS.md, README.md, .agents/skills/**, nem
 wiki/sources/** (documentos originais, imutáveis).
 
-Todas as correções são aplicadas apenas FORA do frontmatter YAML e de
-blocos de código (``` ... ```) para não reescrever exemplos de código.
+Todas as correções de texto corrido são aplicadas apenas FORA do frontmatter
+YAML e de blocos de código (``` ... ```) para não reescrever exemplos de
+código.
 
 Correções aplicadas:
   1. Linha em branco após heading Markdown (#, ##, ... ######).
@@ -18,12 +20,42 @@ Correções aplicadas:
   4. `&amp;` residual (de import HTML/PDF) → `&`.
   5. Três ou mais linhas em branco consecutivas → duas linhas em branco
      (convenção wiki: máximo uma linha em branco entre parágrafos).
+  6. `## Referências` no formato antigo (bullet `- Autor. *Título.* ...`) →
+     padrão AIAA `[N] ...` (mecânica migrada de
+     `check_references.py --fix-format`, ver `rebuild_section` importado
+     dali). Só a parte mecânica: renumera para `[N]`, normaliza itálico do
+     título, repõe a vírgula separadora e move link para `[Link]` no fim.
+     Entrada sem link nenhum sai sem link — quem sinaliza isso é
+     `REFERENCIA_SEM_LINK`, tratamento editorial de `/linkify`.
+
+Uso (mesma CLI de check_wiki.py):
+    python fix_lint.py                    # corpus inteiro (default)
+    python fix_lint.py --all              # idem, explícito
+    python fix_lint.py meu-essay          # só este essay (slug posicional)
+    python fix_lint.py --file meu-essay   # alias de compatibilidade
 """
 
+import argparse
 import re
+import sys
 from pathlib import Path
 
 import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
+# Primitivos de parsing de bibliografia continuam em check_references.py, que é
+# somente-leitura: são a base da validação. A REESCRITA vive aqui, porque este é
+# o único script que escreve em arquivo (ver docstring de check_references.py).
+from check_wiki import heading_anchor
+from check_references import (
+    ANY_MD_LINK_RE,
+    ITALIC_RE,
+    TAIL_LINK_RE,
+    UNDERSCORE_ITALIC_RE,
+    citation_and_note,
+    load,
+    parse_entries,
+    URL_PAT,
+    try_fix_quoted_title,
+)
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 WIKI_ROOT = ROOT_DIR / "wiki"
@@ -154,8 +186,92 @@ def fix_ampersand_entity(segment):
     return segment.replace("&amp;", "&")
 
 
+def fix_hr_needs_blank_line(text):
+    """Garante linha em branco depois de uma régua `---`.
+
+    Sem ela, o Pandoc não lê `---` como régua: com `yaml_metadata_block` ligado
+    (o caso do nosso export), `---` seguido de texto abre um bloco YAML, e o
+    primeiro `:` da prosa aborta o export; com a extensão desligada, `---`
+    seguido de texto vira cabeçalho de tabela e o capítulo inteiro é engolido
+    dentro de um `<td>`, sem erro nenhum. Os dois modos de falha têm a mesma
+    origem, e é aqui que ela se corrige.
+    """
+    lines = text.splitlines()
+    out = []
+    for i, line in enumerate(lines):
+        out.append(line)
+        if (
+            line.strip() == "---"
+            and i > 0
+            and i + 1 < len(lines)
+            and lines[i + 1].strip() != ""
+        ):
+            out.append("")
+    return "\n".join(out) + ("\n" if text.endswith("\n") else "")
+
+
+def _chave_rotulo(texto):
+    """Chave de casamento entre item do Sumário e heading.
+
+    Os dois lados divergem em detalhes que não mudam o texto renderizado: o
+    Sumário costuma trazer ênfase que o heading não tem (`Vácuo *Eterno*` vs.
+    `Vácuo Eterno`) e o heading costuma trazer link que o Sumário resolve para
+    texto puro. Normalizar ambos evita deixar o anchor sem conserto.
+    """
+    t = re.sub(r"\[([^\]]*)\]\([^\)]*\)", lambda m: m.group(1), texto)
+    t = t.replace("*", "").replace("_", "")
+    return re.sub(r"\s+", " ", t).strip().lower()
+
+
+def fix_sumario_anchors(text):
+    """Reescreve os anchors do `## Sumário` para o valor real do heading.
+
+    O anchor é gerado pelo renderizador a partir do texto do heading (regra
+    `gfm_auto_identifiers`), e escrevê-lo à mão erra em dois pontos recorrentes:
+    o travessão, que some e deixa DOIS espaços (`Tradicional — Ernst` ->
+    `tradicional--ernst`, não `-ernst`), e o link embutido, cuja URL não entra
+    no anchor. O texto visível de cada item do Sumário é preservado; só o alvo
+    do link muda.
+
+    Casa item do Sumário com heading pela ordem em que aparecem, ignorando
+    Sumário/Referências/Conexões, e só reescreve quando o alvo atual difere.
+    """
+    m = re.search(r"(?m)^## Sumário\s*$", text)
+    if not m:
+        return text
+    rest = text[m.end():]
+    nxt = re.search(r"(?m)^(---|## )", rest)
+    bloco = rest[: nxt.start()] if nxt else rest
+    inicio, fim = m.end(), m.end() + len(bloco)
+
+    reais = [
+        h.strip()
+        for h in re.findall(r"(?m)^#{2,6} (.+)$", text)
+        if h.strip() not in ("Sumário", "Referências", "Conexões")
+    ]
+    correto = {heading_anchor(h): heading_anchor(h) for h in reais}
+    por_texto = {}
+    for h in reais:
+        por_texto.setdefault(_chave_rotulo(h), heading_anchor(h))
+
+    def troca(mm):
+        rotulo, alvo = mm.group(1), mm.group(2)
+        if alvo in correto:
+            return mm.group(0)
+        chave = _chave_rotulo(rotulo)
+        novo = por_texto.get(chave)
+        if novo is None or novo == alvo:
+            return mm.group(0)
+        return "[%s](#%s)" % (rotulo, novo)
+
+    novo_bloco = re.sub(r"\[([^\]]+)\]\(#([^\)]+)\)", troca, bloco)
+    return text[:inicio] + novo_bloco + text[fim:]
+
+
 def fix_content(content):
     frontmatter, body = split_frontmatter(content)
+    body = apply_outside_fences(body, fix_hr_needs_blank_line)
+    body = fix_sumario_anchors(body)
     body = apply_outside_fences(body, fix_heading_spacing)
     body = apply_outside_fences(body, fix_wikilinks_colons)
     body = apply_outside_fences(body, fix_double_spaces)
@@ -164,25 +280,328 @@ def fix_content(content):
     return frontmatter + body
 
 
-def main():
-    fixed_files_count = 0
+def resolve_essay(slug: str) -> Path:
+    p = Path(slug)
+    if p.exists():
+        return p.resolve()
+    for ext in ("", ".md"):
+        candidate = ESSAYS_DIR / (slug + ext)
+        if candidate.exists():
+            return candidate
+    raise FileNotFoundError(f"Essay '{slug}' não encontrado em {ESSAYS_DIR} nem como caminho direto")
 
-    for d in DIRS:
+
+def build_parser():
+    p = argparse.ArgumentParser(
+        description="Aplica correções mecânicas e inequívocas à formatação da wiki."
+    )
+    p.add_argument(
+        "slug", nargs="?", default=None,
+        help="Corrige apenas este essay (slug, nome do arquivo, ou caminho completo)."
+    )
+    p.add_argument(
+        "--file", "-f", dest="file_slug", metavar="SLUG", default=None,
+        help="Alias de compatibilidade para o slug posicional.",
+    )
+    p.add_argument(
+        "--all", action="store_true",
+        help="Corpus inteiro, explícito (comportamento padrão sem argumento).",
+    )
+    return p
+
+
+# Regex exclusivos da reescrita, vindos junto das funções que os usam.
+BLOCKQUOTE_RE = re.compile(r"^>\s+(.+)$")
+BOLD_NUMBERED_RE = re.compile(r"^\*\*\[(\d+)\]\*\*\s+(.+)$")
+CANONICAL_LINK_RE = re.compile(r"\[[Ll]ink\]\((?P<url>" + URL_PAT + r")\)")
+ITALIC_WRAPPED_LINK_RE = re.compile(r"\*\[(?P<title>[^\]]+)\]\((?P<url>" + URL_PAT + r")\)\*")
+LINKED_TITLE_RE = re.compile(r"\[(?P<title>\*[^*\n]+\*)\]\((?P<url>" + URL_PAT + r")\)")
+QUOTE_CHARS = "\"'“”‘’"
+# Título entre aspas retas ou tipográficas *duplas* — nunca aspas simples: uma
+# aspa simples span captura contrações/genitivos ("d'Alembert's") como se
+# fossem um título inteiro, risco que dobrar em "duplas apenas" evita.
+
+
+# ---------------------------------------------------------------------------
+# Migração de `## Referências` para o padrão AIAA
+#
+# Veio de check_references.py junto com o antigo `--fix-format`: aquele script
+# valida, este corrige, e a fronteira entre os dois é a permissão de escrever.
+# ---------------------------------------------------------------------------
+
+LINK_ANCHOR = "Link"
+
+
+def canonicalize_entry_lines(section):
+    """Normaliza variantes de escrita para o formato `[N] ...`, uma por linha.
+
+    O corpus acumulou quatro estilos de bibliografia. Dois deles são
+    deterministicamente conversíveis e entram aqui:
+
+    - `**[1]** Citação.` seguida da nota num parágrafo próprio: o negrito sai e
+      a nota volta para a mesma linha, depois de ` — `.
+    - `> Citação` em blockquote, uma por linha e sem numeração: vira `[N]` na
+      ordem em que já estava.
+
+    O que sobra (link envolvendo só o título, ou entrada sem título em itálico)
+    depende de saber qual pedaço do texto é o título da obra, e isso não é
+    decidível sem ler a fonte — fica para `/linkify`.
+    """
+    out = []
+    pending_bold = None      # entrada `**[N]**` esperando a nota do parágrafo seguinte
+    blockquote_number = 0
+
+    for raw in section.splitlines():
+        line = raw.strip()
+
+        if not line or line == "---":
+            continue
+
+        m = BOLD_NUMBERED_RE.match(line)
+        if m:
+            if pending_bold:
+                out.append(pending_bold)
+            pending_bold = f"[{m.group(1)}] {m.group(2)}"
+            continue
+
+        m = BLOCKQUOTE_RE.match(line)
+        if m:
+            blockquote_number += 1
+            out.append(f"[{blockquote_number}] {m.group(1)}")
+            continue
+
+        if pending_bold:
+            # Parágrafo solto logo após uma entrada `**[N]**` é a nota dela.
+            out.append(f"{pending_bold} — {line}")
+            pending_bold = None
+            continue
+
+        out.append(line)
+
+    if pending_bold:
+        out.append(pending_bold)
+
+    return "\n".join(out)
+
+
+def convert_underscore_italics(text):
+    """`_Título_` -> `*Título*`. Não mexe em `nome_var`/`x_1` (ver UNDERSCORE_ITALIC_RE)."""
+    return UNDERSCORE_ITALIC_RE.sub(lambda m: f"*{m.group(1)}*", text)
+
+
+def normalize_italics(text):
+    """`*"Título."*` -> `*Título*`. Só mexe no que já está em itálico.
+
+    Nunca toca em `**negrito**` (ver `ITALIC_RE`) e nunca consome espaço fora
+    dos delimitadores: o texto entre um itálico e o próximo é copiado intacto.
+    """
+    out = []
+    pos = 0
+    for m in ITALIC_RE.finditer(text):
+        inner = m.group(1).strip().strip(QUOTE_CHARS).strip()
+        if not inner:
+            continue
+        had_terminal_period = inner.endswith(".")
+        out.append(text[pos : m.start()])
+        out.append(f"*{inner.rstrip('.').strip()}*")
+        pos = m.end()
+        # No formato antigo o ponto que separava título e container morava
+        # dentro do itálico. Tirá-lo sem repor nada deixaria
+        # "*Título* Oxford University Press" sem separador algum, então a
+        # vírgula do padrão AIAA entra no lugar — mas só quando o que vem a
+        # seguir é mesmo um container, e não pontuação que já separa.
+        if had_terminal_period and re.match(r"\s+[^\s,.;:—)\]]", text[pos:]):
+            out.append(",")
+    out.append(text[pos:])
+    return "".join(out)
+
+
+def mover_link_para_o_fim(entrada):
+    """Desmarca todo link do texto e devolve a URL da obra como `[Link]` no fim.
+
+    Cobre todos os arranjos que o corpus acumulou — link envolvendo a citação
+    inteira, envolvendo o título (`[*T*](u)` ou `*[T](u)*`), pendurado no
+    container (`*Título*, [Physical Review Letters](u), 59(22)`) ou já num
+    âncora `[link]` no meio da linha. Em todos, o texto do link permanece como
+    texto e a URL vai para o fim.
+
+    A URL nunca é inventada: entrada sem link nenhum sai sem link, e é o
+    `REFERENCIA_SEM_LINK` que reporta isso.
+    """
+    url = None
+
+    # O âncora explícito, quando existe, é a URL da obra — tem prioridade
+    # sobre um link de glossário que apareça antes dele na mesma entrada.
+    m = CANONICAL_LINK_RE.search(entrada)
+    if m:
+        url = m.group("url")
+        entrada = CANONICAL_LINK_RE.sub("", entrada)
+
+    # `*[Título](url)*` -> `*Título*`; `[*Título*](url)` -> `*Título*`.
+    # O itálico tem que sobreviver ao desembrulho: é ele que marca o título.
+    def desembrulhar(regex, texto, formatar):
+        nonlocal url
+        mm = regex.search(texto)
+        if not mm:
+            return texto
+        if url is None:
+            url = mm.group("url")
+        return texto[: mm.start()] + formatar(mm.group("title")) + texto[mm.end() :]
+
+    entrada = desembrulhar(ITALIC_WRAPPED_LINK_RE, entrada, lambda t: f"*{t}*")
+    entrada = desembrulhar(LINKED_TITLE_RE, entrada, lambda t: t)
+
+    # Qualquer link restante vira texto puro; o primeiro deles serve de URL da
+    # obra se nenhum candidato melhor apareceu antes.
+    def sem_marcacao(mm):
+        nonlocal url
+        if url is None:
+            url = mm.group("url")
+        return mm.group("text")
+
+    entrada = ANY_MD_LINK_RE.sub(sem_marcacao, entrada)
+
+    entrada = re.sub(r"\s{2,}", " ", entrada).strip()
+    entrada = re.sub(r"\s+([,.;:])", r"\1", entrada)
+    # Título que já termina em `?` ou `!` não leva ponto depois do itálico:
+    # `*Is Our Universe Likely to Decay?*. 2006.` vira `*...?* 2006.`
+    entrada = re.sub(r"([?!]\*)\.", r"\1", entrada)
+    return entrada, url
+
+
+def montar_entrada(numero, resto_da_linha):
+    """`[N] Citação. — Nota. [Link](url)` — o link sempre por último.
+
+    Só a **citação** é varrida atrás da URL da obra. Links que estejam na nota
+    são de glossário (um verbete para um termo comentado ali) e continuam onde
+    estão: promovê-los faria a bibliografia apontar para o lugar errado.
+    """
+    # O `[Link]` do fim sai primeiro, senão a divisão citação/nota o jogaria
+    # dentro da nota e a função não seria idempotente.
+    cauda = TAIL_LINK_RE.search(resto_da_linha)
+    url_da_cauda = cauda.group("url") if cauda else None
+    resto_da_linha = TAIL_LINK_RE.sub("", resto_da_linha).rstrip()
+
+    citacao, nota = citation_and_note(resto_da_linha)
+    # Ordem importa: aspas -> itálico antes de underscore -> asterisco, porque
+    # try_fix_quoted_title recusa mexer se já houver _underscore_ (evita duplo
+    # match improvável tipo `_"X"_`); e ambos rodam ANTES de normalize_italics,
+    # que só entende `*...*`. Nunca toca em `nota` — só a citação em si.
+    citacao_com_titulo = try_fix_quoted_title(citacao)
+    if citacao_com_titulo is not None:
+        citacao = citacao_com_titulo
+    citacao = convert_underscore_italics(citacao)
+    citacao, url = mover_link_para_o_fim(normalize_italics(citacao))
+    url = url_da_cauda or url
+
+    linha = f"{numero} {citacao}"
+    if nota:
+        linha += f" — {nota}"
+    if url:
+        # A palavra "Link" vem depois do ponto final, separada da prosa.
+        linha = linha.rstrip()
+        if not linha.endswith((".", "!", "?")):
+            linha += "."
+        linha = f"{linha} [{LINK_ANCHOR}]({url})"
+    return linha
+
+
+def rebuild_section(section):
+    """Reescreve a seção no padrão AIAA. Retorna (novo_texto, n_entradas)."""
+    section = canonicalize_entry_lines(section)
+    entries = [e for e in parse_entries(section) if e["kind"] in ("numbered", "bullet")]
+    if not entries:
+        return None, 0
+
+    lines = []
+    for number, entry in enumerate(entries, start=1):
+        rest = entry["rest"]
+        # Entrada que é bullet E numerada (`- [1] Autor...`) chega aqui com o
+        # `[1]` ainda dentro de `rest`, e a renumeração prefixaria um segundo
+        # número, produzindo `[1] [1] Autor...`. O número velho é descartado:
+        # quem manda é a posição na lista, calculada por `enumerate`.
+        rest = re.sub(r"^\[\d+\]\s*", "", rest)
+        lines.append(montar_entrada(f"[{number}]", rest))
+
+    return "\n\n" + "\n\n".join(lines) + "\n\n", len(entries)
+
+
+def fix_essay(path):
+    """Aplica a migração mecânica. Retorna n_entradas reescritas, 0 se nada mudou."""
+    content = load(path)
+    m = re.search(r"(?m)^## Referências[ \t]*$", content)
+    if not m:
+        return 0
+
+    rest = content[m.end():]
+    next_h2 = re.search(r"(?m)^## ", rest)
+    end = m.end() + (next_h2.start() if next_h2 else len(rest))
+    section = content[m.end():end]
+
+    new_section, count = rebuild_section(section)
+    if new_section is None or new_section == section:
+        return 0
+
+    path.write_text(content[: m.end()] + new_section + content[end:], encoding="utf-8")
+    return count
+
+
+def main():
+    args = build_parser().parse_args()
+    target_slug = args.file_slug or args.slug
+    scope_all = args.all or not target_slug
+
+    if scope_all:
+        essay_targets = sorted(ESSAYS_DIR.glob("*.md"))
+        support_dirs = [CONCEPTS_DIR, ENTITIES_DIR, INSIGHTS_DIR]
+    else:
+        try:
+            essay_targets = [resolve_essay(target_slug)]
+        except FileNotFoundError as e:
+            print(f"ERRO: {e}", file=sys.stderr)
+            sys.exit(1)
+        support_dirs = []
+        print(f"Escopo: apenas {essay_targets[0].name} — checagens de corpus "
+              f"(concepts/entities/insights) puladas, mesmo padrão de check_wiki.py.")
+
+    fixed_files_count = 0
+    referencias_fixed_count = 0
+
+    all_targets = [("essays", f) for f in essay_targets]
+    for d in support_dirs:
         if not d.exists():
             continue
-        for file in sorted(d.glob("*.md")):
-            if file.name in ("log.md", "index.md", "manifest.md", "map.md"):
-                continue
+        all_targets += [(d.name, f) for f in sorted(d.glob("*.md"))]
 
-            content = load_file_content(file)
-            new_content = fix_content(content)
+    for category, file in all_targets:
+        if file.name in ("log.md", "index.md", "manifest.md", "map.md"):
+            continue
 
-            if new_content != content:
-                save_file_content(file, new_content)
-                print(f"Fixed formatting and/or links in: {file.relative_to(ROOT_DIR)}")
-                fixed_files_count += 1
+        content = load_file_content(file)
+        new_content = fix_content(content)
 
-    print(f"\nCompleted auto-fix. Modified {fixed_files_count} files.")
+        if new_content != content:
+            save_file_content(file, new_content)
+            print(f"Fixed formatting and/or links in: {file.relative_to(ROOT_DIR)}")
+            fixed_files_count += 1
+
+        # A migração de `## Referências` para o padrão AIAA só se aplica a
+        # essays — concepts/entities/insights não têm essa seção.
+        if category == "essays":
+            n_entries = fix_essay(file)
+            if n_entries:
+                referencias_fixed_count += 1
+                print(f"Referências reescritas (padrão AIAA): {file.relative_to(ROOT_DIR)} "
+                      f"({n_entries} entrada(s))")
+
+    print(f"\nCompleted auto-fix. Modified {fixed_files_count} file(s); "
+          f"{referencias_fixed_count} essay(s) tiveram '## Referências' reescrita.")
+    if referencias_fixed_count:
+        print("Rode `python scripts/build_references.py` para regenerar o índice de referências.")
+        print(
+            "A migração de referências é só mecânica: entradas que continuarem sem link da "
+            "própria obra saem sinalizadas como REFERENCIA_SEM_LINK e precisam de /linkify."
+        )
 
 
 if __name__ == "__main__":

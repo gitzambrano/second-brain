@@ -2,20 +2,20 @@
 name: sweep
 description: >
   Orquestra a bateria completa de revisão num essay ou no corpus inteiro:
-  /format → /continuity → /proofread → /polish → /linkify, e produz um
-  relatório consolidado. Aceita escopo corpus inteiro (/sweep) ou essay
-  único (/sweep <slug>) — a lógica é idêntica, só o conjunto de arquivos
-  processados muda. Use quando o Usuário disser "corrige todos os essays",
-  "faz uma revisão geral", "passa o pente fino na wiki inteira", "passa o
-  pente fino nesse essay", ou quiser a bateria completa de correções sem
-  invocar cada skill manualmente. É um orquestrador: chama outros skills,
-  não duplica a lógica deles.
+  /organize (passada mecânica) → /continuity → /proofread → /polish →
+  /linkify, e produz um relatório consolidado. Aceita escopo corpus
+  inteiro (/sweep) ou essay único (/sweep <slug>) — a lógica é idêntica,
+  só o conjunto de arquivos processados muda. Use quando o Usuário disser
+  "corrige todos os essays", "faz uma revisão geral", "passa o pente fino
+  na wiki inteira", "passa o pente fino nesse essay", ou quiser a bateria
+  completa de correções sem invocar cada skill manualmente. É um
+  orquestrador: chama outros skills, não duplica a lógica deles.
 allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch AskUserQuestion
 ---
 
 # Sweep
 
-Roda a bateria completa de revisão — `/format` → `/continuity` → `/proofread` → `/polish` → `/linkify` — em qualquer escopo pedido pelo Usuário, e consolida os resultados num único relatório. É um **orquestrador**: toda a lógica de cada correção vive no skill correspondente.
+Roda a bateria completa de revisão — `/organize` (passada mecânica, no escopo correspondente) → `/continuity` → `/proofread` → `/polish` → `/linkify` — em qualquer escopo pedido pelo Usuário, e consolida os resultados num único relatório. É um **orquestrador**: toda a lógica de cada correção vive no skill correspondente.
 
 ## O que é e o que não é
 
@@ -46,14 +46,9 @@ Conforme `conventions/SKILL.md`:
 
 Se o escopo for corpus inteiro e a wiki tiver mais de 5 essays, avise o Usuário antes de começar: "são N essays, vou levar um tempo." Ofereça a opção de processar em lotes menores.
 
-### Passo 2 — Passada mecânica: `/format`
+### Passo 2 — Passada mecânica: `/organize`
 
-Para cada essay:
-
-```bash
-python scripts/check_format.py --file <slug> --json
-python scripts/fix_lint.py
-```
+Para cada essay, chame `/organize <slug>` (escopo essay único — formatação mecânica, referências e wikilinks daquele arquivo só, sem as checagens de corpus). Se o escopo do sweep for o corpus inteiro, isso equivale a rodar `/organize <slug>` em sequência para cada essay; **não** chame `/organize` sem argumento aqui — isso repetiria as checagens de corpus (índice, manifesto, plano, órfãos, grafo) uma vez por essay, desperdício que o próprio design de `/organize` existe para evitar.
 
 Aplique os fixes automáticos (sem interação com o Usuário). Acumule os issues restantes no relatório do essay.
 
@@ -138,8 +133,7 @@ Prosa segue `## Estilo de prosa` em `conventions/SKILL.md`.
 
 ## Skills relacionadas
 
-- `/format` — passada mecânica de formatação (chamada aqui no Passo 2)
+- `/organize` — passada mecânica de formatação/metadados (chamada aqui no Passo 2, em escopo essay único); em modo corpus inteiro é o que decide se vale um sweep
 - `/continuity`, `/proofread`, `/polish`, `/linkify` — skills chamados nos Passos 3–6
-- `/organize` — saúde da wiki inteira; rode antes para decidir se vale um sweep
 - `/review` — validade argumentativa e profundidade; complementar ao sweep, não substituto
 - `/stats` — dashboard de saúde; rode antes para ter uma visão geral

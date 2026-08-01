@@ -4,7 +4,7 @@ Basta importar: o efeito acontece no import, não há função a chamar.
 
 O console padrão do Windows usa cp1252, que não cobre os caracteres de caixa
 (`─`), o sinal de aviso (`⚠`) nem parte da pontuação usada nos relatórios. Sem
-isto, `check_format.py`, `stats.py` e `build_graph.py` abortam com UnicodeEncodeError
+isto, `check_wiki.py`, `stats.py` e `build_graph.py` abortam com UnicodeEncodeError
 depois de já terem feito todo o trabalho, e a saída se perde.
 
 `errors="replace"` em vez de `"strict"` porque um caractere que o terminal não

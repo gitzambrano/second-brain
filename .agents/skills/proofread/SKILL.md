@@ -39,6 +39,15 @@ Ao reportar, resuma o que foi corrigido em vez de listar cada troca individual �
 
 ## Depois
 
+Rode a checagem mecânica do essay tocado — mais barato que acionar `/organize` inteiro para um arquivo só:
+
+```bash
+python scripts/check_wiki.py <slug>
+python scripts/fix_lint.py <slug>
+```
+
+Aplique os achados automáticos e reporte o restante. Reserve `/organize <slug>` para quando o Usuário pedir a auditoria completa daquele essay.
+
 Correções pequenas e locais não precisam de entrada no log. Se a passada foi extensa (essay inteiro, muitos pontos corrigidos), log:
 
 ```

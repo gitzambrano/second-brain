@@ -43,16 +43,20 @@ plan/                        plano de longo prazo do Usuário (não confundir co
   drafts/                    esqueletos de essay 
 
 scripts/                     lint, stats, grafo de conexões, export (PDF/HTML), busca e índice
-  check_format.py            auditoria mecânica de formatação (usado por /format)
-  fix_lint.py                aplica fixes mecânicos inequívocos
-  check_wiki.py              lint completo: wikilinks mortos, órfãos, manifesto, plano, insights
+  check_wiki.py              lint unificado: formatação de essay (byline, Sumário/Referências/
+                              Conexões, LaTeX, aspas, símbolos residuais...) + estrutura de corpus
+                              (wikilinks mortos, órfãos, índice, manifesto, plano, insights).
+                              Usado por /organize. Escopo: --all (padrão) ou <slug>/--file <slug>
+  fix_lint.py                único fixer mecânico: aplica tudo que for inequívoco sem perguntar,
+                              inclusive a migração de ## Referências para o padrão AIAA. Mesma
+                              CLI de check_wiki.py (--all / <slug> / --file <slug>)
   stats.py                   dashboard read-only (usado por /stats)
   check_gaps.py              heurística de cobertura conceitual (usado por /gaps)
   build_graph.py             gera output/graph/graph.html (interativo) e graph.md (Mermaid)
   find_text.py               busca com trecho (grep -n com contexto) escopada à wiki
   build_index.py             gera wiki/index.md e wiki/index.json a partir do frontmatter
   build_references.py        gera wiki/references.md e .json das ## Referências dos essays
-  check_references.py        valida ## Referências no padrão AIAA (usado por /linkify)
+  check_references.py        valida ## Referências no padrão AIAA, somente-leitura (usado por /linkify e /organize)
   check_dedupe.py            candidatos a quase-duplicata: títulos, tags, referências
   check_title.py             checagem exata/fuzzy de títulos
   sync_qmd.bat               reindexa a wiki no qmd (collection "secondbrain") — dois cliques, ou rode no terminal
@@ -140,9 +144,8 @@ As skills estão agrupadas pela mesma lógica de `AGENTS.md`: da ideação de um
 
 ### Manutenção
 
-- **Sweep** · `/sweep` — orquestra a bateria completa de revisão num essay ou no corpus inteiro: `/format` → `/continuity` → `/proofread` → `/polish` → `/linkify`, com relatório consolidado. Aceita `/sweep` (corpus) ou `/sweep <slug>` (essay único). Fecha regenerando índice e bibliografia, e passando pelo ritual de fechamento acima.
-- **Format** · `/format` — auditoria mecânica de formatação: estrutura obrigatória, byline, LaTeX, aspas, espaçamento, compatibilidade Obsidian. Aplica fixes automáticos inequívocos via `fix_lint.py` e reporta o restante. Não toca em prosa nem argumento.
-- **Organize** · `/organize` — organiza a base inteira na camada de metadados: índice, log, manifesto de sources, tags, plano, insights, estrutura de pastas, e gera o grafo de conexões. A skill mais importante para comunicar com clareza — nunca cola o relatório bruto do lint.
+- **Sweep** · `/sweep` — orquestra a bateria completa de revisão num essay ou no corpus inteiro: `/organize` (passada mecânica, no escopo correspondente) → `/continuity` → `/proofread` → `/polish` → `/linkify`, com relatório consolidado. Aceita `/sweep` (corpus) ou `/sweep <slug>` (essay único). Fecha regenerando índice e bibliografia, e passando pelo ritual de fechamento acima.
+- **Organize** · `/organize` — organiza a base na camada de metadados e formatação mecânica de essay (absorveu o antigo `/format`): índice, log, manifesto de sources, tags, plano, insights, estrutura de pastas, formatação (estrutura obrigatória, byline, LaTeX, aspas, espaçamento, compatibilidade Obsidian — fixes automáticos via `fix_lint.py`), e gera o grafo de conexões. Aceita `/organize` (corpus inteiro) ou `/organize <slug>` (só formatação/referências/wikilinks daquele essay, pulando órfãos/índice/manifesto/plano/grafo com aviso). A skill mais importante para comunicar com clareza — nunca cola o relatório bruto do lint. Não toca em prosa nem argumento.
 - **Gaps** · `/gaps` — audita cobertura conceitual: termo citado repetidamente na prosa mas sem página própria, página existente sem link em `## Conexões`, e desbalanço entre tags. Prospectivo e opt-in — nunca cria página nem insere link sozinho.
 - **Stats** · `/stats` — dashboard read-only de saúde da wiki: essays por tag/tipo, órfãos, sources sem manifesto, itens do plano, notas atômicas por maturidade. Não corrige nada, só relata; rápido o bastante para rodar com frequência.
 - **Status** · `/status` — mantém `wiki/status.md`, o snapshot que liga uma sessão à próxima: foco atual, perguntas em aberto, decisões recentes, pendências (raw/, plano, sources não verificados). `/status` mostra; `/status update` recalcula e reescreve.

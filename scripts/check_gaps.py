@@ -197,7 +197,27 @@ def analyze_unlinked_existing_pages(essays, existing_pages):
     findings = []
     for path, content in essays.items():
         body = strip_frontmatter(content)
-        wikilink_targets = extract_wikilinks(body)
+
+        # Compara PÁGINA-ALVO, não texto do link. `existing_pages` indexa cada
+        # página por dois nomes (slug e H1), então `[[Aeroelasticidade]]` e o
+        # termo "aeroelasticity" apontam para o mesmo arquivo — comparar as
+        # strings cruas acusava esse par como não-linkado. Resolver os dois
+        # lados para o caminho elimina a classe inteira de falso positivo.
+        linked_paths = {
+            existing_pages[t] for t in extract_wikilinks(body) if t in existing_pages
+        }
+
+        # `## Referências` fora: obra citada na bibliografia não é o conceito
+        # sendo discutido na prosa, e exigir wikilink por causa dela era ruído
+        # (o autor aparece na lista de fontes, não no argumento).
+        body = re.split(r"(?m)^## Referências\s*$", body)[0]
+
+        # Wikilinks fora do corpo antes de extrair termos: um conceito que só
+        # aparece DENTRO do título de outra página já linkada (ex. "grande
+        # filtro" em `[[O Grande Filtro do Antropocentrismo]]`) é menção ao
+        # essay, não ao conceito.
+        body = re.sub(r"\[\[[^\]]+\]\]", "", body)
+
         body_no_code = strip_code_and_urls(body)
         mentioned = set()
         for a in extract_external_link_anchors(body_no_code):
@@ -207,7 +227,7 @@ def analyze_unlinked_existing_pages(essays, existing_pages):
         for c in extract_capitalized_phrases(body_no_code):
             mentioned.add(normalize(c))
         for term in mentioned:
-            if term in existing_pages and term not in wikilink_targets:
+            if term in existing_pages and existing_pages[term] not in linked_paths:
                 findings.append((path.name, term, existing_pages[term]))
     return findings
 

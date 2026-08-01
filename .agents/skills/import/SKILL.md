@@ -35,7 +35,15 @@ Se não estiver claro que o texto é do próprio Usuário e já está pronto (n�
 9. Preencha `summary:` no frontmatter e rode `python scripts/build_index.py` para regenerar `wiki/index.json`/`wiki/index.md` (apenas essays entram no índice) — nunca insira a entrada à mão.
 10. Como o passo 5 acrescentou `## Referências`, escreva cada entrada no padrão de `## Formato de "## Referências" — padrão AIAA` em `conventions/SKILL.md` (`[N] Autor, *Título* [link](url), Container, Ano.`), confira com `python scripts/check_references.py --file <slug>`, e rode `python scripts/build_references.py` para regenerar `wiki/references.json`/`.md`. A fonte original quase nunca chega nesse formato: converter a bibliografia dela é parte do trabalho de ingestão, e não altera o texto do essay, que continua intacto.
 11. Mova o arquivo original de `raw/` para `wiki/sources/<subpasta-do-tipo>/`, preservando o nome original. Registre em `wiki/sources/manifest.md` (`Tipo:`, `Tags:`, `Pasta:`, `Virou:`) e em `wiki/sources/map.md` (status: "Importado como [[Essay]]"). `Tags:` reusa o mesmo vocabulário controlado dos essays (`## Tags — Vocabulário Controlado` em `conventions/SKILL.md`) — em geral as mesmas tags do essay que a fonte virou, já que é o mesmo conteúdo.
-12. Log: `## [YYYY-MM-DD] import | Título do Essay`
+12. Feche com a checagem mecânica do essay recém-criado, sem acionar `/organize` inteiro:
+
+    ```bash
+    python scripts/check_wiki.py <slug>
+    python scripts/fix_lint.py <slug>
+    ```
+
+    Aplique os achados automáticos e reporte o restante.
+13. Log: `## [YYYY-MM-DD] import | Título do Essay`
 
 Uma única fonte pode tocar 10-15 páginas da wiki. Isso é normal.
 

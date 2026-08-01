@@ -147,6 +147,10 @@ hr{border:none;border-top:1px solid var(--rule-gray);margin:2.4em 0;}
   h2{font-size:1.28em;}
   h3{font-size:1.1em;}
   pre{font-size:0.78em;padding:0.85em;}
+  /* Tabela larga rola dentro de si mesma, em vez de esticar a página: sem
+     isto, uma comparativa de 3 colunas estoura o viewport do celular e o
+     corpo inteiro do texto passa a rolar na horizontal. */
+  table{display:block;width:max-content;max-width:100%;overflow-x:auto;}
 }
 @media print{
   body{font-size:12pt;}
