@@ -121,6 +121,20 @@ GRAPH_STYLE = {
     "labels": "sempre",
     "starfield": True,
     "gradient": True,
+    # Camada extra de luz especular + sombra de contato por cima do
+    # preenchimento normal da bolinha, dando volume de esfera 3D (tipo bola
+    # de vidro/plástico) em vez do disco chapado ou do gradiente simples de
+    # `gradient`. Mais caro que os dois (mais um par de gradientes por
+    # sprite, uma vez só — cacheado igual ao resto), então fica desligado
+    # por padrão; quem quiser o efeito ativa no painel de Estilo.
+    "sphereShading": False,
+    # "Tingimento" do fundo por tag: pinta uma mancha bem escura (quase a
+    # cor de fundo, só com um matiz sutil) em torno do centro de massa de
+    # cada tag, do tamanho da dispersão dos nós que a carregam — dá pra
+    # perceber "regiões temáticas" no grafo sem que a cor chame mais atenção
+    # que os próprios nós/arestas. Desligado por padrão (custo extra por
+    # frame e é só decorativo); ver drawTagTint() no HTML gerado.
+    "tagTint": False,
     # "degree" (nº de conexões visíveis), "bytes" ou "lines" (tamanho do
     # corpo do arquivo). Só afeta essay/concept/entity/insights — reference
     # não tem arquivo e sempre usa o raio base.
@@ -487,6 +501,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Grafo — Second Brain</title>
 <script src="https://d3js.org/d3.v7.min.js"></script>
+<!-- canvas2svg: mock de CanvasRenderingContext2D que, em vez de rasterizar,
+     acumula os comandos de desenho e serializa como SVG. Usado só no export
+     vetorial (ver drawForSvgExport() e o handler de "btn-export-svg" mais
+     abaixo) — o desenho normal do grafo continua 100% Canvas/rAF. -->
+<script src="https://cdn.jsdelivr.net/npm/canvas2svg@1.0.16/canvas2svg.min.js"></script>
 <style>
   :root {
     --bg: #1b1e21;
@@ -774,6 +793,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   .style-hint { font-size: 12px; color: var(--ink-dim); margin: -4px 0 12px 0; line-height: 1.5; }
   .theme-row { display: flex; gap: 10px; flex-wrap: wrap; }
   .theme-btn { flex: 1; min-width: 110px; margin-top: 0; text-align: center; padding: 10px 12px; }
+  /* Precisa vir DEPOIS da regra acima (mesma especificidade — quem vem
+     depois no arquivo vence a cascata, media query ou não): um bloco igual
+     a este, mas colado dentro da media query grande lá em cima, ficava
+     sobrescrito pela regra desktop acima, que roda incondicionalmente. Os 4
+     botões de tema em flex-wrap/min-width 110px cabiam só 2 por linha numa
+     tela estreita, e cada botão mantinha o padding de desktop — juntos isso
+     empilhava 2 linhas altas e "engolia" boa parte da folha do Estilo. Grid
+     fixo de 2 colunas com padding/fonte menores encaixa as 4 opções
+     (Aqua/Céu Noturno/Inferno/Synthwave) em bem menos altura. */
+  @media (max-width: 720px), (pointer: coarse) and (max-width: 900px) {
+    .theme-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .theme-btn { min-width: 0; padding: 8px 6px; font-size: 12px; }
+  }
 </style>
 </head>
 <body>
@@ -793,6 +825,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <button class="btn" id="btn-gaps">Gaps entre tags</button>
   <button class="btn" id="btn-style">Estilo</button>
   <button class="btn" id="btn-export-png">Exportar PNG</button>
+  <button class="btn" id="btn-export-svg">Exportar SVG</button>
+  <button class="btn" id="btn-fit-screen">Ajustar à tela</button>
 
   <div id="detail" hidden></div>
 </div>
@@ -849,6 +883,7 @@ const FACTORY_STYLE = data.defaultStyle || {
   glow: "leve", labels: "sempre", starfield: true, gradient: true, sizeMode: "degree",
   spacing: 1, performance: "auto", collision: true,
   linkStrength: 1, chargeStrength: 1, friction: 0.55,
+  sphereShading: false, tagTint: false,
 };
 const MOBILE_OVERRIDES = data.defaultStyleMobileOverrides || { glow: "off", starfield: false };
 const defaultStyle = DEVICE_IS_MOBILE ? { ...FACTORY_STYLE, ...MOBILE_OVERRIDES } : FACTORY_STYLE;
@@ -1426,11 +1461,12 @@ function spriteHalfSize(bucket) {
 // velho em tela depois do usuário mexer no painel de Estilo.
 function clearSpriteCache() {
   spriteCache.clear();
+  tagTintSprites.clear();
 }
 
 function getNodeSprite(type, dim, r) {
   const bucket = radiusBucket(r);
-  const key = type + "|" + dim + "|" + bucket + "|" + dpr;
+  const key = type + "|" + dim + "|" + bucket + "|" + dpr + "|" + (styleConfig.sphereShading ? "s" : "");
   let sprite = spriteCache.get(key);
   if (sprite) return sprite;
 
@@ -1467,6 +1503,38 @@ function getNodeSprite(type, dim, r) {
     sctx.fillStyle = color;
   }
   sctx.fill();
+  // Textura esférica: opcional, desligada por padrão (custa mais um par de
+  // gradientes por sprite — barato porque é uma vez só, cacheado, mas não
+  // é grátis). "source-atop" restringe as duas camadas abaixo aos pixels
+  // já opacos do disco que acabou de ser pintado, sem precisar refazer o
+  // path de recorte — mais simples e mais barato que clip().
+  if (styleConfig.sphereShading) {
+    sctx.globalCompositeOperation = "source-atop";
+    // Brilho especular: ponto de luz deslocado pro canto superior-esquerdo,
+    // como um reflexo de estúdio numa bola de vidro/plástico.
+    const spec = sctx.createRadialGradient(
+      cx - bucket * 0.38, cy - bucket * 0.42, 0,
+      cx - bucket * 0.38, cy - bucket * 0.42, bucket * 0.9
+    );
+    spec.addColorStop(0, "rgba(255,255,255,0.75)");
+    spec.addColorStop(0.35, "rgba(255,255,255,0.16)");
+    spec.addColorStop(1, "rgba(255,255,255,0)");
+    sctx.fillStyle = spec;
+    sctx.fillRect(0, 0, size, size);
+    // Sombra de contato no quadrante oposto (inferior-direito) — sem ela o
+    // brilho sozinho lê como uma mancha clara, não como volume 3D; os dois
+    // juntos simulam luz vindo de um único lado, como numa esfera de verdade.
+    const shade = sctx.createRadialGradient(
+      cx + bucket * 0.45, cy + bucket * 0.5, 0,
+      cx + bucket * 0.45, cy + bucket * 0.5, bucket * 1.15
+    );
+    shade.addColorStop(0, "rgba(0,0,0,0.4)");
+    shade.addColorStop(0.6, "rgba(0,0,0,0.12)");
+    shade.addColorStop(1, "rgba(0,0,0,0)");
+    sctx.fillStyle = shade;
+    sctx.fillRect(0, 0, size, size);
+    sctx.globalCompositeOperation = "source-over";
+  }
   sctx.shadowBlur = 0;
   sctx.lineWidth = 1;
   sctx.strokeStyle = "#0b1220";
@@ -1499,6 +1567,79 @@ function drawLabel(n) {
   const r = radiusOf(n);
   ctx.globalAlpha = dimmed ? 0.08 : 0.85;
   ctx.fillText(n.title, n.x, n.y - (2 + r));
+}
+
+// ---- Tingimento de fundo por tag ------------------------------------------
+// Hash determinístico (djb2) de string pra matiz 0-360: a mesma tag sempre
+// cai na mesma cor entre recarregamentos, sem precisar guardar um mapa em
+// lugar nenhum.
+function tagHue(tag) {
+  let h = 5381;
+  for (let i = 0; i < tag.length; i++) h = ((h * 33) ^ tag.charCodeAt(i)) >>> 0;
+  return h % 360;
+}
+
+// Um blob GLOBAL por tag (centro de massa + raio de dispersão de TODOS os
+// nós daquela tag) foi a primeira tentativa aqui, e não funcionava: tag não
+// entra na física do layout (só wikilink entra), então a maioria das tags
+// está espalhada pelo grafo inteiro — o "blob" saía do tamanho do grafo
+// inteiro, com opacidade quase uniforme em qualquer ponto da tela.
+// Efetivamente invisível.
+//
+// A solução é local, não global: um "dab" pequeno e bem fraco em cima de
+// CADA nó, pra cada tag que ele carrega, com blend ADITIVO
+// (globalCompositeOperation "lighter"). Um dab sozinho quase não muda nada;
+// mas onde vários nós da MESMA tag caem perto uns dos outros no layout (o
+// que tende a acontecer de verdade — essays da mesma tag costumam se citar
+// e o wikilink os aproxima), os dabs se empilham e a região acumula cor,
+// revelando a densidade real da tag naquele ponto do grafo. "Pinta mais ou
+// menos" literalmente: mais onde a tag está concentrada, quase nada onde
+// está isolada ou espalhada.
+//
+// Sprite cacheado por tag (não por nó): mesma ideia de getNodeSprite() —
+// sem isso seriam milhares de createRadialGradient()+fill() por frame (um
+// por par nó×tag), caro demais até pra uma opção já opt-in.
+const TAG_DAB_SIZE = 110; // diâmetro do dab em px "de mundo", antes do dpr
+const tagTintSprites = new Map(); // tag -> HTMLCanvasElement
+function getTagTintSprite(tag) {
+  let sprite = tagTintSprites.get(tag);
+  if (sprite) return sprite;
+  const hue = tagHue(tag);
+  sprite = document.createElement("canvas");
+  const px = Math.max(2, Math.ceil(TAG_DAB_SIZE * dpr));
+  sprite.width = px;
+  sprite.height = px;
+  const sctx = sprite.getContext("2d");
+  sctx.scale(px / TAG_DAB_SIZE, px / TAG_DAB_SIZE);
+  const c = TAG_DAB_SIZE / 2;
+  const g = sctx.createRadialGradient(c, c, 0, c, c, c);
+  // Saturação e luminosidade um pouco acima do fundo (que já é bem escuro,
+  // ~12% de luminosidade no padrão de fábrica): perto DEMAIS do preto de
+  // fundo e o "lighter" não tem o que somar — o efeito também sumiria,
+  // igual ao blob antigo. Ainda assim continua escuro (11%), só o
+  // suficiente pra ler como matiz, não como cor chapada.
+  g.addColorStop(0, `hsla(${hue}, 60%, 11%, 0.9)`);
+  g.addColorStop(1, `hsla(${hue}, 60%, 11%, 0)`);
+  sctx.fillStyle = g;
+  sctx.fillRect(0, 0, TAG_DAB_SIZE, TAG_DAB_SIZE);
+  tagTintSprites.set(tag, sprite);
+  return sprite;
+}
+
+// Desenhado ANTES de arestas/nós, ainda dentro do bloco de transform de
+// mundo (mesmo pan/zoom) — funciona como camada de fundo. `inView` (já
+// calculado pelo chamador pra cull de nó/aresta) também limita o custo aqui:
+// não pinta o que está fora da tela.
+function drawTagTint(inView) {
+  ctx.globalCompositeOperation = "lighter";
+  const half = TAG_DAB_SIZE / 2;
+  data.nodes.forEach(n => {
+    if (!isNodeVisible(n) || n.x == null || !n.tags || !n.tags.length || !inView(n)) return;
+    n.tags.forEach(tag => {
+      ctx.drawImage(getTagTintSprite(tag), n.x - half, n.y - half, TAG_DAB_SIZE, TAG_DAB_SIZE);
+    });
+  });
+  ctx.globalCompositeOperation = "source-over";
 }
 
 function draw() {
@@ -1537,6 +1678,8 @@ function draw() {
   const [wx1, wy1] = zoomTransform.invert([width, height]);
   const pad = 80;
   const inView = (n) => n.x >= wx0 - pad && n.x <= wx1 + pad && n.y >= wy0 - pad && n.y <= wy1 + pad;
+
+  if (styleConfig.tagTint) drawTagTint(inView);
 
   if (styleConfig.edgeVisibility !== "off") {
     // Batelada de arestas — o maior ganho do arquivo inteiro. Antes: um
@@ -1937,8 +2080,12 @@ updateVisibility();
 // nenhuma com o tamanho da tela) — sem isto, quem abre o grafo no celular
 // vê só um pedaço cortado e precisa dar zoom out à mão antes de enxergar
 // qualquer estrutura.
-function fitToScreen(instant) {
-  if (userAdjustedView || !telaPequena()) return;
+function fitToScreen(instant, force) {
+  // `force` (botão "Ajustar à tela") ignora as duas condições que existem só
+  // para o auto-fit silencioso de carga em celular: aqui é um clique
+  // explícito do usuário, então deve funcionar em qualquer tamanho de tela e
+  // mesmo depois de o usuário já ter mexido no zoom manualmente.
+  if (!force && (userAdjustedView || !telaPequena())) return;
   const visible = data.nodes.filter(n => n.x != null && n.y != null && isNodeVisible(n));
   if (!visible.length) return;
 
@@ -2383,9 +2530,18 @@ function renderStylePanel(seed) {
         <input type="checkbox" id="st-gradient" ${draft.gradient ? "checked" : ""}>
       </label>
       <label class="style-row">
+        <span>Textura esférica nas bolinhas</span>
+        <input type="checkbox" id="st-sphere-shading" ${draft.sphereShading ? "checked" : ""}>
+      </label>
+      <label class="style-row">
         <span>Céu estrelado no fundo</span>
         <input type="checkbox" id="st-starfield" ${draft.starfield ? "checked" : ""}>
       </label>
+      <label class="style-row">
+        <span>Tingir o fundo pelas tags</span>
+        <input type="checkbox" id="st-tag-tint" ${draft.tagTint ? "checked" : ""}>
+      </label>
+      <p class="style-hint">Textura esférica: brilho e sombra por cima da bolinha, pra parecer uma esfera 3D em vez de um disco chapado. Tingir por tag: manchas bem escuras (quase a cor de fundo) em torno de onde cada tag se concentra no grafo — um indício visual de "regiões temáticas", sutil de propósito.</p>
     </div>
     </div>
     <div class="style-actions">
@@ -2424,7 +2580,9 @@ function renderStylePanel(seed) {
   modalBody.querySelector("#st-glow").addEventListener("change", (e) => { draft.glow = e.target.value; preview(); });
   modalBody.querySelector("#st-labels").addEventListener("change", (e) => { draft.labels = e.target.value; preview(); });
   modalBody.querySelector("#st-gradient").addEventListener("change", (e) => { draft.gradient = e.target.checked; preview(); });
+  modalBody.querySelector("#st-sphere-shading").addEventListener("change", (e) => { draft.sphereShading = e.target.checked; preview(); });
   modalBody.querySelector("#st-starfield").addEventListener("change", (e) => { draft.starfield = e.target.checked; preview(); });
+  modalBody.querySelector("#st-tag-tint").addEventListener("change", (e) => { draft.tagTint = e.target.checked; preview(); });
 
   modalBody.querySelector("#st-save").addEventListener("click", () => {
     try { localStorage.setItem(STYLE_KEY, JSON.stringify(draft)); } catch {}
@@ -2444,20 +2602,67 @@ document.getElementById("btn-style").addEventListener("click", () => {
   modalOverlay.classList.add("open");
 });
 
+// ---- Ajustar à tela --------------------------------------------------------
+// Reenquadra o grafo inteiro (nós visíveis) no viewport atual, com a mesma
+// lógica do auto-fit de celular, mas forçado: funciona em qualquer tamanho
+// de tela e mesmo depois de o usuário já ter dado zoom/pan manualmente.
+document.getElementById("btn-fit-screen").addEventListener("click", () => {
+  fitToScreen(false, true);
+});
+
 // ---- Exportar PNG --------------------------------------------------------
 // O canvas já é a imagem inteira (fundo, céu estrelado, arestas, nós, halos)
 // exatamente como está na tela — inclusive zoom/pan e seleção/busca ativos —
 // então exportar é só pedir um blob do canvas e disparar o download; nada
-// precisa ser redesenhado num canvas separado. O `draw()` explícito antes do
-// toBlob só existe para não exportar um frame potencialmente defasado: como
-// scheduleDraw() agenda via requestAnimationFrame, é teoricamente possível
-// clicar "Exportar" entre uma mudança de estado e o próximo repaint.
-// O buffer físico já nasce multiplicado por `dpr` (ver resizeCanvas()), então
-// o PNG exportado sai na resolução real da tela (nítido em retina), não na
-// contagem de pixels CSS.
+// precisa ser redesenhado num canvas separado.
+// Exportar no dpr da tela (1x em monitor comum, 2x em retina) dá um PNG do
+// tamanho exato do viewport — ótimo pra ver na tela, mas o texto pixela ao
+// dar zoom depois num visualizador de imagem, porque não sobra resolução
+// extra. Como o grafo é Canvas (não SVG — ver comentários no topo do
+// arquivo), não existe export vetorial sem reescrever o `draw()` inteiro
+// contra um contexto tipo canvas2svg; a saída pragmática é fingir um dpr
+// bem mais alto só na hora do export ("supersampling"): o buffer físico
+// nasce EXPORT_SCALE× maior que o normal, `draw()` desenha nele (ele já
+// respeita `dpr` em tudo — sprites, lineWidth, fillText — sem precisar
+// tocar numa linha da função), e o PNG final sai nítido mesmo com bastante
+// zoom, ainda que não seja "infinito" como vetor de verdade.
+const EXPORT_SCALE = 3; // multiplicador sobre o dpr atual da tela
+
 document.getElementById("btn-export-png").addEventListener("click", () => {
+  // Reler o transform direto do comportamento de zoom do D3, não confiar só
+  // na variável `zoomTransform`: ela só é reatribuída dentro do handler
+  // "zoom", então se o clique cair entre o fim de um gesto (pinça/arrasto/
+  // roda) e o próximo evento, ela pode estar um frame atrás do estado real.
+  // `d3.zoomTransform(canvas)` lê o transform que o D3 já mantém associado
+  // ao próprio elemento — é a fonte de verdade, sem essa janela de corrida.
+  zoomTransform = d3.zoomTransform(canvas);
+
+  // Troca temporária de resolução: só o buffer físico (canvas.width/height)
+  // muda, `canvas.style.width/height` (tamanho em tela) fica intocado — o
+  // navegador só escala a exibição pra baixo enquanto isso, sem "pular" o
+  // layout. `dpr` é a mesma variável que resizeCanvas() usa, e draw() já lê
+  // tudo através dela, então não há caminho de desenho separado pra manter.
+  const originalDpr = dpr;
+  const originalCanvasWidth = canvas.width;
+  const originalCanvasHeight = canvas.height;
+  dpr = originalDpr * EXPORT_SCALE;
+  canvas.width = Math.round(width * dpr);
+  canvas.height = Math.round(height * dpr);
+  clearSpriteCache(); // sprites cacheados no dpr antigo ficariam pequenos/borrados no buffer novo
+
   draw();
+
   canvas.toBlob((blob) => {
+    // Restaura o buffer físico pro tamanho de tela normal ANTES de qualquer
+    // outra coisa: canvas.toBlob() já leu o buffer grande pro blob, então
+    // não há mais necessidade dele, e deixar o canvas gigante em memória
+    // entre um export e o próximo é desperdício à toa.
+    dpr = originalDpr;
+    canvas.width = originalCanvasWidth;
+    canvas.height = originalCanvasHeight;
+    clearSpriteCache();
+    draw(); // repinta a tela no dpr normal — sem isto ficaria em branco até o próximo evento
+
     if (!blob) return; // navegador sem suporte a toBlob (raríssimo) — falha silenciosa, sem travar a UI
     const url = URL.createObjectURL(blob);
     const stamp = new Date().toISOString().slice(0, 10);
@@ -2469,6 +2674,201 @@ document.getElementById("btn-export-png").addEventListener("click", () => {
     a.remove();
     URL.revokeObjectURL(url);
   }, "image/png");
+});
+
+// ---- Exportar SVG (vetorial, zoom infinito) -------------------------------
+// PNG — mesmo supersampled (ver acima) — é raster: sempre existe um teto de
+// nitidez. Pra zoom de verdade sem perda nenhuma, a saída precisa ser vetor.
+// draw() não serve de base pra isso: ele é o coração de performance do
+// arquivo inteiro (sprites em bitmap, batching de arestas em Path2D, tiers
+// de qualidade, halos com shadowBlur...), tudo pensado pra rodar a 60fps num
+// celular — nada disso é vetorizável sem perder a otimização, e forçar os
+// dois casos de uso (tela + export) pela mesma função misturaria duas
+// preocupações que não têm nada a ver uma com a outra.
+// Por isso drawForSvgExport() é uma função própria, separada, escrita do
+// zero: desenha numa réplica mock do contexto 2D fornecida pela lib
+// canvas2svg (global C2S, carregada no <head>) — ela implementa os mesmos
+// métodos de CanvasRenderingContext2D (translate, arc, fillText,
+// createRadialGradient...) só que, em vez de rasterizar pixels, vai
+// acumulando um grafo de cena e serializa isso como <svg> no final.
+// Gradiente e glow SAEM no export: createRadialGradient() do canvas2svg gera
+// um <radialGradient> de verdade nos <defs> do SVG, não um bitmap — então dá
+// pra reaproveitar a mesma técnica de sombreamento esférico (nodeGradients)
+// e halo (haloGradients) que já existe pra tela, sem abrir mão de nitidez em
+// zoom nenhum. O que fica de fora é só o glow "alto" via shadowBlur — essa
+// propriedade não tem suporte confiável nesta lib — então "alto" e "leve"
+// desenham o mesmo halo em gradiente no export; a diferença de intensidade
+// entre os dois modos só existe na tela.
+// Roda mais devagar que o draw() de tela (sem culling agressivo, sem
+// batching, sem cache de sprite) — tudo bem, só acontece uma vez, no clique
+// de exportar, não a cada frame.
+// Círculo unitário desenhado como dois semicírculos, não um arco 0→2π: o
+// comando de arco elíptico do SVG não representa um círculo fechado (ponto
+// inicial teria que ser igual ao final), e o canvas2svg — como vários outros
+// conversores canvas→svg — trata startAngle===endAngle (depois do módulo 2π)
+// como "nada a desenhar", igual o Canvas nativo faz quando os dois ângulos
+// batem exato. O sintoma real foi esse: halo e nó (os dois únicos lugares
+// que desenhavam círculo fechado) sumiam do SVG inteiro — sobrava só fundo,
+// aresta e texto, que é exatamente a tela quase preta relatada no Xplore.
+function unitCircle(c) {
+  c.beginPath();
+  c.arc(0, 0, 1, 0, Math.PI);
+  c.arc(0, 0, 1, Math.PI, Math.PI * 2);
+}
+
+function drawForSvgExport() {
+  const c = new C2S(width, height); // tamanho em px CSS — vetor não precisa de dpr/supersampling
+
+  c.fillStyle = (styleConfig.colors && styleConfig.colors.background) || "#1b1e21";
+  c.fillRect(0, 0, width, height);
+
+  // Gradientes construídos uma vez, no espaço unitário (-1..1 / 0..1), e
+  // reaproveitados por tipo em todos os nós — exatamente a mesma técnica de
+  // buildGradients(): o CanvasGradient guarda só os stops, e um
+  // translate+scale por nó (mais abaixo) estica ele pro raio de fato, sem
+  // precisar recriar o objeto a cada nó.
+  const svgNodeGradients = {};
+  const svgHaloGradients = {};
+  if (styleConfig.gradient || styleConfig.glow !== "off") {
+    Object.keys(styleConfig.colors || {}).forEach(type => {
+      if (type === "background" || type === "edge") return;
+      const color = styleConfig.colors[type] || "#888";
+      if (styleConfig.gradient) {
+        const g = c.createRadialGradient(-0.3, -0.35, 0, 0, 0, 1);
+        g.addColorStop(0, mixWhite(color, 0.55));
+        g.addColorStop(1, color);
+        svgNodeGradients[type] = g;
+      }
+      if (styleConfig.glow !== "off") {
+        const h = c.createRadialGradient(0, 0, 0, 0, 0, 1);
+        h.addColorStop(0, hexToRgba(color, 0.5));
+        h.addColorStop(1, hexToRgba(color, 0));
+        svgHaloGradients[type] = h;
+      }
+    });
+  }
+
+  c.save();
+  c.translate(zoomTransform.x, zoomTransform.y);
+  c.scale(zoomTransform.k, zoomTransform.k);
+
+  // Mesmo critério de "dentro da tela" do draw() principal, só que sem culling
+  // por índice espacial: aqui não há orçamento de frame a respeitar.
+  const [wx0, wy0] = zoomTransform.invert([0, 0]);
+  const [wx1, wy1] = zoomTransform.invert([width, height]);
+  const pad = 80;
+  const inView = (n) => n.x >= wx0 - pad && n.x <= wx1 + pad && n.y >= wy0 - pad && n.y <= wy1 + pad;
+
+  // Arestas: um beginPath/stroke por aresta (sem o batching em Path2D do
+  // draw() de tela — aqui não corre a 60fps, então o custo extra não importa,
+  // e evita depender de suporte a Path2D dentro do mock do canvas2svg).
+  if (styleConfig.edgeVisibility !== "off") {
+    c.lineWidth = 1.2 / zoomTransform.k;
+    c.strokeStyle = styleConfig.colors.edge;
+    data.edges.forEach(e => {
+      const s = endpoint(e.source), t = endpoint(e.target);
+      if (!s || !t || !isNodeVisible(s) || !isNodeVisible(t)) return;
+      if (!inView(s) && !inView(t)) return;
+      const dim = edgeDimmed(e);
+      c.globalAlpha = dim ? 0.08 : styleConfig.edgeOpacity;
+      // setLineDash pode não existir nesta versão do mock — checar antes de
+      // chamar evita estourar a função inteira por causa de um detalhe
+      // cosmético (linha tracejada vs. sólida) que não é o motivo do export.
+      if (typeof c.setLineDash === "function") {
+        c.setLineDash(e.kind === "reference" ? [3, 3] : []);
+      }
+      c.beginPath();
+      c.moveTo(s.x, s.y);
+      c.lineTo(t.x, t.y);
+      c.stroke();
+    });
+    c.globalAlpha = 1;
+  }
+
+  // Nós: halo de glow (se ligado) por trás, depois o próprio nó — em
+  // gradiente esférico se `styleConfig.gradient` estiver ligado, senão cor
+  // chapada. translate+scale por nó pra reaproveitar os gradientes unitários
+  // construídos acima (mesmo truque de drawHalo()/getNodeSprite() na tela).
+  data.nodes.forEach(n => {
+    if (!isNodeVisible(n) || !inView(n)) return;
+    const r = radiusOf(n);
+    const dim = nodeDimmed(n);
+    const type = n.type;
+
+    if (styleConfig.glow !== "off") {
+      c.save();
+      c.globalAlpha = dim ? 0.08 : 1;
+      c.translate(n.x, n.y);
+      c.scale(r * 2.4, r * 2.4);
+      unitCircle(c);
+      c.fillStyle = svgHaloGradients[type] || "transparent";
+      c.fill();
+      c.restore();
+    }
+
+    c.save();
+    c.globalAlpha = dim ? 0.08 : 1;
+    c.translate(n.x, n.y);
+    c.scale(r, r);
+    unitCircle(c);
+    c.fillStyle = styleConfig.gradient ? (svgNodeGradients[type] || typeColorRaw(n)) : typeColorRaw(n);
+    c.fill();
+    // lineWidth compensado pelo scale(r,r): 1px de verdade vira r depois de
+    // escalado, então 1/r devolve a espessura real de contorno pretendida.
+    c.lineWidth = 1 / r;
+    c.strokeStyle = "#0b1220";
+    c.stroke();
+    c.restore();
+  });
+  c.globalAlpha = 1;
+
+  // Rótulos — o motivo original do pedido: em SVG o texto é elemento <text>
+  // de verdade, então fica nítido em qualquer zoom, ao contrário do PNG.
+  if (labelsShown) {
+    c.font = `${styleConfig.labelSize}px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif`;
+    c.textAlign = "center";
+    c.fillStyle = "#e6e9ec";
+    data.nodes.forEach(n => {
+      if (n.type === "reference" || !isNodeVisible(n) || !inView(n)) return;
+      c.globalAlpha = nodeDimmed(n) ? 0.08 : 0.85;
+      c.fillText(n.title, n.x, n.y - (2 + radiusOf(n)));
+    });
+    c.globalAlpha = 1;
+  }
+
+  c.restore();
+
+  // getSerializedSvg() devolve width/height fixos em px (o tamanho da tela
+  // de onde foi exportado) e nenhum viewBox — abrir esse arquivo direto
+  // (Chrome, Xplore etc.) mostra o SVG no tamanho físico original, sem
+  // escalar pro viewport do visualizador: um grafo exportado de um celular
+  // de ~400px de largura aparece "pequeno, no canto superior esquerdo" numa
+  // tela grande, porque é isso mesmo que os 400px valem lá. Substituir
+  // width/height por 100% + acrescentar viewBox com as dimensões originais
+  // faz o SVG se comportar como imagem responsiva: preenche a janela do
+  // visualizador (ou o elemento onde for embutido depois) mantendo a
+  // proporção, em vez de ficar travado no tamanho de pixel de origem.
+  let svgString = c.getSerializedSvg(true); // true: entidades nomeadas -> numéricas, exigido por SVG standalone
+  svgString = svgString.replace(/<svg\b([^>]*)>/, (match, attrs) => {
+    const cleanAttrs = attrs.replace(/ (width|height)="[0-9.]+"/g, "");
+    return `<svg${cleanAttrs} width="100%" height="100%" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet">`;
+  });
+  return svgString;
+}
+
+document.getElementById("btn-export-svg").addEventListener("click", () => {
+  zoomTransform = d3.zoomTransform(canvas); // mesma fonte de verdade usada no export PNG
+  const svgString = drawForSvgExport();
+  const blob = new Blob([svgString], { type: "image/svg+xml" });
+  const url = URL.createObjectURL(blob);
+  const stamp = new Date().toISOString().slice(0, 10);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `grafo-second-brain-${stamp}.svg`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 });
 
 // Fechar o modal de Estilo sem clicar "Salvar" descarta o rascunho e volta
