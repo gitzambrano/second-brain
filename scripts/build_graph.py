@@ -53,7 +53,10 @@ Usage:
 """
 
 import json
+import math
+import random
 import re
+import time
 from collections import defaultdict
 from pathlib import Path
 
@@ -95,7 +98,38 @@ GRAPH_STYLE = {
     "radiusBase": 5,
     "radiusScale": 3,
     "labelSize": 10,
-    "glow": True,
+    # "off" | "leve" (halo sem blur, barato) | "alto" (drop-shadow com blur,
+    # mais bonito porém pesado em SVG — cada nó vira uma rasterização à
+    # parte; em grafos grandes ou no Chrome mobile isso é o maior vilão de
+    # FPS que existe aqui). "leve" é o padrão por ser barato E ainda dar
+    # uma sensação de brilho.
+    "glow": "leve",
+    "starfield": True,
+    "gradient": True,
+    # "degree" (nº de conexões visíveis), "bytes" ou "lines" (tamanho do
+    # corpo do arquivo). Só afeta essay/concept/entity/insights — reference
+    # não tem arquivo e sempre usa o raio base.
+    "sizeMode": "degree",
+    # Multiplicador de distância entre bolinhas (colisão + arestas + carga).
+    # 1 = padrão; acima disso, o grafo "respira" mais quando fica denso
+    # demais pra ler.
+    "spacing": 1,
+    # "auto" | "alta" | "media" | "baixa" — ver PERFORMANCE_TIERS no HTML
+    # gerado. "auto" decide pelo tamanho do grafo e pelo aparelho (celular
+    # entra em "baixa"/"média" sozinho); as wikis grandes se beneficiam
+    # de deixar em "auto" e não pensar mais nisso.
+    "performance": "auto",
+}
+
+# Aplicado por cima de GRAPH_STYLE no navegador, só quando o próprio
+# navegador se identifica como celular/tablet (toque ou tela pequena) — e só
+# se o usuário nunca salvou uma preferência própria naquele aparelho. Glow e
+# céu estrelado são os itens puramente decorativos mais caros de render;
+# desligá-los por padrão no celular evita que a maioria dos usuários mobile
+# precise descobrir o painel de Estilo só pra destravar performance.
+GRAPH_STYLE_MOBILE_OVERRIDES = {
+    "glow": "off",
+    "starfield": False,
 }
 
 
@@ -164,17 +198,27 @@ def build_graph():
                 "title": title,
                 "type": node_type,
                 "subtype": subtype,
+                "maturidade": fm.get("maturidade") if node_type == "insights" else None,
                 "tags": fm.get("tags", []) if isinstance(fm.get("tags"), list) else [],
                 "file": str(file.relative_to(ROOT_DIR)),
                 "url": None,
                 "degree": 0,
             }
             title_to_id[title] = node_id
-            # O slug do arquivo também indexa o nó: a forma canônica de wikilink
-            # é `[[slug|Título]]`, porque é a única que o Obsidian resolve.
-            # Indexar só pelo H1 fazia o grafo perder a maioria das arestas.
+            # O slug do arquivo também indexa o nó. A forma canônica de wikilink
+            # na wiki é `[[slug|Título]]`, porque é a única que o Obsidian
+            # resolve, então o alvo que aparece no texto é o SLUG. Indexar só
+            # pelo H1 derrubava o grafo de ~2500 para ~780 arestas, e nós sem
+            # aresta somem da tela.
             title_to_id.setdefault(file.stem, node_id)
-            bodies[node_id] = strip_fences(strip_frontmatter(content))
+            body_text = strip_fences(strip_frontmatter(content))
+            bodies[node_id] = body_text
+            # Tamanho do essay como proxy de "densidade" — alternativa ao grau
+            # como métrica de raio da bolinha no grafo (ver GRAPH_STYLE/sizeMode
+            # e o painel "Estilo" no HTML: nem todo nó denso é bem conectado
+            # ainda, e vice-versa; o usuário escolhe qual conta mais para ele).
+            nodes[node_id]["sizeBytes"] = len(body_text.encode("utf-8"))
+            nodes[node_id]["sizeLines"] = len([ln for ln in body_text.splitlines() if ln.strip()])
             if node_type == "essay":
                 slug_to_id[file.stem] = node_id
 
@@ -210,6 +254,8 @@ def build_graph():
             "file": None,
             "url": ref.get("url"),
             "degree": 0,
+            "sizeBytes": 0,
+            "sizeLines": 0,
         }
         for slug in ref.get("cited_by", []):
             essay_id = slug_to_id.get(slug)
@@ -221,6 +267,102 @@ def build_graph():
 
     isolated = [n["title"] for n in nodes.values() if n["degree"] == 0]
     return list(nodes.values()), edges, isolated
+
+
+def compute_layout(nodes, edges, width=1600, height=1000, iterations=None, seed=42):
+    """Layout força-dirigida (Fruchterman-Reingold simplificado), em Python
+    puro, sem dependências novas.
+
+    Por quê fazer isto no build em vez de deixar o navegador calcular: o
+    d3.forceSimulation no cliente começa de posições aleatórias e precisa de
+    ~300 ticks (cada um recalculando repulsão de todo par de nós) até
+    "assentar" — e cada tick redesenha o SVG inteiro. Isso roda toda vez que
+    alguém abre o HTML, inclusive no celular, onde é sensivelmente mais
+    lento que no desktop. Pré-calcular aqui, uma vez, no build, e embutir
+    x/y prontos no JSON faz o navegador abrir quase já assentado — o
+    d3.forceSimulation no cliente só precisa de umas dezenas de ticks pra
+    resolver sobreposição fina, não o layout inteiro do zero.
+
+    O algoritmo é O(nós² × iterações) — aceitável em build time (roda uma
+    vez quando o Usuário chama o script, não a cada carregamento de página).
+    `iterations=None` escala automaticamente pelo tamanho do grafo (menos
+    iterações em wikis grandes) pra manter o build na casa de segundos;
+    passe um número explícito pra forçar mais precisão.
+    """
+    rng = random.Random(seed)
+    n = len(nodes)
+    if n == 0:
+        return
+    if n == 1:
+        nodes[0]["x0"] = width / 2
+        nodes[0]["y0"] = height / 2
+        return
+
+    if iterations is None:
+        if n <= 300:
+            iterations = 250
+        elif n <= 800:
+            iterations = 120
+        else:
+            iterations = 60
+
+    area = width * height
+    k = math.sqrt(area / n)  # distância "ideal" de equilíbrio entre nós
+
+    pos = {node["id"]: [rng.uniform(0, width), rng.uniform(0, height)] for node in nodes}
+    node_ids = [node["id"] for node in nodes]
+
+    for it in range(iterations):
+        temp = (1 - it / iterations) * (width / 10)  # esfria: passos grandes no início, finos no fim
+        disp = {nid: [0.0, 0.0] for nid in node_ids}
+
+        # Repulsão entre todos os pares — o termo O(n²) do algoritmo.
+        for i in range(n):
+            xi, yi = pos[node_ids[i]]
+            for j in range(i + 1, n):
+                xj, yj = pos[node_ids[j]]
+                dx, dy = xi - xj, yi - yj
+                dist = math.hypot(dx, dy) or 0.01
+                force = (k * k) / dist
+                fx, fy = (dx / dist) * force, (dy / dist) * force
+                disp[node_ids[i]][0] += fx
+                disp[node_ids[i]][1] += fy
+                disp[node_ids[j]][0] -= fx
+                disp[node_ids[j]][1] -= fy
+
+        # Atração ao longo das arestas.
+        for e in edges:
+            a, b = e["source"], e["target"]
+            if a not in pos or b not in pos:
+                continue
+            xa, ya = pos[a]
+            xb, yb = pos[b]
+            dx, dy = xa - xb, ya - yb
+            dist = math.hypot(dx, dy) or 0.01
+            force = (dist * dist) / k
+            fx, fy = (dx / dist) * force, (dy / dist) * force
+            disp[a][0] -= fx
+            disp[a][1] -= fy
+            disp[b][0] += fx
+            disp[b][1] += fy
+
+        for nid in node_ids:
+            dx, dy = disp[nid]
+            dist = math.hypot(dx, dy) or 0.01
+            step = min(dist, temp)
+            pos[nid][0] += (dx / dist) * step
+            pos[nid][1] += (dy / dist) * step
+            # Mantém dentro da área — evita que outliers fujam pro infinito
+            # em grafos muito assimétricos (um nó com grau 1 isolado longe
+            # do resto), o que faria o fit-to-screen do cliente zoom out
+            # demais no primeiro carregamento.
+            pos[nid][0] = min(width, max(0, pos[nid][0]))
+            pos[nid][1] = min(height, max(0, pos[nid][1]))
+
+    for node in nodes:
+        x, y = pos[node["id"]]
+        node["x0"] = round(x, 1)
+        node["y0"] = round(y, 1)
 
 
 def union_find_components(nodes, edges):
@@ -384,6 +526,13 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   #graph { background: radial-gradient(ellipse at center, color-mix(in srgb, var(--bg) 92%, white) 0%, var(--bg) 72%); }
   circle.node-glow { filter: var(--node-glow); }
   .dim { opacity: .08; }
+  circle { transition: opacity .25s ease, filter .2s ease, stroke-width .15s ease; }
+  circle:hover { stroke-width: 2px; }
+  /* Escala no hover só quando parado (sem `.dragging`) — durante o arrasto
+     o d3.drag já reposiciona `cx`/`cy` a cada frame; empilhar uma transform
+     de escala por cima brigaria com isso e o nó "tremeria" ao ser puxado. */
+  g.node:not(.dragging) circle:hover { transform: scale(1.12); transform-box: fill-box; transform-origin: center; }
+  .link { transition: opacity .25s ease; }
   .hidden-node { display: none; }
   #modal-overlay { display:none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 20; }
   #modal-overlay.open { display: flex; align-items: center; justify-content: center; }
@@ -406,16 +555,47 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     background: transparent; color: var(--ink-dim); font-size: 11px; cursor: pointer; font-family: inherit; }
   .idx-tab:hover { color: var(--ink); }
   .idx-tab.active { background: var(--instrument-blue); border-color: var(--instrument-blue); color: #0b1220; font-weight: 600; }
+
   #idx-search { width: 100%; padding: 7px 10px; border-radius: 6px; border: 1px solid var(--panel-border);
-    background: #1b1e21; color: var(--ink); font-size: 12px; margin-bottom: 10px; font-family: inherit; }
+    background: #1b1e21; color: var(--ink); font-size: 12px; font-family: inherit; margin-bottom: 8px; }
   #idx-search:focus { outline: none; border-color: var(--instrument-blue); }
-  .idx-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 14px; }
+
+  /* `<details>` nativo — some sozinho a lógica de abrir/fechar, sem estado
+     em JS. Fecha por padrão no celular (o JS decide o atributo `open` na
+     hora de montar o HTML, olhando o mesmo sinal de "tela pequena" que o
+     resto do layout responsivo usa) e some com o filtro fino até o usuário
+     pedir por ele — é o que sobra pra lista de verdade quando a tela é
+     estreita. No desktop, tudo continua visível por padrão, como antes. */
+  .idx-more { margin-bottom: 10px; }
+  .idx-more summary { cursor: pointer; font-size: 11px; color: var(--ink-dim); padding: 4px 0;
+    list-style: none; user-select: none; }
+  .idx-more summary::-webkit-details-marker { display: none; }
+  .idx-more summary::before { content: "▸ "; }
+  .idx-more[open] summary::before { content: "▾ "; }
+  .idx-more summary:hover { color: var(--ink); }
+  .idx-more[open] summary { margin-bottom: 6px; }
+
+  .idx-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .idx-range { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--ink-dim); }
+  .idx-range input[type="number"] { width: 52px; padding: 6px 6px; border-radius: 6px; border: 1px solid var(--panel-border);
+    background: #1b1e21; color: var(--ink); font-size: 12px; font-family: inherit; }
+  #idx-maturidade { padding: 6px 8px; border-radius: 6px; border: 1px solid var(--panel-border);
+    background: #1b1e21; color: var(--ink); font-size: 11px; font-family: inherit; cursor: pointer; }
+  .idx-clear { margin-top: 0; padding: 6px 10px; font-size: 11px; }
+
+  .idx-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 4px; }
   .idx-chip { font-size: 10px; padding: 3px 9px; border-radius: 999px; cursor: pointer; font-family: inherit;
     border: 1px solid var(--panel-border); background: transparent; color: var(--ink-dim); }
   .idx-chip:hover { color: var(--ink); border-color: var(--ink-dim); }
   .idx-chip.on { background: rgba(79,168,255,.18); border-color: var(--instrument-blue); color: var(--instrument-blue); }
   .idx-tagcell { display: flex; flex-wrap: wrap; gap: 3px; }
   .idx-empty { font-size: 12px; color: var(--ink-dim); padding: 18px 4px; }
+  .idx-count { font-size: 11px; color: var(--ink-dim); margin-bottom: 6px; }
+  #modal mark { background: rgba(79,168,255,.35); color: var(--ink); border-radius: 2px; padding: 0 1px; }
+  /* Setinha de direção no cabeçalho ordenado — sinal visual rápido de qual
+     coluna manda e em que sentido, sem precisar clicar de novo pra saber. */
+  #modal th.sorted.asc::after { content: " ▲"; font-size: 9px; }
+  #modal th.sorted.desc::after { content: " ▼"; font-size: 9px; }
 
   /* ---- Tela pequena ----------------------------------------------------
      Nada aqui altera o desktop: tudo mora dentro da media query. O painel
@@ -441,7 +621,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     #panel.collapsed { display: none; }
     #panel h1 { display: none; }
     /* 16px evita o zoom automático que o iOS aplica em campo de texto menor. */
-    #search, #idx-search { font-size: 16px; padding: 10px 12px; }
+    #search, #idx-search, .idx-range input, #idx-maturidade { font-size: 16px; padding: 10px 12px; }
+    .idx-filters { flex-direction: column; align-items: stretch; }
+    .idx-range { justify-content: space-between; }
+    .idx-range input[type="number"] { flex: 1; width: auto; }
+    .idx-clear { width: 100%; }
     .legend-item { font-size: 13px; padding: 7px 8px; }
     .dot { width: 12px; height: 12px; }
     .btn { padding: 10px 12px; font-size: 13px; }
@@ -453,8 +637,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     #modal .close { font-size: 14px; padding: 4px 8px; }
     .idx-tab { padding: 8px 14px; font-size: 12px; }
     .idx-chip { padding: 6px 11px; font-size: 11px; }
-    /* A lista de tags pode ficar longa; limita a altura e rola só ela. */
-    .idx-tags { max-height: 22dvh; overflow-y: auto; }
+    /* Linha única, rolando na horizontal — bem mais compacto na vertical do
+       que deixar as tags quebrarem linha e empilharem. Isto já mora dentro
+       do <details> fechado por padrão, então some da vista até o usuário
+       pedir "Mais filtros" mesmo. */
+    .idx-tags { flex-wrap: nowrap; overflow-x: auto; max-height: none; padding-bottom: 4px; }
+    .idx-chip { flex: none; }
     /* Tabela em coluna: cabeçalho de tabela não cabe em tela estreita. */
     #modal table, #modal tbody, #modal tbody tr, #modal td { display: block; width: 100%; }
     /* O cabeçalho vira barra de ordenação em vez de sumir: sem ele o índice
@@ -465,8 +653,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
       border-radius: 6px; background: rgba(255,255,255,.05); border-bottom: none; position: static; }
     #modal tbody tr { border-bottom: 1px solid #2b2f33; padding: 10px 2px; }
     #modal td { border: none; padding: 2px; }
-    #modal td:last-child { color: var(--ink-dim); font-size: 11px; }
-    #modal td:last-child::before { content: "conexões: "; }
+    #modal td[data-label]:not([data-label="Título"]):not([data-label="Tags"]) { color: var(--ink-dim); font-size: 11px; }
+    #modal td[data-label]:not([data-label="Título"]):not([data-label="Tags"])::before { content: attr(data-label) ": "; }
     .node-title { font-size: 12px; }
   }
   .gap-item { font-size: 12px; margin: 4px 0; color: var(--ink-dim); }
@@ -484,6 +672,11 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   .style-actions .btn { margin-top: 0; text-align: center; }
   .style-primary { background: var(--instrument-blue) !important; color: #0b1220 !important; font-weight: 600;
     border-color: var(--instrument-blue) !important; }
+  .style-row select { background: var(--panel); color: var(--ink); border: 1px solid var(--panel-border);
+    border-radius: 6px; padding: 5px 8px; font-size: 12px; font-family: inherit; cursor: pointer; }
+  .style-hint { font-size: 11px; color: var(--ink-dim); margin: -4px 0 10px 0; line-height: 1.4; }
+  .theme-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .theme-btn { flex: 1; min-width: 90px; margin-top: 0; }
 </style>
 </head>
 <body>
@@ -513,21 +706,42 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <script>
 const data = __DATA_JSON__;
 
+// Toque grosso (dedo, não mouse) OU tela pequena — cobre tablet/celular
+// mesmo quando `matchMedia("pointer: coarse")` falha (alguns Android
+// antigos). É intencionalmente mais amplo que `telaPequena()` (que só olha
+// largura de tela pra decidir layout do painel): aqui a pergunta é "este
+// aparelho tem menos fôlego de CPU/GPU pra física e SVG", não "a tela é
+// estreita" — as duas coisas costumam andar juntas mas não são a mesma.
+function isMobileDevice() {
+  const coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+  const small = Math.min(window.innerWidth, window.innerHeight) < 820;
+  return coarse || small;
+}
+const DEVICE_IS_MOBILE = isMobileDevice();
+
 // ---- Estilo (cores, raio, rótulo) --------------------------------------
 // `defaultStyle` vem do Python (GRAPH_STYLE) — é o padrão "de fábrica" da
 // wiki. `localStorage` guarda só o que o usuário mudou neste navegador; se
 // o Python mudar o padrão depois, quem nunca customizou nada recebe o novo
-// padrão automaticamente (não fica preso a uma cópia congelada).
+// padrão automaticamente (não fica preso a uma cópia congelada). No celular,
+// por cima do padrão do Python ainda entram os `mobileOverrides` — glow e
+// cenário custam mais no Chrome mobile do que no desktop, então o ponto de
+// partida já nasce mais leve lá, sem o usuário precisar descobrir isso
+// sozinho abrindo o painel de Estilo.
 const STYLE_VARS = {
   essay: "--instrument-blue", concept: "--concept", entity: "--entity",
   insights: "--insight", reference: "--reference", edge: "--edge", background: "--bg",
 };
 const STYLE_KEY = "sb-graph-style-v1";
-const defaultStyle = data.defaultStyle || {
+const FACTORY_STYLE = data.defaultStyle || {
   colors: { essay: "#4fa8ff", concept: "#5fd3c4", entity: "#e8b657", insights: "#b48ce8",
     reference: "#8a8f96", edge: "#454b52", background: "#1b1e21" },
-  edgeOpacity: 0.55, radiusBase: 5, radiusScale: 3, labelSize: 10, glow: true,
+  edgeOpacity: 0.55, radiusBase: 5, radiusScale: 3, labelSize: 10,
+  glow: "leve", starfield: true, gradient: true, sizeMode: "degree",
+  spacing: 1, performance: "auto",
 };
+const MOBILE_OVERRIDES = data.defaultStyleMobileOverrides || { glow: "off", starfield: false };
+const defaultStyle = DEVICE_IS_MOBILE ? { ...FACTORY_STYLE, ...MOBILE_OVERRIDES } : FACTORY_STYLE;
 
 function loadSavedStyle() {
   try {
@@ -546,6 +760,29 @@ function mergeWithDefaults(saved) {
 
 let styleConfig = mergeWithDefaults(loadSavedStyle());
 
+// ---- Nível de desempenho da simulação/renderização ---------------------
+// "auto" decide sozinho a partir de aparelho + tamanho do grafo. Os outros
+// três (alta/média/baixa) são escolha explícita do usuário, sobrepondo o
+// automático. `theta` é o parâmetro de aproximação Barnes-Hut do
+// forceManyBody do d3 (quanto maior, mais aproximado e mais rápido, com
+// leve perda de precisão no layout); `distanceMax` limita o alcance da
+// repulsão entre nós distantes, que em grafos grandes é boa parte do custo
+// por tick mesmo com a árvore já aproximando; `collideIterations` é quantas
+// vezes o d3 relaxa colisões por tick (mais = menos sobreposição, mais CPU).
+const PERFORMANCE_TIERS = {
+  alta: { theta: 0.82, distanceMax: Infinity, collideIterations: 2, labelsAlways: true },
+  media: { theta: 1.0, distanceMax: 700, collideIterations: 1, labelsAlways: true },
+  baixa: { theta: 1.3, distanceMax: 420, collideIterations: 1, labelsAlways: false },
+};
+function resolvePerformanceTier(cfg) {
+  if (cfg.performance && cfg.performance !== "auto") return cfg.performance;
+  const n = data.nodes.length;
+  if (DEVICE_IS_MOBILE) return n > 200 ? "baixa" : "media";
+  if (n > 600) return "baixa";
+  if (n > 250) return "media";
+  return "alta";
+}
+
 function applyStyle(cfg, opts) {
   styleConfig = cfg;
   const root = document.documentElement.style;
@@ -556,11 +793,29 @@ function applyStyle(cfg, opts) {
   root.setProperty("--radius-base", cfg.radiusBase);
   root.setProperty("--radius-scale", cfg.radiusScale);
   root.setProperty("--label-size", cfg.labelSize + "px");
-  root.setProperty("--node-glow", cfg.glow ? "drop-shadow(0 0 4px currentColor)" : "drop-shadow(0 0 0 transparent)");
+  // "alto" usa filter: drop-shadow (bonito, caro — rasteriza cada nó à
+  // parte). "leve" usa um halo desenhado como círculo comum, sem filter —
+  // visualmente mais simples mas praticamente de graça em qualquer
+  // aparelho. "off" desliga os dois.
+  root.setProperty("--node-glow", cfg.glow === "alto" ? "drop-shadow(0 0 4px currentColor)" : "none");
+
+  starfieldSel.style("display", cfg.starfield ? null : "none");
+
+  // Sempre reaplica fill/raio/halo — são só atributos em poucas dezenas ou
+  // centenas de elementos, baratos mesmo na carga inicial. O que É caro
+  // (reiniciar a simulação) fica isolado abaixo, atrás do `silent`.
+  nodeSel.attr("r", radiusOf)
+    .classed("node-glow", cfg.glow === "alto")
+    .style("color", d => typeColorRaw(d))
+    .attr("fill", d => cfg.gradient ? `url(#grad-${d.type})` : typeColorRaw(d));
+  haloSel
+    .attr("r", d => radiusOf(d) * 1.7)
+    .attr("fill", d => typeColorRaw(d))
+    .style("opacity", cfg.glow === "leve" ? 0.28 : 0);
+  labelSel.attr("dy", d => -(2 + radiusOf(d)));
+
   if (!opts || !opts.silent) {
-    nodeSel.attr("r", radiusOf).classed("node-glow", !!cfg.glow).style("color", d => typeColorRaw(d));
-    labelSel.attr("dy", d => -(2 + radiusOf(d)));
-    simulation.force("collide", d3.forceCollide().radius(d => 7 + radiusOf(d)));
+    applyForces(cfg);
     simulation.alpha(0.3).restart();
   }
 }
@@ -569,17 +824,40 @@ function typeColorRaw(n) {
   return (styleConfig.colors && styleConfig.colors[n.type]) || "#888";
 }
 
-const typeColor = (n) => {
-  if (n.type === "essay") return "var(--instrument-blue)";
-  if (n.type === "concept") return "var(--concept)";
-  if (n.type === "entity") return "var(--entity)";
-  if (n.type === "insights") return "var(--insight)";
-  if (n.type === "reference") return "var(--reference)";
-  return "#888";
-};
-
 let width = window.innerWidth, height = window.innerHeight;
 const svg = d3.select("#graph").attr("viewBox", [0, 0, width, height]);
+
+// Gradiente radial por tipo — usa var() no próprio atributo `style` do
+// `<stop>`, então quando applyStyle() muda a cor no :root, o degradê
+// acompanha sozinho, sem nenhum JS extra por nó. O centro claro (color-mix
+// com branco) e a borda na cor cheia dão o efeito de "esfera com luz",
+// mais bonito que um preenchimento chapado, e custa zero por tick — é
+// definido uma vez, os nós só referenciam por `url(#grad-tipo)`.
+const defs = svg.append("defs");
+Object.entries(STYLE_VARS).forEach(([type, cssVar]) => {
+  if (type === "background" || type === "edge") return;
+  const grad = defs.append("radialGradient")
+    .attr("id", `grad-${type}`).attr("cx", "35%").attr("cy", "32%").attr("r", "70%");
+  grad.append("stop").attr("offset", "0%")
+    .attr("style", `stop-color: color-mix(in srgb, var(${cssVar}) 55%, white)`);
+  grad.append("stop").attr("offset", "100%")
+    .attr("style", `stop-color: var(${cssVar})`);
+});
+
+// Campo de estrelas decorativo, fixo atrás do grafo (fora do <g> que recebe
+// pan/zoom, então não se move — é cenário, não conteúdo). Só desenhado uma
+// vez no carregamento: são elementos estáticos, sem listener, sem custo por
+// frame, então não pesa mesmo em wikis grandes.
+const starfieldSel = svg.append("g").attr("class", "starfield").attr("aria-hidden", "true");
+const STAR_COUNT = 140;
+for (let i = 0; i < STAR_COUNT; i++) {
+  starfieldSel.append("circle")
+    .attr("cx", Math.random() * width).attr("cy", Math.random() * height)
+    .attr("r", Math.random() * 1.1 + 0.2)
+    .attr("fill", "#ffffff")
+    .attr("opacity", Math.random() * 0.5 + 0.08);
+}
+
 const container = svg.append("g");
 
 // Fica marcado assim que o próprio usuário mexe no zoom/pan (toque, roda ou
@@ -607,6 +885,7 @@ const zoom = d3.zoom()
   })
   .on("zoom", (event) => {
     container.attr("transform", event.transform);
+    updateLabelVisibility(event.transform.k);
     // `sourceEvent` só existe quando a transformação veio de uma interação
     // real (toque, roda, arrasto) — chamadas programáticas como o
     // fitToScreen() não têm, então não acionam esta marca.
@@ -660,56 +939,152 @@ function recomputeVisibleDegrees() {
   });
 }
 
-const radiusOf = (d) => styleConfig.radiusBase + Math.sqrt(d.visibleDegree ?? d.degree) * styleConfig.radiusScale;
+// Bytes/linhas variam muito mais que grau (um essay grande pode ter 15000
+// bytes vs. um insight solto com 200) — por isso os modos "bytes"/"lines"
+// normalizam pelo máximo do dataset (0 a 1) antes de aplicar a escala,
+// senão o slider "Escala por conexões" precisaria de valores completamente
+// diferentes dependendo do modo escolhido. O modo "degree" fica como estava
+// (sem normalizar), pra não mudar o visual de quem já usa o padrão.
+const maxSizeBytes = Math.max(1, ...data.nodes.map(n => n.sizeBytes || 0));
+const maxSizeLines = Math.max(1, ...data.nodes.map(n => n.sizeLines || 0));
+const SIZE_NORM_K = 4; // calibrado pra "bytes"/"lines" ocuparem faixa visual parecida com "degree"
 
-const nodeSel = container.append("g").selectAll("circle")
-  .data(data.nodes).join("circle")
-  .attr("r", radiusOf)
-  .attr("fill", d => typeColor(d))
-  .attr("stroke", "#0b1220")
-  .attr("stroke-width", 1)
-  .style("cursor", "pointer")
-  .style("color", d => typeColorRaw(d))
+const radiusOf = (d) => {
+  const base = styleConfig.radiusBase, scale = styleConfig.radiusScale;
+  if (styleConfig.sizeMode === "bytes") {
+    return base + Math.sqrt((d.sizeBytes || 0) / maxSizeBytes) * scale * SIZE_NORM_K;
+  }
+  if (styleConfig.sizeMode === "lines") {
+    return base + Math.sqrt((d.sizeLines || 0) / maxSizeLines) * scale * SIZE_NORM_K;
+  }
+  return base + Math.sqrt(d.visibleDegree ?? d.degree) * scale;
+};
+
+// Semeia com o layout já calculado no build (ver compute_layout() no
+// Python) em vez de deixar o d3 começar de posições aleatórias. Isso é o
+// que faz o celular não precisar rodar a simulação inteira do zero — só
+// uma passada curta de ajuste fino (colisão) por cima de um layout que já
+// está quase certo.
+// ...mas semeando COMPRIMIDO em direção ao centro, não na posição final.
+// Semear exato deixava a simulação sem nada a resolver: ela rodava, e o
+// grafo aparecia congelado, sem movimento nem colisão visível. Começando
+// contraído, os nós se abrem até o lugar certo em ~2s, o que devolve a
+// animação orgânica sem pagar o custo de descobrir o layout do zero — a
+// topologia já está certa, só a escala é que se resolve na tela.
+const BLOOM = 0.55;          // 1 = já na posição final (estático)
+const JITTER = 18;           // quebra simetria, senão nós coincidentes travam
+data.nodes.forEach(n => {
+  const bx = n.x0 ?? width / 2;
+  const by = n.y0 ?? height / 2;
+  n.x = width / 2 + (bx - width / 2) * BLOOM + (Math.random() - 0.5) * JITTER;
+  n.y = height / 2 + (by - height / 2) * BLOOM + (Math.random() - 0.5) * JITTER;
+});
+
+// Um <g> por nó com UMA transform por tick, em vez de cx/cy no círculo e
+// x/y no texto separadamente — metade das escritas de atributo por frame.
+// Isso importa mais no celular: o Chrome mobile tem bem menos margem de
+// CPU/GPU que desktop pra reescrever atributos SVG a 60fps.
+const nodeGroup = container.append("g").selectAll("g.node")
+  .data(data.nodes).join("g")
+  .attr("class", "node")
+  .attr("transform", d => `translate(${d.x},${d.y})`)
   .call(d3.drag()
     .on("start", dragstarted)
     .on("drag", dragged)
     .on("end", dragended));
 
-const labelSel = container.append("g").selectAll("text")
-  .data(data.nodes.filter(n => n.type !== "reference")).join("text")
+// Halo do glow "leve" — círculo simples sem filter, desenhado atrás do nó
+// principal (ordem de criação = ordem de pintura em SVG). Sempre existe;
+// applyStyle() só liga/desliga via opacidade, então trocar de nível de
+// glow não recria elementos, só reescreve alguns atributos.
+const haloSel = nodeGroup.append("circle").attr("class", "node-halo").style("pointer-events", "none");
+
+const nodeSel = nodeGroup.append("circle")
+  .attr("r", radiusOf)
+  .attr("fill", d => `url(#grad-${d.type})`)
+  .attr("stroke", "#0b1220")
+  .attr("stroke-width", 1)
+  .style("cursor", "pointer")
+  .style("color", d => typeColorRaw(d));
+
+const labelSel = nodeGroup.filter(d => d.type !== "reference").append("text")
   .attr("class", "node-title")
   .attr("dy", d => -(2 + radiusOf(d)))
   .attr("text-anchor", "middle")
   .text(d => d.title);
 
+// Estado do nível de desempenho atual — lido pela visibilidade de rótulos
+// no zoom (abaixo) e recalculado toda vez que spacing/performance mudam.
+let currentTier = PERFORMANCE_TIERS[resolvePerformanceTier(styleConfig)];
+let labelsShown = true;
+
+// Some com os rótulos quando o tier não é "sempre mostrar" e o zoom está
+// afastado — em wikis de centenas de nós, texto é uma das coisas mais caras
+// de desenhar/remedir no SVG; ilegível de longe mesmo, então não custa nada
+// escondê-lo até o usuário aproximar ou selecionar um nó específico.
+function updateLabelVisibility(k) {
+  const show = currentTier.labelsAlways || k > 1.4;
+  if (show !== labelsShown) {
+    labelSel.style("display", show ? null : "none");
+    labelsShown = show;
+  }
+}
+
+// Recria link/charge/collide a partir de spacing + tier de desempenho —
+// chamada na criação e de novo sempre que o usuário mexe nesses dois
+// controles no painel de Estilo.
+function applyForces(cfg) {
+  currentTier = PERFORMANCE_TIERS[resolvePerformanceTier(cfg)];
+  const spacing = cfg.spacing || 1;
+  simulation
+    .force("link", d3.forceLink(data.edges).id(d => d.id).distance(70 * spacing).strength(0.5))
+    .force("charge", d3.forceManyBody().strength(-160 * spacing)
+      .theta(currentTier.theta).distanceMax(currentTier.distanceMax))
+    .force("collide", d3.forceCollide().radius(d => (7 + radiusOf(d)) * spacing)
+      .iterations(currentTier.collideIterations));
+  updateLabelVisibility(d3.zoomTransform(svg.node()).k);
+}
+
 const simulation = d3.forceSimulation(data.nodes)
-  .force("link", d3.forceLink(data.edges).id(d => d.id).distance(70).strength(0.5))
-  .force("charge", d3.forceManyBody().strength(-160))
+  // Padrão do d3 é alpha=1 decaindo a 0.0228 (~300 ticks até parar) —
+  // pensado pra layout começando do zero. Como já chegamos quase prontos,
+  // um alpha inicial baixo + decaimento mais rápido faz a simulação gastar
+  // só uns 40-60 ticks resolvendo sobreposição fina, não o layout inteiro.
   .force("center", d3.forceCenter(width / 2, height / 2))
-  .force("collide", d3.forceCollide().radius(d => 7 + radiusOf(d)));
+  // Alpha cheio com decaimento suave: são ~180 ticks (uns 3s) de assentamento
+  // VISÍVEL, que é o ponto — com 0.5/0.06 o grafo assentava antes de o olho
+  // pegar e parecia estático. O custo continua baixo porque a semente já traz
+  // a topologia certa (ver BLOOM acima); o que roda aqui é expansão e
+  // colisão, não descoberta de layout.
+  .alpha(1)
+  .alphaDecay(0.025)
+  .velocityDecay(0.35);
+
+applyForces(styleConfig);
 
 simulation.on("tick", () => {
   linkSel
     .attr("x1", d => d.source.x).attr("y1", d => d.source.y)
     .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
-  nodeSel.attr("cx", d => d.x).attr("cy", d => d.y);
-  labelSel.attr("x", d => d.x).attr("y", d => d.y);
+  nodeGroup.attr("transform", d => `translate(${d.x},${d.y})`);
 });
 
-// Aplica cores/raio/rótulo salvos (ou o padrão vindo do Python) agora que
-// nodeSel/labelSel/simulation existem — silencioso porque acabaram de
-// nascer já com os valores certos, não precisa re-simular ainda.
+// Aplica cores/raio/rótulo/halo salvos (ou o padrão vindo do Python) agora
+// que nodeSel/haloSel/labelSel/simulation existem — silencioso porque as
+// escritas de atributo já bastam pra ficar certo visualmente, sem precisar
+// reiniciar a simulação que acabou de nascer quase assentada.
 applyStyle(styleConfig, { silent: true });
-nodeSel.classed("node-glow", !!styleConfig.glow);
 
 function dragstarted(event, d) {
   if (!event.active) simulation.alphaTarget(0.3).restart();
   d.fx = d.x; d.fy = d.y;
+  d3.select(this).classed("dragging", true);
 }
 function dragged(event, d) { d.fx = event.x; d.fy = event.y; }
 function dragended(event, d) {
   if (!event.active) simulation.alphaTarget(0);
   d.fx = null; d.fy = null;
+  d3.select(this).classed("dragging", false);
 }
 
 const neighborsOf = (id) => {
@@ -841,7 +1216,8 @@ function updateVisibility() {
   });
 
   // Reacomoda o layout: bolinhas menores pedem menos espaço entre si.
-  simulation.force("collide", d3.forceCollide().radius(d => 7 + radiusOf(d)));
+  simulation.force("collide", d3.forceCollide().radius(d => (7 + radiusOf(d)) * (styleConfig.spacing || 1))
+    .iterations(currentTier.collideIterations));
   simulation.alpha(0.35).restart();
 }
 
@@ -918,17 +1294,45 @@ function escapeHtml(s) {
   return String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 }
 
+const MATURIDADE_LABELS = { solta: "Solta", germinando: "Germinando", madura: "Madura", absorvida: "Absorvida" };
+
+function highlightMatch(text, q) {
+  const safe = escapeHtml(text);
+  if (!q) return safe;
+  const i = text.toLowerCase().indexOf(q.toLowerCase());
+  if (i === -1) return safe;
+  return escapeHtml(text.slice(0, i)) + "<mark>" + escapeHtml(text.slice(i, i + q.length)) + "</mark>" + escapeHtml(text.slice(i + q.length));
+}
+
 function renderTypeIndex() {
-  const state = { type: "essay", tags: new Set(), query: "", col: "degree", dir: -1 };
+  const state = {
+    type: "essay", tags: new Set(), query: "", col: "degree", dir: -1,
+    minDegree: "", maxDegree: "", maturidade: "",
+  };
 
   modalBody.innerHTML = `
     <h2>Índice</h2>
     <div class="idx-tabs"></div>
     <input id="idx-search" type="text" placeholder="Filtrar por título…">
-    <div class="idx-tags"></div>
+    <details class="idx-more" ${telaPequena() ? "" : "open"}>
+      <summary>Mais filtros</summary>
+      <div class="idx-filters">
+        <div class="idx-range">
+          <span>Conexões</span>
+          <input id="idx-min-degree" type="number" min="0" placeholder="mín">
+          <span>–</span>
+          <input id="idx-max-degree" type="number" min="0" placeholder="máx">
+        </div>
+        <select id="idx-maturidade" hidden></select>
+        <button class="btn idx-clear" id="idx-clear">Limpar filtros</button>
+      </div>
+      <div class="idx-tags"></div>
+    </details>
+    <div class="idx-count"></div>
     <table id="idx-table">
       <thead><tr>
-        <th data-col="title">Título</th><th data-col="tags">Tags</th><th data-col="degree">Conexões</th>
+        <th data-col="title">Título</th><th data-col="tags">Tags</th>
+        <th data-col="degree">Conexões</th><th data-col="size">Tamanho</th>
       </tr></thead>
       <tbody></tbody>
     </table>
@@ -938,6 +1342,8 @@ function renderTypeIndex() {
   const tagsEl = modalBody.querySelector(".idx-tags");
   const tbody = modalBody.querySelector("tbody");
   const emptyEl = modalBody.querySelector(".idx-empty");
+  const countEl = modalBody.querySelector(".idx-count");
+  const maturidadeEl = modalBody.querySelector("#idx-maturidade");
 
   Object.keys(TYPE_LABELS).forEach(t => {
     const b = document.createElement("button");
@@ -946,12 +1352,26 @@ function renderTypeIndex() {
     b.addEventListener("click", () => {
       state.type = t;
       state.tags.clear();
+      state.maturidade = "";
       tabsEl.querySelectorAll(".idx-tab").forEach(x => x.classList.toggle("active", x === b));
       drawTags();
+      drawMaturidadeFilter();
       draw();
     });
     tabsEl.appendChild(b);
   });
+
+  // Filtro de maturidade só faz sentido pra Insights — os outros tipos nem
+  // têm o campo. Reaproveita o mesmo <select> em vez de um bloco de HTML
+  // condicional separado, pra não duplicar o vocabulário em dois lugares.
+  function drawMaturidadeFilter() {
+    const show = state.type === "insights";
+    maturidadeEl.hidden = !show;
+    if (!show) return;
+    maturidadeEl.innerHTML = `<option value="">Toda maturidade</option>` +
+      Object.entries(MATURIDADE_LABELS).map(([k, label]) =>
+        `<option value="${k}">${label}</option>`).join("");
+  }
 
   // As tags oferecidas são só as que existem no tipo em exibição: filtro que
   // não pode dar resultado vazio é filtro que não precisa estar ali.
@@ -962,10 +1382,10 @@ function renderTypeIndex() {
     });
     const ordered = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
     tagsEl.innerHTML = "";
-    ordered.forEach(([tag]) => {
+    ordered.forEach(([tag, count]) => {
       const chip = document.createElement("button");
       chip.className = "idx-chip";
-      chip.textContent = tag;
+      chip.textContent = `${tag} · ${count}`;
       chip.addEventListener("click", () => {
         state.tags.has(tag) ? state.tags.delete(tag) : state.tags.add(tag);
         chip.classList.toggle("on", state.tags.has(tag));
@@ -978,16 +1398,23 @@ function renderTypeIndex() {
 
   function draw() {
     const q = state.query.toLowerCase();
+    const min = state.minDegree === "" ? -Infinity : Number(state.minDegree);
+    const max = state.maxDegree === "" ? Infinity : Number(state.maxDegree);
     // Múltiplas tags selecionadas combinam por E: cada clique estreita o
     // resultado, que é como se procura o cruzamento entre dois assuntos.
+    const totalOfType = data.nodes.filter(n => n.type === state.type).length;
     let rows = data.nodes.filter(n =>
       n.type === state.type
       && (!q || n.title.toLowerCase().includes(q))
       && [...state.tags].every(t => (n.tags || []).includes(t))
+      && n.degree >= min && n.degree <= max
+      && (!state.maturidade || n.maturidade === state.maturidade)
     );
 
+    const sizeOf = (n) => n.sizeLines || 0;
     const value = (n) => state.col === "title" ? n.title.toLowerCase()
       : state.col === "tags" ? (n.tags || []).join(",").toLowerCase()
+      : state.col === "size" ? sizeOf(n)
       : n.degree;
     rows.sort((a, b) => {
       const av = value(a), bv = value(b);
@@ -995,10 +1422,14 @@ function renderTypeIndex() {
     });
 
     tbody.innerHTML = rows.map(n => `<tr data-id="${escapeHtml(n.id)}">
-      <td>${escapeHtml(n.title)}</td>
-      <td class="idx-tagcell">${(n.tags || []).map(t => `<span>${escapeHtml(t)}</span>`).join("")}</td>
-      <td>${n.degree}</td></tr>`).join("");
+      <td data-label="Título">${highlightMatch(n.title, state.query)}</td>
+      <td class="idx-tagcell" data-label="Tags">${(n.tags || []).map(t => `<span>${escapeHtml(t)}</span>`).join("")}</td>
+      <td data-label="Conexões">${n.degree}</td>
+      <td data-label="Tamanho">${sizeOf(n) ? sizeOf(n) + " linhas" : "—"}</td></tr>`).join("");
     emptyEl.hidden = rows.length > 0;
+    countEl.textContent = rows.length === totalOfType
+      ? `${rows.length} ${TYPE_LABELS[state.type].toLowerCase()}`
+      : `${rows.length} de ${totalOfType} exibidos`;
 
     tbody.querySelectorAll("tr").forEach(tr => {
       tr.addEventListener("click", () => {
@@ -1014,18 +1445,31 @@ function renderTypeIndex() {
     state.query = e.target.value.trim();
     draw();
   });
+  modalBody.querySelector("#idx-min-degree").addEventListener("input", (e) => { state.minDegree = e.target.value; draw(); });
+  modalBody.querySelector("#idx-max-degree").addEventListener("input", (e) => { state.maxDegree = e.target.value; draw(); });
+  maturidadeEl.addEventListener("change", (e) => { state.maturidade = e.target.value; draw(); });
+  modalBody.querySelector("#idx-clear").addEventListener("click", () => {
+    state.tags.clear(); state.query = ""; state.minDegree = ""; state.maxDegree = ""; state.maturidade = "";
+    modalBody.querySelector("#idx-search").value = "";
+    modalBody.querySelector("#idx-min-degree").value = "";
+    modalBody.querySelector("#idx-max-degree").value = "";
+    maturidadeEl.value = "";
+    tagsEl.querySelectorAll(".idx-chip.on").forEach(c => c.classList.remove("on"));
+    draw();
+  });
   modalBody.querySelectorAll("th[data-col]").forEach(th => {
     th.addEventListener("click", () => {
       const col = th.getAttribute("data-col");
       state.dir = (state.col === col) ? -state.dir : -1;
       state.col = col;
-      modalBody.querySelectorAll("th").forEach(x => x.classList.remove("sorted"));
-      th.classList.add("sorted");
+      modalBody.querySelectorAll("th").forEach(x => { x.classList.remove("sorted", "asc", "desc"); });
+      th.classList.add("sorted", state.dir === 1 ? "asc" : "desc");
       draw();
     });
   });
 
   drawTags();
+  drawMaturidadeFilter();
   draw();
 }
 
@@ -1059,8 +1503,14 @@ const STYLE_LABELS = {
   reference: "Reference", edge: "Arestas",
 };
 
-function renderStylePanel() {
-  const draft = JSON.parse(JSON.stringify(styleConfig)); // rascunho — só grava de fato no "Salvar"
+const GRAPH_THEMES = {
+  cosmico: { label: "Cósmico", glow: "alto", starfield: true, gradient: true },
+  padrao: { label: "Padrão", glow: "leve", starfield: true, gradient: true },
+  minimalista: { label: "Minimalista", glow: "off", starfield: false, gradient: false },
+};
+
+function renderStylePanel(seed) {
+  const draft = JSON.parse(JSON.stringify(seed || styleConfig)); // rascunho — só grava de fato no "Salvar"
 
   const colorRow = (key) => `
     <label class="style-row">
@@ -1068,29 +1518,82 @@ function renderStylePanel() {
       <input type="color" data-color="${key}" value="${draft.colors[key]}">
     </label>`;
 
+  const themeBtn = (key, t) => `<button class="btn theme-btn" data-theme="${key}">${t.label}</button>`;
+
   modalBody.innerHTML = `
     <h2>Estilo do grafo</h2>
+    <div class="style-section">
+      <p class="style-hint">Temas ajustam vários controles de uma vez — os itens abaixo continuam ajustáveis um a um depois.</p>
+      <div class="theme-row">${Object.entries(GRAPH_THEMES).map(([k, t]) => themeBtn(k, t)).join("")}</div>
+    </div>
     <div class="style-section">${Object.keys(STYLE_LABELS).map(colorRow).join("")}</div>
+    <div class="style-section">
+      <label class="style-row">
+        <span>Tamanho da bolinha representa</span>
+        <select id="st-size-mode">
+          <option value="degree" ${draft.sizeMode === "degree" ? "selected" : ""}>Nº de conexões</option>
+          <option value="bytes" ${draft.sizeMode === "bytes" ? "selected" : ""}>Tamanho do essay (bytes)</option>
+          <option value="lines" ${draft.sizeMode === "lines" ? "selected" : ""}>Tamanho do essay (linhas)</option>
+        </select>
+      </label>
+      <p class="style-hint">Referências não têm arquivo — nos modos de tamanho de essay elas ficam sempre no raio base.</p>
+      <label class="style-row style-slider">
+        <span>Raio base da bolinha</span>
+        <input type="range" id="st-radius-base" min="2" max="14" step="1" value="${draft.radiusBase}">
+      </label>
+      <label class="style-row style-slider">
+        <span>Escala do tamanho</span>
+        <input type="range" id="st-radius-scale" min="0" max="8" step="0.5" value="${draft.radiusScale}">
+      </label>
+    </div>
     <div class="style-section">
       <label class="style-row style-slider">
         <span>Opacidade das arestas</span>
         <input type="range" id="st-edge-opacity" min="0.1" max="1" step="0.05" value="${draft.edgeOpacity}">
       </label>
       <label class="style-row style-slider">
-        <span>Raio base da bolinha</span>
-        <input type="range" id="st-radius-base" min="2" max="14" step="1" value="${draft.radiusBase}">
-      </label>
-      <label class="style-row style-slider">
-        <span>Escala por conexões</span>
-        <input type="range" id="st-radius-scale" min="0" max="8" step="0.5" value="${draft.radiusScale}">
-      </label>
-      <label class="style-row style-slider">
         <span>Tamanho do rótulo</span>
         <input type="range" id="st-label-size" min="8" max="18" step="1" value="${draft.labelSize}">
       </label>
+      <label class="style-row style-slider">
+        <span>Espaçamento entre bolinhas</span>
+        <input type="range" id="st-spacing" min="0.6" max="2.5" step="0.1" value="${draft.spacing ?? 1}">
+      </label>
+      <p class="style-hint">Sobe a distância mínima entre nós, a força que os empurra pra longe e o comprimento das arestas — útil quando o grafo fica denso demais pra ler.</p>
+    </div>
+    <div class="style-section">
+      <label class="style-row">
+        <span>Nível de desempenho</span>
+        <select id="st-performance">
+          <option value="auto" ${(draft.performance ?? "auto") === "auto" ? "selected" : ""}>Automático (recomendado)</option>
+          <option value="alta" ${draft.performance === "alta" ? "selected" : ""}>Alta</option>
+          <option value="media" ${draft.performance === "media" ? "selected" : ""}>Média</option>
+          <option value="baixa" ${draft.performance === "baixa" ? "selected" : ""}>Baixa</option>
+        </select>
+      </label>
+      <p class="style-hint">
+        Controla a física da simulação e quando os rótulos somem ao afastar o zoom — não mexe em cor/glow.
+        No automático, este navegador/grafo está usando: <b>${resolvePerformanceTier(draft)}</b>
+        (${data.nodes.length} nós${DEVICE_IS_MOBILE ? ", aparelho móvel" : ""}).
+      </p>
+    </div>
+    <div class="style-section">
+      <p class="style-hint">Extras puramente decorativos — desligue os que não quiser, principalmente em wikis grandes ou no celular.</p>
       <label class="style-row">
         <span>Brilho (glow) nos nós</span>
-        <input type="checkbox" id="st-glow" ${draft.glow ? "checked" : ""}>
+        <select id="st-glow">
+          <option value="off" ${draft.glow === "off" ? "selected" : ""}>Desligado</option>
+          <option value="leve" ${draft.glow === "leve" ? "selected" : ""}>Leve (leve no processamento)</option>
+          <option value="alto" ${draft.glow === "alto" ? "selected" : ""}>Alto (mais bonito, mais pesado)</option>
+        </select>
+      </label>
+      <label class="style-row">
+        <span>Gradiente nas bolinhas</span>
+        <input type="checkbox" id="st-gradient" ${draft.gradient ? "checked" : ""}>
+      </label>
+      <label class="style-row">
+        <span>Céu estrelado no fundo</span>
+        <input type="checkbox" id="st-starfield" ${draft.starfield ? "checked" : ""}>
       </label>
     </div>
     <div class="style-actions">
@@ -1100,14 +1603,30 @@ function renderStylePanel() {
 
   const preview = () => applyStyle(draft); // aplica ao vivo no grafo por trás do modal, sem salvar ainda
 
+  modalBody.querySelectorAll(".theme-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      Object.assign(draft, GRAPH_THEMES[btn.getAttribute("data-theme")]);
+      preview();
+      renderStylePanel(draft); // redesenha os controles pra refletir o tema, sem perder o resto do rascunho
+    });
+  });
   modalBody.querySelectorAll("input[data-color]").forEach(inp => {
     inp.addEventListener("input", () => { draft.colors[inp.getAttribute("data-color")] = inp.value; preview(); });
   });
+  modalBody.querySelector("#st-size-mode").addEventListener("change", (e) => { draft.sizeMode = e.target.value; preview(); });
   modalBody.querySelector("#st-edge-opacity").addEventListener("input", (e) => { draft.edgeOpacity = +e.target.value; preview(); });
   modalBody.querySelector("#st-radius-base").addEventListener("input", (e) => { draft.radiusBase = +e.target.value; preview(); });
   modalBody.querySelector("#st-radius-scale").addEventListener("input", (e) => { draft.radiusScale = +e.target.value; preview(); });
   modalBody.querySelector("#st-label-size").addEventListener("input", (e) => { draft.labelSize = +e.target.value; preview(); });
-  modalBody.querySelector("#st-glow").addEventListener("change", (e) => { draft.glow = e.target.checked; preview(); });
+  modalBody.querySelector("#st-spacing").addEventListener("input", (e) => { draft.spacing = +e.target.value; preview(); });
+  modalBody.querySelector("#st-performance").addEventListener("change", (e) => {
+    draft.performance = e.target.value;
+    preview();
+    renderStylePanel(draft); // atualiza o texto "está usando: X" com o novo valor
+  });
+  modalBody.querySelector("#st-glow").addEventListener("change", (e) => { draft.glow = e.target.value; preview(); });
+  modalBody.querySelector("#st-gradient").addEventListener("change", (e) => { draft.gradient = e.target.checked; preview(); });
+  modalBody.querySelector("#st-starfield").addEventListener("change", (e) => { draft.starfield = e.target.checked; preview(); });
 
   modalBody.querySelector("#st-save").addEventListener("click", () => {
     try { localStorage.setItem(STYLE_KEY, JSON.stringify(draft)); } catch {}
@@ -1168,7 +1687,13 @@ if (window.visualViewport) {
 
 def render_html(nodes, edges, tag_gaps):
     data_json = json.dumps(
-        {"nodes": nodes, "edges": edges, "tag_gaps": tag_gaps, "defaultStyle": GRAPH_STYLE},
+        {
+            "nodes": nodes,
+            "edges": edges,
+            "tag_gaps": tag_gaps,
+            "defaultStyle": GRAPH_STYLE,
+            "defaultStyleMobileOverrides": GRAPH_STYLE_MOBILE_OVERRIDES,
+        },
         ensure_ascii=False,
     )
     html = HTML_TEMPLATE.replace("__DATA_JSON__", data_json)
@@ -1178,6 +1703,11 @@ def render_html(nodes, edges, tag_gaps):
 def main():
     nodes, edges, isolated = build_graph()
     tag_gaps = compute_tag_gaps(nodes, edges)
+
+    layout_start = time.perf_counter()
+    compute_layout(nodes, edges)
+    layout_ms = (time.perf_counter() - layout_start) * 1000
+
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     (OUTPUT_DIR / "graph.json").write_text(
@@ -1191,6 +1721,7 @@ def main():
     (OUTPUT_DIR / "graph.html").write_text(render_html(nodes, edges, tag_gaps), encoding="utf-8")
 
     print(f"Grafo gerado: {len(nodes)} nós, {len(edges)} conexões.")
+    print(f"  layout pré-calculado em {layout_ms:.0f}ms")
     print(f"  {OUTPUT_DIR / 'graph.html'} (interativo)")
     print(f"  {OUTPUT_DIR / 'graph.md'} (mermaid)")
     print(f"  {OUTPUT_DIR / 'graph.json'} (dados)")
