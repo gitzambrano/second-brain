@@ -91,12 +91,20 @@ GRAPH_STYLE = {
         "entity": "#e8b657",
         "insights": "#b48ce8",
         "reference": "#8a8f96",
-        # Levemente esbranquiçada em vez de cinza puro — dá uma sensação de
-        # "fio de luz" mais sutil entre os nós sem chamar atenção pra si.
-        "edge": "#5c6169",
+        # Puxada para o branco (mais clara que cinza médio) — dá uma sensação
+        # de "fio de luz" sutil entre os nós, visível no toque sem chamar
+        # atenção pra si.
+        "edge": "#9aa0a8",
         "background": "#1b1e21",
     },
     "edgeOpacity": 0.55,
+    # "sempre" (arestas sempre na opacidade cheia de `edgeOpacity`, mesmo
+    # durante o destaque de um nó selecionado — nada nunca esmaece) | "auto"
+    # (comportamento clássico: opacidade normal em repouso, mas esmaece as
+    # arestas irrelevantes ao selecionar um nó ou buscar) | "off" (arestas
+    # completamente ocultas). "sempre" é o padrão — some só quando o usuário
+    # pede.
+    "edgeVisibility": "sempre",
     "radiusBase": 5,
     "radiusScale": 3,
     "labelSize": 10,
@@ -106,12 +114,11 @@ GRAPH_STYLE = {
     # FPS que existe aqui). "leve" é o padrão por ser barato E ainda dar
     # uma sensação de brilho.
     "glow": "leve",
-    # "auto" (esconde ao afastar o zoom se o tier de desempenho pedir —
-    # comportamento antigo) | "sempre" (rótulo sempre visível) | "nunca"
-    # (rótulo sempre oculto). Antes disto os rótulos somiam sozinhos no
-    # modo "baixa" performance sem o usuário poder escolher; agora é
-    # explícito no modal de Estilo.
-    "labels": "auto",
+    # "sempre" (rótulo sempre visível) | "auto" (esconde ao afastar o zoom
+    # se o tier de desempenho pedir) | "nunca" (rótulo sempre oculto).
+    # "sempre" é o padrão — o rótulo só some se o usuário pedir
+    # explicitamente no modal de Estilo.
+    "labels": "sempre",
     "starfield": True,
     "gradient": True,
     # "degree" (nº de conexões visíveis), "bytes" ou "lines" (tamanho do
@@ -122,11 +129,33 @@ GRAPH_STYLE = {
     # 1 = padrão; acima disso, o grafo "respira" mais quando fica denso
     # demais pra ler.
     "spacing": 1,
+    # Multiplicador da força elástica das arestas (d3 forceLink.strength).
+    # 1 = padrão (a heurística de grau já embutida na fórmula, ver
+    # applyForces() no HTML gerado); acima disso as conexões puxam os nós
+    # com mais força, deixando o grafo mais "rígido" e compacto; abaixo,
+    # mais "solto", com arestas mais folgadas.
+    "linkStrength": 1,
+    # Multiplicador da força de repulsão entre nós (d3 forceManyBody).
+    # 1 = padrão; acima disso os nós se afastam mais uns dos outros.
+    # Complementa `spacing` (que mexe em distância/colisão/arestas juntos):
+    # este controla só a repulsão, isolado.
+    "chargeStrength": 1,
+    # Atrito da simulação (d3 forceSimulation.velocityDecay). Quanto maior,
+    # mais rápido os nós perdem velocidade e assentam; quanto menor, mais
+    # eles carregam momento entre ticks e podem oscilar antes de parar.
+    # 0.55 é o padrão atual (ver comentário junto de `.velocityDecay` no
+    # HTML gerado).
+    "friction": 0.55,
     # "auto" | "alta" | "media" | "baixa" — ver PERFORMANCE_TIERS no HTML
     # gerado. "auto" decide pelo tamanho do grafo e pelo aparelho (celular
     # entra em "baixa"/"média" sozinho); as wikis grandes se beneficiam
     # de deixar em "auto" e não pensar mais nisso.
     "performance": "auto",
+    # Força de colisão do d3 (evita nós sobrepostos). Ligada por padrão —
+    # pedido explícito do Usuário — mas o usuário pode desligar no painel de
+    # Estilo em aparelhos fracos: é uma das forças mais caras por tick em
+    # grafos com centenas/milhares de nós.
+    "collision": True,
 }
 
 # Aplicado por cima de GRAPH_STYLE no navegador, só quando o próprio
@@ -208,6 +237,11 @@ def build_graph():
                 "subtype": subtype,
                 "maturidade": fm.get("maturidade") if node_type == "insights" else None,
                 "tags": fm.get("tags", []) if isinstance(fm.get("tags"), list) else [],
+                # Resumo de uma linha (campo `summary:` do frontmatter, já
+                # validado/obrigatório pelo check_wiki.py em toda a wiki — ver
+                # SUMMARY_MAX_CHARS lá). Usado no modal de Índice para um
+                # resumo expansível por essay, sem precisar reabrir o arquivo.
+                "summary": str(fm.get("summary") or "").strip(),
                 "file": str(file.relative_to(ROOT_DIR)),
                 "url": None,
                 "degree": 0,
@@ -465,7 +499,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     --entity: #e8b657;
     --insight: #b48ce8;
     --reference: #8a8f96;
-    --edge: #5c6169;
+    --edge: #9aa0a8;
     --edge-ref: #5a5f66;
     --edge-opacity: 0.55;
     --radius-base: 5;
@@ -533,7 +567,22 @@ HTML_TEMPLATE = """<!DOCTYPE html>
      porque é só um gradiente de fundo do body, não redesenha por nó. */
   #graph { background: radial-gradient(ellipse at center, color-mix(in srgb, var(--bg) 92%, white) 0%, var(--bg) 72%); }
   circle.node-glow { filter: var(--node-glow); }
+  /* Halo do glow "leve" — opacidade por classe, não por estilo inline, de
+     propósito: estilo inline sempre venceria `.dim` abaixo (ao selecionar
+     um nó ou buscar) e o halo nunca esmaeceria. Sem a classe, opacidade
+     0 (escondido); ver applyStyle() no HTML gerado. */
+  .node-halo { opacity: 0; }
+  .node-halo.glow-leve { opacity: 1; }
   .dim { opacity: .08; }
+  /* As três classes somadas (mais específico que `.dim` sozinho) garantem
+     que o halo realmente esmaeça com o resto do nó ao deselecionar/buscar,
+     em vez de ficar "grudado" por cima. */
+  .node-halo.glow-leve.dim { opacity: .08; }
+  /* Modo "sempre visível" das conexões: nunca esmaece, nem por seleção nem
+     por busca — vence `.dim` pelo mesmo motivo acima (mais classes = mais
+     específico). Modo "off": oculta de vez, independente de tudo o mais. */
+  .link.link-always, .link.link-always.dim { opacity: var(--edge-opacity); }
+  .link.link-off { display: none; }
   circle { transition: opacity .25s ease, filter .2s ease, stroke-width .15s ease; }
   circle:hover { stroke-width: 2px; }
   /* Escala no hover só quando parado (sem `.dragging`) — durante o arrasto
@@ -545,9 +594,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   /* Índice e Estilo usam a tela inteira, no desktop tanto quanto no
      celular — uma tabela de centenas de linhas ou um painel de dezenas de
      controles não cabem bem numa janelinha de 760px cheia de scroll
-     interno. A coluna de conteúdo continua com uma largura de leitura
-     confortável (max-width abaixo), só o "palco" ao redor é que passa a
-     ser a viewport toda. */
+     interno. #modal-body ocupa 100% da largura do modal, que por sua vez
+     é 100vw/100dvh (ver #modal abaixo): nada aqui limita a largura do
+     conteúdo, só o padding lateral (clamp abaixo) dá a margem de leitura. */
   #modal-overlay { display:none; position: fixed; inset: 0; background: rgba(9,11,13,.72);
     backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); z-index: 20; }
   #modal-overlay.open { display: flex; align-items: stretch; justify-content: stretch; }
@@ -555,10 +604,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     background: var(--panel); border: none; border-radius: 0; padding: 0;
     box-shadow: none; }
   #modal-topbar { position: sticky; top: 0; z-index: 5; display: flex; justify-content: flex-end;
-    padding: 20px clamp(16px, 4vw, 48px) 0; background: linear-gradient(var(--panel) 65%, transparent);
+    padding: 20px clamp(20px, 4vw, 64px) 0; background: linear-gradient(var(--panel) 65%, transparent);
     pointer-events: none; }
   #modal-topbar .close { pointer-events: auto; }
-  #modal-body { max-width: 980px; margin: -4px auto 0; padding: 4px clamp(16px, 4vw, 48px) 72px; }
+  #modal-body { margin: -4px 0 0; padding: 4px clamp(20px, 4vw, 64px) 72px; width: 100%; }
   #modal h2 { margin: 8px 0 20px 0; font-size: 20px; letter-spacing: -.01em;
     color: var(--ink); font-weight: 600; }
   #modal table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -569,6 +618,19 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   #modal td { padding: 11px 12px; border-bottom: 1px solid #2b2f33; vertical-align: top; }
   #modal tbody tr { cursor: pointer; transition: background .12s ease; }
   #modal tbody tr:hover td { background: rgba(79,168,255,.08); }
+
+  /* Linha de resumo expansível (só essays, ver renderTypeIndex): não é
+     clicável pra navegar como as outras — só existe pra mostrar o texto do
+     `summary:` do frontmatter sem abrir o arquivo. Sobrescreve o hover azul
+     genérico de tr acima (mais específico por causa da classe), senão o
+     parágrafo de resumo pareceria clicável igual às linhas de verdade. */
+  .idx-summary-row { cursor: default; }
+  .idx-summary-row:hover td { background: rgba(255,255,255,.02) !important; }
+  .idx-summary-row td { padding-top: 2px; padding-bottom: 14px; background: rgba(255,255,255,.02); }
+  .idx-summary { margin: 0; font-size: 12px; color: var(--ink-dim); line-height: 1.5; max-width: 60ch; }
+  .idx-expand { background: none; border: none; color: var(--ink-dim); cursor: pointer; font-family: inherit;
+    font-size: 11px; padding: 0 7px 0 0; line-height: 1; vertical-align: middle; }
+  .idx-expand:hover { color: var(--instrument-blue); }
   #modal .close { cursor: pointer; color: var(--ink-dim); font-size: 12px; font-family: inherit;
     background: rgba(255,255,255,.05); border: 1px solid var(--panel-border); border-radius: 999px;
     padding: 9px 18px; letter-spacing: .02em; }
@@ -690,8 +752,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   .gap-item { font-size: 12px; margin: 4px 0; color: var(--ink-dim); }
   .gap-item b { color: var(--ink); }
 
-  .style-section { margin-bottom: 18px; padding: 18px 20px; background: rgba(255,255,255,.025);
-    border: 1px solid var(--panel-border); border-radius: 12px; }
+  .style-section { margin-bottom: 0; padding: 18px 20px; background: rgba(255,255,255,.025);
+    border: 1px solid var(--panel-border); border-radius: 12px; align-self: start; }
+  .style-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 18px; margin-bottom: 18px; }
+  .style-span2 { grid-column: 1 / -1; }
   .style-row { display: flex; align-items: center; justify-content: space-between; gap: 12px;
     font-size: 13px; color: var(--ink-dim); padding: 10px 2px; border-bottom: 1px solid #2b2f33; }
   .style-row:last-child { border-bottom: none; }
@@ -713,7 +777,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 </style>
 </head>
 <body>
-<svg id="graph"></svg>
+<canvas id="graph"></canvas>
 <button id="panel-toggle" aria-label="Mostrar ou esconder o painel" aria-expanded="true">☰</button>
 <div id="panel">
   <h1>Grafo da Wiki</h1>
@@ -728,6 +792,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <button class="btn" id="btn-index">Índice</button>
   <button class="btn" id="btn-gaps">Gaps entre tags</button>
   <button class="btn" id="btn-style">Estilo</button>
+  <button class="btn" id="btn-export-png">Exportar PNG</button>
 
   <div id="detail" hidden></div>
 </div>
@@ -751,7 +816,15 @@ const data = __DATA_JSON__;
 function isMobileDevice() {
   const coarse = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
   const small = Math.min(window.innerWidth, window.innerHeight) < 820;
-  return coarse || small;
+  // Toque grosso já basta sozinho. Sem ele, tela pequena isolada não é sinal
+  // suficiente — uma janela de desktop redimensionada fica estreita sem virar
+  // um aparelho fraco — então some com `hardwareConcurrency` (poucos núcleos
+  // lógicos) como segundo sinal antes de aceitar "pequena" como "fraca".
+  // Nenhum dos três é confiável sozinho (coarse falha em Android antigo,
+  // innerWidth mente em janela redimensionada, hardwareConcurrency pode vir
+  // limitado/ausente do navegador) — combinados, cobrem a maioria dos casos.
+  const fewCores = (navigator.hardwareConcurrency || 8) <= 4;
+  return coarse || (small && fewCores);
 }
 const DEVICE_IS_MOBILE = isMobileDevice();
 
@@ -771,10 +844,11 @@ const STYLE_VARS = {
 const STYLE_KEY = "sb-graph-style-v1";
 const FACTORY_STYLE = data.defaultStyle || {
   colors: { essay: "#4fa8ff", concept: "#5fd3c4", entity: "#e8b657", insights: "#b48ce8",
-    reference: "#8a8f96", edge: "#5c6169", background: "#1b1e21" },
-  edgeOpacity: 0.55, radiusBase: 5, radiusScale: 3, labelSize: 10,
-  glow: "leve", labels: "auto", starfield: true, gradient: true, sizeMode: "degree",
-  spacing: 1, performance: "auto",
+    reference: "#8a8f96", edge: "#9aa0a8", background: "#1b1e21" },
+  edgeOpacity: 0.55, edgeVisibility: "sempre", radiusBase: 5, radiusScale: 3, labelSize: 10,
+  glow: "leve", labels: "sempre", starfield: true, gradient: true, sizeMode: "degree",
+  spacing: 1, performance: "auto", collision: true,
+  linkStrength: 1, chargeStrength: 1, friction: 0.55,
 };
 const MOBILE_OVERRIDES = data.defaultStyleMobileOverrides || { glow: "off", starfield: false };
 const defaultStyle = DEVICE_IS_MOBILE ? { ...FACTORY_STYLE, ...MOBILE_OVERRIDES } : FACTORY_STYLE;
@@ -813,7 +887,16 @@ const PERFORMANCE_TIERS = {
 function resolvePerformanceTier(cfg) {
   if (cfg.performance && cfg.performance !== "auto") return cfg.performance;
   const n = data.nodes.length;
-  if (DEVICE_IS_MOBILE) return n > 200 ? "baixa" : "media";
+  if (DEVICE_IS_MOBILE) {
+    // `hardwareConcurrency` é o sinal mais barato de "aparelho fraco de
+    // verdade" dentro do universo já filtrado por DEVICE_IS_MOBILE: a
+    // maioria dos celulares de entrada reporta 4 núcleos lógicos ou menos.
+    // Esse grupo cai para "baixa" com um grafo bem menor do que um celular
+    // topo de linha aguentaria em "média" — sem isso, um Galaxy A com 1100
+    // nós tentaria rodar no mesmo tier de um iPhone recente.
+    const fewCores = (navigator.hardwareConcurrency || 8) <= 4;
+    return n > (fewCores ? 120 : 200) ? "baixa" : "media";
+  }
   if (n > 600) return "baixa";
   if (n > 250) return "media";
   return "alta";
@@ -835,26 +918,19 @@ function applyStyle(cfg, opts) {
   // aparelho. "off" desliga os dois.
   root.setProperty("--node-glow", cfg.glow === "alto" ? "drop-shadow(0 0 4px currentColor)" : "none");
 
-  starfieldSel.style("display", cfg.starfield ? null : "none");
-
-  // Sempre reaplica fill/raio/halo — são só atributos em poucas dezenas ou
-  // centenas de elementos, baratos mesmo na carga inicial. O que É caro
-  // (reiniciar a simulação) fica isolado abaixo, atrás do `silent`.
-  nodeSel.attr("r", radiusOf)
-    .classed("node-glow", cfg.glow === "alto")
-    .style("color", d => typeColorRaw(d))
-    .attr("fill", d => cfg.gradient ? `url(#grad-${d.type})` : typeColorRaw(d));
-  haloSel
-    .attr("r", d => radiusOf(d) * 2.4)
-    .attr("fill", d => `url(#glow-${d.type})`)
-    .style("opacity", cfg.glow === "leve" ? 1 : 0);
-  labelSel.attr("dy", d => -(2 + radiusOf(d)));
-  updateLabelVisibility(d3.zoomTransform(svg.node()).k);
+  // Em Canvas não há atributos DOM pra reaplicar: os gradientes são
+  // recriados (baratos — só stops, não pixels) e o resto (raio, halo,
+  // glow, arestas) é lido direto de `styleConfig` a cada frame por
+  // draw(), então só precisamos agendar um redesenho.
+  buildGradients();
+  clearSpriteCache(); // cor/gradiente/glow/raio podem ter mudado: sprite velho não pode ficar em tela
+  updateLabelVisibility(zoomTransform.k);
 
   if (!opts || !opts.silent) {
     applyForces(cfg);
     simulation.alpha(0.3).restart();
   }
+  scheduleDraw();
 }
 
 function typeColorRaw(n) {
@@ -862,97 +938,229 @@ function typeColorRaw(n) {
 }
 
 let width = window.innerWidth, height = window.innerHeight;
-const svg = d3.select("#graph").attr("viewBox", [0, 0, width, height]);
+let dpr = window.devicePixelRatio || 1;
+const canvas = document.getElementById("graph");
+const ctx = canvas.getContext("2d");
 
-// Gradiente radial por tipo — usa var() no próprio atributo `style` do
-// `<stop>`, então quando applyStyle() muda a cor no :root, o degradê
-// acompanha sozinho, sem nenhum JS extra por nó. O centro claro (color-mix
-// com branco) e a borda na cor cheia dão o efeito de "esfera com luz",
-// mais bonito que um preenchimento chapado, e custa zero por tick — é
-// definido uma vez, os nós só referenciam por `url(#grad-tipo)`.
-const defs = svg.append("defs");
-Object.entries(STYLE_VARS).forEach(([type, cssVar]) => {
-  if (type === "background" || type === "edge") return;
-  const grad = defs.append("radialGradient")
-    .attr("id", `grad-${type}`).attr("cx", "35%").attr("cy", "32%").attr("r", "70%");
-  grad.append("stop").attr("offset", "0%")
-    .attr("style", `stop-color: color-mix(in srgb, var(${cssVar}) 55%, white)`);
-  grad.append("stop").attr("offset", "100%")
-    .attr("style", `stop-color: var(${cssVar})`);
-
-  // Degradê do halo "leve": some gradualmente até opacidade zero na borda,
-  // em vez do círculo de cor chapada + opacidade fixa de antes — aquilo
-  // lia como um anel duro por fora do nó ("sombra esquisita"). Continua
-  // sem `filter`, então continua de graça em qualquer aparelho.
-  const glow = defs.append("radialGradient")
-    .attr("id", `glow-${type}`).attr("cx", "50%").attr("cy", "50%").attr("r", "50%");
-  glow.append("stop").attr("offset", "0%")
-    .attr("style", `stop-color: var(${cssVar}); stop-opacity: 0.5`);
-  glow.append("stop").attr("offset", "100%")
-    .attr("style", `stop-color: var(${cssVar}); stop-opacity: 0`);
-});
-
-// Campo de estrelas decorativo, fixo atrás do grafo (fora do <g> que recebe
-// pan/zoom, então não se move — é cenário, não conteúdo). Só desenhado uma
-// vez no carregamento: são elementos estáticos, sem listener, sem custo por
-// frame, então não pesa mesmo em wikis grandes.
-const starfieldSel = svg.append("g").attr("class", "starfield").attr("aria-hidden", "true");
-const STAR_COUNT = 140;
-for (let i = 0; i < STAR_COUNT; i++) {
-  starfieldSel.append("circle")
-    .attr("cx", Math.random() * width).attr("cy", Math.random() * height)
-    .attr("r", Math.random() * 1.1 + 0.2)
-    .attr("fill", "#ffffff")
-    .attr("opacity", Math.random() * 0.5 + 0.08);
+// ---- Loop de desenho (rAF com flag "dirty") ----------------------------
+// Nada aqui redesenha por conta própria: todo mundo que muda algo visível
+// (tick da simulação, zoom/pan, arrasto, seleção, busca, mudança de estilo)
+// chama scheduleDraw(), que só agenda UM requestAnimationFrame por vez —
+// múltiplas chamadas na mesma volta do event loop colapsam num único
+// desenho. Quando a simulação esfria e ninguém mais mexe em nada, o loop
+// simplesmente para de ser reagendado: sem isso o Chrome mobile continuaria
+// desenhando a 60fps pra sempre, gastando bateria à toa.
+let rafScheduled = false;
+function scheduleDraw() {
+  if (rafScheduled) return;
+  rafScheduled = true;
+  requestAnimationFrame(() => { rafScheduled = false; draw(); });
 }
 
-const container = svg.append("g");
+// HiDPI: o canvas físico é maior que o CSS (devicePixelRatio), e o contexto
+// escala de volta — sem isto o grafo fica borrado em qualquer tela retina,
+// que é a maioria dos celulares hoje.
+function resizeCanvas() {
+  width = window.innerWidth;
+  height = window.innerHeight;
+  const oldDpr = dpr;
+  dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.round(width * dpr);
+  canvas.height = Math.round(height * dpr);
+  canvas.style.width = width + "px";
+  canvas.style.height = height + "px";
+  // Trocar de monitor (ou zoom do SO) muda o devicePixelRatio em runtime —
+  // sprites já cacheados no dpr antigo ficariam borrados/nítidos demais no
+  // novo, então descarta e deixa regenerar sob demanda (a chave já inclui
+  // dpr, então isto só evita acumular as duas gerações à toa).
+  // `oldDpr !== undefined` guarda a PRIMEIRA chamada, que acontece no topo do
+  // script, antes de `const spriteCache` ser inicializado lá embaixo: limpar
+  // ali dentro estouraria em ReferenceError (temporal dead zone) e mataria o
+  // script inteiro, deixando o grafo em branco. No primeiro run o cache nasce
+  // vazio de qualquer jeito, então não há o que limpar.
+  if (oldDpr !== undefined && dpr !== oldDpr) clearSpriteCache();
+  scheduleDraw();
+}
+resizeCanvas();
+
+// Campo de estrelas decorativo, em coordenadas fracionárias da tela (0..1)
+// para se adaptar sozinho a qualquer resize sem recalcular nada — fica fora
+// do transform de zoom/pan (é cenário, não conteúdo) e é gerado uma vez só.
+const STAR_COUNT = 140;
+const stars = Array.from({ length: STAR_COUNT }, () => ({
+  fx: Math.random(), fy: Math.random(),
+  r: Math.random() * 1.1 + 0.2,
+  o: Math.random() * 0.5 + 0.08,
+}));
+
+// Agrupa as estrelas por opacidade em poucos "baldes", uma vez só na carga
+// (não a cada frame): cada estrela tem sua própria opacidade aleatória, e
+// fillStyle vale para o path inteiro, então um fill() só serviria apenas se
+// todas as estrelas tivessem a mesma opacidade. Com poucos baldes (a
+// diferença de opacidade dentro de um balde é imperceptível num ponto de
+// 1-2px) trocamos 140 pares beginPath/fill por frame por só 6, mantendo o
+// aspecto "cintilante" do céu quase idêntico ao original contínuo.
+const STAR_BUCKETS = 6;
+const STAR_O_MIN = 0.08, STAR_O_RANGE = 0.5;
+const starBucketLists = Array.from({ length: STAR_BUCKETS }, () => []);
+stars.forEach(s => {
+  const idx = Math.min(
+    STAR_BUCKETS - 1,
+    Math.floor(((s.o - STAR_O_MIN) / STAR_O_RANGE) * STAR_BUCKETS)
+  );
+  starBucketLists[idx].push(s);
+});
+// Opacidade representativa do balde: o ponto médio do seu intervalo.
+const starBucketOpacity = starBucketLists.map(
+  (_, idx) => STAR_O_MIN + STAR_O_RANGE * ((idx + 0.5) / STAR_BUCKETS)
+);
+
+function hexToRgb(hex) {
+  hex = (hex || "#888888").replace("#", "");
+  if (hex.length === 3) hex = hex.split("").map(c => c + c).join("");
+  const num = parseInt(hex, 16) || 0x888888;
+  return [(num >> 16) & 255, (num >> 8) & 255, num & 255];
+}
+function mixWhite(hex, amt) {
+  const [r, g, b] = hexToRgb(hex);
+  return `rgb(${Math.round(r + (255 - r) * amt)},${Math.round(g + (255 - g) * amt)},${Math.round(b + (255 - b) * amt)})`;
+}
+function hexToRgba(hex, alpha) {
+  const [r, g, b] = hexToRgb(hex);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+// Gradientes cacheados por tipo, definidos num círculo unitário (raio 1,
+// centro 0,0) — na hora de desenhar cada nó fazemos ctx.translate/scale até
+// o raio de fato, e o CanvasGradient (que guarda só os stops, não pixels)
+// se estica sozinho para o tamanho certo. Isso evita recriar o gradiente a
+// cada nó/frame: é criado uma vez por chamada de applyStyle().
+let nodeGradients = {};
+let haloGradients = {};
+function buildGradients() {
+  nodeGradients = {};
+  haloGradients = {};
+  Object.keys(STYLE_VARS).forEach(type => {
+    if (type === "background" || type === "edge") return;
+    const color = (styleConfig.colors && styleConfig.colors[type]) || "#888";
+    const g = ctx.createRadialGradient(-0.3, -0.35, 0, 0, 0, 1);
+    g.addColorStop(0, mixWhite(color, 0.55));
+    g.addColorStop(1, color);
+    nodeGradients[type] = g;
+
+    const h = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+    h.addColorStop(0, hexToRgba(color, 0.5));
+    h.addColorStop(1, hexToRgba(color, 0));
+    haloGradients[type] = h;
+  });
+}
 
 // Fica marcado assim que o próprio usuário mexe no zoom/pan (toque, roda ou
 // arrasto), para nunca mais sobrescrever o enquadramento que ele escolheu —
 // nem no fit-to-screen inicial do mobile, nem numa rotação de tela depois.
 let userAdjustedView = false;
+let zoomTransform = d3.zoomIdentity;
+
+const nodeById = new Map(data.nodes.map(n => [n.id, n]));
+const endpoint = (v) => (typeof v === "object" ? v : nodeById.get(v));
+
+// Quadtree para hit-testing barato: em vez de testar distância contra os
+// ~1100 nós a cada clique/arrasto/hover, a árvore descarta ramos inteiros
+// fora do raio de busca. Reconstruída a cada tick (a simulação move os nós),
+// mas isso é O(n log n) e desprezível perto do custo de desenhar.
+// Reference começa oculto: são centenas de nós-folha que afogam a estrutura
+// entre essays, concepts e entities, que é o que o grafo existe para mostrar.
+// Declarado AQUI, e não junto da legenda lá embaixo, porque rebuildQuadtree()
+// e draw() leem `hiddenTypes` durante a inicialização no topo do script — um
+// `const` mais abaixo estouraria em ReferenceError (temporal dead zone) e
+// mataria o script inteiro, deixando o grafo em branco.
+const hiddenTypes = new Set(["reference"]);
+
+function isNodeVisible(n) {
+  return !hiddenTypes.has(n.type);
+}
+
+let quadtree = d3.quadtree().x(d => d.x).y(d => d.y);
+function rebuildQuadtree() {
+  quadtree = d3.quadtree(data.nodes.filter(isNodeVisible), d => d.x, d => d.y);
+}
+
+// Tolerância de toque maior que a de mouse: um dedo cobre bem mais área de
+// tela que a ponta de um cursor, e com só 10px um toque levemente descentrado
+// do nó simplesmente não achava nada — sensação de "preciso mirar/segurar
+// bastante pro arrasto pegar". 22px (~ metade de um alvo de toque confortável)
+// resolve isso sem prejudicar a precisão no desktop, que continua em 10px.
+const HIT_TOLERANCE_PX = DEVICE_IS_MOBILE ? 22 : 10;
+function findNodeAt(wx, wy) {
+  const tolerance = HIT_TOLERANCE_PX / zoomTransform.k; // tolerância em pixels de tela
+  let found = null;
+  let bestDist = Infinity;
+  quadtree.visit((node, x0, y0, x1, y1) => {
+    if (!node.length) {
+      let q = node;
+      do {
+        const d = q.data;
+        const dx = d.x - wx, dy = d.y - wy;
+        const r = radiusOf(d) + tolerance;
+        const dist = dx * dx + dy * dy;
+        if (dist <= r * r && dist < bestDist) { found = d; bestDist = dist; }
+      } while ((q = q.next));
+    }
+    return x0 > wx + tolerance || x1 < wx - tolerance || y0 > wy + tolerance || y1 < wy - tolerance;
+  });
+  return found;
+}
 
 const zoom = d3.zoom()
   .scaleExtent([0.1, 6])
   .filter((event) => {
-    // Toque (touchstart/touchmove/touchend/touchcancel) não tem `.button`
-    // — sem este ramo, todo evento de toque cai no `return event.button...`
-    // abaixo, que dá `undefined === 0`, ou seja `false`, e zoom/pan morrem
-    // por completo no celular. Toque sempre libera: pinça dá zoom e um dedo
-    // só dá pan; arrastar um nó continua funcionando porque o d3.drag do
-    // próprio nó intercepta o evento antes (nopropagation) e ele nem chega
-    // a subir até aqui.
+    // Se o ponteiro/toque começa em cima de um nó, este evento não deve
+    // virar pan: o d3.drag (abaixo) assume o gesto para arrastar o nó. Sem
+    // este filtro, zoom e drag brigariam pelo mesmo mousedown/touchstart.
+    if (event.type === "mousedown") {
+      const pt = d3.pointer(event, canvas);
+      const [wx, wy] = zoomTransform.invert(pt);
+      if (findNodeAt(wx, wy)) return false;
+    }
+    if (event.type === "touchstart") {
+      // Pinça (2+ dedos) é sempre gesto de zoom, sem hit-test. Com 1 dedo só,
+      // `d3.pointer(event, canvas)` desembrulharia o TouchEvent inteiro, que
+      // não tem clientX/clientY (ficam em event.touches[]) — passar o próprio
+      // Touch de touches[0] é o que d3.pointer sabe interpretar.
+      if (event.touches.length > 1) return true;
+      const pt = d3.pointer(event.touches[0], canvas);
+      const [wx, wy] = zoomTransform.invert(pt);
+      if (findNodeAt(wx, wy)) return false;
+    }
     if (event.type.startsWith("touch")) return true;
     // O filtro padrão do d3 aceita só o botão esquerdo (`!event.button`).
     // Liberar o botão do meio dá o pan por clique-na-rodinha sem tirar o
-    // arrastar de nó, que continua no esquerdo: o d3.drag ignora o botão 1,
-    // então o evento sobe até aqui e vira pan mesmo começando sobre um nó.
+    // arrastar de nó, que continua no esquerdo.
     if (event.type === "wheel") return !event.ctrlKey;
     return event.button === 0 || event.button === 1;
   })
   .on("zoom", (event) => {
-    container.attr("transform", event.transform);
-    updateLabelVisibility(event.transform.k);
+    zoomTransform = event.transform;
+    updateLabelVisibility(zoomTransform.k);
     // `sourceEvent` só existe quando a transformação veio de uma interação
     // real (toque, roda, arrasto) — chamadas programáticas como o
     // fitToScreen() não têm, então não acionam esta marca.
     if (event.sourceEvent) userAdjustedView = true;
+    scheduleDraw();
   });
 
-svg.call(zoom);
+const canvasSel = d3.select(canvas);
+canvasSel.call(zoom);
 
 // Sem isto o navegador entra em auto-scroll (aquele ícone de setas) no
 // clique do meio, e o pan nunca chega a acontecer.
-svg.on("mousedown", (event) => { if (event.button === 1) event.preventDefault(); });
-svg.on("auxclick", (event) => { if (event.button === 1) event.preventDefault(); });
+canvas.addEventListener("mousedown", (event) => { if (event.button === 1) event.preventDefault(); });
+canvas.addEventListener("auxclick", (event) => { if (event.button === 1) event.preventDefault(); });
 
-// Rotação de tela e troca de janela: sem isto o viewBox fica com a dimensão
+// Rotação de tela e troca de janela: sem isto o canvas fica com a dimensão
 // de carregamento e o grafo aparece cortado ou centralizado fora da tela.
 function ajustarViewport() {
-  width = window.innerWidth;
-  height = window.innerHeight;
-  svg.attr("viewBox", [0, 0, width, height]);
+  resizeCanvas();
   simulation.force("center", d3.forceCenter(width / 2, height / 2));
   simulation.alpha(0.15).restart();
   // Ao voltar para tela grande o painel reaparece: `collapsed` é inerte fora
@@ -965,17 +1173,6 @@ function ajustarViewport() {
 }
 window.addEventListener("resize", ajustarViewport);
 window.addEventListener("orientationchange", ajustarViewport);
-
-const linkSel = container.append("g").selectAll("line")
-  .data(data.edges).join("line")
-  .attr("class", d => "link" + (d.kind === "reference" ? " reference" : ""));
-
-// O raio comunica quantas conexões o nó tem *entre as que estão à vista*. Se um
-// tipo inteiro é ocultado pela legenda, as arestas que iam até ele deixam de
-// existir para o leitor, e manter a bolinha do tamanho antigo mentiria sobre a
-// centralidade daquele nó no grafo que está de fato na tela.
-const nodeById = new Map(data.nodes.map(n => [n.id, n]));
-const endpoint = (v) => (typeof v === "object" ? v : nodeById.get(v));
 
 function recomputeVisibleDegrees() {
   data.nodes.forEach(n => { n.visibleDegree = 0; });
@@ -1028,48 +1225,16 @@ data.nodes.forEach(n => {
   n.y = height / 2 + (by - height / 2) * BLOOM + (Math.random() - 0.5) * JITTER;
 });
 
-// Um <g> por nó com UMA transform por tick, em vez de cx/cy no círculo e
-// x/y no texto separadamente — metade das escritas de atributo por frame.
-// Isso importa mais no celular: o Chrome mobile tem bem menos margem de
-// CPU/GPU que desktop pra reescrever atributos SVG a 60fps.
-const nodeGroup = container.append("g").selectAll("g.node")
-  .data(data.nodes).join("g")
-  .attr("class", "node")
-  .attr("transform", d => `translate(${d.x},${d.y})`)
-  .call(d3.drag()
-    .on("start", dragstarted)
-    .on("drag", dragged)
-    .on("end", dragended));
-
-// Halo do glow "leve" — círculo simples sem filter, desenhado atrás do nó
-// principal (ordem de criação = ordem de pintura em SVG). Sempre existe;
-// applyStyle() só liga/desliga via opacidade, então trocar de nível de
-// glow não recria elementos, só reescreve alguns atributos.
-const haloSel = nodeGroup.append("circle").attr("class", "node-halo").style("pointer-events", "none");
-
-const nodeSel = nodeGroup.append("circle")
-  .attr("r", radiusOf)
-  .attr("fill", d => `url(#grad-${d.type})`)
-  .attr("stroke", "#0b1220")
-  .attr("stroke-width", 1)
-  .style("cursor", "pointer")
-  .style("color", d => typeColorRaw(d));
-
-const labelSel = nodeGroup.filter(d => d.type !== "reference").append("text")
-  .attr("class", "node-title")
-  .attr("dy", d => -(2 + radiusOf(d)))
-  .attr("text-anchor", "middle")
-  .text(d => d.title);
-
 // Estado do nível de desempenho atual — lido pela visibilidade de rótulos
 // no zoom (abaixo) e recalculado toda vez que spacing/performance mudam.
 let currentTier = PERFORMANCE_TIERS[resolvePerformanceTier(styleConfig)];
 let labelsShown = true;
 
 // Some com os rótulos quando o tier não é "sempre mostrar" e o zoom está
-// afastado — em wikis de centenas de nós, texto é uma das coisas mais caras
-// de desenhar/remedir no SVG; ilegível de longe mesmo, então não custa nada
-// escondê-lo até o usuário aproximar ou selecionar um nó específico.
+// afastado — em wikis de centenas de nós, texto é de longe a coisa mais
+// cara de desenhar em Canvas (fillText é ordens de magnitude mais lento que
+// um arc()); ilegível de longe mesmo, então não custa nada pular de vez o
+// fillText em vez de só escondê-lo via CSS como no SVG.
 function updateLabelVisibility(k) {
   // "sempre"/"nunca" são escolha explícita do usuário e vencem o tier de
   // desempenho; só em "auto" (o padrão) é que baixo zoom + tier "baixa"
@@ -1079,24 +1244,64 @@ function updateLabelVisibility(k) {
     : mode === "nunca" ? false
     : (currentTier.labelsAlways || k > 1.4);
   if (show !== labelsShown) {
-    labelSel.style("display", show ? null : "none");
     labelsShown = show;
   }
+  scheduleDraw();
 }
 
 // Recria link/charge/collide a partir de spacing + tier de desempenho —
-// chamada na criação e de novo sempre que o usuário mexe nesses dois
-// controles no painel de Estilo.
+// chamada na criação e de novo sempre que o usuário mexe nesses controles
+// no painel de Estilo. `collision` desliga a força inteira quando o usuário
+// pede mais velocidade num aparelho fraco, ao custo de nós podendo se
+// sobrepor visualmente.
+// Grau do nó para calibrar a força do link. `function` (não `const`) porque
+// applyForces() roda na inicialização, no topo do script, e uma const aqui
+// entraria em temporal dead zone. O piso de 1 evita divisão por zero num nó
+// isolado; aceita id ou objeto porque o d3 resolve source/target em momentos
+// diferentes do ciclo de vida do forceLink.
+function degreeOf(node) {
+  if (node == null) return 1;
+  const n = typeof node === "object" ? node : null;
+  if (!n) return 1;
+  return Math.max(1, n.visibleDegree ?? n.degree ?? 1);
+}
+
 function applyForces(cfg) {
   currentTier = PERFORMANCE_TIERS[resolvePerformanceTier(cfg)];
   const spacing = cfg.spacing || 1;
+  // Multiplicadores do painel de Estilo — `?? 1`/`?? 0.55` cobrem tanto
+  // estilos salvos antigos (de antes destes controles existirem) quanto o
+  // padrão de fábrica, então ninguém herda um valor `undefined` na fórmula.
+  const linkStrengthMult = cfg.linkStrength ?? 1;
+  const chargeMult = cfg.chargeStrength ?? 1;
   simulation
-    .force("link", d3.forceLink(data.edges).id(d => d.id).distance(70 * spacing).strength(0.5))
-    .force("charge", d3.forceManyBody().strength(-160 * spacing)
-      .theta(currentTier.theta).distanceMax(currentTier.distanceMax))
-    .force("collide", d3.forceCollide().radius(d => (7 + radiusOf(d)) * spacing)
+    // A força do link NÃO é fixa de propósito. Um `.strength(0.5)` igual para
+    // toda aresta era a causa da agitação: um nó-hub com 40 arestas recebia 40
+    // puxões de 0.5 por tick, entrava em oscilação e sacudia a vizinhança
+    // inteira junto. A fórmula abaixo é a heurística padrão do d3 (dividir pelo
+    // grau do extremo menos conectado), que enfraquece automaticamente o link
+    // conforme o nó acumula conexões — é exatamente o caso desta wiki, onde
+    // alguns essays concentram dezenas de links e a maioria das páginas tem 2 ou 3.
+    // `linkStrengthMult` (slider "Força elástica das conexões") multiplica o
+    // resultado inteiro sem mudar a heurística de grau em si.
+    .force("link", d3.forceLink(data.edges).id(d => d.id)
+      .distance(70 * spacing)
+      .strength(l => linkStrengthMult / Math.min(degreeOf(l.source), degreeOf(l.target))))
+    // `chargeMult` (slider "Força de repulsão entre nós") é independente de
+    // `spacing`: spacing mexe em distância/colisão/arestas juntos, este só
+    // na intensidade da repulsão.
+    .force("charge", d3.forceManyBody().strength(-110 * spacing * chargeMult)
+      .theta(currentTier.theta).distanceMax(currentTier.distanceMax));
+  if (cfg.collision === false) {
+    simulation.force("collide", null);
+  } else {
+    simulation.force("collide", d3.forceCollide().radius(d => (7 + radiusOf(d)) * spacing)
       .iterations(currentTier.collideIterations));
-  updateLabelVisibility(d3.zoomTransform(svg.node()).k);
+  }
+  // Atrito (slider "Atrito") — pode ser reaplicado a qualquer momento no d3,
+  // mesmo com a simulação já rodando, então não precisa de restart especial.
+  simulation.velocityDecay(cfg.friction ?? 0.55);
+  updateLabelVisibility(zoomTransform.k);
 }
 
 const simulation = d3.forceSimulation(data.nodes)
@@ -1110,24 +1315,370 @@ const simulation = d3.forceSimulation(data.nodes)
   // pegar e parecia estático. O custo continua baixo porque a semente já traz
   // a topologia certa (ver BLOOM acima); o que roda aqui é expansão e
   // colisão, não descoberta de layout.
-  .alpha(1)
+  // alpha 0.7, não 1: a semente do Python já traz a topologia certa, então o
+  // que roda aqui é acomodação, não descoberta de layout. Em alpha cheio o
+  // arranque saía com velocidade mediana ~11px/tick, e num aparelho que
+  // renderiza a 15fps cada frame vira um salto visível — daí a impressão de
+  // agitação. Continua havendo expansão visível, só que sem o esticão inicial.
+  .alpha(0.7)
   .alphaDecay(0.025)
-  .velocityDecay(0.35);
+  // Parar em 0.005 em vez do padrão 0.001 corta as últimas dezenas de ticks,
+  // que só produzem tremor sub-pixel invisível mas mantêm o rAF girando (e o
+  // celular acordado) sem nada acontecer na tela.
+  .alphaMin(0.005)
+  // velocityDecay é atrito: quanto menor, mais o nó carrega a velocidade do
+  // tick anterior. Em 0.35 (abaixo até do padrão 0.4 do d3) os nós guardavam
+  // momento demais, passavam do ponto de equilíbrio e voltavam, ficando
+  // tremendo no lugar em vez de assentar. 0.55 preserva a expansão inicial
+  // visível, mas mata a oscilação residual bem mais cedo. Só o valor inicial
+  // fica fixo aqui — applyForces() (chamado logo abaixo) já reaplica a partir
+  // de cfg.friction, então o slider "Atrito" do painel de Estilo sobrescreve
+  // isto no mesmo tick, sem período em que o valor fixo esteja realmente em vigor.
+  .velocityDecay(0.55);
 
 applyForces(styleConfig);
 
+// ---- Desenho -------------------------------------------------------------
+// Estado de destaque/seleção/busca, lido por nodeDimmed()/edgeDimmed() a
+// cada frame — evita recalcular o Set de vizinhos por nó (isso seria O(n²)
+// se chamado dentro do loop de desenho; aqui é calculado uma vez por seleção
+// e reaproveitado por todos os nós/arestas do frame).
+let selectedNodeId = null;
+let highlightSet = null;   // Set<id> dos vizinhos do nó selecionado, ou null
+let searchMatchIds = null; // Set<id> do resultado da busca, ou null
+
+function nodeDimmed(n) {
+  if (searchMatchIds) return !searchMatchIds.has(n.id);
+  if (highlightSet) return !highlightSet.has(n.id);
+  return false;
+}
+function edgeDimmed(e) {
+  if (styleConfig.edgeVisibility === "sempre") return false; // nunca esmaece
+  if (searchMatchIds) return true; // busca sempre esmaece todas as arestas
+  if (selectedNodeId) {
+    const a = typeof e.source === "object" ? e.source.id : e.source;
+    const b = typeof e.target === "object" ? e.target.id : e.target;
+    return a !== selectedNodeId && b !== selectedNodeId;
+  }
+  return false;
+}
+
+function drawHalo(n) {
+  const r = radiusOf(n) * 2.4;
+  ctx.save();
+  ctx.globalAlpha = nodeDimmed(n) ? 0.08 : 1;
+  ctx.translate(n.x, n.y);
+  ctx.scale(r, r);
+  ctx.beginPath();
+  ctx.arc(0, 0, 1, 0, Math.PI * 2);
+  ctx.fillStyle = haloGradients[n.type] || "transparent";
+  ctx.fill();
+  ctx.restore();
+}
+
+// ---- Cache de sprites para nós com gradiente / glow "alto" --------------
+// O agrupamento em Path2D (arestas, e nós quando são cor chapada sem glow
+// "alto") só funciona porque um único fill()/stroke() serve pro grupo
+// inteiro. Gradiente e shadowBlur não têm essa saída: um CanvasGradient é
+// definido no espaço do usuário no momento do fill, então mesmo reaproveitando
+// o MESMO objeto de gradiente (como nodeGradients já fazia) o navegador ainda
+// precisa rasterizá-lo de novo a cada nó, porque translate/scale muda o
+// espaço de destino a cada chamada — e shadowBlur é rasterização à parte,
+// nó a nó, por definição. Ou seja: no default de fábrica (gradient: true,
+// glow: "leve") e em glow "alto", esse é o custo que sobra depois de
+// bateladar as arestas.
+//
+// A saída é pré-rasterizar cada APARÊNCIA (não cada nó) uma única vez num
+// <canvas> offscreen e, depois, só ctx.drawImage() esse bitmap pronto por nó
+// — um blit de pixels já prontos é ordens de magnitude mais barato que
+// recriar gradiente/blur e rasterizar o arco a cada frame.
+//
+// O raio de um nó é contínuo (grau, bytes ou linhas, dependendo de
+// sizeMode), então "um sprite por raio exato" nunca teria cache hit. Como a
+// diferença visual entre um sprite desenhado a 12.0px e um a 12.4px é
+// sub-pixel — imperceptível num círculo de poucos pixels — arredondamos o
+// raio em faixas de RADIUS_STEP px pra escolher/gerar o sprite, e na hora de
+// desenhar ainda esticamos (drawImage com dw/dh proporcionais) pro raio
+// EXATO do nó. O tamanho final na tela continua fiel até a fração de pixel;
+// só a "textura" do gradiente/blur é compartilhada entre nós de raio parecido.
+const RADIUS_STEP = 1;   // faixas de 1px: degrau pequeno o bastante pra não notar
+const RADIUS_MAX = 48;   // cobre o maior raio plausível (radiusBase + radiusScale*escala); acima disso reusa o maior sprite
+const STROKE_PAD = 1.5;  // folga pra borda escura não ser cortada na margem do sprite
+const GLOW_PAD = 8;      // folga extra só em glow "alto": o shadowBlur "vaza" além do arco
+const spriteCache = new Map(); // chave "tipo|dim|bucket|dpr" -> HTMLCanvasElement
+
+function radiusBucket(r) {
+  return Math.min(RADIUS_MAX, Math.max(RADIUS_STEP, Math.round(r / RADIUS_STEP) * RADIUS_STEP));
+}
+
+// Meio-lado do sprite em coordenadas de MUNDO (antes do dpr) pro raio de um
+// balde — inclui a folga de borda/blur, calculada em cima do bucket (não do
+// raio real) porque o sprite inteiro é escalado depois no drawImage.
+function spriteHalfSize(bucket) {
+  return bucket + STROKE_PAD + (styleConfig.glow === "alto" ? GLOW_PAD : 0);
+}
+
+// Invalida o cache inteiro sempre que algo que afete a aparência do sprite
+// muda (cor, gradiente, glow, raio, dpr) — chamado por applyStyle() e por
+// resizeCanvas(). Não há por que reciclar sprites individualmente: o cache
+// inteiro é barato de reconstruir (algumas centenas de bitmaps pequenos, sob
+// demanda, não de uma vez), e "meio-invalidar" arriscaria deixar sprite
+// velho em tela depois do usuário mexer no painel de Estilo.
+function clearSpriteCache() {
+  spriteCache.clear();
+}
+
+function getNodeSprite(type, dim, r) {
+  const bucket = radiusBucket(r);
+  const key = type + "|" + dim + "|" + bucket + "|" + dpr;
+  let sprite = spriteCache.get(key);
+  if (sprite) return sprite;
+
+  const color = (styleConfig.colors && styleConfig.colors[type]) || "#888";
+  const half = spriteHalfSize(bucket);
+  const size = half * 2; // lado do sprite em px "de mundo" (CSS), antes do dpr
+
+  sprite = document.createElement("canvas");
+  // HiDPI: o bitmap do sprite precisa nascer na resolução FÍSICA do
+  // aparelho, senão fica borrado em tela retina/mobile mesmo com o
+  // drawImage depois escalando "certo" — exatamente o mesmo motivo de
+  // resizeCanvas() multiplicar por dpr no canvas principal. Aqui é feito
+  // uma vez na criação do sprite, não a cada frame.
+  const px = Math.max(2, Math.ceil(size * dpr));
+  sprite.width = px;
+  sprite.height = px;
+  const sctx = sprite.getContext("2d");
+  sctx.scale(px / size, px / size); // desenha em coordenadas de mundo (0..size)
+  const cx = half, cy = half;
+
+  sctx.globalAlpha = dim ? 0.08 : 1;
+  if (styleConfig.glow === "alto") {
+    sctx.shadowColor = color;
+    sctx.shadowBlur = 6;
+  }
+  sctx.beginPath();
+  sctx.arc(cx, cy, bucket, 0, Math.PI * 2);
+  if (styleConfig.gradient) {
+    const g = sctx.createRadialGradient(cx - bucket * 0.3, cy - bucket * 0.35, 0, cx, cy, bucket);
+    g.addColorStop(0, mixWhite(color, 0.55));
+    g.addColorStop(1, color);
+    sctx.fillStyle = g;
+  } else {
+    sctx.fillStyle = color;
+  }
+  sctx.fill();
+  sctx.shadowBlur = 0;
+  sctx.lineWidth = 1;
+  sctx.strokeStyle = "#0b1220";
+  sctx.stroke();
+
+  spriteCache.set(key, sprite);
+  return sprite;
+}
+
+function drawNodeSprite(n) {
+  const r = radiusOf(n);
+  if (r <= 0) return;
+  const dimmed = nodeDimmed(n);
+  const sprite = getNodeSprite(n.type, dimmed, r);
+  const bucket = radiusBucket(r);
+  // O sprite foi rasterizado pro raio do BALDE; escalamos aqui pro raio
+  // EXATO do nó (desvio no máximo RADIUS_STEP/2, imperceptível) em vez de
+  // usar o bucket puro — assim o tamanho final na tela não tem degrau.
+  const scale = r / bucket;
+  const dw = spriteHalfSize(bucket) * 2 * scale;
+  ctx.drawImage(sprite, n.x - dw / 2, n.y - dw / 2, dw, dw);
+}
+
+function drawLabel(n) {
+  // font/fillStyle/textAlign já vêm setados uma vez só pelo chamador (draw())
+  // antes do loop — não mudam de rótulo pra rótulo, só a posição e o alpha
+  // de esmaecimento mudam aqui. Reatribuir `ctx.font` por rótulo forçaria o
+  // Canvas a reparsear a string de fonte a cada um dos ~1100 nós.
+  const dimmed = nodeDimmed(n);
+  const r = radiusOf(n);
+  ctx.globalAlpha = dimmed ? 0.08 : 0.85;
+  ctx.fillText(n.title, n.x, n.y - (2 + r));
+}
+
+function draw() {
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, width, height);
+  ctx.fillStyle = (styleConfig.colors && styleConfig.colors.background) || "#1b1e21";
+  ctx.fillRect(0, 0, width, height);
+
+  if (styleConfig.starfield) {
+    for (let i = 0; i < STAR_BUCKETS; i++) {
+      const bucket = starBucketLists[i];
+      if (!bucket.length) continue;
+      ctx.beginPath();
+      for (let j = 0; j < bucket.length; j++) {
+        const s = bucket[j];
+        const x = s.fx * width, y = s.fy * height;
+        // moveTo antes do arc: sem isto o primeiro arco do balde ficaria
+        // ligado ao ponto anterior do path por uma linha reta invisível
+        // (fillStyle não desenha contorno, mas o subpath ainda "gruda").
+        ctx.moveTo(x + s.r, y);
+        ctx.arc(x, y, s.r, 0, Math.PI * 2);
+      }
+      ctx.fillStyle = `rgba(255,255,255,${starBucketOpacity[i]})`;
+      ctx.fill();
+    }
+  }
+
+  ctx.save();
+  ctx.translate(zoomTransform.x, zoomTransform.y);
+  ctx.scale(zoomTransform.k, zoomTransform.k);
+
+  // Culling: só desenha o que cai dentro do viewport (+ margem), em
+  // coordenadas de mundo — evita gastar tempo com milhares de nós fora da
+  // tela quando o usuário dá zoom in numa região pequena do grafo.
+  const [wx0, wy0] = zoomTransform.invert([0, 0]);
+  const [wx1, wy1] = zoomTransform.invert([width, height]);
+  const pad = 80;
+  const inView = (n) => n.x >= wx0 - pad && n.x <= wx1 + pad && n.y >= wy0 - pad && n.y <= wy1 + pad;
+
+  if (styleConfig.edgeVisibility !== "off") {
+    // Batelada de arestas — o maior ganho do arquivo inteiro. Antes: um
+    // beginPath/moveTo/lineTo/stroke POR aresta (2547 chamadas de stroke()
+    // por frame); cada stroke() é uma rasterização própria da GPU/CPU, então
+    // o custo por frame crescia linear com o nº de arestas, não com o nº de
+    // pixels desenhados. Como toda aresta de um mesmo grupo visual (normal
+    // vs. esmaecida × sólida vs. tracejada) compartilha cor/alpha/dash,
+    // acumulamos todos os segmentos do grupo num único Path2D e chamamos
+    // stroke() uma vez por grupo — 4 chamadas fixas por frame, não 2547.
+    // Path2D (em vez de ctx.beginPath()) porque os 4 grupos são intercalados
+    // durante a única passada pelas arestas: só um path pode estar "aberto"
+    // no ctx por vez, mas 4 objetos Path2D podem acumular em paralelo.
+    const edgeColor = styleConfig.colors.edge;
+    const edgeAlphaNormal = styleConfig.edgeOpacity;
+    const pathSolidNormal = new Path2D();
+    const pathSolidDim = new Path2D();
+    const pathDashNormal = new Path2D();
+    const pathDashDim = new Path2D();
+    data.edges.forEach(e => {
+      const s = endpoint(e.source), t = endpoint(e.target);
+      if (!s || !t || !isNodeVisible(s) || !isNodeVisible(t)) return;
+      if (!inView(s) && !inView(t)) return;
+      const dim = edgeDimmed(e);
+      const isRef = e.kind === "reference";
+      const path = isRef
+        ? (dim ? pathDashDim : pathDashNormal)
+        : (dim ? pathSolidDim : pathSolidNormal);
+      path.moveTo(s.x, s.y);
+      path.lineTo(t.x, t.y);
+    });
+    ctx.lineWidth = 1.2 / zoomTransform.k;
+    ctx.strokeStyle = edgeColor;
+    ctx.setLineDash([]);
+    ctx.globalAlpha = edgeAlphaNormal;
+    ctx.stroke(pathSolidNormal);
+    ctx.globalAlpha = 0.08;
+    ctx.stroke(pathSolidDim);
+    ctx.setLineDash([3, 3]);
+    ctx.globalAlpha = edgeAlphaNormal;
+    ctx.stroke(pathDashNormal);
+    ctx.globalAlpha = 0.08;
+    ctx.stroke(pathDashDim);
+    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
+  }
+
+  // Halo pulado inteiro no tier "baixa" — é o item decorativo mais caro
+  // depois do rótulo, e o tier baixo já existe justamente pra aparelhos sem
+  // fôlego de sobra.
+  const drawHalos = styleConfig.glow === "leve" && currentTier !== PERFORMANCE_TIERS.baixa;
+  if (drawHalos) {
+    // Halo usa gradiente radial recentrado por nó (translate/scale
+    // individual) — não dá pra bater em lote sem trocar o visual, porque um
+    // único CanvasGradient não se "reposiciona" por arco dentro do mesmo
+    // path. Fica no caminho por-nó de propósito.
+    data.nodes.forEach(n => {
+      if (!isNodeVisible(n) || !inView(n)) return;
+      drawHalo(n);
+    });
+  }
+
+  // Batelada de nós por cor sólida — mesma lógica das arestas. Só é possível
+  // quando o preenchimento é cor chapada: gradiente (padrão) recentra um
+  // CanvasGradient por nó, e glow "alto" usa shadowBlur, que precisa
+  // desenhar/rasterizar nó a nó pra não borrar o halo dos vizinhos. Com os
+  // dois desligados, agrupamos por cor+esmaecimento (poucas combinações) e
+  // fazemos um fill()+stroke() por grupo em vez de um par por nó — de
+  // ~1122 pares fill/stroke para menos de uma dezena.
+  const canBatchNodes = styleConfig.glow !== "alto" && !styleConfig.gradient;
+  if (canBatchNodes) {
+    const nodeGroups = new Map(); // "cor|esmaecido" -> Path2D
+    data.nodes.forEach(n => {
+      if (!isNodeVisible(n) || !inView(n)) return;
+      const color = typeColorRaw(n);
+      const dim = nodeDimmed(n);
+      const key = color + "|" + dim;
+      let path = nodeGroups.get(key);
+      if (!path) {
+        path = new Path2D();
+        nodeGroups.set(key, path);
+      }
+      const r = radiusOf(n);
+      path.moveTo(n.x + r, n.y);
+      path.arc(n.x, n.y, r, 0, Math.PI * 2);
+    });
+    // Contorno escuro é idêntico pra todo mundo (cor e espessura fixas,
+    // independente do raio do nó — igual ao caminho individual, que
+    // compensava o raio com translate/scale + lineWidth=1/r; aqui os arcos
+    // já estão em coordenadas de mundo sem esse scale por nó, então
+    // lineWidth=1 reproduz a mesma espessura final).
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "#0b1220";
+    nodeGroups.forEach((path, key) => {
+      const sep = key.lastIndexOf("|");
+      const color = key.slice(0, sep);
+      const dim = key.slice(sep + 1) === "true";
+      ctx.globalAlpha = dim ? 0.08 : 1;
+      ctx.fillStyle = color;
+      ctx.fill(path);
+      ctx.stroke(path);
+    });
+    ctx.globalAlpha = 1;
+  } else {
+    // gradient ligado e/ou glow "alto": nenhum dos dois bateria num Path2D
+    // em grupo (ver comentário acima de getNodeSprite), então o caminho aqui
+    // é o cache de sprites — drawImage por nó em vez de fill/stroke com
+    // gradiente ou shadowBlur recalculados a cada um.
+    data.nodes.forEach(n => {
+      if (!isNodeVisible(n) || !inView(n)) return;
+      drawNodeSprite(n);
+    });
+  }
+
+  if (labelsShown) {
+    // Lê o estilo uma vez fora do loop apertado: font/fillStyle não mudam
+    // por nó, só a posição — evitar reatribuir a mesma string de fonte a
+    // cada rótulo economiza reparse de `ctx.font` (não é grátis no Canvas).
+    ctx.font = `${styleConfig.labelSize}px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#e6e9ec";
+    data.nodes.forEach(n => {
+      if (n.type === "reference" || !isNodeVisible(n) || !inView(n)) return;
+      drawLabel(n);
+    });
+  }
+
+  ctx.restore();
+}
+
 simulation.on("tick", () => {
-  linkSel
-    .attr("x1", d => d.source.x).attr("y1", d => d.source.y)
-    .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
-  nodeGroup.attr("transform", d => `translate(${d.x},${d.y})`);
+  rebuildQuadtree();
+  scheduleDraw();
 });
 
 // Aplica cores/raio/rótulo/halo salvos (ou o padrão vindo do Python) agora
-// que nodeSel/haloSel/labelSel/simulation existem — silencioso porque as
-// escritas de atributo já bastam pra ficar certo visualmente, sem precisar
-// reiniciar a simulação que acabou de nascer quase assentada.
+// que styleConfig/simulation existem — silencioso porque redesenhar já
+// basta pra ficar certo visualmente, sem precisar reiniciar a simulação que
+// acabou de nascer quase assentada.
 applyStyle(styleConfig, { silent: true });
+rebuildQuadtree();
+scheduleDraw();
 
 // Reaquecer a simulação inteira a alphaTarget 0.3 é o padrão de livro-texto
 // do d3, pensado pra grafos pequenos — com centenas/milhares de nós e carga
@@ -1138,17 +1689,106 @@ applyStyle(styleConfig, { silent: true });
 // arestas/colisão do próprio nó arrastado acompanharem o mouse, sem jogar
 // energia extra no resto do sistema.
 const DRAG_ALPHA_TARGET = data.nodes.length > 300 ? 0.06 : 0.3;
-function dragstarted(event, d) {
+let dragMoved = false;
+
+// Em Canvas não há elemento por nó pra prender um d3.drag — o "subject" faz
+// hit-testing via quadtree em coordenadas de mundo (invertendo o transform
+// de zoom atual), e start/drag/end trabalham com esse mesmo nó encontrado.
+// event.x/event.y do d3.drag continuam em pixels de TELA (o drag não sabe
+// nada sobre zoom), então cada handler inverte o transform de novo.
+function dragsubject(event) {
+  // Diferente de dragged(), aqui NÃO usamos d3.pointer(event, canvas): o
+  // `event` recebido pelo accessor `subject` é o DragEvent do d3-drag, e
+  // d3.pointer desembrulharia `.sourceEvent` até o evento nativo — que no
+  // toque é um TouchEvent sem clientX/clientY (isso mora em event.touches[]).
+  // O próprio d3-drag já calculou event.x/event.y certos em pixels do
+  // container (inclusive para toque, chamando pointer() com o Touch, não com
+  // o TouchEvent), então usamos esses valores prontos e só invertemos o zoom.
+  const [wx, wy] = zoomTransform.invert([event.x, event.y]);
+  return findNodeAt(wx, wy);
+}
+// `dragOffsetX/Y` guarda a distância entre o CENTRO do nó e o ponto exato do
+// dedo/cursor no instante do toque. Sem isso, dragged() faria fx/fy = posição
+// absoluta do ponteiro invertida pelo zoom, o que recentraliza o nó embaixo
+// do dedo de golpe assim que o gesto começa — visto como "pula pro lado" por
+// quem não tocou bem no centro do círculo (comum em toque: o dedo cobre uma
+// área bem maior que o nó de poucos pixels, e o ponto de contato reportado
+// raramente cai exatamente no centro). Guardando o deslocamento inicial e
+// somando ele de novo em todo dragged(), o nó acompanha o dedo pelo mesmo
+// delta que ele percorre, preservando onde exatamente ele foi pego — e
+// qualquer viés sistemático residual de coordenada (toque vs. mouse, DPR)
+// cancela na subtração em vez de aparecer como um salto constante.
+let dragOffsetX = 0, dragOffsetY = 0;
+function dragstarted(event) {
   if (!event.active) simulation.alphaTarget(DRAG_ALPHA_TARGET).restart();
-  d.fx = d.x; d.fy = d.y;
-  d3.select(this).classed("dragging", true);
+  const [wx, wy] = zoomTransform.invert([event.x, event.y]);
+  dragOffsetX = event.subject.x - wx;
+  dragOffsetY = event.subject.y - wy;
+  event.subject.fx = event.subject.x;
+  event.subject.fy = event.subject.y;
+  dragMoved = false;
 }
-function dragged(event, d) { d.fx = event.x; d.fy = event.y; }
-function dragended(event, d) {
+function dragged(event) {
+  const [wx, wy] = zoomTransform.invert([event.x, event.y]);
+  event.subject.fx = wx + dragOffsetX;
+  event.subject.fy = wy + dragOffsetY;
+  dragMoved = true;
+  scheduleDraw();
+}
+// Double-tap é detectado AQUI dentro, e não num listener de "touchend" no
+// canvas, porque o touchended do próprio d3-drag chama stopImmediatePropagation()
+// sempre que há um gesto ativo — isto é, exatamente quando o toque caiu em cima
+// de um nó. Um listener registrado depois do d3.drag nunca rodaria no único caso
+// que interessa. Aqui já estamos dentro do gesto, então nada pode nos calar.
+const DOUBLE_TAP_MS = 350;
+const DOUBLE_TAP_PX = 30;
+let lastTap = null; // { x, y, t } em pixels do container
+
+function dragended(event) {
   if (!event.active) simulation.alphaTarget(0);
-  d.fx = null; d.fy = null;
-  d3.select(this).classed("dragging", false);
+  event.subject.fx = null;
+  event.subject.fy = null;
+  // Sem movimento perceptível = clique, não arrasto: seleciona o nó (a
+  // versão SVG tinha um listener de "click" próprio; em Canvas o mesmo
+  // mousedown/touchstart já foi capturado pelo d3.drag, então tratamos o
+  // "clique parado" aqui mesmo).
+  if (!dragMoved) {
+    // No desktop o duplo-clique já é tratado pelo listener de "dblclick"; só
+    // o toque precisa da detecção manual, senão um duplo-clique de mouse
+    // abriria o nó duas vezes.
+    const doToque = event.sourceEvent && String(event.sourceEvent.type).startsWith("touch");
+    const agora = performance.now();
+    if (doToque && lastTap
+        && agora - lastTap.t < DOUBLE_TAP_MS
+        && Math.hypot(event.x - lastTap.x, event.y - lastTap.y) < DOUBLE_TAP_PX) {
+      lastTap = null;
+      openNode(event.subject);
+    } else {
+      lastTap = doToque ? { x: event.x, y: event.y, t: agora } : null;
+      selectNode(event.subject);
+    }
+  }
+  scheduleDraw();
 }
+canvasSel.call(d3.drag()
+  .subject(dragsubject)
+  .on("start", dragstarted)
+  .on("drag", dragged)
+  .on("end", dragended));
+
+// Ação compartilhada entre dblclick (desktop) e double-tap (mobile), para não
+// duplicar a lógica de abrir o nó em dois listeners.
+function openNodeAt(wx, wy, event) {
+  const node = findNodeAt(wx, wy);
+  if (node) { event.stopPropagation(); openNode(node); }
+  return node;
+}
+
+canvas.addEventListener("dblclick", (event) => {
+  const pt = d3.pointer(event, canvas);
+  const [wx, wy] = zoomTransform.invert(pt);
+  openNodeAt(wx, wy, event);
+});
 
 const neighborsOf = (id) => {
   const s = new Set([id]);
@@ -1187,11 +1827,11 @@ if (telaPequena()) definirPainel(false);
 const detailEl = document.getElementById("detail");
 
 function resetHighlight() {
-  nodeSel.classed("dim", false);
-  haloSel.classed("dim", false);
-  labelSel.classed("dim", false);
-  linkSel.classed("dim", false);
+  highlightSet = null;
+  selectedNodeId = null;
+  searchMatchIds = null;
   detailEl.hidden = true;
+  scheduleDraw();
 }
 
 function selectNode(d) {
@@ -1204,15 +1844,10 @@ function selectNode(d) {
     updateVisibility();
   }
 
-  const neighbors = neighborsOf(d.id);
-  nodeSel.classed("dim", n => !neighbors.has(n.id));
-  haloSel.classed("dim", n => !neighbors.has(n.id));
-  labelSel.classed("dim", n => !neighbors.has(n.id));
-  linkSel.classed("dim", e => {
-    const a = typeof e.source === "object" ? e.source.id : e.source;
-    const b = typeof e.target === "object" ? e.target.id : e.target;
-    return a !== d.id && b !== d.id;
-  });
+  highlightSet = neighborsOf(d.id);
+  selectedNodeId = d.id;
+  searchMatchIds = null;
+  scheduleDraw();
 
   const target = d.type === "reference" ? d.url : (d.file ? "../../" + d.file : null);
   // O cartão de detalhe mora dentro do painel, mas o painel só deve abrir
@@ -1237,56 +1872,46 @@ function openNode(d) {
   }
 }
 
-nodeSel.on("click", (event, d) => {
-  selectNode(d);
-}).on("dblclick", (event, d) => {
-  event.stopPropagation();
-  openNode(d);
-});
-
-svg.on("click", (event) => {
-  if (event.target.tagName === "svg") resetHighlight();
+// Clique num nó já é resolvido em dragended() (mousedown/touchstart parado
+// sem movimento = clique). Aqui só sobra o clique no fundo, pra resetar o
+// destaque — dispara depois do dragend, então checar "achou nó aqui?" evita
+// desfazer por engano a seleção que acabou de acontecer no mesmo gesto.
+canvas.addEventListener("click", (event) => {
+  const pt = d3.pointer(event, canvas);
+  const [wx, wy] = zoomTransform.invert(pt);
+  if (!findNodeAt(wx, wy)) resetHighlight();
 });
 
 document.getElementById("search").addEventListener("input", (e) => {
   const q = e.target.value.trim().toLowerCase();
   if (!q) { resetHighlight(); return; }
-  const matchIds = new Set(data.nodes.filter(n =>
+  searchMatchIds = new Set(data.nodes.filter(n =>
     n.title.toLowerCase().includes(q) || (n.tags || []).some(t => t.toLowerCase().includes(q))
   ).map(n => n.id));
-  nodeSel.classed("dim", n => !matchIds.has(n.id));
-  haloSel.classed("dim", n => !matchIds.has(n.id));
-  labelSel.classed("dim", n => !matchIds.has(n.id));
-  linkSel.classed("dim", true);
+  highlightSet = null;
+  selectedNodeId = null;
+  detailEl.hidden = true;
+  scheduleDraw();
 });
 
 // ---- Legenda clicável com visibilidade independente para cada tipo ----
-// Reference começa oculto: são centenas de nós-folha que afogam a estrutura
-// entre essays, concepts e entities, que é o que o grafo existe para mostrar.
-const hiddenTypes = new Set(["reference"]);
-
-function isNodeVisible(n) {
-  return !hiddenTypes.has(n.type);
-}
+// (`hiddenTypes` e `isNodeVisible` moram lá em cima, junto do quadtree: são
+// lidos por rebuildQuadtree()/draw(), que rodam bem antes daqui.)
 
 function updateVisibility() {
   recomputeVisibleDegrees();
-
-  nodeSel.classed("hidden-node", n => !isNodeVisible(n))
-    .attr("r", radiusOf);
-  haloSel.classed("hidden-node", n => !isNodeVisible(n))
-    .attr("r", d => radiusOf(d) * 2.4);
-  labelSel.classed("hidden-node", n => !isNodeVisible(n))
-    .attr("dy", d => -(2 + radiusOf(d)));
-  linkSel.classed("hidden-node", e => {
-    const s = endpoint(e.source), t = endpoint(e.target);
-    return !s || !t || !isNodeVisible(s) || !isNodeVisible(t);
-  });
+  rebuildQuadtree(); // hit-test não deve mais achar nós de um tipo oculto
 
   // Reacomoda o layout: bolinhas menores pedem menos espaço entre si.
-  simulation.force("collide", d3.forceCollide().radius(d => (7 + radiusOf(d)) * (styleConfig.spacing || 1))
-    .iterations(currentTier.collideIterations));
+  // Respeita o mesmo toggle de colisão do painel de Estilo.
+  if (styleConfig.collision === false) {
+    simulation.force("collide", null);
+  } else {
+    simulation.force("collide", d3.forceCollide().radius(d => (7 + radiusOf(d)) * (styleConfig.spacing || 1))
+      .iterations(currentTier.collideIterations));
+  }
   simulation.alpha(0.35).restart();
+  scheduleDraw();
 }
 
 document.querySelectorAll(".legend-item[data-type]").forEach(el => {
@@ -1333,7 +1958,7 @@ function fitToScreen(instant) {
   const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
   const transform = d3.zoomIdentity.translate(width / 2, height / 2).scale(scale).translate(-cx, -cy);
 
-  (instant ? svg : svg.transition().duration(280)).call(zoom.transform, transform);
+  (instant ? canvasSel : canvasSel.transition().duration(280)).call(zoom.transform, transform);
 }
 
 if (telaPequena()) {
@@ -1489,15 +2114,47 @@ function renderTypeIndex() {
       return av < bv ? -state.dir : av > bv ? state.dir : 0;
     });
 
-    tbody.innerHTML = rows.map(n => `<tr data-id="${escapeHtml(n.id)}">
-      <td data-label="Título">${highlightMatch(n.title, state.query)}</td>
+    // Resumo expansível só faz sentido pra essays (é o único tipo com corpo
+    // de texto de verdade por trás — concept/entity/insight/reference não
+    // têm `summary:` de arquivo, ou têm um campo curto sem tanto valor extra
+    // aqui). `n.summary` pode vir vazio (arquivo sem o campo no frontmatter,
+    // ou frontmatter que não passou no check_wiki.py ainda) — nesse caso não
+    // mostra o botão de expandir, pra não prometer um resumo que não existe.
+    const showSummary = state.type === "essay";
+    tbody.innerHTML = rows.map(n => {
+      const hasSummary = showSummary && n.summary;
+      const row = `<tr data-id="${escapeHtml(n.id)}">
+      <td data-label="Título">${hasSummary
+        ? `<button type="button" class="idx-expand" aria-label="Mostrar resumo" aria-expanded="false">▸</button> `
+        : ""}${highlightMatch(n.title, state.query)}</td>
       <td class="idx-tagcell" data-label="Tags">${(n.tags || []).map(t => `<span>${escapeHtml(t)}</span>`).join("")}</td>
       <td data-label="Conexões">${n.degree}</td>
-      <td data-label="Tamanho">${sizeOf(n) ? sizeOf(n) + " linhas" : "—"}</td></tr>`).join("");
+      <td data-label="Tamanho">${sizeOf(n) ? sizeOf(n) + " linhas" : "—"}</td></tr>`;
+      const summaryRow = hasSummary
+        ? `<tr class="idx-summary-row" hidden><td colspan="4"><p class="idx-summary">${escapeHtml(n.summary)}</p></td></tr>`
+        : "";
+      return row + summaryRow;
+    }).join("");
     emptyEl.hidden = rows.length > 0;
     countEl.textContent = rows.length === totalOfType
       ? `${rows.length} ${TYPE_LABELS[state.type].toLowerCase()}`
       : `${rows.length} de ${totalOfType} exibidos`;
+
+    // `stopPropagation()` é o que faz o botão de expandir não também disparar
+    // o clique da linha (que fecha o modal e navega até o nó) — sem isto,
+    // abrir o resumo já saía navegando pro nó junto, o oposto do que
+    // "expansível pra não ficar clutered" pede.
+    tbody.querySelectorAll(".idx-expand").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const summaryRow = btn.closest("tr").nextElementSibling;
+        if (!summaryRow || !summaryRow.classList.contains("idx-summary-row")) return;
+        const willOpen = summaryRow.hidden;
+        summaryRow.hidden = !willOpen;
+        btn.textContent = willOpen ? "▾" : "▸";
+        btn.setAttribute("aria-expanded", String(willOpen));
+      });
+    });
 
     tbody.querySelectorAll("tr").forEach(tr => {
       tr.addEventListener("click", () => {
@@ -1568,13 +2225,39 @@ document.getElementById("btn-gaps").addEventListener("click", () => {
 // ---- Painel de Estilo (cores, raio, rótulo — ao vivo + salvo por navegador) ----
 const STYLE_LABELS = {
   essay: "Essay", concept: "Concept", entity: "Entity", insights: "Insight",
-  reference: "Reference", edge: "Arestas",
+  reference: "Reference", edge: "Arestas", background: "Fundo",
 };
 
 const GRAPH_THEMES = {
   cosmico: { label: "Cósmico", glow: "alto", starfield: true, gradient: true },
   padrao: { label: "Padrão", glow: "leve", starfield: true, gradient: true },
   minimalista: { label: "Minimalista", glow: "off", starfield: false, gradient: false },
+  // Os quatro abaixo, diferente dos três de cima, também trocam as cores
+  // (`colors` completo, um valor pra cada chave de STYLE_LABELS) — um reskin
+  // inteiro num clique, não só glow/fundo estrelado/gradiente. Aplicado via
+  // Object.assign(draft, tema) no clique do botão: como cada um define os 7
+  // tipos, a troca substitui o objeto de cores inteiro sem deixar sobra do
+  // tema anterior.
+  aqua: {
+    label: "Aqua", glow: "leve", starfield: false, gradient: true,
+    colors: { essay: "#22d3ee", concept: "#0ea5a2", entity: "#38bdf8",
+      insights: "#67e8f9", reference: "#5f8f96", edge: "#3fa6c2", background: "#062026" },
+  },
+  noite: {
+    label: "Céu Noturno", glow: "alto", starfield: true, gradient: true,
+    colors: { essay: "#8ab4ff", concept: "#a78bfa", entity: "#fbbf24",
+      insights: "#f472b6", reference: "#64748b", edge: "#3d4a63", background: "#0a0e1f" },
+  },
+  inferno: {
+    label: "Inferno", glow: "alto", starfield: false, gradient: true,
+    colors: { essay: "#ff6b35", concept: "#ff3b3b", entity: "#ffb703",
+      insights: "#c1121f", reference: "#7f1d1d", edge: "#a11d1d", background: "#170404" },
+  },
+  synthwave: {
+    label: "Synthwave", glow: "alto", starfield: true, gradient: true,
+    colors: { essay: "#ff2bd6", concept: "#00e5ff", entity: "#ffe400",
+      insights: "#a78bfa", reference: "#7c3aed", edge: "#ff2bd6", background: "#170426" },
+  },
 };
 
 function renderStylePanel(seed) {
@@ -1590,21 +2273,13 @@ function renderStylePanel(seed) {
 
   modalBody.innerHTML = `
     <h2>Estilo do grafo</h2>
-    <div class="style-section">
+    <div class="style-grid">
+    <div class="style-section style-span2">
       <p class="style-hint">Temas ajustam vários controles de uma vez — os itens abaixo continuam ajustáveis um a um depois.</p>
       <div class="theme-row">${Object.entries(GRAPH_THEMES).map(([k, t]) => themeBtn(k, t)).join("")}</div>
     </div>
-    <div class="style-section">${Object.keys(STYLE_LABELS).map(colorRow).join("")}</div>
     <div class="style-section">
-      <label class="style-row">
-        <span>Tamanho da bolinha representa</span>
-        <select id="st-size-mode">
-          <option value="degree" ${draft.sizeMode === "degree" ? "selected" : ""}>Nº de conexões</option>
-          <option value="bytes" ${draft.sizeMode === "bytes" ? "selected" : ""}>Tamanho do essay (bytes)</option>
-          <option value="lines" ${draft.sizeMode === "lines" ? "selected" : ""}>Tamanho do essay (linhas)</option>
-        </select>
-      </label>
-      <p class="style-hint">Referências não têm arquivo — nos modos de tamanho de essay elas ficam sempre no raio base.</p>
+      ${Object.keys(STYLE_LABELS).map(colorRow).join("")}
       <label class="style-row style-slider">
         <span>Raio base da bolinha</span>
         <input type="range" id="st-radius-base" min="2" max="14" step="1" value="${draft.radiusBase}">
@@ -1615,6 +2290,25 @@ function renderStylePanel(seed) {
       </label>
     </div>
     <div class="style-section">
+      <label class="style-row">
+        <span>Tamanho da bolinha representa</span>
+        <select id="st-size-mode">
+          <option value="degree" ${draft.sizeMode === "degree" ? "selected" : ""}>Nº de conexões</option>
+          <option value="bytes" ${draft.sizeMode === "bytes" ? "selected" : ""}>Tamanho do essay (bytes)</option>
+          <option value="lines" ${draft.sizeMode === "lines" ? "selected" : ""}>Tamanho do essay (linhas)</option>
+        </select>
+      </label>
+      <p class="style-hint">Referências não têm arquivo — nos modos de tamanho de essay elas ficam sempre no raio base. O raio base e a escala do tamanho agora ficam ao lado das cores, acima.</p>
+    </div>
+    <div class="style-section">
+      <label class="style-row">
+        <span>Conexões (arestas) entre os nós</span>
+        <select id="st-edges">
+          <option value="sempre" ${(draft.edgeVisibility ?? "sempre") === "sempre" ? "selected" : ""}>Sempre visível</option>
+          <option value="auto" ${draft.edgeVisibility === "auto" ? "selected" : ""}>Automático (esmaece ao selecionar/buscar)</option>
+          <option value="off" ${draft.edgeVisibility === "off" ? "selected" : ""}>Desligado</option>
+        </select>
+      </label>
       <label class="style-row style-slider">
         <span>Opacidade das arestas</span>
         <input type="range" id="st-edge-opacity" min="0.1" max="1" step="0.05" value="${draft.edgeOpacity}">
@@ -1628,6 +2322,19 @@ function renderStylePanel(seed) {
         <input type="range" id="st-spacing" min="0.6" max="2.5" step="0.1" value="${draft.spacing ?? 1}">
       </label>
       <p class="style-hint">Sobe a distância mínima entre nós, a força que os empurra pra longe e o comprimento das arestas — útil quando o grafo fica denso demais pra ler.</p>
+      <label class="style-row style-slider">
+        <span>Força elástica das conexões</span>
+        <input type="range" id="st-link-strength" min="0.2" max="3" step="0.1" value="${draft.linkStrength ?? 1}">
+      </label>
+      <label class="style-row style-slider">
+        <span>Força de repulsão entre nós</span>
+        <input type="range" id="st-charge-strength" min="0.3" max="3" step="0.1" value="${draft.chargeStrength ?? 1}">
+      </label>
+      <label class="style-row style-slider">
+        <span>Atrito</span>
+        <input type="range" id="st-friction" min="0.2" max="0.9" step="0.05" value="${draft.friction ?? 0.55}">
+      </label>
+      <p class="style-hint">Elástica: quanto maior, mais as arestas puxam os nós conectados com força. Repulsão: quanto maior, mais os nós se afastam uns dos outros. Atrito: quanto maior, mais rápido o grafo assenta e para de balançar.</p>
     </div>
     <div class="style-section">
       <label class="style-row">
@@ -1644,6 +2351,14 @@ function renderStylePanel(seed) {
         No automático, este navegador/grafo está usando: <b>${resolvePerformanceTier(draft)}</b>
         (${data.nodes.length} nós${DEVICE_IS_MOBILE ? ", aparelho móvel" : ""}).
       </p>
+      <label class="style-row">
+        <span>Colisão entre nós</span>
+        <select id="st-collision">
+          <option value="true" ${(draft.collision ?? true) !== false ? "selected" : ""}>Ligada (padrão)</option>
+          <option value="false" ${draft.collision === false ? "selected" : ""}>Desligada (mais rápido)</option>
+        </select>
+      </label>
+      <p class="style-hint">Desligar evita que o simulador gaste tempo resolvendo sobreposição entre bolinhas — mais rápido em aparelhos fracos, ao custo de nós podendo se sobrepor na tela.</p>
     </div>
     <div class="style-section">
       <p class="style-hint">Extras puramente decorativos — desligue os que não quiser, principalmente em wikis grandes ou no celular.</p>
@@ -1672,6 +2387,7 @@ function renderStylePanel(seed) {
         <input type="checkbox" id="st-starfield" ${draft.starfield ? "checked" : ""}>
       </label>
     </div>
+    </div>
     <div class="style-actions">
       <button class="btn" id="st-reset">Restaurar padrão</button>
       <button class="btn style-primary" id="st-save">Salvar</button>
@@ -1690,16 +2406,21 @@ function renderStylePanel(seed) {
     inp.addEventListener("input", () => { draft.colors[inp.getAttribute("data-color")] = inp.value; preview(); });
   });
   modalBody.querySelector("#st-size-mode").addEventListener("change", (e) => { draft.sizeMode = e.target.value; preview(); });
+  modalBody.querySelector("#st-edges").addEventListener("change", (e) => { draft.edgeVisibility = e.target.value; preview(); });
   modalBody.querySelector("#st-edge-opacity").addEventListener("input", (e) => { draft.edgeOpacity = +e.target.value; preview(); });
   modalBody.querySelector("#st-radius-base").addEventListener("input", (e) => { draft.radiusBase = +e.target.value; preview(); });
   modalBody.querySelector("#st-radius-scale").addEventListener("input", (e) => { draft.radiusScale = +e.target.value; preview(); });
   modalBody.querySelector("#st-label-size").addEventListener("input", (e) => { draft.labelSize = +e.target.value; preview(); });
   modalBody.querySelector("#st-spacing").addEventListener("input", (e) => { draft.spacing = +e.target.value; preview(); });
+  modalBody.querySelector("#st-link-strength").addEventListener("input", (e) => { draft.linkStrength = +e.target.value; preview(); });
+  modalBody.querySelector("#st-charge-strength").addEventListener("input", (e) => { draft.chargeStrength = +e.target.value; preview(); });
+  modalBody.querySelector("#st-friction").addEventListener("input", (e) => { draft.friction = +e.target.value; preview(); });
   modalBody.querySelector("#st-performance").addEventListener("change", (e) => {
     draft.performance = e.target.value;
     preview();
     renderStylePanel(draft); // atualiza o texto "está usando: X" com o novo valor
   });
+  modalBody.querySelector("#st-collision").addEventListener("change", (e) => { draft.collision = e.target.value === "true"; preview(); });
   modalBody.querySelector("#st-glow").addEventListener("change", (e) => { draft.glow = e.target.value; preview(); });
   modalBody.querySelector("#st-labels").addEventListener("change", (e) => { draft.labels = e.target.value; preview(); });
   modalBody.querySelector("#st-gradient").addEventListener("change", (e) => { draft.gradient = e.target.checked; preview(); });
@@ -1721,6 +2442,33 @@ document.getElementById("btn-style").addEventListener("click", () => {
   styleModalOpen = true;
   renderStylePanel();
   modalOverlay.classList.add("open");
+});
+
+// ---- Exportar PNG --------------------------------------------------------
+// O canvas já é a imagem inteira (fundo, céu estrelado, arestas, nós, halos)
+// exatamente como está na tela — inclusive zoom/pan e seleção/busca ativos —
+// então exportar é só pedir um blob do canvas e disparar o download; nada
+// precisa ser redesenhado num canvas separado. O `draw()` explícito antes do
+// toBlob só existe para não exportar um frame potencialmente defasado: como
+// scheduleDraw() agenda via requestAnimationFrame, é teoricamente possível
+// clicar "Exportar" entre uma mudança de estado e o próximo repaint.
+// O buffer físico já nasce multiplicado por `dpr` (ver resizeCanvas()), então
+// o PNG exportado sai na resolução real da tela (nítido em retina), não na
+// contagem de pixels CSS.
+document.getElementById("btn-export-png").addEventListener("click", () => {
+  draw();
+  canvas.toBlob((blob) => {
+    if (!blob) return; // navegador sem suporte a toBlob (raríssimo) — falha silenciosa, sem travar a UI
+    const url = URL.createObjectURL(blob);
+    const stamp = new Date().toISOString().slice(0, 10);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `grafo-second-brain-${stamp}.png`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, "image/png");
 });
 
 // Fechar o modal de Estilo sem clicar "Salvar" descarta o rascunho e volta
