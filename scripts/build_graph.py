@@ -2843,15 +2843,20 @@ function drawForSvgExport() {
   // (Chrome, Xplore etc.) mostra o SVG no tamanho físico original, sem
   // escalar pro viewport do visualizador: um grafo exportado de um celular
   // de ~400px de largura aparece "pequeno, no canto superior esquerdo" numa
-  // tela grande, porque é isso mesmo que os 400px valem lá. Substituir
-  // width/height por 100% + acrescentar viewBox com as dimensões originais
-  // faz o SVG se comportar como imagem responsiva: preenche a janela do
-  // visualizador (ou o elemento onde for embutido depois) mantendo a
-  // proporção, em vez de ficar travado no tamanho de pixel de origem.
+  // tela grande, porque é isso mesmo que os 400px valem lá.
+  // A primeira tentativa trocou width/height por "100%", mas isso quebrou o
+  // Xplore: visualizadores de SVG simples/nativos (bem diferentes de um
+  // motor de navegador completo) em geral precisam de um width/height NUMÉRICO
+  // pra saber que tamanho de bitmap alocar antes de desenhar — percentual sem
+  // um viewport de referência dá 0 ou indefinido pra eles, o que rende tela
+  // preta/vazia. Por isso width/height voltam a ser o valor em px de origem
+  // (compatível com qualquer visualizador, simples ou não) e quem ganha o
+  // comportamento responsivo é só quem entende `style` (CSS) — ou seja,
+  // navegador de verdade — via `width:100%;height:100%` mais viewBox pra
+  // escalar o conteúdo interno proporcionalmente sem distorcer.
   let svgString = c.getSerializedSvg(true); // true: entidades nomeadas -> numéricas, exigido por SVG standalone
-  svgString = svgString.replace(/<svg\b([^>]*)>/, (match, attrs) => {
-    const cleanAttrs = attrs.replace(/ (width|height)="[0-9.]+"/g, "");
-    return `<svg${cleanAttrs} width="100%" height="100%" viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet">`;
+  svgString = svgString.replace(/<svg([^>]*)>/, (match, attrs) => {
+    return `<svg${attrs} viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%">`;
   });
   return svgString;
 }
