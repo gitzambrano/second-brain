@@ -84,6 +84,8 @@ Campo `Tipo:` do manifesto (`wiki/sources/manifest.md`), vocabulário fechado �
 
 Reuse um tipo existente antes de criar um novo. `/organize` e `/stats` auditam a consistência entre `Tipo:` no manifesto e a subpasta real no disco.
 
+`wiki/sources/manifest.md` e `wiki/sources/map.md` são catálogos vivos, mantidos por `/import`, `/digest` e `/organize`: a regra "nunca modifique `wiki/sources/`" protege os documentos originais arquivados nas subpastas, não esses dois. Os wikilinks deles seguem a mesma forma canônica do resto da wiki, `[[slug-do-arquivo|Título Visível]]` (ver `## Regra de links`), porque também são lidos no Obsidian.
+
 ## Status de essay (draft | maduro | finalizado)
 
 Campo `status:` no frontmatter, **só em `wiki/essays/`**, nunca em `concepts/`/`entities/`. Vocabulário fechado: `draft`, `maduro`, `finalizado`.
@@ -261,7 +263,7 @@ Append-only, uma entrada por fonte ingerida:
 Tipo: [vocabulário controlado, ver AGENTS.md].
 Tags: [tag1, tag2] (mesmo vocabulário controlado dos essays — ver ## Tags — Vocabulário Controlado logo abaixo; nunca uma lista própria de tags de source).
 Pasta: wiki/sources/<subpasta-correspondente>/
-Virou: [[Essay Resultante]] (essay novo) | enriqueceu [[Essay Existente]] | ainda não — ver resumo em wiki/sources/resumos/.
+Virou: [[slug-do-essay|Essay Resultante]] (essay novo) | enriqueceu [[slug-do-essay|Essay Existente]] | ainda não — ver resumo em wiki/sources/resumos/.
 Verificação: [referências confirmadas | não verificado — checar antes de citar em outro essay].
 ```
 
@@ -276,7 +278,7 @@ Atualize o manifesto e `wiki/sources/map.md` no mesmo momento em que o arquivo �
 Lista plana de tudo já processado ou pendente, sem agrupamento por categoria — a classificação temática vem só de `Tags:`:
 
 ```
-- [[Nome do Source]] — Tipo · Tags: tag1, tag2 · Status
+- [[slug-do-source|Nome do Source]] — Tipo · Tags: tag1, tag2 · Status
   - Status: Importado como [[Essay]] | Resumido — ver wiki/sources/resumos/<slug>.md | Absorvido em [[Essay X]] | Pendente em raw/
 ```
 

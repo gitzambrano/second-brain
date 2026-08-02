@@ -101,8 +101,8 @@ Leva um insight `madura` para o conteúdo de fato da wiki. Nunca promove um insi
 1. Pergunte (se não estiver óbvio pela nota) se ela vira:
    - **Essay novo**: quando a ideia sustenta um argumento inteiro por si só. Rode o fluxo completo de `/essay` — o insight serve de ponto de partida (a tese já pode estar praticamente pronta), não de rascunho a copiar sem desenvolver.
    - **Capítulo/seção de um essay existente**: quando a ideia se encaixa como parte de um argumento maior já em andamento. Rode `/expand` (se cabe dentro de uma seção) ou `/chapter` (se merece seção própria).
-2. Depois que o essay/capítulo existe, **não delete o insight** — atualize seu frontmatter: `maturidade: absorvida`, e adicione uma linha no corpo indicando o destino: `> Absorvida em [[Essay Resultante]] em YYYY-MM-DD.` Isso preserva a genealogia da ideia, do mesmo jeito que `wiki/sources/manifest.md` preserva proveniência de fontes.
-3. Log: `## [YYYY-MM-DD] insight-promote | Título da nota → [[Essay Resultante]]`
+2. Depois que o essay/capítulo existe, **não delete o insight** — atualize seu frontmatter: `maturidade: absorvida`, e adicione uma linha no corpo indicando o destino: `> Absorvida em [[slug-do-essay|Essay Resultante]] em YYYY-MM-DD.` Isso preserva a genealogia da ideia, do mesmo jeito que `wiki/sources/manifest.md` preserva proveniência de fontes.
+3. Log: `## [YYYY-MM-DD] insight-promote | Título da nota → [[slug-do-essay|Essay Resultante]]`
 
 ## O que não fazer
 

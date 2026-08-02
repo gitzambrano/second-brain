@@ -77,7 +77,7 @@ Papel: ...
 ...
 
 ## Conexões candidatas
-- [[Essay ou Concept já existente]] — por quê
+- [[slug-do-arquivo|Essay ou Concept já existente]] — por quê
 ```
 
 `plan/drafts/` é rascunho de estrutura, não wiki de verdade — por isso fica em `plan/`, fora do escopo de `/organize`, `/sweep` e `/gaps` — essas skills tratam `wiki/essays/` como conteúdo publicado, e um esqueleto de bullets ali quebraria a expectativa de prosa completa que elas assumem. (O mesmo vale para o script `python scripts/check_wiki.py`, que não é uma skill invocável por `/`, mas segue a mesma lógica de escopo.)

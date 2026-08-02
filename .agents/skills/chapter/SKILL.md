@@ -62,6 +62,8 @@ Se existir handout para este essay e a reorganização mudou a tese ou o caminho
 
 ## Convenções
 
+Wikilink usa `[[slug-do-arquivo|Título Visível]]` e link de seção usa `[[#Texto Do Heading]]` — as únicas formas que o Obsidian resolve. Heading nunca leva link markdown dentro, senão a seção fica inalcançável por qualquer link. Detalhe e motivo em `## Regra de links` de `conventions/SKILL.md`.
+
 Segue a regra de status (batch vs específico) de `## Status de essay` em `conventions/SKILL.md`.
 
 Texto novo segue `## Estilo de prosa` em `conventions/SKILL.md`. Não invente conteúdo para preencher uma seção nova sem ter material — se o pedido for só "cria um capítulo sobre X" sem mais direção, trate como um pedido de `/expand` primeiro (perguntar o que deve entrar), e só então estruture aqui.

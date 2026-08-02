@@ -68,7 +68,7 @@ Ao mostrar `/plan list`, respeite essa ordem — é ela que sugere por onde come
 ## Revisões
 
 ### Título
-- Alvo: [[Essay ou Concept/Entity a revisar]]
+- Alvo: [[slug-do-arquivo|Essay ou Concept/Entity a revisar]]
 - Tópico: ...
 - Status: Pendente | Em Andamento
 - Adicionado: YYYY-MM-DD
