@@ -115,6 +115,25 @@ def apply_outside_fences(body, fn):
     return "\n".join(out_segments)
 
 
+def fix_blank_line_before_heading(segment):
+    """Garante linha em branco ANTES de um heading Markdown.
+
+    Complemento de `fix_heading_spacing`, que só cuidava da linha DEPOIS. Sem a
+    linha antes, o Pandoc lê `## Título` colado no parágrafo anterior como
+    continuação preguiçosa do parágrafo, e o heading **desaparece** do HTML e do
+    PDF, sem erro nenhum: o texto vira uma frase solta no meio da prosa e todo
+    link do Sumário que apontava para ele fica órfão. O Obsidian e o GitHub
+    renderizam mesmo assim, o que faz o defeito passar despercebido na edição.
+    """
+    lines = segment.split("\n")
+    out = []
+    for line in lines:
+        if re.match(r"^#{1,6} ", line) and out and out[-1].strip() != "":
+            out.append("")
+        out.append(line)
+    return "\n".join(out)
+
+
 def fix_heading_spacing(segment):
     lines = segment.split("\n")
     new_lines = []
@@ -272,6 +291,7 @@ def fix_content(content):
     frontmatter, body = split_frontmatter(content)
     body = apply_outside_fences(body, fix_hr_needs_blank_line)
     body = fix_sumario_anchors(body)
+    body = apply_outside_fences(body, fix_blank_line_before_heading)
     body = apply_outside_fences(body, fix_heading_spacing)
     body = apply_outside_fences(body, fix_wikilinks_colons)
     body = apply_outside_fences(body, fix_double_spaces)
