@@ -116,7 +116,11 @@ def orphans(scopes=None):
     index, all_pages = build_backlink_index(ALL_SCOPES)
     result = []
     for title, (node_type, path) in all_pages.items():
-        if node_type in target_scopes and title not in index:
+        # Um wikilink pode apontar pelo slug do arquivo (`[[andy-clark|...]]`,
+        # forma canônica que o Obsidian resolve) ou pelo H1 antigo. A página só
+        # é órfã quando NENHUMA das duas grafias aparece em lugar nenhum.
+        slug = Path(path).stem
+        if node_type in target_scopes and title not in index and slug not in index:
             result.append((title, node_type, path))
     return sorted(result, key=lambda x: (x[1], x[0]))
 

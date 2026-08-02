@@ -76,6 +76,28 @@ def strip_conexoes_section(body):
     return '\n'.join(result) + '\n'
 
 
+def convert_heading_wikilinks(text):
+    """`[[#Heading]]` / `[[#Heading|Display]]` -> `[Display](#slug-pandoc)`.
+
+    O `## Sumário` é escrito na forma nativa do Obsidian, a única que aquele
+    leitor resolve: `[texto](#slug-github)` não navega lá. O Pandoc é o oposto,
+    só entende o slug. A fonte guarda a forma do Obsidian e a tradução acontece
+    aqui, no mesmo espírito com que o export já remove `## Conexões` e limpa
+    wikilinks residuais.
+
+    Precisa rodar ANTES de `clean_residual_wikilinks`, que apagaria a sintaxe
+    `[[...]]` e deixaria só o texto, sem link nenhum.
+    """
+    from check_wiki import heading_anchor
+
+    def repl(m):
+        alvo = m.group(1).strip()
+        display = m.group(2) if m.group(2) else alvo
+        return '[%s](#%s)' % (display, heading_anchor(alvo))
+
+    return re.sub(r'\[\[#([^\]\|]+)(?:\|([^\]]+))?\]\]', repl, text)
+
+
 def clean_residual_wikilinks(text):
     """Remove any remaining [[wikilinks]] converting to plain text."""
     # [[Target|Display]] -> Display
@@ -95,9 +117,24 @@ def strip_italic_from_headings(text):
     def _strip_heading(m):
         hashes = m.group(1)   # e.g. '##'
         title  = m.group(2)   # everything after '## '
+
+        # Trechos de math ($...$) saem de cena antes da limpeza e voltam depois:
+        # dentro deles o `_` é SUBSCRITO, não ênfase. Removê-lo transformava
+        # `$C_{n_\beta}$` em `$C_{n\beta}$`, o que apagava o subscrito no PDF e
+        # ainda mudava o id da seção, quebrando o link do Sumário só no PDF.
+        math = []
+
+        def _guardar(mm):
+            math.append(mm.group(0))
+            return "\x00MATH%d\x00" % (len(math) - 1)
+
+        title = re.sub(r'\$[^$\n]*\$', _guardar, title)
+
         # Remove **bold** and *italic* markers (but not inside inline code)
         title = re.sub(r'\*{1,2}([^*]+)\*{1,2}', r'\1', title)
         title = re.sub(r'_{1,2}([^_]+)_{1,2}', r'\1', title)
+
+        title = re.sub(r'\x00MATH(\d+)\x00', lambda mm: math[int(mm.group(1))], title)
         return f'{hashes} {title}'
 
     return re.sub(r'^(#{2,3}) (.+)$', _strip_heading, text, flags=re.MULTILINE)
@@ -192,6 +229,7 @@ def prepare_for_pandoc(filepath):
     body = strip_conexoes_section(body)
     
     # Clean residual wikilinks
+    body = convert_heading_wikilinks(body)
     body = clean_residual_wikilinks(body)
     
     # Strip italic/bold markers from headings to fix TOC spacing in LuaLaTeX
@@ -392,6 +430,7 @@ def prepare_for_pandoc(filepath):
     body = strip_conexoes_section(body)
     
     # Clean residual wikilinks
+    body = convert_heading_wikilinks(body)
     body = clean_residual_wikilinks(body)
     
     # Strip italic/bold markers from headings to fix TOC spacing in LuaLaTeX

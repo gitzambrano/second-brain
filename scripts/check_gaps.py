@@ -203,9 +203,16 @@ def analyze_unlinked_existing_pages(essays, existing_pages):
         # termo "aeroelasticity" apontam para o mesmo arquivo — comparar as
         # strings cruas acusava esse par como não-linkado. Resolver os dois
         # lados para o caminho elimina a classe inteira de falso positivo.
-        linked_paths = {
-            existing_pages[t] for t in extract_wikilinks(body) if t in existing_pages
-        }
+        # O alvo canônico do wikilink é o SLUG do arquivo (`[[andy-clark|Andy
+        # Clark]]`), única forma que o Obsidian resolve. `existing_pages` indexa
+        # o slug com hífen virado espaço, então cada alvo é testado nas duas
+        # grafias; sem isso, todo link migrado para slug reaparecia como gap.
+        linked_paths = set()
+        for t in extract_wikilinks(body):
+            for cand in (t, t.replace("-", " ")):
+                if cand in existing_pages:
+                    linked_paths.add(existing_pages[cand])
+                    break
 
         # `## Referências` fora: obra citada na bibliografia não é o conceito
         # sendo discutido na prosa, e exigir wikilink por causa dela era ruído

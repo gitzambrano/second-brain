@@ -72,7 +72,7 @@ Registre primeiro, converse depois — o Usuário pode só querer soltar a ideia
    Um ou dois parágrafos curtos, prosa corrida, a ideia central sem enchimento.
 
    ## Conexões
-   - [[Essay ou Concept Relacionado]]
+   - [[slug-do-arquivo|Essay ou Concept Relacionado]]
    ```
 
    `## Conexões` pode ficar vazia (`- (nenhuma ainda)`) se a ideia é genuinamente nova e solta — não force um link fraco só para preencher.

@@ -150,6 +150,12 @@ def fix_heading_spacing(segment):
 def fix_wikilinks_colons(segment):
     def repl(match):
         raw_link = match.group(1)
+        # `[[#Heading]]` referencia seção do próprio arquivo, não um arquivo: o
+        # `:` ali é legítimo (o veto a `:` existe porque o Windows não aceita
+        # dois-pontos em nome de arquivo). Trocar por travessão reescrevia o
+        # título da seção e quebrava o link.
+        if raw_link.startswith("#"):
+            return match.group(0)
         if "|" in raw_link:
             target, display = raw_link.split("|", 1)
         else:
@@ -239,6 +245,10 @@ def _chave_rotulo(texto):
     """
     t = re.sub(r"\[([^\]]*)\]\([^\)]*\)", lambda m: m.group(1), texto)
     t = t.replace("*", "").replace("_", "")
+    # Pontuação de separação some: o mesmo título aparece como
+    # "Introdução: O Xadrez" e "Introdução — O Xadrez" conforme quem
+    # escreveu, e os dois devem casar com o mesmo heading.
+    t = re.sub(r"[:—–-]+", " ", t)
     return re.sub(r"\s+", " ", t).strip().lower()
 
 
@@ -268,22 +278,44 @@ def fix_sumario_anchors(text):
         for h in re.findall(r"(?m)^#{2,6} (.+)$", text)
         if h.strip() not in ("Sumário", "Referências", "Conexões")
     ]
-    correto = {heading_anchor(h): heading_anchor(h) for h in reais}
+    # Índices para achar o heading certo a partir do que o Sumário escreveu:
+    # pelo slug antigo (forma `[texto](#slug)`) ou pelo texto do rótulo.
+    por_slug = {heading_anchor(h): h for h in reais}
     por_texto = {}
     for h in reais:
-        por_texto.setdefault(_chave_rotulo(h), heading_anchor(h))
+        por_texto.setdefault(_chave_rotulo(h), h)
+
+    def _monta(heading, rotulo):
+        if rotulo.strip() == heading.strip():
+            return "[[#%s]]" % heading
+        return "[[#%s|%s]]" % (heading, rotulo)
 
     def troca(mm):
         rotulo, alvo = mm.group(1), mm.group(2)
-        if alvo in correto:
+        heading = por_slug.get(alvo) or por_texto.get(_chave_rotulo(rotulo))
+        if heading is None:
             return mm.group(0)
-        chave = _chave_rotulo(rotulo)
-        novo = por_texto.get(chave)
-        if novo is None or novo == alvo:
-            return mm.group(0)
-        return "[%s](#%s)" % (rotulo, novo)
+        return _monta(heading, rotulo)
 
+    # Migra a forma antiga `[texto](#slug)` para a forma nativa do Obsidian.
     novo_bloco = re.sub(r"\[([^\]]+)\]\(#([^\)]+)\)", troca, bloco)
+
+    # E conserta a forma nova que aponte para um heading inexistente, quando o
+    # rótulo ainda permite identificar de qual seção se tratava.
+    def troca_wl(mm):
+        alvo, display = mm.group(1).strip(), mm.group(2)
+        if alvo in {h.strip() for h in reais}:
+            return mm.group(0)
+        # Tenta o ALVO antes do display: o display costuma ser uma versão
+        # encurtada do título (sem o "Seção 1 —" da frente), e não casa.
+        heading = por_texto.get(_chave_rotulo(alvo))
+        if heading is None and display:
+            heading = por_texto.get(_chave_rotulo(display))
+        if heading is None:
+            return mm.group(0)
+        return _monta(heading, display or heading)
+
+    novo_bloco = re.sub(r"\[\[#([^\]\|]+)(?:\|([^\]]+))?\]\]", troca_wl, novo_bloco)
     return text[:inicio] + novo_bloco + text[fim:]
 
 

@@ -130,10 +130,23 @@ Logo após o `# Título`, com uma linha vazia entre título e byline:
 4. **`## Referências` obrigatória** — bibliografia com links externos, no formato AIAA (ver `## Formato de "## Referências" — padrão AIAA` abaixo). Heading exato (nunca H1, nunca "Referências Bibliográficas", nunca numerado). Todo conceito/claim de fonte externa não arquivada em `wiki/sources/` precisa de entrada aqui.
 5. **`## Conexões` obrigatória** no final — `[[wikilinks]]` bidirecionais para páginas relacionadas. Não exportada a PDF.
 
-## Regra de links — exportabilidade para PDF
+## Regra de links — Obsidian é o leitor primário
 
-- **Corpo (inline)**: só links externos `[texto](url)`. Nunca `[[wikilinks]]` inline.
-- **`## Conexões`**: só `[[wikilinks]]` — metadata interna, não exportada.
+**O Obsidian manda no formato da fonte; o export se adapta.** Os `.md` são lidos no Obsidian antes de virarem PDF ou HTML, então a sintaxe gravada no arquivo é a que aquele leitor entende, e os exportadores traduzem na hora de gerar. Regras verificadas no leitor real, não deduzidas:
+
+| O que | Forma correta | Por quê |
+| --- | --- | --- |
+| Link para outra página | `[[slug-do-arquivo\|Título Visível]]` | O Obsidian resolve **por nome de arquivo**. Não resolve pelo H1 nem por `aliases:` do frontmatter. |
+| Link para seção | `[[#Texto Exato Do Heading]]` ou `[[#Texto\|Display]]` | `[texto](#slug-github)` **não navega** no Obsidian, só no PDF/HTML. |
+| Heading | Nunca com link markdown dentro | Heading com `[texto](url)` fica **inalcançável**: nenhuma forma de link chega até ele. |
+| Artefato gerado | Markdown puro, nunca HTML solto | Um `<span>` sem fechamento engole o resto da entrada no Obsidian. |
+
+Os exportadores convertem `[[#Heading]]` em `[Display](#slug)` (`convert_heading_wikilinks`), removem `## Conexões` e limpam wikilinks residuais. Nada disso precisa estar na fonte.
+
+**Ao mexer em link, verifique nos dois lados.** `check_wiki.py` valida a forma da fonte e o export valida o destino, mas nenhum dos dois abre o Obsidian. Uma mudança de sintaxe de link só está confirmada depois de clicada lá.
+
+- **Corpo (inline)**: só links externos `[texto](url)`. Nunca `[[wikilink]]` para outra página. `[[#Heading]]` é permitido: aponta para seção do próprio arquivo, e o export o converte em âncora normal.
+- **`## Conexões`**: só `[[slug|Título]]` — metadata interna, não exportada.
 - **`## Referências`**: links externos bibliográficos, exportados, no formato AIAA (ver `## Formato de "## Referências" — padrão AIAA` abaixo).
 - Motivo: essays são documentos autocontidos, compartilháveis como PDF sem perda de informação.
 - **Trabalho de bibliografia não toca no corpo.** Uma passada sobre `## Referências` (formato, numeração, link da obra, dedup) mexe só na seção do fim do arquivo. Os links inline do corpo ficam exatamente onde estão, com o texto-âncora que já têm. Quando um check acusa uma obra citada no corpo e ausente da bibliografia, a correção é **acrescentar a entrada em `## Referências`** — nunca mexer no link do corpo para silenciar o aviso. Alterar links inline é trabalho de `/linkify` no modo `## Adicionar links`, e só sob pedido explícito do Usuário.
@@ -276,7 +289,7 @@ Atualizado por `/import`, `/digest` e `/absorb` durante o processamento, e revis
 - Arquivos: kebab-case + `.md`. Títulos: Title Case.
 - Essays/concepts/entities: `wiki/<pasta>/nome-do-arquivo.md` → `# Nome Do Arquivo`.
 - Sources: nomes originais preservados em `wiki/sources/<subpasta-do-tipo>/` — não são páginas wiki.
-- `[[wikilinks]]` usam o título da página, nunca o nome do arquivo: `[[Nome Da Entidade]]`, não `[[nome-da-entidade]]`.
+- `[[wikilinks]]` usam o **nome do arquivo** como alvo e o título como texto visível: `[[nome-da-entidade|Nome Da Entidade]]`. É a única forma que o Obsidian resolve; alvo pelo H1 não funciona lá, e `aliases:` no frontmatter também não.
 - Título → nome de arquivo: minúsculas, espaços viram hífens, remove caracteres especiais.
 
 ## Tratamento de imagens
@@ -293,7 +306,7 @@ Reforça regras já definidas acima:
 - `[[wikilinks]]` só em `## Conexões` e em páginas de concept/entity/source, nunca inline (ver `## Regra de links`).
 - Imagens em caminho relativo (ver `## Tratamento de imagens`).
 
-Regra específica desta seção: wikilinks em `## Conexões` usam `[[Título da Página]]` — Obsidian resolve pelo caminho mais curto até a página (shortest path).
+Regra específica desta seção: wikilinks em `## Conexões` usam `[[nome-do-arquivo|Título da Página]]`. O alvo é sempre o nome do arquivo, sem extensão; o texto depois da barra é o que o leitor vê. Verificado no Obsidian: alvo pelo título do H1 não resolve, e declarar `aliases:` no frontmatter também não resolve.
 
 ## Conversão de fontes (HTML/PDF/DOCX → Markdown)
 

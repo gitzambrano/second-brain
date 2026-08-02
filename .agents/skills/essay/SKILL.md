@@ -74,7 +74,7 @@ Aplique as duas seções acima na proporção que o argumento pedir — um essay
   Três erros que o corpus antigo acumulou e que **não** devem se repetir: título fora do itálico (todo título vai em itálico, inclusive verbete de enciclopédia e norma técnica); link em qualquer lugar que não seja a palavra `Link` no fim da entrada — nem no título, nem no periódico, nem envolvendo a citação inteira; e entrada que é só um link de glossário sem obra, autor nem container — se o alvo é um verbete, escreva-o como verbete (`*Título do verbete*, Wikipedia. [Link](url)`), e se não é fonte de nada, ele pertence ao corpo do texto, não à bibliografia.
 
   Confira com `python scripts/check_references.py --file <slug>` antes de encerrar.
-- **`## Conexões`** como última seção, só `[[wikilinks]]` para essays/conceitos/entidades relacionados
+- **`## Conexões`** como última seção, só `[[slug-do-arquivo|Título Visível]]` para essays/conceitos/entidades relacionados — o alvo é o nome do arquivo, única forma que o Obsidian resolve (ver `## Regra de links` em `conventions/SKILL.md`)
 
 ## 3. Criar/atualizar conceitos e entidades
 
@@ -97,7 +97,7 @@ Todo conceito, pensador, ou entidade central ao argumento que ainda não tem pá
   ```
   ## [YYYY-MM-DD] essay | Título do Essay
   Tese: uma frase com a posição central defendida.
-  Tipo: X. Conecta com: [[Essay Relacionado]], [[Conceito]].
+  Tipo: X. Conecta com: [[slug-do-essay|Essay Relacionado]], [[slug-do-conceito|Conceito]].
   ```
 
 ## 5. Oferecer exportação e handout

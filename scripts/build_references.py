@@ -296,10 +296,11 @@ def render_references_md(data):
         if ref["url"] and not ANY_MD_LINK_RE.search(citation):
             citation = f"{citation.rstrip()} [link]({ref['url']})"
         lines.append(f"- {citation}")
-        lines.append(
-            '  <span style="font-size:0.82em; color:#8a8f96;">'
-            f"`{', '.join(ref['cited_by'])}`"
-        )
+        # Markdown puro, sem HTML: a versão anterior abria um `<span>` de estilo
+        # e nunca o fechava, e o Obsidian engolia o resto da entrada, incluindo
+        # o link externo da obra. O arquivo é lido no Obsidian antes de qualquer
+        # outro lugar, então ele manda no formato.
+        lines.append(f"  `{', '.join(ref['cited_by'])}`")
         lines.append("")
 
     return "\n".join(lines).rstrip() + "\n"

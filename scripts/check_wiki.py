@@ -461,12 +461,28 @@ def check_essay(filepath: Path) -> dict:
             ]
             real_anchors = {anchor_key(heading_anchor(h)) for h in real_headings}
 
-            sumario_links = re.findall(r"\[([^\]]+)\]\(#([^\)]+)\)", sum_block.group(1))
-            for display, anchor in sumario_links:
+            bloco = sum_block.group(1)
+
+            # Forma canônica, nativa do Obsidian: `[[#Texto Do Heading]]` (ou com
+            # `|Display`). Confere pelo texto do heading, não pelo slug.
+            reais_txt = {h.strip() for h in real_headings}
+            for alvo in re.findall(r"\[\[#([^\]\|]+)(?:\|[^\]]+)?\]\]", bloco):
+                if alvo.strip() not in reais_txt:
+                    add("WARNING", "SUMARIO_BROKEN_ANCHOR",
+                        f"Sumário aponta para '#{alvo.strip()}', que não é um heading "
+                        f"deste essay (headings: {sorted(reais_txt)[:3]}...)")
+
+            # Forma antiga `[texto](#slug)`: ainda validada, mas sinalizada — ela
+            # navega no PDF/HTML e NÃO navega no Obsidian.
+            for display, anchor in re.findall(r"\[([^\]]+)\]\(#([^\)]+)\)", bloco):
                 if anchor_key(anchor) not in real_anchors:
                     add("WARNING", "SUMARIO_BROKEN_ANCHOR",
                         f"Sumário link '#{anchor}' não bate com nenhum heading real "
                         f"(esperados: {sorted(real_anchors)[:4]}...)")
+                else:
+                    add("WARNING", "SUMARIO_ANCHOR_NAO_OBSIDIAN",
+                        f"Sumário usa '[{display[:30]}](#{anchor[:30]})', que não navega no "
+                        f"Obsidian; a forma canônica é [[#Texto Do Heading]]")
 
     # -----------------------------------------------------------------------
     # 5. ## Referências (só existência/heading — conteúdo é check_references.py)
@@ -551,7 +567,27 @@ def check_essay(filepath: Path) -> dict:
     # 7. Wikilinks fora de Conexões
     # -----------------------------------------------------------------------
     body_before_conex = strip_fences(content).split("## Conexões")[0]
-    wikilinks_in_body = re.findall(r"\[\[([^\]]+)\]\]", body_before_conex)
+    # `[[#Heading]]` é link para seção do próprio arquivo, não para outra
+    # página: é a forma que o `## Sumário` usa, e a única que o Obsidian
+    # resolve. A regra "só link externo no corpo" existe para o essay ser
+    # autocontido no PDF, e o export converte esses em âncora normal, então
+    # eles não violam nada.
+    wikilinks_in_body = [
+        w for w in re.findall(r"\[\[([^\]]+)\]\]", body_before_conex)
+        if not w.startswith("#")
+    ]
+
+    # Todo `[[#Heading]]` do corpo é validado, não só os do `## Sumário`. Links
+    # de seção aparecem também em índices internos e em referências cruzadas no
+    # meio do texto, e por muito tempo ninguém os checou: foi exatamente aí que
+    # 20 links quebrados sobreviveram a várias passadas de lint.
+    todos_headings = {
+        m.group(1).strip() for m in re.finditer(r"(?m)^#{2,6} (.+)$", content)
+    }
+    for alvo in re.findall(r"\[\[#([^\]\|]+)(?:\|[^\]]+)?\]\]", strip_fences(content)):
+        if alvo.strip() not in todos_headings:
+            add("WARNING", "HEADING_LINK_QUEBRADO",
+                f"'[[#{alvo.strip()[:50]}]]' não corresponde a nenhum heading deste essay")
     if wikilinks_in_body:
         add("ERROR", "WIKILINKS_IN_BODY",
             f"{len(wikilinks_in_body)} [[wikilink(s)]] fora de Conexões: "
@@ -708,6 +744,14 @@ def build_title_map():
             rel_path = f"{category}/{file.name}"
             content = load(file)
             title = get_h1(content)
+            # O slug do arquivo é alvo VÁLIDO de wikilink, e é a forma canônica:
+            # o Obsidian resolve `[[...]]` por nome de arquivo, nunca pelo H1 nem
+            # por alias de frontmatter (verificado no leitor real). A convenção da
+            # wiki é `[[slug-do-arquivo|Título Visível]]`. O H1 continua aceito
+            # aqui só para não quebrar link antigo ainda não migrado.
+            all_titles.add(file.stem)
+            if category == "essays":
+                essay_titles.add(file.stem)
             if title:
                 title_to_file[title] = rel_path
                 file_to_title[rel_path] = title
@@ -830,7 +874,12 @@ def check_orphans(title_map):
             title = get_h1(load(file))
             if not title:
                 continue
-            pattern = re.compile(r"\[\[" + re.escape(title) + r"(\|[^\]]+)?\]\]")
+            # Casa pelo slug do arquivo E pelo H1: a forma canônica é
+            # `[[slug|Título]]`, mas link antigo pelo título ainda conta como
+            # referência — senão a migração para slug marcaria a wiki inteira
+            # como órfã.
+            alvos = "|".join(re.escape(a) for a in (file.stem, title))
+            pattern = re.compile(r"\[\[(?:" + alvos + r")(\|[^\]]+)?\]\]")
             if not pattern.search(essay_content):
                 corpus.append({
                     "section": "ORPHANS", "severity": "WARNING", "code": "ORPHAN_PAGE",

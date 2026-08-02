@@ -39,6 +39,7 @@ from export_essay_pdf import (
     extract_frontmatter,
     strip_conexoes_section,
     clean_residual_wikilinks,
+    convert_heading_wikilinks,
     extract_title,
     resolve_image_paths,
     AUTHOR,
@@ -107,6 +108,7 @@ def prepare_for_pandoc(filepath):
         author_date = f"{AUTHOR} · {date}" if date else AUTHOR
 
     body = strip_conexoes_section(body)
+    body = convert_heading_wikilinks(body)
     body = clean_residual_wikilinks(body)
     body = remove_h1_and_byline(body)
     body = resolve_image_paths(body, Path(filepath).parent)

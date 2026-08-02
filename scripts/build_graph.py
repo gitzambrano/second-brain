@@ -170,6 +170,10 @@ def build_graph():
                 "degree": 0,
             }
             title_to_id[title] = node_id
+            # O slug do arquivo também indexa o nó: a forma canônica de wikilink
+            # é `[[slug|Título]]`, porque é a única que o Obsidian resolve.
+            # Indexar só pelo H1 fazia o grafo perder a maioria das arestas.
+            title_to_id.setdefault(file.stem, node_id)
             bodies[node_id] = strip_fences(strip_frontmatter(content))
             if node_type == "essay":
                 slug_to_id[file.stem] = node_id
