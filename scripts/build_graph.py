@@ -91,7 +91,9 @@ GRAPH_STYLE = {
         "entity": "#e8b657",
         "insights": "#b48ce8",
         "reference": "#8a8f96",
-        "edge": "#454b52",
+        # Levemente esbranquiçada em vez de cinza puro — dá uma sensação de
+        # "fio de luz" mais sutil entre os nós sem chamar atenção pra si.
+        "edge": "#5c6169",
         "background": "#1b1e21",
     },
     "edgeOpacity": 0.55,
@@ -104,6 +106,12 @@ GRAPH_STYLE = {
     # FPS que existe aqui). "leve" é o padrão por ser barato E ainda dar
     # uma sensação de brilho.
     "glow": "leve",
+    # "auto" (esconde ao afastar o zoom se o tier de desempenho pedir —
+    # comportamento antigo) | "sempre" (rótulo sempre visível) | "nunca"
+    # (rótulo sempre oculto). Antes disto os rótulos somiam sozinhos no
+    # modo "baixa" performance sem o usuário poder escolher; agora é
+    # explícito no modal de Estilo.
+    "labels": "auto",
     "starfield": True,
     "gradient": True,
     # "degree" (nº de conexões visíveis), "bytes" ou "lines" (tamanho do
@@ -457,7 +465,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     --entity: #e8b657;
     --insight: #b48ce8;
     --reference: #8a8f96;
-    --edge: #454b52;
+    --edge: #5c6169;
     --edge-ref: #5a5f66;
     --edge-opacity: 0.55;
     --radius-base: 5;
@@ -534,31 +542,51 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   g.node:not(.dragging) circle:hover { transform: scale(1.12); transform-box: fill-box; transform-origin: center; }
   .link { transition: opacity .25s ease; }
   .hidden-node { display: none; }
-  #modal-overlay { display:none; position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 20; }
-  #modal-overlay.open { display: flex; align-items: center; justify-content: center; }
-  #modal { width: min(760px, 92vw); max-height: 82vh; overflow-y: auto; background: var(--panel);
-    border: 1px solid var(--panel-border); border-radius: 10px; padding: 18px; }
-  #modal h2 { margin: 0 0 14px 0; font-size: 13px; letter-spacing: .08em; text-transform: uppercase;
-    color: var(--ink-dim); font-weight: 600; }
-  #modal table { width: 100%; border-collapse: collapse; font-size: 12px; }
-  #modal th { text-align: left; color: var(--ink-dim); cursor: pointer; padding: 6px 8px; border-bottom: 1px solid var(--panel-border); position: sticky; top:0; background: var(--panel); font-weight: 500; }
+  /* Índice e Estilo usam a tela inteira, no desktop tanto quanto no
+     celular — uma tabela de centenas de linhas ou um painel de dezenas de
+     controles não cabem bem numa janelinha de 760px cheia de scroll
+     interno. A coluna de conteúdo continua com uma largura de leitura
+     confortável (max-width abaixo), só o "palco" ao redor é que passa a
+     ser a viewport toda. */
+  #modal-overlay { display:none; position: fixed; inset: 0; background: rgba(9,11,13,.72);
+    backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); z-index: 20; }
+  #modal-overlay.open { display: flex; align-items: stretch; justify-content: stretch; }
+  #modal { width: 100vw; height: 100dvh; max-height: 100dvh; overflow-y: auto;
+    background: var(--panel); border: none; border-radius: 0; padding: 0;
+    box-shadow: none; }
+  #modal-topbar { position: sticky; top: 0; z-index: 5; display: flex; justify-content: flex-end;
+    padding: 20px clamp(16px, 4vw, 48px) 0; background: linear-gradient(var(--panel) 65%, transparent);
+    pointer-events: none; }
+  #modal-topbar .close { pointer-events: auto; }
+  #modal-body { max-width: 980px; margin: -4px auto 0; padding: 4px clamp(16px, 4vw, 48px) 72px; }
+  #modal h2 { margin: 8px 0 20px 0; font-size: 20px; letter-spacing: -.01em;
+    color: var(--ink); font-weight: 600; }
+  #modal table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  #modal th { text-align: left; color: var(--ink-dim); cursor: pointer; padding: 10px 12px; border-bottom: 1px solid var(--panel-border); position: sticky; top:0; background: var(--panel); font-weight: 500;
+    font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
   #modal th:hover { color: var(--ink); }
   #modal th.sorted { color: var(--instrument-blue); }
-  #modal td { padding: 7px 8px; border-bottom: 1px solid #2b2f33; vertical-align: top; }
-  #modal tbody tr { cursor: pointer; }
+  #modal td { padding: 11px 12px; border-bottom: 1px solid #2b2f33; vertical-align: top; }
+  #modal tbody tr { cursor: pointer; transition: background .12s ease; }
   #modal tbody tr:hover td { background: rgba(79,168,255,.08); }
-  #modal .close { float: right; cursor: pointer; color: var(--ink-dim); font-size: 11px; }
-  #modal .close:hover { color: var(--ink); }
+  #modal .close { cursor: pointer; color: var(--ink-dim); font-size: 12px; font-family: inherit;
+    background: rgba(255,255,255,.05); border: 1px solid var(--panel-border); border-radius: 999px;
+    padding: 9px 18px; letter-spacing: .02em; }
+  #modal .close:hover { color: var(--ink); border-color: var(--instrument-blue); background: rgba(79,168,255,.12); }
 
-  .idx-tabs { display: flex; gap: 4px; margin-bottom: 12px; flex-wrap: wrap; }
-  .idx-tab { padding: 5px 12px; border-radius: 999px; border: 1px solid var(--panel-border);
-    background: transparent; color: var(--ink-dim); font-size: 11px; cursor: pointer; font-family: inherit; }
-  .idx-tab:hover { color: var(--ink); }
-  .idx-tab.active { background: var(--instrument-blue); border-color: var(--instrument-blue); color: #0b1220; font-weight: 600; }
+  .idx-tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+  .idx-tab { padding: 7px 16px; border-radius: 999px; border: 1px solid var(--panel-border);
+    background: transparent; color: var(--ink-dim); font-size: 12px; cursor: pointer; font-family: inherit;
+    transition: background .12s ease, border-color .12s ease, color .12s ease; }
+  .idx-tab:hover { color: var(--ink); border-color: var(--ink-dim); }
+  .idx-tab.active { background: var(--instrument-blue); border-color: var(--instrument-blue); color: #0b1220;
+    font-weight: 600; box-shadow: 0 2px 10px rgba(79,168,255,.35); }
 
-  #idx-search { width: 100%; padding: 7px 10px; border-radius: 6px; border: 1px solid var(--panel-border);
-    background: #1b1e21; color: var(--ink); font-size: 12px; font-family: inherit; margin-bottom: 8px; }
-  #idx-search:focus { outline: none; border-color: var(--instrument-blue); }
+  #idx-search { width: 100%; padding: 11px 14px; border-radius: 8px; border: 1px solid var(--panel-border);
+    background: #1b1e21; color: var(--ink); font-size: 13px; font-family: inherit; margin-bottom: 14px;
+    transition: border-color .12s ease, box-shadow .12s ease; }
+  #idx-search:focus { outline: none; border-color: var(--instrument-blue);
+    box-shadow: 0 0 0 3px rgba(79,168,255,.15); }
 
   /* `<details>` nativo — some sozinho a lógica de abrir/fechar, sem estado
      em JS. Fecha por padrão no celular (o JS decide o atributo `open` na
@@ -566,31 +594,33 @@ HTML_TEMPLATE = """<!DOCTYPE html>
      resto do layout responsivo usa) e some com o filtro fino até o usuário
      pedir por ele — é o que sobra pra lista de verdade quando a tela é
      estreita. No desktop, tudo continua visível por padrão, como antes. */
-  .idx-more { margin-bottom: 10px; }
-  .idx-more summary { cursor: pointer; font-size: 11px; color: var(--ink-dim); padding: 4px 0;
+  .idx-more { margin-bottom: 14px; }
+  .idx-more summary { cursor: pointer; font-size: 12px; color: var(--ink-dim); padding: 4px 0;
     list-style: none; user-select: none; }
   .idx-more summary::-webkit-details-marker { display: none; }
   .idx-more summary::before { content: "▸ "; }
   .idx-more[open] summary::before { content: "▾ "; }
   .idx-more summary:hover { color: var(--ink); }
-  .idx-more[open] summary { margin-bottom: 6px; }
+  .idx-more[open] summary { margin-bottom: 10px; }
 
-  .idx-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
-  .idx-range { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--ink-dim); }
-  .idx-range input[type="number"] { width: 52px; padding: 6px 6px; border-radius: 6px; border: 1px solid var(--panel-border);
+  .idx-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .idx-range { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-dim); }
+  .idx-range input[type="number"] { width: 58px; padding: 7px 8px; border-radius: 7px; border: 1px solid var(--panel-border);
     background: #1b1e21; color: var(--ink); font-size: 12px; font-family: inherit; }
-  #idx-maturidade { padding: 6px 8px; border-radius: 6px; border: 1px solid var(--panel-border);
-    background: #1b1e21; color: var(--ink); font-size: 11px; font-family: inherit; cursor: pointer; }
-  .idx-clear { margin-top: 0; padding: 6px 10px; font-size: 11px; }
+  .idx-range input[type="number"]:focus { outline: none; border-color: var(--instrument-blue); }
+  #idx-maturidade { padding: 7px 10px; border-radius: 7px; border: 1px solid var(--panel-border);
+    background: #1b1e21; color: var(--ink); font-size: 12px; font-family: inherit; cursor: pointer; }
+  .idx-clear { margin-top: 0; padding: 7px 12px; font-size: 12px; width: auto; }
 
-  .idx-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 4px; }
-  .idx-chip { font-size: 10px; padding: 3px 9px; border-radius: 999px; cursor: pointer; font-family: inherit;
-    border: 1px solid var(--panel-border); background: transparent; color: var(--ink-dim); }
+  .idx-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 6px; }
+  .idx-chip { font-size: 11px; padding: 5px 12px; border-radius: 999px; cursor: pointer; font-family: inherit;
+    border: 1px solid var(--panel-border); background: transparent; color: var(--ink-dim);
+    transition: background .12s ease, border-color .12s ease, color .12s ease; }
   .idx-chip:hover { color: var(--ink); border-color: var(--ink-dim); }
   .idx-chip.on { background: rgba(79,168,255,.18); border-color: var(--instrument-blue); color: var(--instrument-blue); }
-  .idx-tagcell { display: flex; flex-wrap: wrap; gap: 3px; }
-  .idx-empty { font-size: 12px; color: var(--ink-dim); padding: 18px 4px; }
-  .idx-count { font-size: 11px; color: var(--ink-dim); margin-bottom: 6px; }
+  .idx-tagcell { display: flex; flex-wrap: wrap; gap: 4px; }
+  .idx-empty { font-size: 13px; color: var(--ink-dim); padding: 40px 4px; text-align: center; }
+  .idx-count { font-size: 12px; color: var(--ink-dim); margin-bottom: 10px; letter-spacing: .01em; }
   #modal mark { background: rgba(79,168,255,.35); color: var(--ink); border-radius: 2px; padding: 0 1px; }
   /* Setinha de direção no cabeçalho ordenado — sinal visual rápido de qual
      coluna manda e em que sentido, sem precisar clicar de novo pra saber. */
@@ -629,12 +659,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     .legend-item { font-size: 13px; padding: 7px 8px; }
     .dot { width: 12px; height: 12px; }
     .btn { padding: 10px 12px; font-size: 13px; }
-    #modal-overlay.open { align-items: stretch; justify-content: stretch; }
-    #modal {
-      width: 100vw; max-width: none; max-height: 100dvh; height: 100dvh;
-      border-radius: 0; border: none; padding: 14px 14px calc(14px + env(safe-area-inset-bottom));
-    }
-    #modal .close { font-size: 14px; padding: 4px 8px; }
+    /* #modal já é 100vw/100dvh no desktop também — aqui só sobra o respiro
+       de área segura do iPhone (notch/home indicator) e um pouco menos de
+       padding lateral, já que a tela é estreita. */
+    #modal-body { padding: 4px 14px calc(14px + env(safe-area-inset-bottom)); }
+    #modal-topbar { padding: calc(10px + env(safe-area-inset-top)) 14px 0; }
+    #modal .close { font-size: 12px; padding: 7px 14px; }
     .idx-tab { padding: 8px 14px; font-size: 12px; }
     .idx-chip { padding: 6px 11px; font-size: 11px; }
     /* Linha única, rolando na horizontal — bem mais compacto na vertical do
@@ -660,23 +690,26 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   .gap-item { font-size: 12px; margin: 4px 0; color: var(--ink-dim); }
   .gap-item b { color: var(--ink); }
 
-  .style-section { margin-bottom: 16px; }
+  .style-section { margin-bottom: 18px; padding: 18px 20px; background: rgba(255,255,255,.025);
+    border: 1px solid var(--panel-border); border-radius: 12px; }
   .style-row { display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    font-size: 12px; color: var(--ink-dim); padding: 7px 2px; border-bottom: 1px solid #2b2f33; }
+    font-size: 13px; color: var(--ink-dim); padding: 10px 2px; border-bottom: 1px solid #2b2f33; }
+  .style-row:last-child { border-bottom: none; }
   .style-row span { flex: 1; }
-  .style-row input[type="color"] { width: 40px; height: 26px; padding: 0; border: 1px solid var(--panel-border);
-    border-radius: 6px; background: none; cursor: pointer; }
+  .style-row input[type="color"] { width: 42px; height: 28px; padding: 0; border: 1px solid var(--panel-border);
+    border-radius: 7px; background: none; cursor: pointer; }
   .style-slider input[type="range"] { flex: 1.4; accent-color: var(--instrument-blue); }
-  .style-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--instrument-blue); cursor: pointer; }
-  .style-actions { display: flex; gap: 8px; margin-top: 4px; }
+  .style-row input[type="checkbox"] { width: 17px; height: 17px; accent-color: var(--instrument-blue); cursor: pointer; }
+  .style-actions { display: flex; gap: 10px; margin-top: 4px; position: sticky; bottom: 0;
+    padding: 14px 0 4px; background: linear-gradient(transparent, var(--panel) 35%); }
   .style-actions .btn { margin-top: 0; text-align: center; }
   .style-primary { background: var(--instrument-blue) !important; color: #0b1220 !important; font-weight: 600;
-    border-color: var(--instrument-blue) !important; }
+    border-color: var(--instrument-blue) !important; box-shadow: 0 2px 10px rgba(79,168,255,.3); }
   .style-row select { background: var(--panel); color: var(--ink); border: 1px solid var(--panel-border);
-    border-radius: 6px; padding: 5px 8px; font-size: 12px; font-family: inherit; cursor: pointer; }
-  .style-hint { font-size: 11px; color: var(--ink-dim); margin: -4px 0 10px 0; line-height: 1.4; }
-  .theme-row { display: flex; gap: 8px; flex-wrap: wrap; }
-  .theme-btn { flex: 1; min-width: 90px; margin-top: 0; }
+    border-radius: 7px; padding: 7px 10px; font-size: 12px; font-family: inherit; cursor: pointer; }
+  .style-hint { font-size: 12px; color: var(--ink-dim); margin: -4px 0 12px 0; line-height: 1.5; }
+  .theme-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .theme-btn { flex: 1; min-width: 110px; margin-top: 0; text-align: center; padding: 10px 12px; }
 </style>
 </head>
 <body>
@@ -700,7 +733,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 </div>
 
 <div id="modal-overlay">
-  <div id="modal"><span class="close" id="modal-close">✕ fechar</span><div id="modal-body"></div></div>
+  <div id="modal">
+    <div id="modal-topbar"><span class="close" id="modal-close">✕ Fechar</span></div>
+    <div id="modal-body"></div>
+  </div>
 </div>
 
 <script>
@@ -735,9 +771,9 @@ const STYLE_VARS = {
 const STYLE_KEY = "sb-graph-style-v1";
 const FACTORY_STYLE = data.defaultStyle || {
   colors: { essay: "#4fa8ff", concept: "#5fd3c4", entity: "#e8b657", insights: "#b48ce8",
-    reference: "#8a8f96", edge: "#454b52", background: "#1b1e21" },
+    reference: "#8a8f96", edge: "#5c6169", background: "#1b1e21" },
   edgeOpacity: 0.55, radiusBase: 5, radiusScale: 3, labelSize: 10,
-  glow: "leve", starfield: true, gradient: true, sizeMode: "degree",
+  glow: "leve", labels: "auto", starfield: true, gradient: true, sizeMode: "degree",
   spacing: 1, performance: "auto",
 };
 const MOBILE_OVERRIDES = data.defaultStyleMobileOverrides || { glow: "off", starfield: false };
@@ -809,10 +845,11 @@ function applyStyle(cfg, opts) {
     .style("color", d => typeColorRaw(d))
     .attr("fill", d => cfg.gradient ? `url(#grad-${d.type})` : typeColorRaw(d));
   haloSel
-    .attr("r", d => radiusOf(d) * 1.7)
-    .attr("fill", d => typeColorRaw(d))
-    .style("opacity", cfg.glow === "leve" ? 0.28 : 0);
+    .attr("r", d => radiusOf(d) * 2.4)
+    .attr("fill", d => `url(#glow-${d.type})`)
+    .style("opacity", cfg.glow === "leve" ? 1 : 0);
   labelSel.attr("dy", d => -(2 + radiusOf(d)));
+  updateLabelVisibility(d3.zoomTransform(svg.node()).k);
 
   if (!opts || !opts.silent) {
     applyForces(cfg);
@@ -842,6 +879,17 @@ Object.entries(STYLE_VARS).forEach(([type, cssVar]) => {
     .attr("style", `stop-color: color-mix(in srgb, var(${cssVar}) 55%, white)`);
   grad.append("stop").attr("offset", "100%")
     .attr("style", `stop-color: var(${cssVar})`);
+
+  // Degradê do halo "leve": some gradualmente até opacidade zero na borda,
+  // em vez do círculo de cor chapada + opacidade fixa de antes — aquilo
+  // lia como um anel duro por fora do nó ("sombra esquisita"). Continua
+  // sem `filter`, então continua de graça em qualquer aparelho.
+  const glow = defs.append("radialGradient")
+    .attr("id", `glow-${type}`).attr("cx", "50%").attr("cy", "50%").attr("r", "50%");
+  glow.append("stop").attr("offset", "0%")
+    .attr("style", `stop-color: var(${cssVar}); stop-opacity: 0.5`);
+  glow.append("stop").attr("offset", "100%")
+    .attr("style", `stop-color: var(${cssVar}); stop-opacity: 0`);
 });
 
 // Campo de estrelas decorativo, fixo atrás do grafo (fora do <g> que recebe
@@ -1023,7 +1071,13 @@ let labelsShown = true;
 // de desenhar/remedir no SVG; ilegível de longe mesmo, então não custa nada
 // escondê-lo até o usuário aproximar ou selecionar um nó específico.
 function updateLabelVisibility(k) {
-  const show = currentTier.labelsAlways || k > 1.4;
+  // "sempre"/"nunca" são escolha explícita do usuário e vencem o tier de
+  // desempenho; só em "auto" (o padrão) é que baixo zoom + tier "baixa"
+  // ainda escondem rótulo sozinhos, como antes.
+  const mode = styleConfig.labels || "auto";
+  const show = mode === "sempre" ? true
+    : mode === "nunca" ? false
+    : (currentTier.labelsAlways || k > 1.4);
   if (show !== labelsShown) {
     labelSel.style("display", show ? null : "none");
     labelsShown = show;
@@ -1075,8 +1129,17 @@ simulation.on("tick", () => {
 // reiniciar a simulação que acabou de nascer quase assentada.
 applyStyle(styleConfig, { silent: true });
 
+// Reaquecer a simulação inteira a alphaTarget 0.3 é o padrão de livro-texto
+// do d3, pensado pra grafos pequenos — com centenas/milhares de nós e carga
+// repulsiva entre todos eles, esse alpha alto durante o arrasto faz a
+// colisão inteira ser recalculada a cada tick, e ao soltar o nó o grafo
+// "explode" num pulo generalizado em vez de só reacomodar a vizinhança do
+// nó largado. Grafos grandes usam um alvo bem mais baixo: o suficiente pra
+// arestas/colisão do próprio nó arrastado acompanharem o mouse, sem jogar
+// energia extra no resto do sistema.
+const DRAG_ALPHA_TARGET = data.nodes.length > 300 ? 0.06 : 0.3;
 function dragstarted(event, d) {
-  if (!event.active) simulation.alphaTarget(0.3).restart();
+  if (!event.active) simulation.alphaTarget(DRAG_ALPHA_TARGET).restart();
   d.fx = d.x; d.fy = d.y;
   d3.select(this).classed("dragging", true);
 }
@@ -1125,6 +1188,7 @@ const detailEl = document.getElementById("detail");
 
 function resetHighlight() {
   nodeSel.classed("dim", false);
+  haloSel.classed("dim", false);
   labelSel.classed("dim", false);
   linkSel.classed("dim", false);
   detailEl.hidden = true;
@@ -1142,6 +1206,7 @@ function selectNode(d) {
 
   const neighbors = neighborsOf(d.id);
   nodeSel.classed("dim", n => !neighbors.has(n.id));
+  haloSel.classed("dim", n => !neighbors.has(n.id));
   labelSel.classed("dim", n => !neighbors.has(n.id));
   linkSel.classed("dim", e => {
     const a = typeof e.source === "object" ? e.source.id : e.source;
@@ -1190,6 +1255,7 @@ document.getElementById("search").addEventListener("input", (e) => {
     n.title.toLowerCase().includes(q) || (n.tags || []).some(t => t.toLowerCase().includes(q))
   ).map(n => n.id));
   nodeSel.classed("dim", n => !matchIds.has(n.id));
+  haloSel.classed("dim", n => !matchIds.has(n.id));
   labelSel.classed("dim", n => !matchIds.has(n.id));
   linkSel.classed("dim", true);
 });
@@ -1208,6 +1274,8 @@ function updateVisibility() {
 
   nodeSel.classed("hidden-node", n => !isNodeVisible(n))
     .attr("r", radiusOf);
+  haloSel.classed("hidden-node", n => !isNodeVisible(n))
+    .attr("r", d => radiusOf(d) * 2.4);
   labelSel.classed("hidden-node", n => !isNodeVisible(n))
     .attr("dy", d => -(2 + radiusOf(d)));
   linkSel.classed("hidden-node", e => {
@@ -1588,6 +1656,14 @@ function renderStylePanel(seed) {
         </select>
       </label>
       <label class="style-row">
+        <span>Rótulo (nome) dos nós</span>
+        <select id="st-labels">
+          <option value="auto" ${(draft.labels ?? "auto") === "auto" ? "selected" : ""}>Automático (some ao afastar o zoom)</option>
+          <option value="sempre" ${draft.labels === "sempre" ? "selected" : ""}>Sempre visível</option>
+          <option value="nunca" ${draft.labels === "nunca" ? "selected" : ""}>Sempre oculto</option>
+        </select>
+      </label>
+      <label class="style-row">
         <span>Gradiente nas bolinhas</span>
         <input type="checkbox" id="st-gradient" ${draft.gradient ? "checked" : ""}>
       </label>
@@ -1625,6 +1701,7 @@ function renderStylePanel(seed) {
     renderStylePanel(draft); // atualiza o texto "está usando: X" com o novo valor
   });
   modalBody.querySelector("#st-glow").addEventListener("change", (e) => { draft.glow = e.target.value; preview(); });
+  modalBody.querySelector("#st-labels").addEventListener("change", (e) => { draft.labels = e.target.value; preview(); });
   modalBody.querySelector("#st-gradient").addEventListener("change", (e) => { draft.gradient = e.target.checked; preview(); });
   modalBody.querySelector("#st-starfield").addEventListener("change", (e) => { draft.starfield = e.target.checked; preview(); });
 

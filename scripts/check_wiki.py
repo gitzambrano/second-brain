@@ -734,7 +734,7 @@ def build_title_map():
     conjunto de arquivos sem H1 (issue própria de páginas de apoio; essays
     já têm NO_H1 no check_essay)."""
     title_to_file, file_to_title = {}, {}
-    essay_titles, all_titles = set(), set()
+    essay_titles, all_titles, all_slugs = set(), set(), set()
     no_h1 = []
 
     for category, dir_path in DIRS.items():
@@ -750,6 +750,7 @@ def build_title_map():
             # wiki é `[[slug-do-arquivo|Título Visível]]`. O H1 continua aceito
             # aqui só para não quebrar link antigo ainda não migrado.
             all_titles.add(file.stem)
+            all_slugs.add(file.stem)
             if category == "essays":
                 essay_titles.add(file.stem)
             if title:
@@ -766,6 +767,7 @@ def build_title_map():
         "file_to_title": file_to_title,
         "essay_titles": essay_titles,
         "all_titles": all_titles,
+        "all_slugs": all_slugs,
         "no_h1": no_h1,
     }
 
@@ -834,6 +836,7 @@ def check_dead_wikilinks(title_map, essay_only_file=None):
         corpus.append({"section": section, "severity": severity, "code": code, "message": message})
 
     all_titles = title_map["all_titles"]
+    all_slugs = title_map["all_slugs"]
 
     if essay_only_file:
         scope = {"essays": [essay_only_file]}
@@ -841,6 +844,7 @@ def check_dead_wikilinks(title_map, essay_only_file=None):
         scope = {cat: sorted(d.glob("*.md")) for cat, d in DIRS.items() if d.exists()}
 
     dead_links = {}
+    non_slug_links = {}
     for category, files in scope.items():
         for file in files:
             content = strip_fences(load(file))
@@ -854,10 +858,19 @@ def check_dead_wikilinks(title_map, essay_only_file=None):
                         f"Wikilink display text em {category}/{file.name} tem dois-pontos: '{raw_link}'")
                 if target not in all_titles:
                     dead_links.setdefault(target, set()).add(f"{category}/{file.name}")
+                elif target not in all_slugs:
+                    # Existe uma pagina com esse H1, mas o link usa o titulo em vez
+                    # do nome de arquivo: resolve aqui (falso "vivo"), mas o Obsidian
+                    # so resolve por slug e abre uma nota nova em branco.
+                    non_slug_links.setdefault(target, set()).add(f"{category}/{file.name}")
 
     for target, sources in sorted(dead_links.items()):
         add("DEAD_WIKILINKS", "ERROR", "DEAD_WIKILINK",
             f"'{target}' referenciado em: {', '.join(sorted(sources))}")
+
+    for target, sources in sorted(non_slug_links.items()):
+        add("DEAD_WIKILINKS", "ERROR", "NON_SLUG_WIKILINK",
+            f"'{target}' usa o título em vez do slug (quebra no Obsidian) em: {', '.join(sorted(sources))}")
 
     return corpus
 

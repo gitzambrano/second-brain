@@ -332,6 +332,41 @@ def fix_content(content):
     return frontmatter + body
 
 
+def build_title_to_slug():
+    """Mapa H1 -> slug e conjunto de slugs, para migrar wikilink por título
+    para a forma canônica `[[slug|Título]]` (Obsidian resolve só por slug)."""
+    title_to_slug = {}
+    all_slugs = set()
+    for d in DIRS:
+        if not d.exists():
+            continue
+        for f in d.glob("*.md"):
+            all_slugs.add(f.stem)
+            m = re.search(r"(?m)^# (.+)", load_file_content(f))
+            if m:
+                title_to_slug[m.group(1).strip()] = f.stem
+    return title_to_slug, all_slugs
+
+
+BARE_WIKILINK_RE = re.compile(r"\[\[([^\]\|#]+)(\|([^\]]+))?\]\]")
+
+
+def fix_bare_title_wikilinks(body, title_to_slug, all_slugs):
+    """`[[Título]]` ou `[[Título|Display]]` -> `[[slug|Display]]` quando o
+    alvo não é já um slug mas casa com o H1 de uma página existente."""
+    def repl(m):
+        target = m.group(1).strip()
+        display = m.group(3).strip() if m.group(3) else target
+        if target in all_slugs:
+            return m.group(0)
+        slug = title_to_slug.get(target)
+        if slug is None:
+            return m.group(0)
+        return f"[[{slug}|{display}]]"
+
+    return BARE_WIKILINK_RE.sub(repl, body)
+
+
 def resolve_essay(slug: str) -> Path:
     p = Path(slug)
     if p.exists():
@@ -618,6 +653,7 @@ def main():
 
     fixed_files_count = 0
     referencias_fixed_count = 0
+    title_to_slug, all_slugs = build_title_to_slug()
 
     all_targets = [("essays", f) for f in essay_targets]
     for d in support_dirs:
@@ -631,6 +667,9 @@ def main():
 
         content = load_file_content(file)
         new_content = fix_content(content)
+        frontmatter, body = split_frontmatter(new_content)
+        body = apply_outside_fences(body, lambda seg: fix_bare_title_wikilinks(seg, title_to_slug, all_slugs))
+        new_content = frontmatter + body
 
         if new_content != content:
             save_file_content(file, new_content)
