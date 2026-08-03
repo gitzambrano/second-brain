@@ -180,7 +180,7 @@ GRAPH_STYLE = {
 # desligá-los por padrão no celular evita que a maioria dos usuários mobile
 # precise descobrir o painel de Estilo só pra destravar performance.
 GRAPH_STYLE_MOBILE_OVERRIDES = {
-    "glow": "on",
+    "glow": "leve",
     "starfield": False,
 }
 
