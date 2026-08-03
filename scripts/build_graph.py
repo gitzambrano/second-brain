@@ -161,6 +161,19 @@ GRAPH_STYLE = {
     # HTML gerado) — reduzido de 0.55 pra deixar as bolinhas um pouco mais
     # nervosas/flutuantes por padrão, sem exagerar (um degrau do slider).
     "friction": 0.65,
+    # Elasticidade de retorno: puxa cada nó de volta pra sua posição no
+    # layout calculado (n.x0/n.y0, ver compute_layout() no Python) sempre
+    # que ele se afasta dali — na prática, é o que faz uma bolinha arrastada
+    # voltar pra onde ela "mora" ao ser solta, em vez de simplesmente
+    # assentar onde as forças de link/carga a deixarem depois do arrasto
+    # (que raramente é o mesmo lugar: link/carga só resolvem a forma
+    # relativa entre vizinhos, não têm noção de posição absoluta nenhuma).
+    # É um d3.forceX/forceY por trás (ver applyForces() no HTML gerado), com
+    # este valor como strength — 0 desliga completamente (nó fica onde for
+    # solto, comportamento de antes desta opção existir); valores de
+    # forceX/Y acima de ~0.6 já ficam bem rígidos (quase trava o nó no
+    # lugar), por isso o slider vai só até ali.
+    "homeStrength": 0.25,
     # "auto" | "alta" | "media" | "baixa" — ver PERFORMANCE_TIERS no HTML
     # gerado. "auto" decide pelo tamanho do grafo e pelo aparelho (celular
     # entra em "baixa"/"média" sozinho); as wikis grandes se beneficiam
@@ -180,6 +193,11 @@ GRAPH_STYLE = {
 # desligá-los por padrão no celular evita que a maioria dos usuários mobile
 # precise descobrir o painel de Estilo só pra destravar performance.
 GRAPH_STYLE_MOBILE_OVERRIDES = {
+    # "on" não é um valor válido (as opções são "off"/"leve"/"alto" — ver
+    # <select id="st-glow"> no HTML gerado); ficava sem corresponder a
+    # nenhuma delas, então o halo nunca desenhava na tela mesmo assim.
+    # Trocado para "leve", a opção decorativa mais barata, já que a intenção
+    # aqui parece ter sido ligar glow no celular em vez de desligar.
     "glow": "leve",
     "starfield": False,
 }
@@ -930,10 +948,10 @@ const FACTORY_STYLE = data.defaultStyle || {
   edgeOpacity: 0.55, edgeVisibility: "sempre", radiusBase: 5, radiusScale: 3, labelSize: 10,
   glow: "leve", labels: "sempre", starfield: true, gradient: true, sizeMode: "degree",
   spacing: 1.8, performance: "auto", collision: true,
-  linkStrength: 3.5, chargeStrength: 2.5, friction: 0.65,
+  linkStrength: 3.5, chargeStrength: 2.5, friction: 0.65, homeStrength: 0.25,
   sphereShading: false, tagTint: false,
 };
-const MOBILE_OVERRIDES = data.defaultStyleMobileOverrides || { glow: "off", starfield: false };
+const MOBILE_OVERRIDES = data.defaultStyleMobileOverrides || { glow: "leve", starfield: false };
 const defaultStyle = DEVICE_IS_MOBILE ? { ...FACTORY_STYLE, ...MOBILE_OVERRIDES } : FACTORY_STYLE;
 
 function loadSavedStyle() {
@@ -963,9 +981,9 @@ let styleConfig = mergeWithDefaults(loadSavedStyle());
 // por tick mesmo com a árvore já aproximando; `collideIterations` é quantas
 // vezes o d3 relaxa colisões por tick (mais = menos sobreposição, mais CPU).
 const PERFORMANCE_TIERS = {
-  alta: { theta: 0.82, distanceMax: Infinity, collideIterations: 2, labelsAlways: true },
-  media: { theta: 1.0, distanceMax: 700, collideIterations: 1, labelsAlways: true },
-  baixa: { theta: 1.3, distanceMax: 420, collideIterations: 1, labelsAlways: false },
+  alta: { theta: 0.9, distanceMax: 900, collideIterations: 2, labelsAlways: true },
+  media: { theta: 1.1, distanceMax: 550, collideIterations: 1, labelsAlways: true },
+  baixa: { theta: 1.4, distanceMax: 320, collideIterations: 1, labelsAlways: false },
 };
 function resolvePerformanceTier(cfg) {
   if (cfg.performance && cfg.performance !== "auto") return cfg.performance;
@@ -978,10 +996,14 @@ function resolvePerformanceTier(cfg) {
     // topo de linha aguentaria em "média" — sem isso, um Galaxy A com 1100
     // nós tentaria rodar no mesmo tier de um iPhone recente.
     const fewCores = (navigator.hardwareConcurrency || 8) <= 4;
-    return n > (fewCores ? 120 : 200) ? "baixa" : "media";
+    return n > (fewCores ? 90 : 140) ? "baixa" : "media";
   }
-  if (n > 600) return "baixa";
-  if (n > 250) return "media";
+  // Desktop nunca cai de tier sozinho: fica sempre em "alta" (o usuário
+  // pode escolher "média"/"baixa" à mão no painel de Estilo se um aparelho
+  // desktop específico não aguentar). Diferente do celular, aqui não há
+  // sinal barato de "máquina fraca" pra decidir por baixo do usuário — e
+  // quem roda o gerador num desktop já tende a ter CPU de sobra pro tamanho
+  // desta wiki.
   return "alta";
 }
 
@@ -1357,6 +1379,7 @@ function applyForces(cfg) {
   // padrão de fábrica, então ninguém herda um valor `undefined` na fórmula.
   const linkStrengthMult = cfg.linkStrength ?? 3.5;
   const chargeMult = cfg.chargeStrength ?? 2.5;
+  const homeMult = cfg.homeStrength ?? 0.25;
   simulation
     // A força do link NÃO é fixa de propósito. Um `.strength(0.5)` igual para
     // toda aresta era a causa da agitação: um nó-hub com 40 arestas recebia 40
@@ -1374,7 +1397,18 @@ function applyForces(cfg) {
     // `spacing`: spacing mexe em distância/colisão/arestas juntos, este só
     // na intensidade da repulsão.
     .force("charge", d3.forceManyBody().strength(-110 * spacing * chargeMult)
-      .theta(currentTier.theta).distanceMax(currentTier.distanceMax));
+      .theta(currentTier.theta).distanceMax(currentTier.distanceMax))
+    // Elasticidade de retorno (slider "Elasticidade de retorno"): âncora cada
+    // nó na sua posição de layout (x0/y0, calculada no Python — ver BLOOM
+    // acima, que semeia daqui) via forceX/forceY. Link e charge só resolvem
+    // FORMA relativa entre vizinhos; nenhum dos dois tem noção de posição
+    // absoluta, então nada nesta simulação puxava um nó arrastado de volta
+    // pro lugar de onde ele saiu — essa é a força que faz isso. Fallback
+    // pra `d.x`/`d.y` cobre o caso raro de nó sem x0/y0 (não travado por
+    // compute_layout): sem home definido, a força vira strength*0 = no-op
+    // pra ele, em vez de NaN se propagando pela simulação inteira.
+    .force("homeX", d3.forceX(d => d.x0 ?? d.x).strength(homeMult))
+    .force("homeY", d3.forceY(d => d.y0 ?? d.y).strength(homeMult));
   if (cfg.collision === false) {
     simulation.force("collide", null);
   } else {
@@ -2530,6 +2564,11 @@ function renderStylePanel(seed) {
         <input type="range" id="st-friction" min="0.05" max="1.25" step="0.1" value="${draft.friction ?? 0.65}">
       </label>
       <p class="style-hint">Elástica: quanto maior, mais as arestas puxam os nós conectados com força. Repulsão: quanto maior, mais os nós se afastam uns dos outros. Atrito: quanto maior, mais rápido o grafo assenta e para de balançar.</p>
+      <label class="style-row style-slider">
+        <span>Elasticidade de retorno</span>
+        <input type="range" id="st-home-strength" min="0" max="0.6" step="0.02" value="${draft.homeStrength ?? 0.25}">
+      </label>
+      <p class="style-hint">Puxa cada bolinha de volta pro lugar dela no layout quando ela é arrastada e solta — diferente da força elástica das conexões, que só rege a distância entre vizinhos, sem noção de posição absoluta. 0 desliga (a bolinha fica onde for solta).</p>
     </div>
     <div class="style-section">
       <label class="style-row">
@@ -2619,6 +2658,7 @@ function renderStylePanel(seed) {
   modalBody.querySelector("#st-link-strength").addEventListener("input", (e) => { draft.linkStrength = +e.target.value; preview(); });
   modalBody.querySelector("#st-charge-strength").addEventListener("input", (e) => { draft.chargeStrength = +e.target.value; preview(); });
   modalBody.querySelector("#st-friction").addEventListener("input", (e) => { draft.friction = +e.target.value; preview(); });
+  modalBody.querySelector("#st-home-strength").addEventListener("input", (e) => { draft.homeStrength = +e.target.value; preview(); });
   modalBody.querySelector("#st-performance").addEventListener("change", (e) => {
     draft.performance = e.target.value;
     preview();
