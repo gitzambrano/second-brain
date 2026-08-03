@@ -142,24 +142,25 @@ GRAPH_STYLE = {
     # Multiplicador de distância entre bolinhas (colisão + arestas + carga).
     # 1 = padrão; acima disso, o grafo "respira" mais quando fica denso
     # demais pra ler.
-    "spacing": 1,
+    "spacing": 1.8,
     # Multiplicador da força elástica das arestas (d3 forceLink.strength).
     # 1 = padrão (a heurística de grau já embutida na fórmula, ver
     # applyForces() no HTML gerado); acima disso as conexões puxam os nós
     # com mais força, deixando o grafo mais "rígido" e compacto; abaixo,
     # mais "solto", com arestas mais folgadas.
-    "linkStrength": 1,
+    "linkStrength": 3.5,
     # Multiplicador da força de repulsão entre nós (d3 forceManyBody).
     # 1 = padrão; acima disso os nós se afastam mais uns dos outros.
     # Complementa `spacing` (que mexe em distância/colisão/arestas juntos):
     # este controla só a repulsão, isolado.
-    "chargeStrength": 1,
+    "chargeStrength": 2.5,
     # Atrito da simulação (d3 forceSimulation.velocityDecay). Quanto maior,
     # mais rápido os nós perdem velocidade e assentam; quanto menor, mais
     # eles carregam momento entre ticks e podem oscilar antes de parar.
-    # 0.55 é o padrão atual (ver comentário junto de `.velocityDecay` no
-    # HTML gerado).
-    "friction": 0.55,
+    # 0.5 é o padrão atual (ver comentário junto de `.velocityDecay` no
+    # HTML gerado) — reduzido de 0.55 pra deixar as bolinhas um pouco mais
+    # nervosas/flutuantes por padrão, sem exagerar (um degrau do slider).
+    "friction": 0.65,
     # "auto" | "alta" | "media" | "baixa" — ver PERFORMANCE_TIERS no HTML
     # gerado. "auto" decide pelo tamanho do grafo e pelo aparelho (celular
     # entra em "baixa"/"média" sozinho); as wikis grandes se beneficiam
@@ -179,7 +180,7 @@ GRAPH_STYLE = {
 # desligá-los por padrão no celular evita que a maioria dos usuários mobile
 # precise descobrir o painel de Estilo só pra destravar performance.
 GRAPH_STYLE_MOBILE_OVERRIDES = {
-    "glow": "off",
+    "glow": "on",
     "starfield": False,
 }
 
@@ -806,6 +807,47 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     .theme-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
     .theme-btn { min-width: 0; padding: 8px 6px; font-size: 12px; }
   }
+
+  /* Acima de 900px: os 6 cartões de .style-section (alturas bem diferentes —
+     um tem 9 linhas de cor, outro tem 4 sliders de física) numa grid comum
+     deixam buraco embaixo dos cartões curtos que dividem linha com um
+     cartão alto, porque grid não é masonry: a altura da linha é dada pelo
+     maior item dela, e cada linha não sabe da anterior. Numa tela larga
+     isso lê como "cartões jogados sem ordem". Column layout resolve: cada
+     cartão flui pro topo da PRÓXIMA coluna assim que a atual enche, então o
+     espaço usado acompanha a altura real do conteúdo, sem sobra — e a
+     largura toda da tela é ocupada porque column-width define uma largura
+     mínima e o navegador decide quantas colunas cabem, esticando-as pra
+     preencher o contêiner (igual ao auto-fit da grid, só que sem as linhas
+     fantasmas). Mobile não entra aqui: fica com a grid de coluna única de
+     sempre. */
+  @media (min-width: 900px) {
+    .style-grid { display: block; column-width: 380px; column-gap: 18px; }
+    .style-section { break-inside: avoid; margin: 0 0 18px; display: inline-block; width: 100%; }
+    .style-span2 { column-span: all; }
+    /* .btn é width:100% por padrão (bom no mobile, onde a barra de ações
+       deve preencher a largura toda). Em desktop, dentro do .style-actions
+       flex, isso vira flex-basis:100% pros dois botões, que dividem a
+       largura inteira do modal entre si e ficam enormes. Aqui eles voltam a
+       ter largura pelo conteúdo, alinhados à direita como uma barra de
+       ação comum. */
+    .style-actions { justify-content: flex-end; }
+    .style-actions .btn { width: auto; flex: 0 0 auto; padding: 10px 24px; }
+  }
+
+  /* ---- Popover de escolha ao exportar SVG -------------------------------
+     Um clique em "Exportar SVG" tem duas saídas bem diferentes (arquivo com
+     glow/gradiente, que o Xplore do Android historicamente recusa a abrir,
+     vs. um sem nenhum dos dois, pra testar se é isso). Um <select> ou
+     confirm() nativo esconderia essa escolha atrás de mais um clique sem
+     explicar o porquê; um popover ancorado no botão deixa as duas opções
+     visíveis de cara, com a explicação ao lado. */
+  #export-svg-popover { display: none; position: fixed; z-index: 30; flex-direction: column; gap: 8px;
+    min-width: 240px; max-width: 280px; background: var(--panel); border: 1px solid var(--panel-border);
+    border-radius: 10px; padding: 12px; box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+  #export-svg-popover.open { display: flex; }
+  #export-svg-popover .btn { width: 100%; margin-top: 0; text-align: center; }
+  #export-svg-popover p { font-size: 11px; color: var(--ink-dim); margin: 0 0 2px; line-height: 1.4; }
 </style>
 </head>
 <body>
@@ -829,6 +871,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <button class="btn" id="btn-fit-screen">Ajustar à tela</button>
 
   <div id="detail" hidden></div>
+</div>
+
+<div id="export-svg-popover">
+  <p>Completo tem glow e gradiente, mas alguns leitores de SVG simples (ex.: Xplore no Android) podem não abrir. Simples é sem os dois — teste se abre.</p>
+  <button class="btn style-primary" id="btn-export-svg-completo">Completo (glow + gradiente)</button>
+  <button class="btn" id="btn-export-svg-simples">Simples (sem glow/gradiente)</button>
 </div>
 
 <div id="modal-overlay">
@@ -881,8 +929,8 @@ const FACTORY_STYLE = data.defaultStyle || {
     reference: "#8a8f96", edge: "#9aa0a8", background: "#1b1e21" },
   edgeOpacity: 0.55, edgeVisibility: "sempre", radiusBase: 5, radiusScale: 3, labelSize: 10,
   glow: "leve", labels: "sempre", starfield: true, gradient: true, sizeMode: "degree",
-  spacing: 1, performance: "auto", collision: true,
-  linkStrength: 1, chargeStrength: 1, friction: 0.55,
+  spacing: 1.8, performance: "auto", collision: true,
+  linkStrength: 3.5, chargeStrength: 2.5, friction: 0.65,
   sphereShading: false, tagTint: false,
 };
 const MOBILE_OVERRIDES = data.defaultStyleMobileOverrides || { glow: "off", starfield: false };
@@ -1307,8 +1355,8 @@ function applyForces(cfg) {
   // Multiplicadores do painel de Estilo — `?? 1`/`?? 0.55` cobrem tanto
   // estilos salvos antigos (de antes destes controles existirem) quanto o
   // padrão de fábrica, então ninguém herda um valor `undefined` na fórmula.
-  const linkStrengthMult = cfg.linkStrength ?? 1;
-  const chargeMult = cfg.chargeStrength ?? 1;
+  const linkStrengthMult = cfg.linkStrength ?? 3.5;
+  const chargeMult = cfg.chargeStrength ?? 2.5;
   simulation
     // A força do link NÃO é fixa de propósito. Um `.strength(0.5)` igual para
     // toda aresta era a causa da agitação: um nó-hub com 40 arestas recebia 40
@@ -1335,7 +1383,7 @@ function applyForces(cfg) {
   }
   // Atrito (slider "Atrito") — pode ser reaplicado a qualquer momento no d3,
   // mesmo com a simulação já rodando, então não precisa de restart especial.
-  simulation.velocityDecay(cfg.friction ?? 0.55);
+  simulation.velocityDecay(cfg.friction ?? 0.6);
   updateLabelVisibility(zoomTransform.k);
 }
 
@@ -2466,20 +2514,20 @@ function renderStylePanel(seed) {
       </label>
       <label class="style-row style-slider">
         <span>Espaçamento entre bolinhas</span>
-        <input type="range" id="st-spacing" min="0.6" max="2.5" step="0.1" value="${draft.spacing ?? 1}">
+        <input type="range" id="st-spacing" min="0.6" max="3" step="0.2" value="${draft.spacing ?? 1.8}">
       </label>
       <p class="style-hint">Sobe a distância mínima entre nós, a força que os empurra pra longe e o comprimento das arestas — útil quando o grafo fica denso demais pra ler.</p>
       <label class="style-row style-slider">
         <span>Força elástica das conexões</span>
-        <input type="range" id="st-link-strength" min="0.2" max="3" step="0.1" value="${draft.linkStrength ?? 1}">
+        <input type="range" id="st-link-strength" min="0.2" max="7" step="0.4" value="${draft.linkStrength ?? 3.5}">
       </label>
       <label class="style-row style-slider">
         <span>Força de repulsão entre nós</span>
-        <input type="range" id="st-charge-strength" min="0.3" max="3" step="0.1" value="${draft.chargeStrength ?? 1}">
+        <input type="range" id="st-charge-strength" min="0.2" max="6" step="0.4" value="${draft.chargeStrength ?? 2}">
       </label>
       <label class="style-row style-slider">
         <span>Atrito</span>
-        <input type="range" id="st-friction" min="0.2" max="0.9" step="0.05" value="${draft.friction ?? 0.55}">
+        <input type="range" id="st-friction" min="0.05" max="1.25" step="0.1" value="${draft.friction ?? 0.65}">
       </label>
       <p class="style-hint">Elástica: quanto maior, mais as arestas puxam os nós conectados com força. Repulsão: quanto maior, mais os nós se afastam uns dos outros. Atrito: quanto maior, mais rápido o grafo assenta e para de balançar.</p>
     </div>
@@ -2716,10 +2764,18 @@ function unitCircle(c) {
   c.arc(0, 0, 1, Math.PI, Math.PI * 2);
 }
 
-function drawForSvgExport() {
+// `simple`: exporta em cor chapada, sem glow nem gradiente — testado pra
+// contornar visualizadores de SVG simples (Xplore no Android é o caso
+// relatado) que engasgam nos <radialGradient> do export "completo", mesmo já
+// sem os três problemas de sintaxe descritos acima (atributo duplicado,
+// notação científica, encoding). Não mexe no styleConfig de verdade: cria
+// uma cópia rasa só pra esta exportação, então o grafo em tela e o próximo
+// export "completo" continuam com o estilo salvo do usuário intactos.
+function drawForSvgExport(simple) {
+  const svgStyle = simple ? Object.assign({}, styleConfig, { glow: "off", gradient: false }) : styleConfig;
   const c = new C2S(width, height); // tamanho em px CSS — vetor não precisa de dpr/supersampling
 
-  c.fillStyle = (styleConfig.colors && styleConfig.colors.background) || "#1b1e21";
+  c.fillStyle = (svgStyle.colors && svgStyle.colors.background) || "#1b1e21";
   c.fillRect(0, 0, width, height);
 
   // Gradientes construídos uma vez, no espaço unitário (-1..1 / 0..1), e
@@ -2729,17 +2785,17 @@ function drawForSvgExport() {
   // precisar recriar o objeto a cada nó.
   const svgNodeGradients = {};
   const svgHaloGradients = {};
-  if (styleConfig.gradient || styleConfig.glow !== "off") {
-    Object.keys(styleConfig.colors || {}).forEach(type => {
+  if (svgStyle.gradient || svgStyle.glow !== "off") {
+    Object.keys(svgStyle.colors || {}).forEach(type => {
       if (type === "background" || type === "edge") return;
-      const color = styleConfig.colors[type] || "#888";
-      if (styleConfig.gradient) {
+      const color = svgStyle.colors[type] || "#888";
+      if (svgStyle.gradient) {
         const g = c.createRadialGradient(-0.3, -0.35, 0, 0, 0, 1);
         g.addColorStop(0, mixWhite(color, 0.55));
         g.addColorStop(1, color);
         svgNodeGradients[type] = g;
       }
-      if (styleConfig.glow !== "off") {
+      if (svgStyle.glow !== "off") {
         const h = c.createRadialGradient(0, 0, 0, 0, 0, 1);
         h.addColorStop(0, hexToRgba(color, 0.5));
         h.addColorStop(1, hexToRgba(color, 0));
@@ -2762,15 +2818,15 @@ function drawForSvgExport() {
   // Arestas: um beginPath/stroke por aresta (sem o batching em Path2D do
   // draw() de tela — aqui não corre a 60fps, então o custo extra não importa,
   // e evita depender de suporte a Path2D dentro do mock do canvas2svg).
-  if (styleConfig.edgeVisibility !== "off") {
+  if (svgStyle.edgeVisibility !== "off") {
     c.lineWidth = 1.2 / zoomTransform.k;
-    c.strokeStyle = styleConfig.colors.edge;
+    c.strokeStyle = svgStyle.colors.edge;
     data.edges.forEach(e => {
       const s = endpoint(e.source), t = endpoint(e.target);
       if (!s || !t || !isNodeVisible(s) || !isNodeVisible(t)) return;
       if (!inView(s) && !inView(t)) return;
       const dim = edgeDimmed(e);
-      c.globalAlpha = dim ? 0.08 : styleConfig.edgeOpacity;
+      c.globalAlpha = dim ? 0.08 : svgStyle.edgeOpacity;
       // setLineDash pode não existir nesta versão do mock — checar antes de
       // chamar evita estourar a função inteira por causa de um detalhe
       // cosmético (linha tracejada vs. sólida) que não é o motivo do export.
@@ -2786,7 +2842,7 @@ function drawForSvgExport() {
   }
 
   // Nós: halo de glow (se ligado) por trás, depois o próprio nó — em
-  // gradiente esférico se `styleConfig.gradient` estiver ligado, senão cor
+  // gradiente esférico se `svgStyle.gradient` estiver ligado, senão cor
   // chapada. translate+scale por nó pra reaproveitar os gradientes unitários
   // construídos acima (mesmo truque de drawHalo()/getNodeSprite() na tela).
   data.nodes.forEach(n => {
@@ -2795,7 +2851,7 @@ function drawForSvgExport() {
     const dim = nodeDimmed(n);
     const type = n.type;
 
-    if (styleConfig.glow !== "off") {
+    if (svgStyle.glow !== "off") {
       c.save();
       c.globalAlpha = dim ? 0.08 : 1;
       c.translate(n.x, n.y);
@@ -2811,7 +2867,7 @@ function drawForSvgExport() {
     c.translate(n.x, n.y);
     c.scale(r, r);
     unitCircle(c);
-    c.fillStyle = styleConfig.gradient ? (svgNodeGradients[type] || typeColorRaw(n)) : typeColorRaw(n);
+    c.fillStyle = svgStyle.gradient ? (svgNodeGradients[type] || typeColorRaw(n)) : typeColorRaw(n);
     c.fill();
     // lineWidth compensado pelo scale(r,r): 1px de verdade vira r depois de
     // escalado, então 1/r devolve a espessura real de contorno pretendida.
@@ -2825,7 +2881,7 @@ function drawForSvgExport() {
   // Rótulos — o motivo original do pedido: em SVG o texto é elemento <text>
   // de verdade, então fica nítido em qualquer zoom, ao contrário do PNG.
   if (labelsShown) {
-    c.font = `${styleConfig.labelSize}px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif`;
+    c.font = `${svgStyle.labelSize}px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif`;
     c.textAlign = "center";
     c.fillStyle = "#e6e9ec";
     data.nodes.forEach(n => {
@@ -2920,23 +2976,73 @@ function drawForSvgExport() {
   // encoding explicitamente remove a ambiguidade de vez.
   svgString = '<?xml version="1.0" encoding="UTF-8"?>\\n' + svgString;
 
+  // Duas limpezas a mais, de baixo risco (não mudam nada visualmente em
+  // Chrome nem no que já testamos) pra reduzir o que um parser de SVG
+  // simples/legado poderia ter de errado nesse arquivo:
+  // 1) canvas2svg escreve os raios/centros de <radialGradient> com sufixo
+  //    "px" (ex.: r="1px"). É um <length> válido pela gramática do SVG, mas
+  //    parsers enxutos costumam só aceitar número puro nesses atributos.
+  //    Como esses valores são sempre em userSpaceOnUse (sem unidade real
+  //    envolvida), tirar o "px" não muda o resultado em nada.
+  svgString = svgString.replace(/([a-zA-Z]+)="(-?[\\d.]+)px"/g, '$1="$2"');
+  // 2) `paint-order` é propriedade de SVG2 — a ordem padrão (fill antes de
+  //    stroke) já é a que canvas2svg segue nos casos onde não escreve o
+  //    atributo, então remover não muda a aparência; só tira algo que um
+  //    parser SVG1.1 pode não reconhecer.
+  svgString = svgString.replace(/ paint-order="[^"]*"/g, "");
+
   return svgString;
 }
 
-document.getElementById("btn-export-svg").addEventListener("click", () => {
+function exportSvgFile(simple) {
   zoomTransform = d3.zoomTransform(canvas); // mesma fonte de verdade usada no export PNG
-  const svgString = drawForSvgExport();
+  const svgString = drawForSvgExport(simple);
   const blob = new Blob([svgString], { type: "image/svg+xml" });
   const url = URL.createObjectURL(blob);
   const stamp = new Date().toISOString().slice(0, 10);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `grafo-second-brain-${stamp}.svg`;
+  a.download = `grafo-second-brain-${stamp}${simple ? "-simples" : ""}.svg`;
   document.body.appendChild(a);
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+}
+
+const exportSvgBtn = document.getElementById("btn-export-svg");
+const exportSvgPopover = document.getElementById("export-svg-popover");
+
+function closeExportSvgPopover() { exportSvgPopover.classList.remove("open"); }
+
+function openExportSvgPopover() {
+  // Ancorado no botão, não centralizado: abre logo abaixo dele (ou acima,
+  // se não couber embaixo), e clampa na largura da viewport pra nunca sair
+  // da tela no painel estreito do mobile.
+  exportSvgPopover.classList.add("open");
+  const btnRect = exportSvgBtn.getBoundingClientRect();
+  const popRect = exportSvgPopover.getBoundingClientRect();
+  let left = btnRect.left;
+  left = Math.min(left, window.innerWidth - popRect.width - 10);
+  left = Math.max(left, 10);
+  let top = btnRect.bottom + 8;
+  if (top + popRect.height > window.innerHeight - 10) {
+    top = btnRect.top - popRect.height - 8;
+  }
+  exportSvgPopover.style.left = `${left}px`;
+  exportSvgPopover.style.top = `${top}px`;
+}
+
+exportSvgBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (exportSvgPopover.classList.contains("open")) { closeExportSvgPopover(); return; }
+  openExportSvgPopover();
 });
+document.getElementById("btn-export-svg-completo").addEventListener("click", () => { closeExportSvgPopover(); exportSvgFile(false); });
+document.getElementById("btn-export-svg-simples").addEventListener("click", () => { closeExportSvgPopover(); exportSvgFile(true); });
+document.addEventListener("click", (e) => {
+  if (exportSvgPopover.classList.contains("open") && !exportSvgPopover.contains(e.target)) closeExportSvgPopover();
+});
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeExportSvgPopover(); });
 
 // Fechar o modal de Estilo sem clicar "Salvar" descarta o rascunho e volta
 // ao estilo realmente salvo (ou ao padrão, se nada foi salvo ainda) — sem
