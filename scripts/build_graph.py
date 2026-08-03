@@ -2855,9 +2855,71 @@ function drawForSvgExport() {
   // navegador de verdade — via `width:100%;height:100%` mais viewBox pra
   // escalar o conteúdo interno proporcionalmente sem distorcer.
   let svgString = c.getSerializedSvg(true); // true: entidades nomeadas -> numéricas, exigido por SVG standalone
+
+  // getSerializedSvg() do canvas2svg sai com o atributo xmlns:xlink DUPLICADO
+  // na tag <svg> raiz. A lib tenta corrigir um bug antigo do IE trocando a
+  // primeira ocorrência de xmlns="..." pelo texto xmlns:xlink="..." (ver
+  // canvas2svg.js, comentário "IE search for a duplicate xmnls"), só que o
+  // serializer de DOM usado aqui (confirmado tanto em jsdom quanto no
+  // comportamento de motores modernos) já declara um xmlns:xlink próprio ao
+  // serializar — o "conserto" da lib não remove duplicata nenhuma, só troca
+  // QUAL atributo fica duplicado: em vez de xmlns repetido, sobra
+  // xmlns:xlink repetido. Atributo repetido na mesma tag é proibido pela
+  // regra de unicidade do XML; testado aqui com um parser XML estrito
+  // (xml.etree), o SVG cru do canvas2svg falha com "duplicate attribute".
+  // O Chrome tolera isso porque abre SVG com o parser de HTML, que é
+  // permissivo e ignora repetição de atributo; o Xplore usa um parser XML
+  // de verdade pro visualizador de SVG, que rejeita o arquivo por violar
+  // essa regra — daí o erro e a tela preta relatados, e é isso (não
+  // gradiente, não círculo, não viewBox) que o Xplore realmente reclama.
+  // A correção é varrer a tag <svg> raiz e manter só a primeira ocorrência
+  // de cada atributo, descartando repetições, antes de montar o viewBox.
   svgString = svgString.replace(/<svg([^>]*)>/, (match, attrs) => {
-    return `<svg${attrs} viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%">`;
+    const seen = new Set();
+    const dedupedAttrs = attrs.replace(/\\s+([a-zA-Z_:][-a-zA-Z0-9_:.]*)="[^"]*"/g, (attrMatch, name) => {
+      if (seen.has(name)) return ""; // atributo repetido: descarta, fica só a primeira ocorrência
+      seen.add(name);
+      return attrMatch;
+    });
+    return `<svg${dedupedAttrs} viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%">`;
   });
+
+  // unitCircle() corta o círculo em dois arcos no ângulo Math.PI (ver comentário
+  // acima) pra evitar o caso startAngle===endAngle que o canvas2svg trata como
+  // "nada a desenhar". O problema é que Math.sin(Math.PI) no ponto de corte não
+  // dá 0 exato — dá 1.2246467991473532e-16, erro de ponto flutuante inerente ao
+  // IEEE 754 — e o canvas2svg serializa esse valor em notação científica dentro
+  // do atributo `d` de todo <path> de nó/halo. Notação científica é válida pela
+  // gramática formal de path data do SVG 1.1, e o parser de HTML do Chrome (que
+  // é quem abre SVG lá) engole isso sem reclamar — mas o Xplore usa um parser de
+  // SVG enxuto, que só entende números decimais simples e rejeita o path inteiro
+  // ao encontrar "e-16": nó e halo somem, e é isso — não gradiente, não viewBox —
+  // que produz a tela quase preta relatada lá.
+  // Como esse "erro" é da ordem de 10^-16 num desenho medido em pixels, arredondar
+  // pra 6 casas decimais elimina a notação científica sem qualquer perda visual
+  // perceptível, e cobre não só o valor do corte do círculo como qualquer outro
+  // número minúsculo que apareça por motivo semelhante em qualquer lugar do SVG.
+  svgString = svgString.replace(/-?\d*\.?\d+e[+-]\d+/gi, (numStr) => {
+    const rounded = Number(numStr).toFixed(6).replace(/\.?0+$/, "");
+    return rounded === "" || rounded === "-" ? "0" : rounded;
+  });
+
+  // getSerializedSvg() do canvas2svg nunca escreve o prólogo `<?xml ...?>` — o
+  // próprio exemplo oficial da lib sai puro em "<svg ...>...</svg>" (conferido
+  // na documentação do gliffy/canvas2svg). Os títulos dos nós são em português
+  // e vêm cheios de acento (Consciência, Campeões, Cérebros...), gravados como
+  // bytes UTF-8 crus dentro dos <text> — sem BOM e sem declaração de encoding
+  // no arquivo. Pela gramática formal do XML, ausência de declaração e de BOM
+  // significa "assuma UTF-8", e é isso que o parser de HTML do Chrome faz. Mas
+  // parsers de XML enxutos/legados — a mesma categoria de parser rígido que já
+  // rejeitava atributo duplicado e notação científica — não raro caem pro
+  // charset padrão da plataforma em vez do padrão da spec quando não há
+  // declaração explícita, o que transforma cada acento numa sequência de bytes
+  // inválida pro charset errado: no Xplore isso tende a se somar aos sintomas
+  // já descritos (erro ao abrir / conteúdo não desenhado), então declarar o
+  // encoding explicitamente remove a ambiguidade de vez.
+  svgString = '<?xml version="1.0" encoding="UTF-8"?>\\n' + svgString;
+
   return svgString;
 }
 
