@@ -3,10 +3,11 @@ name: connect
 description: >
   Expande e repara a malha de conexões (wikilinks em ## Conexões) entre
   essays, concepts, entities e insights — os quatro tipos ao mesmo tempo,
-  como peers. Checa conexão que devia existir e não existe, conexão
-  quebrada ou mal formatada, e cria conexão nova tanto com página já
-  existente quanto com página que ainda não existe (criando a página
-  mínima junto). Aceita corpus inteiro (/connect) ou um subconjunto
+  como peers. Invoca /gaps internamente como primeiro passo para
+  identificar candidatos (mecânico, léxico, semântico) e age sobre eles:
+  corrige link quebrado ou mal formatado, aplica conexão nova de alta
+  confiança, propõe o resto, e cria página mínima quando o candidato não
+  tem nenhuma ainda. Aceita corpus inteiro (/connect) ou um subconjunto
   (/connect <slugs, pasta, ou tema>). Use quando o Usuário disser "expande
   as conexões", "essa página está bem conectada?", "cria os links que
   faltam", "esse conceito devia linkar com aquele outro", "essas duas
@@ -16,7 +17,7 @@ allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion
 ---
 # Connect
 
-Expande e repara **o grafo de conexões** — `## Conexões` de essays, concepts, entities e insights — como unidade própria de trabalho. Trata os quatro tipos de página como peers: concept pode linkar concept, entity pode linkar entity, insight pode linkar essay ou concept. Parte do grafo inteiro e pergunta o que falta nele, em vez de só tocar `## Conexões` de passagem durante a edição de um essay específico.
+Expande e repara **o grafo de conexões** — `## Conexões` de essays, concepts, entities e insights — como unidade própria de trabalho. Trata os quatro tipos de página como peers: concept pode linkar concept, entity pode linkar entity, insight pode linkar essay ou concept. `/connect` é a camada de **ação**: a identificação (as três camadas — mecânica, léxica, semântica) é trabalho de `/gaps`, que este skill invoca como passo 1, nunca reimplementa por conta própria.
 
 ## Escopo
 
@@ -31,42 +32,39 @@ Se o argumento for ambíguo (casa com mais de uma página/tema), pergunte antes 
 
 ## O que este skill reusa (não reimplementa)
 
-- **Wikilink quebrado ou fora do padrão**: detecção via `check_wiki.py` (`DEAD_WIKILINK`, `NON_SLUG_WIKILINK`, `WIKILINK_DISPLAY_COLON`).
-- **Termo citado repetidamente sem virar página**, ou **página existente sem link num essay que a cita**: candidatos vêm de `python scripts/check_gaps.py`, que já cobre isso na direção essay→página; reusa a mesma lista como ponto de partida da Parte B e **estende** a lógica para concept↔concept, entity↔entity, e qualquer par envolvendo insight.
+- **Toda a identificação de candidatos** — mecânica, léxica, semântica — é `/gaps`, invocado no passo 1 com o mesmo argumento de escopo recebido aqui. `/connect` nunca roda `check_gaps.py` nem `qmd query` de forma independente; consome a lista que `/gaps` já produziu.
 - **Órfão reverso** (página sem nenhum essay que a referencie): `find_backlinks.py --orphans`.
 - **Quase-duplicata** (duas páginas que parecem a mesma coisa): `check_dedupe.py`, antes de criar qualquer página nova.
 - **Nome de página novo**: `check_title.py "Título Proposto"` sempre antes de nomear um arquivo, evita nascer quase-duplicata por grafia diferente.
 
 ## Passo a passo
 
-### 1. Preparar
+### 1. Invocar /gaps
 
-Rode `python scripts/build_index.py` se `wiki/index.json` estiver desatualizado. Rode `python scripts/find_backlinks.py --orphans` para o grafo atual de quem linka quem. Se `qmd status` disponível, prefira `qmd query` para achar páginas tematicamente próximas; sem qmd, `scripts/find_text.py --ignore-case` cobre os quatro tipos numa passada só.
+Chame `/gaps` com o mesmo argumento de escopo recebido por `/connect` (corpus inteiro, slug, pasta ou tema). Isso devolve a lista das três camadas: mecânico (links quebrados/mal formatados), léxico (termo sem página, página sem link), semântico (pares tematicamente próximos sem menção literal), já classificados por confiança. As seções 2-4 abaixo agem sobre essa lista — não gere candidato novo aqui.
+
+Se `wiki/index.json` estiver desatualizado, rode `python scripts/build_index.py` antes (necessário pra `check_title.py` e pro vocabulário de tags na Parte C).
 
 ### 2. Parte A — conexões quebradas ou mal formatadas
 
-1. Rode `python scripts/check_wiki.py --json` (ou `check_wiki.py <slug> --json` por página, se o escopo for um subconjunto) e filtre os achados de `DEAD_WIKILINKS`.
-2. **Typo óbvio de página existente** (ex: `[[entropi-termodinamica]]` quando a página é `entropia-termodinamica`): corrija direto, mecânico.
-3. **Alvo que não corresponde a nada nem a typo óbvio**: não invente nem apague — liste e pergunte o que fazer.
-4. **Mal formatado mas não morto** (`WIKILINK_DISPLAY_COLON`, ou sintaxe fora de `[[slug|Título]]`): corrija a forma, mantendo o mesmo alvo e texto visível.
-5. **Errado no sentido semântico** (o link existe, aponta para uma página real, mas é a errada): `check_wiki.py` não detecta isso. Ao ler cada página, preste atenção ao contexto ao redor de cada wikilink — se a frase descreve algo que não bate com o título/resumo da página alvo, sinalize como candidato a link errado e pergunte, nunca troque sozinho.
+Age sobre o achado mecânico de `/gaps`:
+
+1. **Typo óbvio de página existente** (ex: `[[entropi-termodinamica]]` quando a página é `entropia-termodinamica`) — mesmo candidato que `/gaps` já sinalizou como alta confiança: corrija direto, mecânico.
+2. **Alvo que não corresponde a nada nem a typo óbvio**: não invente nem apague — liste e pergunte o que fazer.
+3. **Mal formatado mas não morto** (`WIKILINK_DISPLAY_COLON`, ou sintaxe fora de `[[slug|Título]]`): corrija a forma, mantendo o mesmo alvo e texto visível.
+4. **Errado no sentido semântico** (o link existe, aponta para uma página real, mas é a errada): isso `/gaps` não cobre — exige ler o contexto ao redor de cada wikilink válido durante esta passada, não uma auditoria em lote separada. Se a frase descreve algo que não bate com o título/resumo da página alvo, sinalize como candidato a link errado e pergunte, nunca troque sozinho.
 
 ### 3. Parte B — conexões ausentes entre páginas já existentes
 
-Para cada página no escopo, gere candidatos de duas formas e combine:
-
-- **Léxica**: título de outra página do wiki aparece no corpo (nome próprio, negrito, ou já linkado como link externo) sem estar em `## Conexões`.
-- **Semântica**: `qmd query "<título/tags da página>"` (ou `find_text.py` com os termos centrais, sem qmd) para achar páginas tematicamente próximas que nunca se mencionam literalmente — comum entre concept↔concept e entity↔entity, onde duas páginas tratam da mesma ideia com vocabulário diferente.
-
-Classifique por confiança:
+Age sobre os achados léxico (Parte 2) e semântico de `/gaps`, já classificados por confiança:
 
 - **Alta confiança** (nome exato da página-alvo já aparece no texto, só falta o `[[wikilink]]`): aplique direto. Adicione nos dois lados (ver `## Bidirecionalidade`).
 - **Média confiança** (relação temática forte via busca semântica, termo não aparece literalmente): agrupe e apresente em lote curto para o Usuário confirmar ou descartar — não aplique sem essa confirmação.
-- **Baixa confiança**: descarte sem listar. Ruído satura mais do que ajuda.
+- **Baixa confiança**: `/gaps` já descartou isso antes de te devolver a lista — nada a fazer aqui.
 
 ### 4. Parte C — conexões com página que ainda não existe
 
-Quando o candidato da Parte B não tem página nenhuma no wiki (nem em `concepts/`, `entities/`, `insights/`, nem como essay) mas aparece com força o bastante para justificar uma:
+Age sobre o achado léxico Parte 1 de `/gaps` (termo sem página, candidato a `concepts/` ou `entities/`):
 
 1. Rode `python scripts/check_title.py "Título Proposto"` antes de decidir o nome do arquivo.
 2. Decida a pasta certa pela tabela `## Onde as coisas vão` de `conventions/SKILL.md`: ideia/framework sem tese própria → `concepts/`; pessoa/obra/instituição nomeada → `entities/`. Nunca crie essay novo nem insight novo — se o candidato é grande o bastante para isso, pare e sugira a rota certa em vez de criar você mesmo.
@@ -99,12 +97,12 @@ N links corrigidos, M conexões novas aplicadas, K páginas novas criadas.
 
 ## Comunicar
 
-Nunca cole a lista bruta de candidatos. Agrupe:
+Nunca cole a lista bruta de candidatos de `/gaps`. Agrupe:
 
 - **Corrigido automaticamente** (typos, formatação, alta confiança aplicada).
 - **Conexões novas — pendente confirmação** (média confiança, lote curto).
 - **Páginas novas propostas** (Parte C, com a página mínima que seria criada).
-- **Links suspeitos — possível alvo errado** (Parte A, item 5).
+- **Links suspeitos — possível alvo errado** (Parte A, item 4).
 - **Descartado como ruído**, só se relevante para calibrar expectativa.
 
 ## O que não fazer
@@ -115,11 +113,13 @@ Não enriqueça o conteúdo de uma página existente além do necessário para j
 
 Não aplique conexão de baixa confiança nem página nova sem confirmação do Usuário, mesmo que pareça óbvio.
 
+Não rode a identificação por conta própria — isso é sempre `/gaps` (passo 1). Se o passo 1 falhar ou vier vazio, diga isso ao Usuário em vez de gerar candidatos por fora do fluxo.
+
 ## Skills relacionadas
 
-- `/gaps` — auditoria só-leitura, essay-cêntrica, nunca aplica; `/connect` cobre o mesmo heurístico de origem mas em todos os tipos de página e aplica direto os casos de alta confiança. Se o Usuário só quer saber o que falta cobrir, a resposta é `/gaps`; se quer a malha de fato expandida e reparada, é `/connect`. Rodar os dois na mesma sessão é redundante para o caso essay→página — prefira `/connect`, que já inclui esse heurístico
+- `/gaps` — a metade "identificação" deste par; `/connect` sempre a invoca como passo 1 e nunca reimplementa a detecção. Se o Usuário só quer saber o que falta cobrir, sem agir, a resposta é `/gaps` direto; se quer a malha de fato expandida e reparada, é `/connect`
 - `/chapter` — cria concept/entity a partir de um essay em edição, com conteúdo completo; `/connect` cria a mesma pasta mas como stub mínimo, disparado pela lacuna do grafo
-- `/organize` — dono da checagem mecânica de wikilink quebrado (`check_wiki.py`) que `/connect` reusa; órfão reverso (passo 3 de lá) é outra face do mesmo grafo, mas `/organize` só reporta, não conecta. Ofereça `/connect` ao final de um `/organize` de corpus inteiro
+- `/organize` — dono da checagem mecânica de wikilink quebrado (`check_wiki.py`), que `/gaps` reusa e `/connect` repara; órfão reverso (passo 3 de lá) é outra face do mesmo grafo, mas `/organize` só reporta, não conecta. Ofereça `/connect` ao final de um `/organize` de corpus inteiro
 - `/expand`, `/absorb` — para aprofundar o conteúdo de uma página depois que `/connect` criou o stub ou a conexão
 - `/insight` — `/connect` pode dar a um insight `solta` sua primeira conexão, mas não muda `maturidade:` sozinho — isso continua decisão de `/insight develop`
 - `/sweep` — não inclui `/connect` na bateria automática, mas ofereça como próximo passo ao final

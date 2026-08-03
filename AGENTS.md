@@ -87,8 +87,8 @@ Tag entre colchetes indica como a skill trabalha: **[script]** roda ferramenta e
 | -------- | ------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Sweep    | `/sweep`    | ambos  | Bateria completa num essay ou no corpus:`/organize` → `/continuity` → `/proofread` → `/polish` → `/linkify`. Aceita `/sweep` ou `/sweep <slug>` |
 | Organize | `/organize` | ambos  | Saúde da base (índice, log, mapa de sources, tags, links) e formatação mecânica de essay. Aceita`/organize` ou `/organize <slug>`                        |
-| Gaps     | `/gaps`     | script | Cobertura conceitual: termo sem página, página sem link em Conexões, desbalanço de tags                                                                       |
-| Connect  | `/connect`  | ambos  | Expandir/reparar`## Conexões` entre essays, concepts, entities e insights. Aceita `/connect` ou `/connect <slug/pasta/tema>`                               |
+| Gaps     | `/gaps`     | script | Identifica lacunas (mecânico + léxico + semântico) nos 4 tipos como peers — nunca corrige. Passo interno de`/connect`; desbalanço de tags é `/organize`  |
+| Connect  | `/connect`  | ambos  | Invoca`/gaps` e age sobre o resultado: expande/repara `## Conexões` entre essays, concepts, entities e insights. Aceita `/connect` ou `/connect <slug/pasta/tema>` |
 | Stats    | `/stats`    | script | Dashboard read-only: essays por tag/tipo, órfãos, sources sem manifest, plano, insights, grafo                                                                  |
 | Status   | `/status`   | script | Ver ou atualizar`wiki/status.md`                                                                                                                                |
 
@@ -108,7 +108,7 @@ Tag entre colchetes indica como a skill trabalha: **[script]** roda ferramenta e
 
 ### Pedidos batch — qual skill dispara
 
-- **Verificar/organizar/limpar a base inteira**: `/organize` para metadados e estrutura. Adicione `/gaps` e `/connect`se o pedido tocar cobertura de conteúdo ("o que falta", "conceito sem página"). Use `/stats` para retrato read-only, sem correção. Nenhuma das três mexe em prosa — isso é `/sweep`, e só quando pedido explicitamente.
+- **Verificar/organizar/limpar a base inteira**: `/organize` para metadados, estrutura e balanço de tags. Adicione `/connect` se o pedido tocar cobertura de conteúdo ou conexão ("o que falta", "conceito sem página", "está tudo conectado") — `/connect` já invoca `/gaps` internamente, não chame os dois. Use `/gaps` sozinho só se o Usuário quiser identificar sem agir. Use `/stats` para retrato read-only, sem correção. Nenhuma mexe em prosa — isso é `/sweep`, e só quando pedido explicitamente.
 - **Processar tudo em `raw/`**: classifique cada arquivo. Ensaio completo do Usuário → `/import`; fonte de terceiros → `/digest`. Um arquivo por vez; pergunte só se a classificação for ambígua. Ofereça `/absorb` apenas ao final.
 
 `conventions` não tem comando: é a referência de formatação que as outras skills consultam.
