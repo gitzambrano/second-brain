@@ -74,3 +74,4 @@ Texto novo segue `## Estilo de prosa` em `conventions/SKILL.md`. Não invente co
 - `/continuity` — depois de mover/fundir seções, vale checar que a nova ordem não quebrou a progressão lógica
 - `/linkify` — toda página de conceito/entidade nova precisa de link externo na primeira ocorrência dela no essay
 - `/outline` — se o essay ainda tem capítulos do esboço original não escritos (`plan/drafts/<slug>.md` ainda existe), reestruturar essa parte pendente é `/outline`, não `/chapter`; este skill só trabalha sobre prosa já publicada
+- `/connect` — cria concept/entity também, mas como stub mínimo disparado por lacuna no grafo de conexões, não por conteúdo de um essay em edição; se a página nova precisa de desenvolvimento de verdade a partir do essay, é `/chapter`

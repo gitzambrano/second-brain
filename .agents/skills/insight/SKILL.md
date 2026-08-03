@@ -118,6 +118,7 @@ Não deixe insights `solta` acumularem por muito tempo sem nunca virarem `germin
 - `/essay`, `/expand`, `/chapter` — para onde um insight `madura` é promovido
 - `/stats` — sinaliza insights `madura` como candidatos a promoção, e insights `solta` antigos
 - `/organize` — audita insights órfãos (sem nenhuma `## Conexões` preenchida há muito tempo) como parte da saúde geral da base
+- `/connect` — pode dar a um insight `solta` sua primeira conexão fora de uma sessão de `/insight develop`; não muda `maturidade:` sozinho, isso continua decisão deste skill
 - `/study` — origem mais comum de insight: uma ideia que emergiu de uma sessão de estudo, sem tese completa ainda
 - `/absorb`, `/digest` — outra origem comum: uma ideia tangencial que uma fonte revelou, mas que não cabe no essay/resumo em edição
 - `/plan` — se o insight revelar que vale a pena estudar mais antes de promover, isso vira um item na seção Estudos do plano, não trava a nota em `/insight`

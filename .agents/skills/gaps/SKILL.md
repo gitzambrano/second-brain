@@ -52,10 +52,13 @@ Log só se algo foi de fato criado ou linkado como resultado:
 ## [YYYY-MM-DD] gaps | Resumo do que foi criado/linkado a partir da auditoria
 ```
 
+`/gaps` só cobre termo→página e página→essay. Ao final, ofereça `/connect` para o que fica de fora: concept↔concept, entity↔entity, qualquer par com insight, e reparo de link quebrado/mal formatado — sobretudo se a wiki já tem volume relevante de concepts/entities/insights e não só essays.
+
 ## Skills relacionadas
 
 - `/organize` — saúde estrutural/metadados da base inteira; órfão *reverso* (página sem essay) é passo 2 de lá, não daqui
 - `/linkify` — links *externos* dentro do corpo de um essay; `/gaps` opera na camada de `[[wikilink]]`/página, não em URL
 - `/chapter` — quem de fato cria a página de concept/entity que `/gaps` só propôs
+- `/connect` — reusa o mesmo heurístico de termo-sem-página, mas em todos os tipos de página (não só essay→página) e aplica direto os casos de alta confiança em vez de só propor; prefira `/connect` quando o Usuário quiser a malha de fato expandida, não só auditada
 - `/plan` — recebe candidatos que o Usuário quer decidir depois, não agora
 - `/scout` — quando o desbalanço de tag (Parte 3) vira "preciso de mais fonte sobre esse tema"
