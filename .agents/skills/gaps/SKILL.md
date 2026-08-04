@@ -20,7 +20,7 @@ allowed-tools: Bash Read Glob Grep
 
 # Gaps
 
-Identifica **lacunas**: o que devia existir e não existe, ou o que já existe e não está conectado. Read-only nas três camadas — mecânica, léxica, semântica. Nunca cria página, nunca insere wikilink, nunca corrige nada; essa é a camada de **identificação**, que `/connect` (a camada de **ação**) consome como primeiro passo.
+**[ambos]** Identifica **lacunas**: o que devia existir e não existe, ou o que já existe e não está conectado. Read-only nas três camadas — mecânica, léxica, semântica. Nunca cria página, nunca insere wikilink, nunca corrige nada; essa é a camada de **identificação**, que `/connect` (a camada de **ação**) consome como primeiro passo.
 
 ## Escopo
 
@@ -75,9 +75,6 @@ Read-only — nada para logar quando chamado direto. (Se chamado de dentro de `/
 
 ## Skills relacionadas
 
-- `/connect` — consome a lista de `/gaps` como passo 1; é quem de fato cria página, insere wikilink, e corrige link quebrado
-- `/organize` — saúde estrutural/metadados da base inteira, e balanço de cobertura por tag (a antiga Parte 3 de `/gaps`, que migrou pra lá — não é uma questão de conexão, é sinal de cobertura de conteúdo); órfão *reverso* (página sem essay) é passo 3 de lá, não daqui
-- `/linkify` — links *externos* dentro do corpo de um essay; `/gaps` opera na camada de `[[wikilink]]`/página, não em URL
-- `/chapter` — cria a página de concept/entity que `/gaps` só propôs, quando o Usuário quer criar direto sem passar pelo fluxo completo de `/connect`
-- `/plan` — recebe candidatos que o Usuário quer decidir depois, não agora
-- `/scout` — quando `/organize` sinalizar desbalanço de tag e o Usuário quiser "mais fonte sobre esse tema"
+- `/connect` — age sobre a lista que `/gaps` identifica
+- `/linkify` — links externos, não `[[wikilink]]`/página
+- `/organize`, `/chapter`, `/plan`, `/scout`

@@ -102,5 +102,5 @@ Segue a regra de status (batch vs específico) de `## Status de essay` em `conve
 
 ## Skills relacionadas
 
-- `/expand` — se o processo de linkificar revelar que um conceito citado de passagem merece uma explicação melhor no corpo, isso é `/expand`, não `/linkify`
-- `/sweep` — roda `/linkify` em todos os essays de uma vez
+- `/expand` — se revelar necessidade de explicação melhor no corpo
+- `/sweep`

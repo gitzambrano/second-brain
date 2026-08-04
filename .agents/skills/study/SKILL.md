@@ -65,9 +65,5 @@ Não confunda `/study` com `/query` — `/query` responde uma pergunta pontual u
 
 ## Skills relacionadas
 
-- `/plan` — quem decide chamar `/study` ao retomar um item da seção Estudos, e quem registra se ficou pendente
-- `/scout` — busca mais extensa e curada de fontes, quando `WebSearch` direto não é suficiente
-- `/insight` — destino natural de um insight que emergiu da sessão mas ainda não é uma tese completa
-- `/essay` — destino de uma sessão que já produziu uma tese completa
-- `/digest`, `/absorb` — destino de uma fonte específica encontrada durante o estudo
-- `/query` — para responder uma pergunta pontual com o que já está na wiki, sem sair buscando material novo
+- `/query` — responde pergunta pontual com o que já está na wiki, sem buscar material novo
+- `/plan`, `/scout`, `/insight`, `/essay`, `/digest`, `/absorb`

@@ -62,7 +62,7 @@ Se existir handout para este essay e a reorganização mudou a tese ou o caminho
 
 ## Convenções
 
-Wikilink usa `[[slug-do-arquivo|Título Visível]]` e link de seção usa `[[#Texto Do Heading]]` — as únicas formas que o Obsidian resolve. Heading nunca leva link markdown dentro, senão a seção fica inalcançável por qualquer link. Detalhe e motivo em `## Regra de links` de `conventions/SKILL.md`.
+Formato de wikilink e link de seção: `## Regra de links` em `conventions/SKILL.md`. Heading nunca leva link markdown dentro, senão a seção fica inalcançável por qualquer link.
 
 Segue a regra de status (batch vs específico) de `## Status de essay` em `conventions/SKILL.md`.
 
@@ -71,7 +71,5 @@ Texto novo segue `## Estilo de prosa` em `conventions/SKILL.md`. Não invente co
 ## Skills relacionadas
 
 - `/expand` — conteúdo dentro de uma seção, não a estrutura
-- `/continuity` — depois de mover/fundir seções, vale checar que a nova ordem não quebrou a progressão lógica
-- `/linkify` — toda página de conceito/entidade nova precisa de link externo na primeira ocorrência dela no essay
-- `/outline` — se o essay ainda tem capítulos do esboço original não escritos (`plan/drafts/<slug>.md` ainda existe), reestruturar essa parte pendente é `/outline`, não `/chapter`; este skill só trabalha sobre prosa já publicada
-- `/connect` — cria concept/entity também, mas como stub mínimo disparado por lacuna no grafo de conexões, não por conteúdo de um essay em edição; se a página nova precisa de desenvolvimento de verdade a partir do essay, é `/chapter`
+- `/connect` — cria concept/entity como stub mínimo por lacuna do grafo; `/chapter` cria com desenvolvimento completo a partir do essay
+- `/continuity`, `/linkify`, `/outline`

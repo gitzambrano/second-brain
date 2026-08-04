@@ -70,5 +70,4 @@ Avise o Usuário do caminho do handout (em `wiki/handouts/` e em `output/handout
 ## Skills relacionadas
 
 - `/essay` — cria o essay que o handout resume
-- `/expand`, `/chapter`, `/proofread`, `/polish` — se o essay mudar depois, o handout existente pode precisar ser regenerado
-- `/pdf` / `/html` — para exportar o essay completo, não o handout
+- `/expand`, `/chapter`, `/proofread`, `/polish`, `/pdf`, `/html`

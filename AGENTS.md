@@ -32,7 +32,7 @@ Siga este arquivo e as skills em `.agents/skills/` à risca — nunca improvise 
 | Fonte única (edite aqui) | Espelho gerado (nunca edite) | Sincronização |
 | ------------------------- | ---------------------------- | ------------------------------------------------------------------- |
 | `AGENTS.md` | `CLAUDE.md` | `CLAUDE.md` só contém `@AGENTS.md`; resolvido automaticamente |
-| `.agents/skills/` | `.claude/skills/` | `scripts/sync_skills.py`, disparado pelo hook `SessionStart` |
+| `.agents/skills/`, `.agents/agents/` | `.claude/skills/`, `.claude/agents/` | `scripts/sync_skills.py`, disparado pelo hook `SessionStart` e pelo subagent `update` |
 
 Editar o espelho é trabalho perdido — a próxima sessão sobrescreve. Para checar divergência sem escrever nada: `python scripts/sync_skills.py --check`.
 
@@ -87,7 +87,7 @@ Tag entre colchetes indica como a skill trabalha: **[script]** roda ferramenta e
 | -------- | ------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Sweep    | `/sweep`    | ambos  | Bateria completa num essay ou no corpus:`/organize` → `/continuity` → `/proofread` → `/polish` → `/linkify`. Aceita `/sweep` ou `/sweep <slug>` |
 | Organize | `/organize` | ambos  | Saúde da base (índice, log, mapa de sources, tags, links) e formatação mecânica de essay. Aceita`/organize` ou `/organize <slug>`                        |
-| Gaps     | `/gaps`     | script | Identifica lacunas (mecânico + léxico + semântico) nos 4 tipos como peers — nunca corrige. Passo interno de`/connect`; desbalanço de tags é `/organize`  |
+| Gaps     | `/gaps`     | ambos | Identifica lacunas (mecânico + léxico + semântico) nos 4 tipos como peers — nunca corrige. Passo interno de`/connect`; desbalanço de tags é `/organize`  |
 | Connect  | `/connect`  | ambos  | Invoca`/gaps` e age sobre o resultado: expande/repara `## Conexões` entre essays, concepts, entities e insights. Aceita `/connect` ou `/connect <slug/pasta/tema>` |
 | Stats    | `/stats`    | script | Dashboard read-only: essays por tag/tipo, órfãos, sources sem manifest, plano, insights, grafo                                                                  |
 | Status   | `/status`   | script | Ver ou atualizar`wiki/status.md`                                                                                                                                |
@@ -147,7 +147,11 @@ Pendência de curto prazo (o que ficou em aberto na sessão) fica em `wiki/statu
 `wiki/status.md` liga uma sessão à próxima (skill `/status`). `wiki/log.md` é histórico, não estado atual.
 
 - **Abertura**: se o pedido envolve trabalho substancial, leia `wiki/status.md` primeiro, e sempre leia `conventions/SKILL.md`.
-- **Fechamento**: depois de trabalho substancial (`/essay`, `/import`, `/digest`, `/absorb`, `/organize`, `/sweep`, `/study`, `/plan work`), ofereça `/status update`. As skills de fechamento também acertam dois artefatos que ninguém regenera sozinho: reindexar busca semântica (`qmd update && qmd embed`, sempre oferecido, nunca automático) e sincronizar `.claude/skills/` (`python scripts/sync_skills.py --check`; sync direto se houver drift — isso é mecânico). `/stats` é exceção: read-only, só reporta o drift.
+- **Fechamento**: depois de trabalho substancial (`/essay`, `/import`, `/digest`, `/absorb`, `/organize`, `/sweep`, `/study`, `/plan work`), ofereça `/status update`.
+
+  As skills de fechamento também acertam artefatos derivados que ninguém regenera sozinho — índice, referências, grafo, stats, lint, reindexação semântica, sincronização de skills/agents — via o subagent `update` (ver `## Subagents`), chamado só depois das edições, nunca antes.
+
+  `/stats` é exceção: read-only, nunca chama o subagent, só reporta o drift.
 
 ## Regras Gerais
 
@@ -158,6 +162,14 @@ Pendência de curto prazo (o que ficou em aberto na sessão) fica em `wiki/statu
 5. **Contradição entre fontes**: nunca escolha um lado sozinho, nem tire a média. Pare, aponte a contradição citando as duas fontes com localização exata, e só edite depois da resposta do Usuário. Detalhe por skill em `conventions/SKILL.md`.
 6. Busque na wiki primeiro. Vá às fontes brutas em `wiki/sources/` só se a wiki não tiver a resposta.
 7. A wiki inteira é escrita em Português do Brasil.
+
+## Subagents
+
+`.agents/agents/` guarda subagents: sessão própria, mais barata, pra trabalho mecânico. Espelhado em `.claude/agents/` via `scripts/sync_skills.py`.
+
+- **`update`** — roda a bateria de fechamento (`build_index.py`, `build_references.py`, `build_graph.py`, `stats.py --save`, `fix_lint.py`, `qmd update && qmd embed`, `sync_skills.py`) e commita/dá push da camada versionada (`git add -A`; sem mudança, commit não faz nada).
+
+  Nunca decide conteúdo — nunca funde página, nunca resolve contradição, nunca escreve prosa. Chame só ao fechar `/organize`, `/sweep`, `/status update`, ou sob pedido direto ("atualiza tudo", "sincroniza") — nunca antes das edições. Nunca versiona `wiki/`, `plan/`, `raw/`, `output/` (ver `## Notas` no README.md).
 
 ## Ferramentas
 

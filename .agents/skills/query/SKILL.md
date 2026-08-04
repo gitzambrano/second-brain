@@ -54,7 +54,7 @@ Combine com o tipo de pergunta:
 
 ### Citações
 
-Cite sempre o essay de origem via wikilink. Todo wikilink usa `[[slug-do-arquivo|Título Visível]]`, e link de seção usa `[[#Texto Do Heading]]` — as únicas formas que o Obsidian resolve (ver `## Regra de links` em `conventions/SKILL.md`).
+Cite sempre o essay de origem via wikilink, no formato de `## Regra de links` em `conventions/SKILL.md`.
 
 
 > Segundo [[mente-aumentada|Mente Aumentada]], o padrão LLM Wiki resolve o problema clássico do second brain fazendo a manutenção da malha de conexões automática. Isso se conecta ao que [[Autopoiese, Consciência e os Limites do Vivo]] discute sobre sistemas que se auto-mantêm.
@@ -81,7 +81,5 @@ Antes de criar a página nova (essay ou insight), rode `python scripts/check_tit
 
 ## Skills relacionadas
 
-- `/import`, `/digest`, ou `/absorb` — processar novas fontes em essays
-- `/essay` — criar um essay novo do zero
-- `/insight` — quando a resposta revela uma síntese ou ideia nova que vale a pena guardar, curta demais para virar essay
-- `/organize` — auditar e organizar a wiki
+- `/insight` — quando a resposta revela uma síntese curta demais para virar essay
+- `/import`, `/digest`, `/absorb`, `/essay`, `/organize`

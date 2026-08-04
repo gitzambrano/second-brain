@@ -47,6 +47,4 @@ Prosa segue `## Estilo de prosa` em `conventions/SKILL.md`.
 ## Skills relacionadas
 
 - `/import` — quando a fonte é um essay completo do próprio autor
-- `/absorb` — para de fato incorporar o conteúdo da fonte a páginas existentes
-- `/essay` — se o Usuário decidir que o tema merece um essay novo, depois de ver o resumo
-- `/insight` — se o resumo provocar uma ideia nova, solta, que não é sobre a fonte em si
+- `/absorb`, `/essay`, `/insight`

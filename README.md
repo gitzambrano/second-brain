@@ -64,7 +64,7 @@ scripts/                     lint, stats, grafo de conexões, export (PDF/HTML),
   export_essay_pdf.py        export para PDF via Pandoc + LuaLaTeX (usado por /pdf)
   export_essay_html.py       export para HTML standalone via Pandoc (usado por /html)
   essay_template.html        template do HTML exportado
-  sync_skills.py             espelha .agents/skills/ em .claude/skills/ (hook SessionStart)
+  sync_skills.py             espelha .agents/skills/ e .agents/agents/ em .claude/ (hook SessionStart)
   console_encoding.py        força UTF-8 na saída dos scripts (console Windows é cp1252)
 
 output/                      tudo que sai da wiki para compartilhamento externo
@@ -75,7 +75,9 @@ output/                      tudo que sai da wiki para compartilhamento externo
   graph/                     gerado sob demanda por /organize ou /stats — graph.html, graph.md
 
 .agents/skills/               skills (slash commands) que operam sobre a wiki — ver seção abaixo
+.agents/agents/               subagents (trabalho mecânico, sessão própria mais barata) — ver seção abaixo
 .claude/skills/               espelho gerado do anterior, para o Claude Code — nunca editar
+.claude/agents/               espelho gerado de .agents/agents/, para o Claude Code — nunca editar
 .claude/settings.json         hook SessionStart que mantém o espelho sincronizado
 AGENTS.md                     regras operacionais — fonte única para todos os agentes
 CLAUDE.md                     só um `@AGENTS.md`; existe porque o Claude Code procura por ele
@@ -86,9 +88,9 @@ CLAUDE.md                     só um `@AGENTS.md`; existe porque o Claude Code p
 Cada agente procura a configuração num lugar diferente, então há dois pares de caminhos — e, em cada par, só um lado se edita:
 
 | Fonte única (edite aqui) | Espelho gerado (nunca edite) | Mecanismo |
-| ------------------------- | ---------------------------- | ------------------------------------------------------------------ |
+| ---------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------ |
 | `AGENTS.md` | `CLAUDE.md` | `CLAUDE.md` contém só `@AGENTS.md`; o import resolve sozinho |
-| `.agents/skills/` | `.claude/skills/` | `scripts/sync_skills.py`, via hook `SessionStart` |
+| `.agents/skills/`, `.agents/agents/` | `.claude/skills/`, `.claude/agents/` | `scripts/sync_skills.py`, via hook `SessionStart` |
 
 O espelho de skills é regenerado no início de cada sessão do Claude Code, então qualquer edição feita direto em `.claude/skills/` é perdida. Para ver se os dois lados divergiram, sem escrever nada:
 
@@ -98,14 +100,13 @@ python scripts/sync_skills.py --check
 
 ### Ritual de fechamento
 
-Dois artefatos da wiki são derivados e não se regeneram sozinhos: o índice do `qmd` (busca semântica) e o espelho `.claude/skills/`. As skills de fechamento — `/organize`, `/sweep`, `/stats` e `/status update` — cuidam dos dois no fim do trabalho:
+Artefatos derivados que não se regeneram sozinhos — índice, bibliografia, grafo, stats, lint, índice do `qmd`, e o espelho `.claude/skills/`/`.claude/agents/` — são de responsabilidade do subagent **`update`** (`.agents/agents/update.md`).
 
-| Artefato            | Comando                           | Comportamento                                                       |
-| ------------------- | --------------------------------- | ------------------------------------------------------------------- |
-| Índice do qmd      | `qmd update && qmd embed`       | Sempre**oferecido**, nunca rodado sozinho (pode ser demorado) |
-| `.claude/skills/` | `python scripts/sync_skills.py` | Checado com`--check`; o sync é mecânico e aplicado direto       |
+Chamado pelas skills de fechamento (`/organize`, `/sweep`, `/status update`) só depois das edições, nunca antes:
 
-`/stats` é a exceção: sendo read-only por definição, ele só reporta o drift do espelho, sem corrigir.
+| Artefato | Responsável | Comportamento |
+| ------------------------------------------------------------------------ | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Índice, referências, grafo, stats, lint, qmd, espelho de skills/agents | Subagent`update` | Roda a bateria mecânica e commita/dá push da camada versionada (`git add -A`, respeitando `.gitignore`; sem mudança, commit não faz nada) |
 
 ## Skills
 
@@ -210,5 +211,5 @@ Toda fonte processada também gera uma entrada em `wiki/sources/manifest.md` (pr
 
 ## Notas
 
-- **Tudo o que é pessoal fica fora do controle de versão, por design.** `raw/`, `plan/` e a `wiki/` inteira (essays, concepts, entities, insights, handouts, assets, sources, `manifest.md`, `map.md`, `index.md`, `references.md`, `log.md`, `status.md`) estão no `.gitignore` — só a estrutura de pastas é versionada (via `.gitkeep`), nunca o conteúdo. `output/` também fica fora, é sempre derivado. O que de fato é versionado no Git é a camada operacional: `AGENTS.md`, `CLAUDE.md`, `README.md`, `.agents/skills/**`, `scripts/**` e `.claude/settings.json`. O espelho `.claude/skills/**` fica de fora, por ser derivado.
+- **Tudo o que é pessoal fica fora do controle de versão, por design.** `raw/`, `plan/` e a `wiki/` inteira (essays, concepts, entities, insights, handouts, assets, sources, `manifest.md`, `map.md`, `index.md`, `references.md`, `log.md`, `status.md`) estão no `.gitignore` — só a estrutura de pastas é versionada (via `.gitkeep`), nunca o conteúdo. `output/` também fica fora, é sempre derivado. O que de fato é versionado no Git é a camada operacional: `AGENTS.md`, `CLAUDE.md`, `README.md`, `.agents/skills/**`, `.agents/agents/**`, `scripts/**` e `.claude/settings.json`. Os espelhos `.claude/skills/**` e `.claude/agents/**` ficam de fora, por serem derivados. É exatamente essa fronteira que o subagent `update` (ver `## Ritual de fechamento`) respeita ao decidir o que entra num commit.
 - Todo o conteúdo é em Português do Brasil.

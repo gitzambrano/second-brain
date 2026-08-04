@@ -117,9 +117,6 @@ Não rode a identificação por conta própria — isso é sempre `/gaps` (passo
 
 ## Skills relacionadas
 
-- `/gaps` — a metade "identificação" deste par; `/connect` sempre a invoca como passo 1 e nunca reimplementa a detecção. Se o Usuário só quer saber o que falta cobrir, sem agir, a resposta é `/gaps` direto; se quer a malha de fato expandida e reparada, é `/connect`
-- `/chapter` — cria concept/entity a partir de um essay em edição, com conteúdo completo; `/connect` cria a mesma pasta mas como stub mínimo, disparado pela lacuna do grafo
-- `/organize` — dono da checagem mecânica de wikilink quebrado (`check_wiki.py`), que `/gaps` reusa e `/connect` repara; órfão reverso (passo 3 de lá) é outra face do mesmo grafo, mas `/organize` só reporta, não conecta. Ofereça `/connect` ao final de um `/organize` de corpus inteiro
-- `/expand`, `/absorb` — para aprofundar o conteúdo de uma página depois que `/connect` criou o stub ou a conexão
-- `/insight` — `/connect` pode dar a um insight `solta` sua primeira conexão, mas não muda `maturidade:` sozinho — isso continua decisão de `/insight develop`
-- `/sweep` — não inclui `/connect` na bateria automática, mas ofereça como próximo passo ao final
+- `/gaps` — identificação (sempre invocado como passo 1); `/connect` age sobre a lista
+- `/chapter` — cria concept/entity com conteúdo completo; `/connect` cria stub mínimo
+- `/organize`, `/expand`, `/absorb`, `/insight`, `/sweep`

@@ -110,13 +110,13 @@ Não crie um insight para algo que já é claramente um essay completo na cabeç
 
 Não force conversa em `/insight add` — o registro imediato vem primeiro, a oferta de desenvolver vem depois e nunca é obrigatória.
 
-Não deixe insights `solta` acumularem por muito tempo sem nunca virarem `germinando` — se `/stats`/`/organize` sinalizarem vários soltos antigos, isso é sinal de que vale uma sessão de `/insight develop` em lote, ou de que alguns devem ser arquivados por não terem vingado (pergunte ao Usuário, não decida sozinho).
+Insight `solta` sem nunca virar `germinando` não é um problema a resolver — fica na wiki como está pelo tempo que for.
 
 ## Skills relacionadas
 
 - `/query` — se a resposta revelar uma ideia nova em vez de só organizar o que já existe na wiki, `/query` pode oferecer capturá-la via `/insight add`
 - `/essay`, `/expand`, `/chapter` — para onde um insight `madura` é promovido
-- `/stats` — sinaliza insights `madura` como candidatos a promoção, e insights `solta` antigos
+- `/stats` — sinaliza insights `madura` como candidatos a promoção
 - `/organize` — audita insights órfãos (sem nenhuma `## Conexões` preenchida há muito tempo) como parte da saúde geral da base
 - `/connect` — pode dar a um insight `solta` sua primeira conexão fora de uma sessão de `/insight develop`; não muda `maturidade:` sozinho, isso continua decisão deste skill
 - `/study` — origem mais comum de insight: uma ideia que emergiu de uma sessão de estudo, sem tese completa ainda

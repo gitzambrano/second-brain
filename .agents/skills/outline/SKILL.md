@@ -120,7 +120,5 @@ Sem entrada em `wiki/log.md` — esboço não é conteúdo publicado. Se o esbo�
 
 ## Skills relacionadas
 
-- `/essay` — consome o esqueleto aprovado e escreve o texto corrido; apaga o esboço ao final
-- `/study` — sessão anterior que pode ter produzido a tese que `/outline` estrutura
-- `/plan` — guarda a pendência de "esboço pronto, falta escrever" entre sessões
-- `/chapter` — reestruturação de capítulos depois que o essay já existe em prosa; `/outline` é a mesma operação, mas antes de qualquer prosa existir
+- `/chapter` — mesma operação, mas depois que o essay já existe em prosa; `/outline` é antes
+- `/essay`, `/study`, `/plan`

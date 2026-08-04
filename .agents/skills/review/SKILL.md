@@ -161,8 +161,4 @@ Após aplicar as modificações:
 
 ## Skills relacionadas
 
-- `/continuity` — fluxo narrativo (complementar ao review)
-- `/expand` — aplicar uma adição específica decidida após o review
-- `/scout` — buscar fontes candidatas sugeridas no relatório
-- `/proofread`, `/polish` — revisão de língua e estilo após o review de conteúdo
-- `/sweep` — sequência completa de revisões (inclui `/organize`, continuity, proofread, polish, linkify)
+- `/continuity`, `/expand`, `/scout`, `/proofread`, `/polish`, `/sweep`

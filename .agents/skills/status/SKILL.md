@@ -34,7 +34,9 @@ Leia `wiki/status.md` e mostre o conteúdo ao Usuário, tal como está. Read-onl
    - **Perguntas em aberto**: dúvidas ainda não resolvidas que vão precisar de decisão futura.
    - **Decisões recentes**: qualquer decisão de conteúdo ou estilo fechada nesta sessão (se for uma decisão de estilo/formatação, ofereça também registrá-la em `## Decisões fechadas` de `conventions/SKILL.md`).
 4. Reescreva `wiki/status.md` inteiro (sobrescreva, não faça append) com `Atualizado:` na data de hoje.
-5. Se a sessão criou/editou muitas páginas (ex: uma auditoria grande, vários essays tocados), **sugira fortemente** rodar `qmd update && qmd embed` antes de encerrar (se `qmd` estiver disponível — `qmd status`) — sem isso, a busca semântica fica cega para o que acabou de mudar até a próxima reindexação. Se a sessão também editou algum `.agents/skills/*/SKILL.md`, ofereça rodar `python scripts/sync_skills.py` (ou pelo menos `--check`) — senão `.claude/skills/` fica com a versão antiga até o próximo `SessionStart`. Não rode nenhum dos dois sozinho; são sugestões, como o resto de `/status update`.
+5. Se a sessão criou/editou muitas páginas, ou editou algum `.agents/skills/*/SKILL.md` ou `.agents/agents/*.md`, **ofereça** o subagent `update` (`.agents/agents/update.md`) — ele cuida de índice, referências, grafo, stats, qmd e sync de skills/agents numa sessão própria, mais barata.
+
+   Não chame sozinho sem avisar; é sugestão, como o resto de `/status update`.
 6. Não é necessário logar a atualização em `wiki/log.md` — `/status` é meta-operação sobre o estado da wiki, não uma operação de conteúdo.
 
 ## Template

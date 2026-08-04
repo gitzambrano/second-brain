@@ -70,5 +70,5 @@ O handout não tem `## Conexões`/`## Referências`/`## Sumário`, então esses 
 
 ## Skills relacionadas
 
-- `/html` — mesma essência, saída HTML standalone
-- `/organize` e `/sweep` — o checklist de organize/sweep testa `export_essay_pdf.py --all` como parte do health-check
+- `/html` — mesma essência, saída HTML
+- `/organize`, `/sweep`

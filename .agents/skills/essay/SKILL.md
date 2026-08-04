@@ -74,7 +74,7 @@ Aplique as duas seções acima na proporção que o argumento pedir — um essay
   Três erros que o corpus antigo acumulou e que **não** devem se repetir: título fora do itálico (todo título vai em itálico, inclusive verbete de enciclopédia e norma técnica); link em qualquer lugar que não seja a palavra `Link` no fim da entrada — nem no título, nem no periódico, nem envolvendo a citação inteira; e entrada que é só um link de glossário sem obra, autor nem container — se o alvo é um verbete, escreva-o como verbete (`*Título do verbete*, Wikipedia. [Link](url)`), e se não é fonte de nada, ele pertence ao corpo do texto, não à bibliografia.
 
   Confira com `python scripts/check_references.py --file <slug>` antes de encerrar.
-- **`## Conexões`** como última seção, só `[[slug-do-arquivo|Título Visível]]` para essays/conceitos/entidades relacionados — o alvo é o nome do arquivo, única forma que o Obsidian resolve (ver `## Regra de links` em `conventions/SKILL.md`)
+- **`## Conexões`** como última seção, com wikilinks para essays/conceitos/entidades relacionados no formato de `## Regra de links` em `conventions/SKILL.md`
 
 ## 3. Criar/atualizar conceitos e entidades
 
@@ -122,9 +122,6 @@ Depois de pronto, ofereça `/pdf` ou `/html` conforme o uso (imprimir/anexar vs.
 
 ## Skills relacionadas
 
-- **`/outline` — obrigatório antes deste skill**, exceto quando a fonte é `/import`. Gera e itera o esboço; `/essay` só entra depois de aprovado.
-- **Iterar sobre este essay** com `/expand`, `/chapter`, `/proofread`, `/polish`, `/continuity`, `/linkify`
-- **Processar novas fontes** com `/import`, `/digest`, ou `/absorb`
-- **Perguntar sobre o que já existe** com `/query`
-- **Organizar ou auditar a wiki** com `/organize`, `/sweep`, `/stats`, `/gaps`
-- **Se este essay veio de um item do plano** (`plan/plano.md`, seção "Essays Futuros"), rode `/plan done` ao terminar, para tirá-lo do plano
+- `/outline` — obrigatório antes deste skill, exceto quando a fonte é `/import`
+- `/expand`, `/chapter`, `/proofread`, `/polish`, `/continuity`, `/linkify`, `/import`, `/digest`, `/absorb`, `/query`, `/organize`, `/sweep`, `/stats`, `/gaps`
+- Se este essay veio de um item do plano (seção "Essays Futuros"), rode `/plan done` ao terminar

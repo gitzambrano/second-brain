@@ -20,7 +20,7 @@ Incorpora o conteúdo de uma fonte já processada às páginas existentes da wik
 1. Confirme com o Usuário quais essays/conceitos/entidades a fonte deve enriquecer. Se ele não especificar, releia o resumo (`wiki/sources/resumos/<slug>.md`, se houver) ou a fonte original e proponha candidatos antes de editar — `qmd query` com os termos centrais da fonte acha candidatos mais rápido do que reler a wiki inteira (ver `## Ferramentas` no AGENTS.md).
 2. Leia a fonte: o original em `wiki/sources/<subpasta>/` se precisar do texto completo, ou o resumo em `wiki/sources/resumos/` se já for suficiente.
 3. Atualize as páginas relevantes com o conteúdo novo — seja profundo, não superficial. Uma frase genérica não cumpre o propósito de absorver a fonte. Se isso acrescentar uma entrada em `## Referências` de algum essay, confira `wiki/references.md` primeiro: se a fonte já está catalogada, reuse a citação exata em vez de redigir uma nova.
-4. Ajuste os wikilinks em `## Conexões` das páginas tocadas, nos dois sentidos quando fizer sentido. Todo wikilink usa `[[slug-do-arquivo|Título Visível]]`, e link de seção usa `[[#Texto Do Heading]]` — as únicas formas que o Obsidian resolve (ver `## Regra de links` em `conventions/SKILL.md`).
+4. Ajuste os wikilinks em `## Conexões` das páginas tocadas, nos dois sentidos quando fizer sentido, no formato de `## Regra de links` em `conventions/SKILL.md`.
 5. Se a fonte revelar um conceito/entidade sem página própria e central o bastante, crie a página (mesma lógica de `/chapter`) — `tags:` reusa o vocabulário controlado, checando `tags_in_use` em `wiki/index.json` antes de criar tag nova (ver passo 6).
 6. Atualize `wiki/sources/map.md` (status: "Absorvido em [[slug-pagina-a|Página A]], [[slug-pagina-b|Página B]]") e `manifest.md` se a fonte ainda não tiver entrada — raro, mas possível se foi arquivada manualmente. Se `manifest.md` já tiver a entrada mas faltar `Tags:` (fonte antiga, de antes desse campo existir), aproveite e preencha — vocabulário controlado, cheque `tags_in_use` em `wiki/index.json` (gerado por `python scripts/build_index.py`; rode-o primeiro se estiver desatualizado) e só use tag nova se nenhuma existente cobrir o tema.
 7. Se o passo 3 acrescentou entrada em `## Referências` de algum essay, rode `python scripts/build_references.py` para regenerar `wiki/references.json`/`.md`.
@@ -47,6 +47,5 @@ Prosa segue `## Estilo de prosa` em `conventions/SKILL.md`.
 ## Skills relacionadas
 
 - `/digest` — passo anterior, quando a fonte ainda não foi lida/resumida
-- `/chapter` — para criar página de conceito/entidade nova revelada pela fonte
-- `/expand` — mesma lógica de adição de conteúdo, mas disparada por pedido direto do Usuário em vez de por uma fonte
-- `/insight` — se a fonte revelar uma ideia tangencial que não cabe no essay em edição, capture como nota atômica em vez de forçar ou descartar
+- `/expand` — mesma lógica de conteúdo, mas por pedido direto, não por fonte
+- `/chapter`, `/insight`

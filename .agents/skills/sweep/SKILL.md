@@ -70,9 +70,7 @@ Execute na ordem para cada essay do escopo, um por vez (não paralelize).
 
    Não exponha cada correção individual durante a execução — acumule e apresente só ao final.
 8. **Fechamento**: sweep mexe em muita prosa de uma vez, então feche a sessão com os artefatos derivados em dia.
-   - **[script]** Essay tocado → `python scripts/build_index.py`; `## Referências` mudou (passo 6 quase sempre muda) → `python scripts/build_references.py` também.
-   - **[script]** qmd disponível (`qmd status`) → **ofereça** `qmd update && qmd embed` (não rode sozinho); sem qmd, pule sem avisar.
-   - **[script]** `python scripts/sync_skills.py --check`; drift → `python scripts/sync_skills.py` direto.
+   - **[script]** Ofereça o subagent `update` (`.agents/agents/update.md`) — cuida de índice, referências, grafo, stats, qmd e sync de skills/agents numa sessão à parte, sem custo do agente principal.
    - Ofereça `/status update`, depois `/review`, `/expand`, `/chapter` ou `/connect` como próximos passos.
 
 ## Log
@@ -103,8 +101,7 @@ Prosa segue `## Estilo de prosa` em `conventions/SKILL.md`.
 
 ## Skills relacionadas
 
-- `/organize` — passada mecânica (chamada no Passo 2, escopo essay único); em modo corpus inteiro decide se vale um sweep
-- `/continuity`, `/proofread`, `/polish`, `/linkify` — chamados nos Passos 3–6
-- `/review` — validade argumentativa e profundidade; complementar, não substituto
-- `/stats` — dashboard de saúde; rode antes para visão geral
-- `/connect` — fora da bateria automática; ofereça como próximo passo no fechamento
+- `/organize` — passada mecânica, chamada no Passo 2
+- `/continuity`, `/proofread`, `/polish`, `/linkify` — Passos 3–6
+- `/review` — validade argumentativa; complementar, não substituto
+- `/stats`, `/connect`

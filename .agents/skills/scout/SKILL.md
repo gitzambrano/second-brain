@@ -28,14 +28,15 @@ Use `/scout` para triagem ampla ("quais dessas 8 fontes valem meu tempo"); use `
 
 1. Identifique o ponto de partida e extraia 2 a 4 ângulos de busca distintos (não uma única query genérica — ver disciplina de busca: termos específicos, buscas separadas por sub-tema).
 2. Pesquise (`WebSearch`/`WebFetch`). Priorize fontes primárias: papers com peer review, documentação oficial, livros, sites de instituições — evite agregadores rasos e conteúdo SEO.
-3. Para cada candidato, produza:
+3. Antes de listar um candidato, confira `wiki/references.md` (por título ou URL) — se a obra já está catalogada (outro essay já cita), sinalize isso na justificativa em vez de sugerir como se fosse fonte nova.
+4. Para cada candidato, produza:
    - Título e autor/fonte.
    - Link.
    - Uma frase sobre por que essa fonte é relevante para o tema/item específico (não uma descrição genérica do assunto).
    - Tipo provável no vocabulário de `AGENTS.md` (Artigo Acadêmico, Livro, Documentação Técnica, Web Clipping, etc.), para já indicar a subpasta de destino se for ingerida depois.
-4. Apresente de 3 a 8 candidatos (não despeje dezenas) — curadoria, não uma lista bruta de resultados de busca.
-5. Se o ponto de partida foi um item de `plan/plano.md`, ofereça anexar a lista a esse item, como uma linha `- Fontes candidatas:` sob o item, para não se perder entre sessões.
-6. **Nunca baixe nem copie o conteúdo da fonte para `raw/` automaticamente.** Se o Usuário escolher uma, oriente-o a colocar o arquivo/link em `raw/` e rodar `/import` ou `/digest` normalmente — `/scout` termina na sugestão.
+5. Apresente de 3 a 8 candidatos (não despeje dezenas) — curadoria, não uma lista bruta de resultados de busca.
+6. Se o ponto de partida foi um item de `plan/plano.md`, ofereça anexar a lista a esse item, como uma linha `- Fontes candidatas:` sob o item, para não se perder entre sessões.
+7. **Nunca baixe nem copie o conteúdo da fonte para `raw/` automaticamente.** Se o Usuário escolher uma, oriente-o a colocar o arquivo/link em `raw/` e rodar `/import` ou `/digest` normalmente — `/scout` termina na sugestão.
 
 ## Regras
 
@@ -45,6 +46,4 @@ Use `/scout` para triagem ampla ("quais dessas 8 fontes valem meu tempo"); use `
 
 ## Skills relacionadas
 
-- `/plan` — origem dos itens do plano que `/scout` pode usar como ponto de partida.
-- `/study` — sessão de estudo que pode chamar `/scout` no meio, quando uma busca rápida não basta.
-- `/import` / `/digest` — o que processa de fato a fonte escolhida, depois que ela chega em `raw/`.
+- `/plan`, `/study`, `/import`, `/digest`

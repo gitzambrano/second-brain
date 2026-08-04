@@ -111,7 +111,7 @@ O comando que de fato conduz o trabalho, chamando a skill certa:
 3. Dependendo da seção do item, siga o fluxo da skill correspondente **dentro da mesma conversa** (leia o `SKILL.md` dela e execute, não peça pro Usuário digitar outro comando):
    - **Tarefas** → normalmente não envolve a wiki. Pergunte o que o Usuário precisa (pode ser fora do escopo deste sistema — tudo bem, ajude do jeito que der).
    - **Fontes para Ingerir** → siga `/import`, `/digest` ou `/absorb` (o que estiver em `Skill sugerida:`, ou pergunte se estiver vazio).
-   - **Revisões** → abra o `Alvo:`, leia por inteiro, e siga `/continuity` (reler e avaliar sem editar) ou `/expand` (se a revisão já revelar que precisa de conteúdo novo) — decida com base no que a `Nota:` do item pede.
+   - **Revisões** → abra o `Alvo:`, leia por inteiro, e siga `/continuity` (reler e avaliar sem editar), `/expand` (se precisa de conteúdo novo) ou `/chapter` (se precisa de reestruturação) — decida com base no que a `Nota:` do item pede.
    - **Estudos** → siga `/study`.
    - **Essays Futuros** → se já existe `plan/drafts/<slug>.md` referenciado na `Nota:`, siga direto `/essay` (ele lê o esboço). Se ainda não existe esqueleto, rode `/outline` primeiro — `/essay` não escreve prosa sem esboço aprovado, exceto quando a fonte é `/import`.
 4. Ao final do trabalho, se o item foi de fato concluído, rode `/plan done` nele. Se só avançou parcialmente, deixe `Status: Em Andamento` e registre o progresso na `Nota:`.
@@ -140,10 +140,4 @@ Leia `plan/plano.md` e mostre um resumo por seção, na ordem canônica (Tarefas
 
 ## Skills relacionadas
 
-- `/study` — o trabalho de fato por trás de um item `Estudo`
-- `/essay` — o trabalho de fato por trás de um item `Essay Futuro`
-- `/import`, `/digest`, `/absorb` — o trabalho de fato por trás de um item `Fontes para Ingerir`
-- `/continuity`, `/expand` — o trabalho de fato por trás de um item `Revisão`
-- `/scout` — pesquisa fontes candidatas para qualquer item que precise
-- `/status` — pendências agregadas do plano (contagem por seção) aparecem no snapshot de sessão
-- `/organize` — audita a estrutura do plano (as 5 seções existem, `Status:` usa o vocabulário certo, tópicos não fragmentaram)
+- `/study`, `/essay`, `/import`, `/digest`, `/absorb`, `/continuity`, `/expand`, `/chapter`, `/scout`, `/status`, `/organize`

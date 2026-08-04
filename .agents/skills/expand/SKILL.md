@@ -76,6 +76,5 @@ Essays originais preservados de `raw/` também podem receber expansão — a reg
 
 ## Skills relacionadas
 
-- `/chapter` — quando a adição é estrutural (capítulo/seção nova, reorganização)
-- `/continuity` — se a adição for grande, vale rodar depois para checar que a nova peça se encaixa
-- `/linkify` — garantir que todo conceito novo tem link externo
+- `/chapter` — quando a adição é estrutural, não conteúdo dentro de seção existente
+- `/continuity`, `/linkify`

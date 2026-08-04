@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Espelha .agents/skills/ para .claude/skills/.
+"""Espelha .agents/skills/ e .agents/agents/ para .claude/skills/ e .claude/agents/.
 
-A wiki mantém as skills em dois lugares porque cada agente procura num lugar
-diferente: Claude Code lê `.claude/skills/`, os demais agentes leem
-`.agents/skills/`. A fonte única é `.agents/skills/` — `.claude/skills/` é
-artefato gerado, nunca editado à mão.
+A wiki mantém skills e subagents em dois lugares porque cada agente procura num
+lugar diferente: Claude Code lê `.claude/skills/` e `.claude/agents/`, os demais
+agentes leem `.agents/skills/` e `.agents/agents/`. A fonte única é sempre
+`.agents/` — o par em `.claude/` é artefato gerado, nunca editado à mão.
 
 O mesmo vale para a documentação de topo, mas ali não é preciso script:
 `CLAUDE.md` contém apenas `@AGENTS.md`, e o import é resolvido pelo Claude Code.
@@ -24,8 +24,11 @@ from pathlib import Path
 import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-SOURCE = REPO_ROOT / ".agents" / "skills"
-DEST = REPO_ROOT / ".claude" / "skills"
+
+PAIRS = [
+    (REPO_ROOT / ".agents" / "skills", REPO_ROOT / ".claude" / "skills"),
+    (REPO_ROOT / ".agents" / "agents", REPO_ROOT / ".claude" / "agents"),
+]
 
 
 def relative_files(root: Path) -> set:
@@ -35,20 +38,20 @@ def relative_files(root: Path) -> set:
     return {p.relative_to(root) for p in root.rglob("*") if p.is_file()}
 
 
-def sync(check_only: bool = False):
-    """Retorna (copiados, removidos) como listas de caminhos relativos."""
-    if not SOURCE.is_dir():
-        print(f"ERRO: fonte não encontrada: {SOURCE}", file=sys.stderr)
-        sys.exit(2)
+def sync_pair(source: Path, dest: Path, check_only: bool = False):
+    """Retorna (copiados, removidos) como listas de caminhos relativos a `dest`."""
+    if not source.is_dir():
+        # Par opcional (ex: .agents/agents/ ainda não existe) — sem erro.
+        return [], []
 
-    src_files = relative_files(SOURCE)
-    dest_files = relative_files(DEST)
+    src_files = relative_files(source)
+    dest_files = relative_files(dest)
 
     to_copy = sorted(
         rel
         for rel in src_files
         if rel not in dest_files
-        or not filecmp.cmp(SOURCE / rel, DEST / rel, shallow=False)
+        or not filecmp.cmp(source / rel, dest / rel, shallow=False)
     )
     to_remove = sorted(dest_files - src_files)
 
@@ -56,20 +59,28 @@ def sync(check_only: bool = False):
         return to_copy, to_remove
 
     for rel in to_copy:
-        target = DEST / rel
+        target = dest / rel
         target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(SOURCE / rel, target)
+        shutil.copy2(source / rel, target)
 
     for rel in to_remove:
-        (DEST / rel).unlink()
+        (dest / rel).unlink()
 
-    # Diretórios que ficaram vazios depois da remoção.
-    if DEST.is_dir():
-        for path in sorted(DEST.rglob("*"), key=lambda p: len(p.parts), reverse=True):
+    if dest.is_dir():
+        for path in sorted(dest.rglob("*"), key=lambda p: len(p.parts), reverse=True):
             if path.is_dir() and not any(path.iterdir()):
                 path.rmdir()
 
     return to_copy, to_remove
+
+
+def sync(check_only: bool = False):
+    """Roda todos os pares fonte/espelho. Retorna lista de (source, dest, copiados, removidos)."""
+    results = []
+    for source, dest in PAIRS:
+        copied, removed = sync_pair(source, dest, check_only=check_only)
+        results.append((source, dest, copied, removed))
+    return results
 
 
 def main():
@@ -86,35 +97,45 @@ def main():
     )
     args = parser.parse_args()
 
-    copied, removed = sync(check_only=args.check)
+    results = sync(check_only=args.check)
+    any_drift = any(copied or removed for _, _, copied, removed in results)
+
+    def label(source, dest):
+        return f"{source.relative_to(REPO_ROOT)} -> {dest.relative_to(REPO_ROOT)}"
 
     if args.check:
-        if copied or removed:
-            print(
-                f"DRIFT: {len(copied)} arquivo(s) desatualizado(s), "
-                f"{len(removed)} sobrando em .claude/skills/"
-            )
-            for rel in copied:
-                print(f"  desatualizado: {rel.as_posix()}")
-            for rel in removed:
-                print(f"  sobrando:      {rel.as_posix()}")
+        if any_drift:
+            for source, dest, copied, removed in results:
+                if not (copied or removed):
+                    continue
+                print(
+                    f"DRIFT ({label(source, dest)}): {len(copied)} arquivo(s) "
+                    f"desatualizado(s), {len(removed)} sobrando"
+                )
+                for rel in copied:
+                    print(f"  desatualizado: {rel.as_posix()}")
+                for rel in removed:
+                    print(f"  sobrando:      {rel.as_posix()}")
             print("Rode: python scripts/sync_skills.py")
             sys.exit(1)
         if not args.quiet:
-            print("skills sincronizadas (.agents/skills -> .claude/skills)")
+            print("skills e agents sincronizados")
         return
 
-    if copied or removed:
-        print(
-            f"skills sincronizadas: {len(copied)} copiada(s), "
-            f"{len(removed)} removida(s) (.agents/skills -> .claude/skills)"
-        )
-        for rel in copied:
-            print(f"  copiada:  {rel.as_posix()}")
-        for rel in removed:
-            print(f"  removida: {rel.as_posix()}")
+    if any_drift:
+        for source, dest, copied, removed in results:
+            if not (copied or removed):
+                continue
+            print(
+                f"sincronizado ({label(source, dest)}): {len(copied)} copiado(s), "
+                f"{len(removed)} removido(s)"
+            )
+            for rel in copied:
+                print(f"  copiado:  {rel.as_posix()}")
+            for rel in removed:
+                print(f"  removido: {rel.as_posix()}")
     elif not args.quiet:
-        print("skills já sincronizadas (.agents/skills -> .claude/skills)")
+        print("skills e agents já sincronizados")
 
 
 if __name__ == "__main__":
