@@ -43,15 +43,10 @@ plan/                        plano de longo prazo do Usuário (não confundir co
   drafts/                    esqueletos de essay 
 
 scripts/                     lint, stats, grafo de conexões, export (PDF/HTML), busca e índice
-  check_wiki.py              lint unificado: formatação de essay (byline, Sumário/Referências/
-                              Conexões, LaTeX, aspas, símbolos residuais...) + estrutura de corpus
-                              (wikilinks mortos, órfãos, índice, manifesto, plano, insights).
-                              Usado por /organize. Escopo: --all (padrão) ou <slug>/--file <slug>
-  fix_lint.py                único fixer mecânico: aplica tudo que for inequívoco sem perguntar,
-                              inclusive a migração de ## Referências para o padrão AIAA. Mesma
-                              CLI de check_wiki.py (--all / <slug> / --file <slug>)
+  check_wiki.py              verifica e reporta formatação de essay e corpus da wiki
+  fix_lint.py                único fixer mecânico: aplica tudo que for inequívoco sem perguntar
   stats.py                   dashboard read-only (usado por /stats)
-  check_gaps.py              heurística léxica de cobertura, 4 tipos como peers (usado por /gaps; --tags-only usado por /organize)
+  check_gaps.py              heurística léxica e semântica de cobertura da wiki
   build_graph.py             gera output/graph/graph.html (interativo) e graph.md (Mermaid)
   find_text.py               busca com trecho (grep -n com contexto) escopada à wiki
   build_index.py             gera wiki/index.md e wiki/index.json a partir do frontmatter
