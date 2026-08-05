@@ -35,7 +35,8 @@ dois módulos é a permissão de escrever, não o assunto.
 
 Uso:
     python check_references.py                    # todos os essays
-    python check_references.py --file meu-essay   # essay único (slug ou .md)
+    python check_references.py meu-essay           # essay único (slug ou .md)
+    python check_references.py --file meu-essay   # mesma coisa, forma explícita
     python check_references.py --json             # saída JSON para a skill parsear
 """
 
@@ -420,17 +421,25 @@ def resolve_essay(slug):
 
 def build_parser():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--file", help="essay único (slug ou nome .md)")
+    p.add_argument(
+        "slug", nargs="?", default=None,
+        help="Checa apenas este essay (slug, nome do arquivo, ou caminho completo).",
+    )
+    p.add_argument(
+        "--file", "-f", dest="file_slug", metavar="SLUG", default=None,
+        help="Alias de compatibilidade para o slug posicional.",
+    )
     p.add_argument("--json", action="store_true", help="saída JSON para a skill parsear")
     return p
 
 
 def main():
     args = build_parser().parse_args()
+    target = args.slug or args.file_slug
 
-    if args.file:
+    if target:
         try:
-            essay_paths = [resolve_essay(args.file)]
+            essay_paths = [resolve_essay(target)]
         except FileNotFoundError as e:
             print(f"ERRO: {e}", file=sys.stderr)
             sys.exit(1)

@@ -49,7 +49,7 @@ Se `wiki/index.json` estiver desatualizado, rode `python scripts/build_index.py`
 
 Age sobre o achado mecânico de `/gaps`:
 
-1. **Typo óbvio de página existente** (ex: `[[entropi-termodinamica]]` quando a página é `entropia-termodinamica`) — mesmo candidato que `/gaps` já sinalizou como alta confiança: corrija direto, mecânico.
+1. **Typo óbvio de página existente** (ex: `[[entropi-termodinamica]]` quando a página é `entropia-termodinamica`) — mesmo candidato que `/gaps` já sinalizou como alta confiança: corrija direto, mecânico. (`/organize` passo 15 cobre o mesmo caso; rodar os dois em sequência é redundante, não incorreto.)
 2. **Alvo que não corresponde a nada nem a typo óbvio**: não invente nem apague — liste e pergunte o que fazer.
 3. **Mal formatado mas não morto** (`WIKILINK_DISPLAY_COLON`, ou sintaxe fora de `[[slug|Título]]`): corrija a forma, mantendo o mesmo alvo e texto visível.
 4. **Errado no sentido semântico** (o link existe, aponta para uma página real, mas é a errada): isso `/gaps` não cobre — exige ler o contexto ao redor de cada wikilink válido durante esta passada, não uma auditoria em lote separada. Se a frase descreve algo que não bate com o título/resumo da página alvo, sinalize como candidato a link errado e pergunte, nunca troque sozinho.

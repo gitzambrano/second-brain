@@ -53,6 +53,7 @@ scripts/                     lint, stats, grafo de conexões, export (PDF/HTML),
   build_references.py        gera wiki/references.md e .json das ## Referências dos essays
   check_references.py        valida ## Referências no padrão AIAA, somente-leitura (usado por /linkify e /organize)
   check_dedupe.py            candidatos a quase-duplicata: títulos, tags, referências
+  retag.py                   renomeia/consolida uma tag em toda a wiki (frontmatter + manifest.md)
   check_title.py             checagem exata/fuzzy de títulos
   sync_qmd.bat               reindexa a wiki no qmd (collection "secondbrain") — dois cliques, ou rode no terminal
   find_backlinks.py          lookup reverso de [[wikilinks]] e detecção de órfãos 
@@ -103,6 +104,8 @@ Chamado pelas skills de fechamento (`/organize`, `/sweep`, `/status update`) só
 | ------------------------------------------------------------------------ | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Índice, referências, grafo, stats, lint, qmd, espelho de skills/agents | Subagent`update` | Roda a bateria mecânica e commita/dá push da camada versionada (`git add -A`, respeitando `.gitignore`; sem mudança, commit não faz nada) |
 
+Diagnóstico de lint (check_wiki/references/dedupe/gaps agregados em `--json`) é o subagent **`lint-report`** (`.agents/agents/lint-report.md`) — sob pedido direto do Usuário, não parte automática de nenhuma skill.
+
 ## Skills
 
 As skills estão agrupadas pela mesma lógica de `AGENTS.md`: da ideação de uma ideia solta até a exportação de um essay pronto. Cada uma é um arquivo `.agents/skills/<nome>/SKILL.md` — a fonte de verdade é sempre o arquivo, isto aqui é um resumo para orientação humana.
@@ -124,7 +127,7 @@ As skills estão agrupadas pela mesma lógica de `AGENTS.md`: da ideação de um
 - **Polish** · `/polish` — revisão de estilo de prosa: ritmo, elegância, remoção de bullets do corpo argumentativo, contagem de travessões (máximo 2 por essay). Não altera o que é dito, só como é dito.
 - **Continuity** · `/continuity` — auditoria de continuidade lógica e narrativa do início ao fim: conceitos usados antes de definidos, saltos abruptos entre seções, tese sustentada, conclusão que fecha o argumento. Só diagnostica e reporta — nunca corrige silenciosamente.
 - **Linkify** · `/linkify` — garante que todo conceito/termo técnico/pensador citado no corpo tem link externo na primeira ocorrência (mínimo 10 por essay), e audita se os links já existentes ainda apontam para algo válido.
-- **Review** · `/review` — peer review no estilo acadêmico: validade argumentativa e lógica, rigor físico/matemático quando aplicável, profundidade, ausência de citações, gaps conceituais, e sugestões ativas de enriquecimento (experimentos mentais, exemplos, fontes candidatas, conexões internas). Gera um plano de modificação e só edita após aprovação explícita.
+- **Review** · `/review` — peer review no estilo acadêmico: validade argumentativa e lógica, rigor físico/matemático quando aplicável (em essay técnico, exige sempre insight físico a partir de first principles **e** o desenvolvimento matemático com equações, nunca só um dos dois), profundidade, ausência de citações, gaps conceituais, e sugestões ativas de enriquecimento (experimentos mentais, exemplos, fontes candidatas, conexões internas). Gera um plano de modificação e só edita após aprovação explícita.
 
 ### Fontes (três formas de processar algo em `raw/`)
 
@@ -146,6 +149,8 @@ As skills estão agrupadas pela mesma lógica de `AGENTS.md`: da ideação de um
 - **Connect** · `/connect` — invoca `/gaps` e age sobre a lista: corrige link quebrado/mal formatado, aplica direto conexão de alta confiança, e propõe (com aprovação) conexão de média confiança e página nova. Aceita `/connect` (corpus) ou `/connect <slug/pasta/tema>`. Não roda automaticamente dentro de `/organize`/`/sweep`, mas é o próximo passo natural depois deles.
 - **Stats** · `/stats` — dashboard read-only de saúde da wiki: essays por tag/tipo, órfãos, sources sem manifesto, itens do plano, notas atômicas por maturidade. Não corrige nada, só relata; rápido o bastante para rodar com frequência.
 - **Status** · `/status` — mantém `wiki/status.md`, o snapshot que liga uma sessão à próxima: foco atual, perguntas em aberto, decisões recentes, pendências (raw/, plano, sources não verificados). `/status` mostra; `/status update` recalcula e reescreve.
+- **Merge** · `/merge` — funde duas páginas do mesmo tipo (dois essays, dois concepts, duas entities, ou dois insights) numa só: junta conteúdo e metadados, reaponta todo wikilink que apontava para a absorvida, e apaga a absorvida. Não funde tipos diferentes.
+- **Delete** · `/delete` — apaga um essay, concept, entity ou insight. Confirma com o Usuário, mostra o que referencia a página antes de apagar, loga a remoção, e chama `/organize` ao final para consertar os links que ficaram órfãos.
 
 ### Saída
 

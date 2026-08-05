@@ -21,9 +21,9 @@ Parceiro de escrita e pesquisa para criar um essay novo, original, do zero. Dife
 
 O essay resultante deve ser **extenso, profundo e criativo**, não um resumo nem um esboço: o oposto de um artigo curto de blog, com desenvolvimento real de cada ideia.
 
-## 0. Exija um esboço aprovado — sem exceção
+## 0. Exija um esboço aprovado
 
-`/essay` nunca escreve prosa sem um esboço aprovado em `plan/drafts/<slug>.md`. Isso é regra, não sugestão:
+`/essay` nunca escreve prosa sem um esboço aprovado em `plan/drafts/<slug>.md`, exceto na única situação abaixo. Isso é regra, não sugestão:
 
 - **Já existe o draft** (Usuário veio de `/outline`, ou citou um esboço já pronto): leia `plan/drafts/<slug>.md`. Tese (`tese:`), tipo e domínio já estão no frontmatter; a estrutura de capítulos e bullets é o brief de escrita — não proponha esboço novo, desenvolva o que já foi aprovado. Só apague `plan/drafts/<slug>.md` quando **todos** os capítulos do esboço estiverem escritos no essay. Se a sessão terminar com o essay parcialmente escrito, mantenha o draft e marque nele quais capítulos já foram escritos (`escritos: [Capítulo 1, Capítulo 2]` no frontmatter) — isso permite retomar depois, inclusive reestruturando só a parte pendente via `/outline` (ver `## Retomar um esboço em andamento` em `outline/SKILL.md`).
 - **Não existe draft ainda**: não pergunte tese nem proponha esboço aqui dentro. Rode `/outline` primeiro (mesma conversa, sem exigir que o Usuário digite o comando à parte) e só volte a este skill depois que o esboço estiver aprovado. Se o próprio pedido do Usuário já trouxer tese e capítulos detalhados o bastante, `/outline` pode tratar o esboço como implicitamente aprovado e seguir direto para escrita (ver `## Esboço implicitamente aprovado` em `outline/SKILL.md`).
@@ -59,7 +59,7 @@ Aplique as duas seções acima na proporção que o argumento pedir — um essay
 
 ### Checklist obrigatório (todo domínio)
 
-- **Frontmatter YAML**: `tags` (reuse do vocabulário controlado — cheque `tags_in_use` em `wiki/index.json`, rode `python scripts/build_index.py` primeiro se estiver desatualizado; só crie tag nova se nenhuma existente cobrir o tema), `summary` (resumo de uma linha, até 120 caracteres — usado por `build_index.py` para montar a entrada em `wiki/index.md`), `sources`, `created`, `updated`, `status: draft` (ver `## Status de essay` em `conventions/SKILL.md`)
+- **Frontmatter YAML**: `tags` (vocabulário controlado — `## Reuso de vocabulário controlado` em `conventions/SKILL.md`), `summary` (resumo de uma linha, até 120 caracteres — usado por `build_index.py` para montar a entrada em `wiki/index.md`), `sources`, `created`, `updated`, `status: draft` (ver `## Status de essay` em `conventions/SKILL.md`)
 - **Título** `# Título do Essay`, linha em branco, byline (`> Tipo`, `> Gustavo Zambrano · Mês de Ano`, sem `:`, sem `[[wikilinks]]`)
 - **Sem resumo condensado dentro do essay** — vai direto da byline pro `## Sumário`; a introdução (primeira seção `##`) cumpre esse papel. Resumo de uma página é handout (`/handout`), nunca seção do essay.
 - **`## Sumário`** logo após a byline, com links para cada seção `##` (exceto Referências e Conexões)
@@ -82,14 +82,7 @@ Todo conceito, pensador, ou entidade central ao argumento que ainda não tem pá
 
 ## 4. Indexar e logar
 
-- Feche com uma checagem de formato do essay recém-criado, sem acionar `/organize` inteiro (caro e desproporcional para um único arquivo):
-
-  ```bash
-  python scripts/check_wiki.py <slug>
-  python scripts/fix_lint.py <slug>
-  ```
-
-  Aplique os achados mecânicos e reporte o restante. Só rode `/organize <slug>` se o Usuário pedir a auditoria completa daquele essay.
+- Feche com o `## Fechamento padrão de essay único` de `conventions/SKILL.md`.
 - Preencha `summary:` no frontmatter (resumo de uma linha, até 120 caracteres) e rode `python scripts/build_index.py` para regenerar `wiki/index.json`/`wiki/index.md` — nunca insira a entrada à mão (ver `## Formato do índice` em `conventions/SKILL.md`).
 - Rode `python scripts/build_references.py` para regenerar `wiki/references.json`/`.md` a partir da `## Referências` do essay novo (mesmo padrão de `build_index.py` — artefato gerado, nunca editado à mão).
 - `wiki/log.md`:

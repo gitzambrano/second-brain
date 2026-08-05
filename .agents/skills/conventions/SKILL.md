@@ -270,10 +270,10 @@ Lista plana de tudo já processado ou pendente, sem agrupamento — classificaç
 
 ```
 - [[slug-do-source|Nome do Source]] — Tipo · Tags: tag1, tag2 · Status
-  - Status: Importado como [[Essay]] | Resumido — ver wiki/sources/resumos/<slug>.md | Absorvido em [[Essay X]] | Pendente em raw/
+  - Status: Importado como [[Essay]] | Resumido — ver wiki/sources/resumos/<slug>.md | Absorvido em [[Essay X]]
 ```
 
-`Tags:` espelha o que já está em `manifest.md` para a mesma fonte. Atualizado por `/import`, `/digest`, `/absorb`; revisado por inteiro por `/organize`.
+`Tags:` espelha o que já está em `manifest.md` para a mesma fonte. Atualizado por `/import`, `/digest`, `/absorb`; revisado por inteiro por `/organize`. Só entra no mapa depois de já estar em `wiki/sources/` — `raw/` não aparece aqui.
 
 ## Nomenclatura de páginas
 
@@ -322,6 +322,21 @@ Lista plana de tudo já processado ou pendente, sem agrupamento — classificaç
 Se informação nova (fonte ingerida, ou o que o Usuário disse) contradiz o que já está escrito: **não escolha um lado sozinho, não tire a média.** Pare, aponte a contradição citando as duas fontes com localização exata, e só edite depois que o Usuário disser qual prevalece.
 
 Vale para `/absorb`, `/digest`, `/expand`, `/continuity` e qualquer skill que compare conteúdo novo contra o que já está na wiki.
+
+## Fechamento padrão de essay único
+
+Toda skill que edita um essay específico (`/expand`, `/chapter`, `/proofread`, `/polish`, `/linkify`, `/absorb`, `/import`, `/essay`) fecha com:
+
+```bash
+python scripts/check_wiki.py <slug>
+python scripts/fix_lint.py <slug>
+```
+
+Aplique os achados automáticos e reporte o restante. Reserve `/organize <slug>` para quando o Usuário pedir a auditoria completa daquele essay — mais caro e desproporcional para um arquivo só.
+
+## Reuso de vocabulário controlado (`tags_in_use`)
+
+Antes de criar uma tag nova (essay, concept, entity, insight, ou `Tags:` de source), cheque `tags_in_use` em `wiki/index.json` — rode `python scripts/build_index.py` primeiro se estiver desatualizado. Só crie tag nova se nenhuma existente cobrir o tema.
 
 ## Decisões fechadas
 

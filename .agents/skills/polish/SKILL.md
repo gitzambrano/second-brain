@@ -34,14 +34,7 @@ Resuma o que foi ajustado (ex: "3 travessões reescritos, 2 blocos de bullets co
 
 ## Depois
 
-Rode a checagem mecânica do essay tocado — mais barato que acionar `/organize` inteiro para um arquivo só:
-
-```bash
-python scripts/check_wiki.py <slug>
-python scripts/fix_lint.py <slug>
-```
-
-Aplique os achados automáticos e reporte o restante. Reserve `/organize <slug>` para quando o Usuário pedir a auditoria completa daquele essay.
+Feche com o `## Fechamento padrão de essay único` de `conventions/SKILL.md`.
 
 Atualize `updated:` no frontmatter. Log se o ajuste foi extenso:
 ```

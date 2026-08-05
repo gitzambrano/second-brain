@@ -28,7 +28,7 @@ Leia o essay inteiro antes de mover uma única linha. Reorganização é cara de
 ## Criar página de conceito/entidade
 
 1. Verifique primeiro se já não existe uma página equivalente: `python scripts/check_title.py "Título Candidato"` cobre essays, concepts, entities e insights de uma vez (exato e fuzzy) — não duplique.
-2. Crie o arquivo na subpasta certa, com frontmatter simples e conteúdo denso o bastante para justificar a página própria. O campo `tags:` reusa o vocabulário controlado — cheque `tags_in_use` em `wiki/index.json` (gerado por `python scripts/build_index.py`; rode-o primeiro se estiver desatualizado) e só crie tag nova se nenhuma existente cobrir o tema.
+2. Crie o arquivo na subpasta certa, com frontmatter simples e conteúdo denso o bastante para justificar a página própria. O campo `tags:` segue `## Reuso de vocabulário controlado` em `conventions/SKILL.md`.
 3. Linke a partir do essay em `## Conexões`, e a partir da página nova de volta para o essay.
 
 ## Mover, fundir, ou dividir seções
@@ -42,14 +42,7 @@ Depois de qualquer reorganização, atualize `## Sumário` para refletir a nova 
 
 ## Depois
 
-Rode a checagem mecânica do essay tocado — mais barato que acionar `/organize` inteiro para um arquivo só:
-
-```bash
-python scripts/check_wiki.py <slug>
-python scripts/fix_lint.py <slug>
-```
-
-Aplique os achados automáticos e reporte o restante. Reserve `/organize <slug>` para quando o Usuário pedir a auditoria completa daquele essay.
+Feche com o `## Fechamento padrão de essay único` de `conventions/SKILL.md`.
 
 Atualize `updated:` no frontmatter. Se a mudança foi de peso (nova seção, reorganização geral, página nova criada), log:
 

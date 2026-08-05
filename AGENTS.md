@@ -61,9 +61,9 @@ Tag entre colchetes indica como a skill trabalha: **[script]** roda ferramenta e
 | Chapter    | `/chapter`    | leitura | Adicionar, mover, fundir ou dividir capítulo/seção; criar concept/entity ligado ao essay                          |
 | Proofread  | `/proofread`  | leitura | Revisão de português                                                                                               |
 | Polish     | `/polish`     | leitura | Revisão de estilo de prosa                                                                                          |
-| Continuity | `/continuity` | leitura | Auditoria de continuidade lógica e narrativa                                                                        |
+| Continuity | `/continuity` | leitura | Auditoria de coerência estrutural (tese entre capítulos, fechamento do argumento) — componente estrutural do peer review |
 | Linkify    | `/linkify`    | ambos   | Adicionar e checar links externos (busca é leitura; edição é mecânica)                                          |
-| Review     | `/review`     | leitura | Peer review: validade argumentativa, profundidade, gaps, citações ausentes, sugestões de fonte/experimento mental |
+| Review     | `/review`     | leitura | Peer review: ataca a força dos argumentos, falácias, física/matemática, citações ausentes; invoca `/continuity` para a parte estrutural |
 
 **Fontes** (três formas de processar algo em `raw/`)
 
@@ -91,6 +91,8 @@ Tag entre colchetes indica como a skill trabalha: **[script]** roda ferramenta e
 | Connect  | `/connect`  | ambos  | Invoca`/gaps` e age sobre o resultado: expande/repara `## Conexões` entre essays, concepts, entities e insights. Aceita `/connect` ou `/connect <slug/pasta/tema>` |
 | Stats    | `/stats`    | script | Dashboard read-only: essays por tag/tipo, órfãos, sources sem manifest, plano, insights, grafo                                                                  |
 | Status   | `/status`   | script | Ver ou atualizar`wiki/status.md`                                                                                                                                |
+| Merge    | `/merge`    | ambos  | Funde duas páginas do mesmo tipo (essay+essay, concept+concept, etc.) em uma só; reaponta links, apaga a absorvida                                             |
+| Delete   | `/delete`   | ambos  | Apaga essay/concept/entity/insight; confirma, loga, e chama`/organize` para consertar os links quebrados pela remoção                                        |
 
 **Saída**
 
@@ -170,6 +172,8 @@ Pendência de curto prazo (o que ficou em aberto na sessão) fica em `wiki/statu
 - **`update`** — roda a bateria de fechamento (`build_index.py`, `build_references.py`, `build_graph.py`, `stats.py --save`, `fix_lint.py`, `qmd update && qmd embed`, `sync_skills.py`) e commita/dá push da camada versionada (`git add -A`; sem mudança, commit não faz nada).
 
   Nunca decide conteúdo — nunca funde página, nunca resolve contradição, nunca escreve prosa. Chame só ao fechar `/organize`, `/sweep`, `/status update`, ou sob pedido direto ("atualiza tudo", "sincroniza") — nunca antes das edições. Nunca versiona `wiki/`, `plan/`, `raw/`, `output/` (ver `## Notas` no README.md).
+
+- **`lint-report`** — roda `check_wiki.py`, `check_references.py`, `check_dedupe.py` e `check_gaps.py` em modo `--json` e devolve o resumo já agrupado por prioridade (Crítico/Atenção/Informativo). Não corrige nada. Só sob pedido direto do Usuário — nenhuma skill chama este subagent automaticamente.
 
 ## Ferramentas
 

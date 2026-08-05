@@ -33,6 +33,7 @@ Uso (mesma CLI de check_wiki.py):
     python fix_lint.py --all              # idem, explícito
     python fix_lint.py meu-essay          # só este essay (slug posicional)
     python fix_lint.py --file meu-essay   # alias de compatibilidade
+    python fix_lint.py --dry-run          # simula: lista o que mudaria, sem escrever nada
 """
 
 import argparse
@@ -394,6 +395,10 @@ def build_parser():
         "--all", action="store_true",
         help="Corpus inteiro, explícito (comportamento padrão sem argumento).",
     )
+    p.add_argument(
+        "--dry-run", action="store_true",
+        help="Não escreve nada — só lista os arquivos que seriam alterados e o que mudaria.",
+    )
     return p
 
 
@@ -613,8 +618,11 @@ def rebuild_section(section):
     return "\n\n" + "\n\n".join(lines) + "\n\n", len(entries)
 
 
-def fix_essay(path):
-    """Aplica a migração mecânica. Retorna n_entradas reescritas, 0 se nada mudou."""
+def fix_essay(path, dry_run=False):
+    """Aplica a migração mecânica. Retorna n_entradas reescritas, 0 se nada mudou.
+
+    Com dry_run=True, calcula a mudança mas não escreve — só para reporte.
+    """
     content = load(path)
     m = re.search(r"(?m)^## Referências[ \t]*$", content)
     if not m:
@@ -629,7 +637,8 @@ def fix_essay(path):
     if new_section is None or new_section == section:
         return 0
 
-    path.write_text(content[: m.end()] + new_section + content[end:], encoding="utf-8")
+    if not dry_run:
+        path.write_text(content[: m.end()] + new_section + content[end:], encoding="utf-8")
     return count
 
 
@@ -672,22 +681,27 @@ def main():
         new_content = frontmatter + body
 
         if new_content != content:
-            save_file_content(file, new_content)
-            print(f"Fixed formatting and/or links in: {file.relative_to(ROOT_DIR)}")
+            if not args.dry_run:
+                save_file_content(file, new_content)
+            verb = "Would fix" if args.dry_run else "Fixed"
+            print(f"{verb} formatting and/or links in: {file.relative_to(ROOT_DIR)}")
             fixed_files_count += 1
 
         # A migração de `## Referências` para o padrão AIAA só se aplica a
         # essays — concepts/entities/insights não têm essa seção.
         if category == "essays":
-            n_entries = fix_essay(file)
+            n_entries = fix_essay(file, dry_run=args.dry_run)
             if n_entries:
                 referencias_fixed_count += 1
-                print(f"Referências reescritas (padrão AIAA): {file.relative_to(ROOT_DIR)} "
+                verb = "would be rewritten" if args.dry_run else "reescritas"
+                print(f"Referências {verb} (padrão AIAA): {file.relative_to(ROOT_DIR)} "
                       f"({n_entries} entrada(s))")
 
-    print(f"\nCompleted auto-fix. Modified {fixed_files_count} file(s); "
-          f"{referencias_fixed_count} essay(s) tiveram '## Referências' reescrita.")
-    if referencias_fixed_count:
+    action = "Dry-run completo — nada foi escrito." if args.dry_run else "Completed auto-fix."
+    print(f"\n{action} {fixed_files_count} file(s) {'seriam' if args.dry_run else 'foram'} "
+          f"modificado(s); {referencias_fixed_count} essay(s) "
+          f"{'teriam' if args.dry_run else 'tiveram'} '## Referências' reescrita.")
+    if referencias_fixed_count and not args.dry_run:
         print("Rode `python scripts/build_references.py` para regenerar o índice de referências.")
         print(
             "A migração de referências é só mecânica: entradas que continuarem sem link da "

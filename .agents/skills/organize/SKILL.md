@@ -40,23 +40,23 @@ Nunca cole o relatório bruto de `check_wiki.py` — é genérico de propósito.
 
 ## Modo corpus inteiro
 
-1. **[script]** `python scripts/build_index.py && python scripts/build_references.py` — direto, sem o subagent.
-2. **[script]** Formatação mecânica de todos os essays:
+1. **[script]** Nessa ordem:
 
    ```bash
-   python scripts/check_wiki.py --json
-   python scripts/check_references.py --json
-   python scripts/fix_lint.py
+   python scripts/build_index.py         # regenera índice e index.json
+   python scripts/build_references.py    # regenera wiki/references.md/.json
+   python scripts/check_wiki.py --json          # diagnostica formatação, links, estrutura
+   python scripts/check_references.py --json    # diagnostica formatação de referências
+   python scripts/fix_lint.py                   # corrige formatação e reescreve Referências
+   python scripts/build_references.py    # fix_lint reescreveu Referências — reindexa
    ```
 
-   `check_wiki.py` cobre essay e corpus (índice, órfãos, manifesto, plano, insights, wikilinks mortos). `check_references.py` valida formatação AIAA. `fix_lint.py` aplica fixes mecânicos sem perguntar, incluindo reformatação de `## Referências` ao padrão AIAA.
+   Guarde as duas saídas `--json` — usadas nos passos 4, 14, 15 e 18. Aplique `fix_lint.py` em todo essay, inclusive `finalizado`/`maduro`.
+2. **[script]** Órfãos: `python scripts/find_backlinks.py --orphans`. **[leitura]** Para cada concept/entity sem essay que o referencie, decida com o Usuário: essay novo, anexar a existente, ou remover.
+3. **[leitura]** Contradições e claims desatualizados: ao ler os essays (achados do stats ou amostragem), sinalize contradições entre páginas e claims superados, seguindo `## Regra de contradição entre fontes` de `conventions/SKILL.md` — nunca escolha um lado sozinho. Se a correção não for imediata, ofereça registrar `Revisão` em `plan/plano.md` via `/plan add`.
+4. **[script]** Confirme `wiki/index.md`/`index.json` regenerados (passo 1). Se essay novo/editado/removido não refletir, rode `build_index.py` de novo.
 
-   Pule fixes automáticos em essays `finalizado`/`maduro` (não altera a prosa deles), mas inclua no relatório.
-3. **[script]** Órfãos: `python scripts/find_backlinks.py --orphans`. **[leitura]** Para cada concept/entity sem essay que o referencie, decida com o Usuário: essay novo, anexar a existente, ou remover.
-4. **[leitura]** Contradições e claims desatualizados: ao ler os essays (achados do stats ou amostragem), sinalize contradições entre páginas e claims superados, seguindo `## Regra de contradição entre fontes` de `conventions/SKILL.md` — nunca escolha um lado sozinho. Se a correção não for imediata, ofereça registrar `Revisão` em `plan/plano.md` via `/plan add`.
-5. **[script]** Confirme `wiki/index.md`/`index.json` regenerados (passo 1). Se essay novo/editado/removido não refletir, rode `build_index.py` de novo.
-
-   **Cobertura do índice**, no JSON do passo 2:
+   **Cobertura do índice**, no JSON do passo 1:
 
    - `FM_NO_SUMMARY`: essay sem `summary:` — liste nominalmente em "Crítico".
    - `FM_LONG_SUMMARY`: resumo passou de 120 caracteres.
@@ -64,32 +64,32 @@ Nunca cole o relatório bruto de `check_wiki.py` — é genérico de propósito.
    Não escreva os resumos aqui — resumo é conteúdo editorial. Reporte e ofereça passada dedicada.
 
    **Cobertura de bibliografia**: cruze `wiki/references.json` com os essays — sem nenhuma entrada em `## Referências`, ou bibliografia rasa para a extensão do texto, entra em "Atenção". `check_wiki.py` emite `NO_REFERENCIAS` para a seção ausente; o julgamento de suficiência é seu.
-6. **[leitura]** Tags quase-duplicadas: cheque `tags_in_use` em `wiki/index.json` (essay/concept/entity/insight + manifesto de sources, mesma fonte de vocabulário). Proponha consolidação e liste os afetados antes de renomear em massa.
-7. **[script]** Balanço de cobertura por tag: `python scripts/check_gaps.py --tags-only`. Uma tag com um essay só, comparada a outras com dez, é sinal de área subexplorada. **Não corrija nada aqui** — se o Usuário quiser agir sobre uma tag rasa, ofereça `/plan add` (item Essay futuro) ou `/scout` (fontes candidatas pro tema).
-8. **[script + leitura]** `python scripts/check_dedupe.py` (se o corpus cresceu desde a última passada, rode também com `--threshold 0.75`). Reporta quatro classes: títulos de essay, títulos de concept/entity, tags, e mesma referência com citação divergente entre essays.
+5. **[leitura]** Tags quase-duplicadas: cheque `tags_in_use` em `wiki/index.json` (essay/concept/entity/insight + manifesto de sources, mesma fonte de vocabulário). Proponha consolidação e liste os afetados antes de renomear em massa. Aprovado o Usuário, aplique com `python scripts/retag.py "tag-velha" "tag-nova"` (aceita `--dry-run` para conferir antes) e rode `build_index.py` de novo.
+6. **[script]** Balanço de cobertura por tag: `python scripts/check_gaps.py --tags-only`. Uma tag com um essay só, comparada a outras com dez, é sinal de área subexplorada. **Não corrija nada aqui** — se o Usuário quiser agir sobre uma tag rasa, ofereça `/plan add` (item Essay futuro) ou `/scout` (fontes candidatas pro tema).
+7. **[script + leitura]** `python scripts/check_dedupe.py` (se o corpus cresceu desde a última passada, rode também com `--threshold 0.75`). Reporta quatro classes: títulos de essay, títulos de concept/entity, tags, e mesma referência com citação divergente entre essays.
 
    **Nunca funde nem deleta** — para cada candidato, mostre os dois lados com caminho e **pergunte ao Usuário**. Fuzzy matching erra: par com similaridade alta pode ser conceitos irmãos legítimos.
-9. **[script + leitura]** Manifesto, tipos de source, estrutura canônica:
+8. **[script + leitura]** Manifesto, tipos de source, estrutura canônica:
 
    - Verifique se todo arquivo em `wiki/sources/**` tem entrada no manifesto e vice-versa, se `Tipo:` usa vocabulário controlado, se `Tipo: Ensaio Completo Importado` tem `Virou: [[slug|Essay]]` existente.
-   - `Tags:` faltando numa entrada antiga: preencha agora usando o conteúdo da fonte, sem perguntar. Tag fora do vocabulário: sinalize junto ao passo 6.
+   - `Tags:` faltando numa entrada antiga: preencha agora usando o conteúdo da fonte, sem perguntar. Tag fora do vocabulário: reporte junto com as tags quase-duplicadas no resumo final (passo 18) — não tente voltar ao passo 5, que já rodou.
    - Arquivo fora da subpasta correta: mova agora sem perguntar, atualize `Pasta:`.
    - Exceção que pede pergunta: arquivo sem entrada e sem `Tipo:` inferível — reporte, não adivinhe.
-10. **[script]** Estrutura canônica de pastas: `check_wiki.py` verifica as 8 subpastas de `wiki/sources/` e `wiki/handouts/`. Faltando: crie com `.gitkeep` direto.
-11. **[leitura]** `wiki/sources/map.md`: revise por inteiro — toda fonte em `wiki/sources/` e todo item pendente em `raw/` aparece, com status correto.
-12. **[script]** `wiki/log.md`: confirme append-only (nenhuma entrada antiga editada) — só verifique.
-13. **[leitura]** `plan/plano.md`: as 5 seções existem (mesmo vazias)? `Status:` fora do vocabulário (Pendente | Em Andamento)? Tópico fragmentado em quase-duplicatas? Corrija estrutura faltando direto; para tópicos quase-duplicados, proponha consolidação.
-14. **[leitura]** `wiki/insights/`: toda página tem `maturidade:` válida? Sinalize insights sem link em `## Conexões` (candidatos a órfãos) e `madura` há tempo sem promoção (sugira `/insight promote`).
-15. **[script + leitura]** Wikilinks mortos (já cobertos no passo 2): erro de digitação óbvio de página existente → corrija agora. Alvo sem correspondência óbvia → não invente nem apague, reporte e pergunte. Links externos quebrados são `/linkify`, não `/organize`.
-16. **[script]** Formato das `## Referências`: `REFERENCIA_SEM_LINK` e `LINK_NOT_IN_REFERENCIAS` que sobrarem após `fix_lint.py` entram em "Atenção" — pedem busca de fonte (`/linkify`), não correção mecânica.
-17. **[script]** Chame o subagent `update` (`.agents/agents/update.md`). Leia o relato: `stats:` e `grafo:` trazem os caminhos — abra `output/graph/graph.html` de lá e use `stats:` no resumo do passo 19. Clusters isolados ou muitos wikilinks mortos sem alvo óbvio: ofereça `/connect`.
-18. **[script]** Exportação (opcional, só sob pedido): `python scripts/export_essay_pdf.py --all` e `export_essay_html.py --all`; confirme hyperlinks clicáveis, imagens resolvendo, seção`## Conexões` ausente do PDF, seção`## Referências`/`## Sumário` presentes.
-19. **[leitura]** Resumo priorizado — nunca cole o relatório bruto:
+9. **[script]** Estrutura canônica de pastas: `check_wiki.py` verifica as 8 subpastas de `wiki/sources/` e `wiki/handouts/`. Faltando: crie com `.gitkeep` direto.
+10. **[leitura]** `wiki/sources/map.md`: revise por inteiro — toda fonte em `wiki/sources/` aparece, com status correto. `raw/` não entra no mapa: é inbox pessoal, ainda não faz parte da wiki.
+11. **[script]** `wiki/log.md`: confirme append-only (nenhuma entrada antiga editada) — só verifique.
+12. **[leitura]** `plan/plano.md`: as 5 seções existem (mesmo vazias)? `Status:` fora do vocabulário (Pendente | Em Andamento)? Tópico fragmentado em quase-duplicatas? Corrija estrutura faltando direto; para tópicos quase-duplicados, proponha consolidação.
+13. **[leitura]** `wiki/insights/`: toda página tem `maturidade:` válida? Sinalize insights sem link em `## Conexões` (candidatos a órfãos) e `madura` há tempo sem promoção (sugira `/insight promote`).
+14. **[script + leitura]** Wikilinks mortos (já cobertos no passo 1): erro de digitação óbvio de página existente → corrija agora. Alvo sem correspondência óbvia → não invente nem apague, reporte e pergunte. Links externos quebrados são `/linkify`, não `/organize`. (`/connect` corrige o mesmo tipo de typo via `/gaps` — rodar os dois em sequência é redundante, não incorreto.)
+15. **[script]** Formato das `## Referências`: `REFERENCIA_SEM_LINK` e `LINK_NOT_IN_REFERENCIAS` que sobrarem após `fix_lint.py` entram em "Atenção" — pedem busca de fonte (`/linkify`), não correção mecânica.
+16. **[script]** Chame o subagent `update` (`.agents/agents/update.md`). Use `stats:` no resumo do passo 18. Se `grafo:` reportar página(s) isolada(s) ou par(es) de tag sem conexão, liste-os (nomes/tags, não só a contagem — leia `output/graph/graph.json`, campos `isolated` e `tag_gaps`) em "Atenção" e ofereça `/connect`.
+17. **[script]** Exportação (opcional, só sob pedido): `python scripts/export_essay_pdf.py --all` e `export_essay_html.py --all`; confirme hyperlinks clicáveis, imagens resolvendo, seção`## Conexões` ausente do PDF, seção`## Referências`/`## Sumário` presentes.
+18. **[leitura]** Resumo priorizado — nunca cole o relatório bruto. Cubra todo achado de `check_wiki.py`/`check_references.py` do passo 1 que não foi auto-corrigido, agrupado por severidade — as mesmas categorias do modo essay único (Estrutura obrigatória, Byline, Links/Wikilinks, LaTeX/aspas, Idioma, Residuais, Estilo, Referências) aparecem aqui, só que para o corpus inteiro:
 
     - **Corrigido automaticamente** (mecânico, já aplicado).
-    - **Crítico — precisa de decisão** (sources sem essay, wikilinks mortos sem alvo, contradições, seções do plano fora do vocabulário).
-    - **Atenção — vale revisar** (notas órfãs, tags quase-duplicadas, tags com cobertura rasa, quase-duplicatas de título/referência, `## Referências` sem link ou fora do padrão, estrutura de pastas faltando).
-    - **Informativo** (contagens do stats, link do grafo).
+    - **Crítico — precisa de decisão** (sources sem essay, wikilinks mortos sem alvo, contradições, seções do plano fora do vocabulário, `[[wikilink]]` fora de `## Conexões`, `## Conexões`/`## Sumário` ausente).
+    - **Atenção — vale revisar** (notas órfãs, páginas isoladas no grafo, pares de tag sem conexão, tags quase-duplicadas, tags com cobertura rasa, quase-duplicatas de título/referência, `## Referências` sem link ou fora do padrão, estrutura de pastas faltando, byline malformado, aspas/apóstrofo ASCII, parágrafo em inglês, HTML residual, símbolo residual, travessão em excesso).
+    - **Informativo** (contagens do stats).
     - **Liste nominalmente os essays com `FM_NO_SUMMARY`.**
     - **[leitura]** `EMPTY_REFERENCIAS`, `REF_BOLD_AUTHOR`, `REF_TITLE_IS_AUTHOR`, `REF_MISSING_TITLE` nunca são auto-corrigíveis — exigem descobrir o título/autor real de fonte externa, o que `fix_lint.py` não navega a web para fazer.
 

@@ -33,7 +33,7 @@ O Usuário quer incluir uma ideia, tese, conceito ou exemplo novo, sem tirar o q
 3. Se for uma expansão de um parágrafo ou ponto já existente, integre à prosa corrida, não como um adendo colado ao final.
 4. Se o conteúdo se apoia em fonte externa nova, adicione a `## Referências` e ao campo `sources:` do frontmatter, com link externo inline na primeira ocorrência do conceito. Antes de escrever a entrada, confira `wiki/references.md`: se a mesma obra já está catalogada, reuse a citação exata existente em vez de redigir uma nova.
 5. Se o novo conceito merece página própria (`wiki/concepts/` ou `wiki/entities/`), crie-a e linke em `## Conexões`.
-6. O frontmatter dessa página nova carrega `tags:` — reuse o vocabulário controlado (cheque `tags_in_use` em `wiki/index.json`, gerado por `python scripts/build_index.py`; rode-o primeiro se estiver desatualizado) e só crie tag nova se nenhuma existente cobrir o tema.
+6. O frontmatter dessa página nova carrega `tags:` — reuse o vocabulário controlado (`## Reuso de vocabulário controlado` em `conventions/SKILL.md`).
 
 ### 2. Correção conceitual/factual
 
@@ -46,14 +46,7 @@ O Usuário aponta um erro. Depois de ler o essay inteiro:
 
 ## Depois
 
-Rode a checagem mecânica do essay tocado — mais barato que acionar `/organize` inteiro para um arquivo só:
-
-```bash
-python scripts/check_wiki.py <slug>
-python scripts/fix_lint.py <slug>
-```
-
-Aplique os achados automáticos e reporte o restante. Reserve `/organize <slug>` para quando o Usuário pedir a auditoria completa daquele essay.
+Feche com o `## Fechamento padrão de essay único` de `conventions/SKILL.md`.
 
 Atualize `updated:` no frontmatter. Se a mudança foi substancial, log:
 

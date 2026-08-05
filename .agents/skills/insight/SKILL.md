@@ -8,7 +8,7 @@ description: >
   oferece, sem insistir, expandir/conectar/polir), develop (retomar
   um insight existente numa sessão futura, conversando e iterando com
   o Usuário para polir ou expandir a nota), list (mostrar insights por
-  maturidade), promote (levar um insight maduro para virar essay novo
+  maturidade), promote (levar um insight para virar essay novo
   ou capítulo de um essay existente). Use quando o Usuário disser
   "tive uma ideia sobre X mas não é um essay ainda", "anota esse
   insight solto", "esse insight já está maduro o bastante para virar
@@ -34,14 +34,14 @@ Vive em `wiki/insights/` (ver `## Formato de páginas em wiki/insights/` em `con
 3. **Observações e intuições** — reflexões pessoais sobre padrões que o Usuário começa a notar.
 4. **Mini-argumentos** — teses curtas e opiniões já bem fundamentadas, no ponto para compor um essay no futuro.
 
-As quatro entram pelo mesmo fluxo (`/insight add`) e seguem a mesma escala de maturidade — o que muda é só o ponto de partida: uma semente normalmente nasce `solta`, um mini-argumento já pode nascer `germinando` ou até perto de `madura`.
+As quatro entram pelo mesmo fluxo (`/insight add`) e seguem a mesma escala de maturidade — o que muda é só o ponto de partida: uma semente normalmente nasce `solta`, uma síntese ou mini-argumento já costuma nascer `germinando` (corpo desenvolvido + conexão desde a criação) ou até perto de `madura`.
 
 ## Maturidade — vocabulário fechado
 
 Todo insight carrega `maturidade:` no frontmatter, um de quatro estados:
 
-1. **`solta`** — acabou de ser capturada. Pode ser uma frase, uma pergunta, uma intuição ainda não articulada por inteiro. Pode não ter nenhum link ainda.
-2. **`germinando`** — já foi revisitada ao menos uma vez (via `/insight develop`), ganhou corpo, e está ligada a pelo menos um essay/concept/entity/outro insight via `## Conexões`. Ainda não é densa o bastante para virar essay sozinha, mas está a caminho.
+1. **`solta`** — acabou de ser capturada, sem corpo desenvolvido e sem conexão. Pode ser uma frase, uma pergunta, uma intuição ainda não articulada por inteiro.
+2. **`germinando`** — tem corpo (desenvolvida além de uma frase solta) e está ligada a pelo menos um essay/concept/entity/outro insight via `## Conexões`. Não precisa ter passado por `/insight develop` para chegar aqui: se a ideia já nasce com esses dois elementos — em `/insight add`, quando o tema rendeu os 4-5 parágrafos e a busca do passo 2 achou conexão genuína — ela nasce `germinando` direto. Ainda não é densa o bastante para virar essay sozinha, mas está a caminho.
 3. **`madura`** — densa, bem conectada, com uma tese ou insight central articulado com clareza. Pronta para `/insight promote`. `/stats` sinaliza todo insight `madura` como candidato a promoção, mas a promoção em si nunca é automática.
 4. **`absorvida`** — o insight já foi promovido: seu conteúdo virou essay/capítulo via `/insight promote`. A nota permanece na wiki (nunca é deletada), mas passa a ser um registro histórico da origem da ideia, não mais candidata a nova promoção.
 
@@ -51,10 +51,11 @@ Não pule estados retroativamente sem justificativa (um insight não vira `madur
 
 Registre primeiro, converse depois — o Usuário pode só querer soltar a ideia e seguir em frente, sem interagir.
 
-1. Capture a ideia como o Usuário a trouxe e **grave imediatamente**, sem inflar artificialmente e sem exigir uma rodada de conversa antes de salvar. Um insight de 3 linhas é normal e não é um problema a corrigir.
-2. Busque na wiki por algo relacionado — prefira `qmd query "termo"` (busca semântica, ver `## Ferramentas` no AGENTS.md); sem qmd disponível/indexado, `python scripts/find_text.py "termo" --ignore-case` (cobre essays, `concepts/`, `entities/`, e outros insights em `wiki/insights/` de uma vez). Se a ideia já ecoa um essay ou concept existente, linke desde o início em `## Conexões`. Isso não deve atrasar o registro: é uma busca rápida, não uma pesquisa aprofundada.
+1. Grave imediatamente, sem exigir conversa prévia. Desenvolva a ideia até 4-5 parágrafos, explorando desdobramentos, exemplos e tensões. Notas de 3 linhas são aceitáveis quando a ideia é pontual.
+2. Busque na wiki por conteúdo relacionado: `qmd query "termo"` (busca semântica, ver `## Ferramentas` no AGENTS.md) ou, sem qmd disponível/indexado, `python scripts/find_text.py "termo" --ignore-case` (cobre essays, `concepts/`, `entities/` e `wiki/insights/`). Linke em `## Conexões` o que for relevante. Não prolongue essa etapa.
 3. Título curto — antes de decidir o nome do arquivo, rode `python scripts/check_title.py "Título Da Ideia"` para não nascer um quase-duplicado de algo que já existe com outra grafia.
-4. `tags:` reusa o mesmo vocabulário controlado dos essays. Cheque `tags_in_use` em `wiki/index.json` (gerado por `python scripts/build_index.py`; rode-o primeiro se estiver desatualizado) e só crie tag nova se nenhuma existente cobrir o tema.
+4. Decida `maturidade:` antes de gravar: `germinando` se a nota saiu com corpo desenvolvido (passo 1) **e** pelo menos uma conexão genuína (passo 2); `solta` se faltou um dos dois — corpo curto, sem conexão, ou ambos. Não force nenhum dos dois lados: uma nota de 3 linhas sem conexão nasce `solta` normalmente, e isso é o resultado esperado, não um caso a corrigir.
+5. `tags:` reusa o mesmo vocabulário controlado dos essays (`## Reuso de vocabulário controlado` em `conventions/SKILL.md`).
 
    Arquivo `wiki/insights/<slug>.md`:
 
@@ -64,20 +65,20 @@ Registre primeiro, converse depois — o Usuário pode só querer soltar a ideia
    sources: []
    created: YYYY-MM-DD
    updated: YYYY-MM-DD
-   maturidade: solta
+   maturidade: solta | germinando
    ---
 
    # Título Da Ideia
 
-   Um ou dois parágrafos curtos, prosa corrida, a ideia central sem enchimento.
+   Prosa corrida, sem enchimento artificial. Desenvolva até 4-5 parágrafos quando a ideia permitir. Ideias pontuais podem ter apenas 3 linhas.
 
    ## Conexões
    - [[slug-do-arquivo|Essay ou Concept Relacionado]]
    ```
 
-   `## Conexões` pode ficar vazia (`- (nenhuma ainda)`) se a ideia é genuinamente nova e solta — não force um link fraco só para preencher.
-5. Não gera entrada em `wiki/log.md` — captura de insight é leve demais para o log cronológico, ao contrário de `/essay`/`/import`/`/digest`.
-6. **Depois** de salvar, ofereça — sem insistir — desenvolver mais: perguntar se quer expandir a ideia, adicionar conexões, ou deixar exatamente como está. Uma frase curta basta ("Registrado. Quer desenvolver mais agora ou fica assim por enquanto?"). Se o Usuário não responder ou disser que só queria registrar, encerre por aí — não force `/insight develop` na mesma mensagem.
+   `## Conexões` pode ficar vazia (`- (nenhuma ainda)`) se a busca do passo 2 não retornar nada relevante.
+6. Não gera entrada em `wiki/log.md` — captura de insight é leve demais para o log cronológico, ao contrário de `/essay`/`/import`/`/digest`.
+7. **Depois** de salvar, ofereça — sem insistir — desenvolver mais: perguntar se quer expandir a ideia, adicionar conexões, ou deixar exatamente como está. Uma frase curta basta ("Registrado. Quer desenvolver mais agora ou fica assim por enquanto?"). Se o Usuário não responder ou disser que só queria registrar, encerre por aí — não force `/insight develop` na mesma mensagem.
 
 ## `/insight develop <nota>`
 
@@ -96,7 +97,7 @@ Leia todos os insights em `wiki/insights/` e mostre agrupados por maturidade —
 
 ## `/insight promote <nota>`
 
-Leva um insight `madura` para o conteúdo de fato da wiki. Nunca promove um insight `solta` ou `germinando` sem antes perguntar se o Usuário tem certeza — a maturidade existe para evitar promoção prematura.
+Leva um insight para o conteúdo de fato da wiki: essay novo ou capítulo de um essay existente. Insight `solta` ou `germinando` exige confirmação do Usuário antes de promover — a maturidade não bloqueia a promoção, mas `madura` é o estado esperado antes dela.
 
 1. Pergunte (se não estiver óbvio pela nota) se ela vira:
    - **Essay novo**: quando a ideia sustenta um argumento inteiro por si só. Rode o fluxo completo de `/essay` — o insight serve de ponto de partida (a tese já pode estar praticamente pronta), não de rascunho a copiar sem desenvolver.

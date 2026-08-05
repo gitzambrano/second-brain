@@ -28,8 +28,11 @@ Gera `wiki/handouts/<slug-do-essay>.md`: uma versão de uma página do essay, pa
 
 ```markdown
 ---
+tags: [tag1, tag2]
+sources: []
 essay: <slug-do-essay>
 created: YYYY-MM-DD
+updated: YYYY-MM-DD
 ---
 
 # <Título do Essay>
@@ -45,8 +48,10 @@ created: YYYY-MM-DD
 Leia o essay completo: [<Título do Essay>](../essays/<slug>.md)
 ```
 
+`tags:` copia as do essay de origem. `sources:` fica vazio — o handout não introduz fonte nova, só resume.
+
 5. **Não inclua** `## Sumário`, `## Referências` ou `## Conexões` — essas seções pertencem ao essay completo, não ao handout.
-6. Se já existir um handout para esse essay (de uma edição anterior do essay), leia-o primeiro e regenere em vez de duplicar — sobrescreva com o conteúdo atualizado.
+6. Se já existir um handout para esse essay (de uma edição anterior do essay), leia-o primeiro e regenere em vez de duplicar — sobrescreva com o conteúdo atualizado, `updated:` na data de hoje.
 7. Não é necessário atualizar `wiki/index.md` (que contém apenas essays) nem `wiki/log.md` — handout é um artefato leve, gerado sob demanda, não uma operação de conteúdo da wiki que precise de rastro no log.
 
 ## Handout como output

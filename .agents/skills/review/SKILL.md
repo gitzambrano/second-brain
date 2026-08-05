@@ -1,22 +1,30 @@
 ---
 name: review
 description: >
-  Revisor de essay no estilo de peer review acadêmico: analisa validade
-  argumentativa, lógica, física e matemática; detecta fenômenos mal
-  explicados, ausência de citações de autores e filósofos, gaps
-  conceituais e de profundidade. Além de apontar problemas, sugere fontes
-  candidatas, experimentos mentais, exemplos concretos e conexões com
-  ideias da wiki. Cria um plano de modificação para o Usuário aprovar
-  antes de editar qualquer coisa. Use quando o Usuário disser "faz um
-  review do essay X", "esse ensaio está profundo o suficiente?", "quais
-  são os gaps argumentativos?", ou quiser o olhar de um revisor externo
-  antes de marcar um essay como maduro ou finalizado.
+  Revisor de essay no estilo de peer review acadêmico — o lado
+  crítico do conteúdo: ataca a força dos argumentos, aponta falácias,
+  premissas implícitas não sustentadas, erros de física/matemática,
+  citações ausentes, e onde a tese fica vulnerável a uma objeção que
+  ela não antecipou. Invoca /continuity internamente como primeiro
+  passo para a coerência estrutural (progressão entre capítulos,
+  conceito usado antes de explicado, fechamento do argumento) — nunca
+  reimplementa esse checklist. Além de criticar, sugere ativamente
+  fontes candidatas, experimentos mentais, exemplos concretos e
+  conexões com ideias da wiki. Cria um plano de modificação para o
+  Usuário aprovar antes de editar qualquer coisa. Use quando o
+  Usuário disser "faz um review do essay X", "esse ensaio está
+  profundo o suficiente?", "quais são os gaps argumentativos?",
+  "ataca essa tese", "que objeções esse argumento não considerou?",
+  ou quiser o olhar de um revisor externo antes de marcar um essay
+  como maduro ou finalizado.
 allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch AskUserQuestion
 ---
 
 # Review
 
-Funciona como um revisor de paper acadêmico: lê o essay com olhar crítico e construtivo, identifica problemas de argumentação, profundidade e rigor, e — diferente de um revisor puramente negativo — sugere ativamente o que enriqueceria o texto. Só edita após o Usuário aprovar um plano de modificação explícito.
+Funciona como um revisor de paper acadêmico: lê o essay com olhar crítico e construtivo, ataca a validade dos argumentos, e — diferente de um revisor puramente negativo — sugere ativamente o que enriqueceria o texto. Só edita após o Usuário aprovar um plano de modificação explícito.
+
+**Divisão de trabalho com `/continuity`**: coerência estrutural (a tese se sustenta do início ao fim sem contradizer a própria conclusão, conceito usado antes de explicado, transição abrupta entre seções) é domínio de `/continuity`, invocado aqui como passo 2. `/review` não reimplementa esse checklist — a dimensão 3.1 abaixo assume que a estrutura já foi checada e mira no que `/continuity` não cobre: se os argumentos usados para sustentar a tese são fortes, e que objeção um leitor cético levantaria.
 
 ## Passo a passo
 
@@ -29,48 +37,61 @@ Resolva o alvo:
 
 Leia o essay inteiro antes de qualquer análise.
 
-### 2. Análise crítica — sete dimensões
+### 2. Invocar /continuity
+
+Chame `/continuity` no essay identificado antes de começar a análise crítica. Ele devolve os achados de coerência estrutural (conceito antes de explicado, salto entre seções, tese sustentada, fechamento) — incorpore esses achados diretamente na seção "Visão geral" e no nível 🔴/🟡/🟢 do relatório do passo 5, em vez de rechecar a mesma coisa na dimensão 3.1.
+
+### 3. Análise crítica — sete dimensões
 
 Analise o essay em silêncio, gerando um relatório interno antes de qualquer saída. Use as sete dimensões abaixo como checklist:
 
-#### 2.1 Tese e estrutura do argumento
+#### 3.1 Força argumentativa da tese
 
-- A tese central é explicitada no início?
-- Cada capítulo avança o argumento, ou algum tangencia ou repete?
-- A conclusão fecha o argumento aberto — não apenas resume, mas conclui?
-- Há premissas implícitas que sustentam a tese sem nunca serem declaradas?
+Assume que a estrutura já foi checada pelo passo 2 — o foco aqui é se o argumento convence, não se ele está bem organizado:
 
-#### 2.2 Validade lógica e filosófica
+- Os argumentos usados para sustentar a tese são fortes, ou dependem de uma premissa frágil?
+- Que objeção um leitor cético e bem informado levantaria contra a tese, e o essay a antecipa?
+- Há premissas implícitas que sustentam a tese sem nunca serem declaradas ou justificadas?
+- Onde a tese é mais vulnerável — o elo mais fraco da cadeia argumentativa?
+
+#### 3.2 Validade lógica e filosófica
 
 - Há falácias detectáveis (post hoc ergo propter hoc, homem-palha, apelo à autoridade sem referência, generalização indevida, falsa dicotomia)?
 - Se o essay toma posição filosófica, reconhece as objeções clássicas ao campo (ex: se defende determinismo, menciona o problema da agência; se defende emergência, menciona o argumento de Searle)?
 - Conceitos-chave são definidos antes de serem usados?
 
-#### 2.3 Validade física e matemática (quando aplicável)
+#### 3.3 Validade física e matemática (quando aplicável)
 
 - Afirmações quantitativas têm fonte ou estimativa de ordem de grandeza?
 - Há contradições com leis ou princípios bem estabelecidos (termodinâmica, conservação, relatividade, etc.)?
 - Modelos matemáticos são usados corretamente (unidades, limites de validade)?
 
-#### 2.4 Profundidade e completude
+**Regra fixa para essay técnico** (física, engenharia, matemática aplicada como tema central, não menção de passagem): exigir sempre as duas coisas juntas, nunca uma no lugar da outra.
+
+- **Insight físico a partir de first principles**: o essay precisa explicar o mecanismo em linguagem física direta antes ou junto da formalização — de onde vem o efeito, por que ele existe, o que aconteceria se o parâmetro variasse. Fórmula sem intuição por trás é sinal de 🔴.
+- **Desenvolvimento matemático com equações**: a afirmação quantitativa central não fica só enunciada ou citada de fonte terceira — o essay deriva ou apresenta a equação relevante, passo a passo quando a derivação for o ponto, sem pular álgebra que carregue a física do argumento.
+
+Falta de qualquer um dos dois num essay técnico é sempre 🔴, nunca 🟡 — ausência de intuição física deixa a matemática arbitrária; ausência de equação deixa a intuição não verificável.
+
+#### 3.4 Profundidade e completude
 
 - Algum fenômeno é descrito mas não explicado mecanisticamente (o "como" está ausente)?
 - Algum conceito é introduzido mas nunca aprofundado além do nível de enciclopédia?
 - Há seções que "pairiam" sobre o tema sem nunca aterrissar num exemplo ou consequência concreta?
 
-#### 2.5 Citações e atribuições
+#### 3.5 Citações e atribuições
 
 - Ideias de filósofos, cientistas ou correntes são atribuídas sem nomear o autor/obra?
 - Há afirmações de caráter histórico ou empírico sem nenhuma referência?
 - Alguma seção inteira não cita nenhuma fonte externa?
 
-#### 2.6 Gaps conceituais e de cobertura
+#### 3.6 Gaps conceituais e de cobertura
 
 - O essay menciona uma ideia conexa que deveria ser desenvolvida mas não é?
 - Há uma perspectiva contrária relevante que está completamente ausente?
 - O essay ignora um autor ou tradição que naturalmente deveria aparecer dado o tema?
 
-#### 2.7 Oportunidades de enriquecimento
+#### 3.7 Oportunidades de enriquecimento
 
 Esta dimensão é propositiva, não crítica. Liste ativamente o que tornaria o essay mais rico:
 
@@ -80,7 +101,7 @@ Esta dimensão é propositiva, não crítica. Liste ativamente o que tornaria o 
 - **Conexões com outros essays da wiki**: ideias que já foram desenvolvidas em outro lugar e que poderiam ser integradas (use os `[[wikilinks]]` conhecidos)
 - **Analogias**: pontes entre domínios que clarificam o argumento sem simplificá-lo
 
-### 3. Classificar e priorizar os achados
+### 4. Classificar e priorizar os achados
 
 Organize os achados em três níveis de prioridade:
 
@@ -88,7 +109,7 @@ Organize os achados em três níveis de prioridade:
 - **🟡 Moderado** — lacuna ou imprecisão que reduz a credibilidade ou profundidade; vale resolver agora
 - **🟢 Sugestão** — enriquecimento que tornaria o essay mais rico, mas que não é um problema atual
 
-### 4. Apresentar o Relatório de Revisão
+### 5. Apresentar o Relatório de Revisão
 
 Apresente o relatório ao Usuário **antes de editar qualquer coisa**. Formato:
 
@@ -114,7 +135,7 @@ Apresente o relatório ao Usuário **antes de editar qualquer coisa**. Formato:
 - [Descrição do experimento/exemplo e onde aplicar no essay]
 ```
 
-### 5. Criar o Plano de Modificação
+### 6. Criar o Plano de Modificação
 
 Após apresentar o relatório, pergunte ao Usuário quais issues ele quer resolver nesta sessão. Para cada issue selecionado, proponha a modificação concreta:
 
@@ -125,7 +146,7 @@ Após apresentar o relatório, pergunte ao Usuário quais issues ele quer resolv
 
 Agrupe as modificações em um **plano numerado**, apresente ao Usuário, e aguarde aprovação explícita antes de editar.
 
-### 6. Executar o Plano Aprovado
+### 7. Executar o Plano Aprovado
 
 Aplique **apenas** as modificações aprovadas, na ordem do plano. Para cada modificação:
 
@@ -134,7 +155,7 @@ Aplique **apenas** as modificações aprovadas, na ordem do plano. Para cada mod
 3. Confirme que o `## Sumário` ainda está correto (se uma seção nova foi adicionada, adicione o link)
 4. Marque o item do plano como concluído antes de passar ao próximo
 
-### 7. Registrar e fechar
+### 8. Registrar e fechar
 
 Após aplicar as modificações:
 
@@ -148,7 +169,7 @@ Após aplicar as modificações:
   ```
 
 - Se o essay estava `draft` e todos os críticos foram resolvidos, **pergunte** ao Usuário se quer promovê-lo para `maduro` — não faça isso automaticamente.
-- Ofereça `/continuity` se detectar gaps que exigem a intervenção desse skill.
+- Se as modificações aplicadas mudaram a estrutura ou a tese, ofereça rodar `/continuity` de novo para confirmar que a coerência se manteve após a edição.
 - Ofereça `/status update` se a sessão for encerrada após o review.
 
 ## Regras e limites
@@ -161,4 +182,6 @@ Após aplicar as modificações:
 
 ## Skills relacionadas
 
-- `/continuity`, `/expand`, `/scout`, `/proofread`, `/polish`, `/sweep`
+- `/continuity` — coerência estrutural, invocado aqui como passo 2; `/review` nunca reimplementa esse checklist
+- `/expand`, `/scout`, `/proofread`, `/polish`, `/sweep`
+- `/organize` — saúde de metadados/formatação; `/review` é sobre validade do argumento, não sobre isso

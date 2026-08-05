@@ -35,13 +35,13 @@ Formato fixo, sempre as mesmas linhas:
 
 ```
 stats: output/stats/stats-YYYY-MM-DD.md
-grafo: output/graph/graph.html
+grafo: output/graph/graph.html (N página(s) isolada(s), N par(es) de tag sem conexão — ver output/graph/graph.json)
 lint: N corrigido(s) automaticamente  (ou "0")
 git: <hash curto> "<primeira linha da mensagem>"  (ou "nada a commitar")
 erros: nenhum  (ou uma linha por erro/warning real: "erro: <script> — <mensagem>")
 ```
 
-Sempre inclua `stats:` e `grafo:` com o caminho. Omita `qmd`/`sync_skills` do relato quando não houver drift.
+Sempre inclua `stats:` e `grafo:` com o caminho. Os contadores de `grafo:` vêm do stdout de `build_graph.py` (linhas "página(s) sem nenhuma conexão" e "par(es) de tags que nunca se conectam") — omita o parêntese quando os dois forem zero. Omita `qmd`/`sync_skills` do relato quando não houver drift.
 
 ## O que nunca fazer
 

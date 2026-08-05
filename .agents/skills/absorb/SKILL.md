@@ -19,19 +19,12 @@ Incorpora o conteúdo de uma fonte já processada às páginas existentes da wik
 
 1. Confirme com o Usuário quais essays/conceitos/entidades a fonte deve enriquecer. Se ele não especificar, releia o resumo (`wiki/sources/resumos/<slug>.md`, se houver) ou a fonte original e proponha candidatos antes de editar — `qmd query` com os termos centrais da fonte acha candidatos mais rápido do que reler a wiki inteira (ver `## Ferramentas` no AGENTS.md).
 2. Leia a fonte: o original em `wiki/sources/<subpasta>/` se precisar do texto completo, ou o resumo em `wiki/sources/resumos/` se já for suficiente.
-3. Atualize as páginas relevantes com o conteúdo novo — seja profundo, não superficial. Uma frase genérica não cumpre o propósito de absorver a fonte. Se isso acrescentar uma entrada em `## Referências` de algum essay, confira `wiki/references.md` primeiro: se a fonte já está catalogada, reuse a citação exata em vez de redigir uma nova.
+3. Atualize as páginas relevantes com o conteúdo novo — seja profundo, não superficial. Uma frase genérica não cumpre o propósito de absorver a fonte. Adicione a fonte ao campo `sources:` do frontmatter de cada página tocada. Se isso acrescentar uma entrada em `## Referências` de algum essay, confira `wiki/references.md` primeiro: se a fonte já está catalogada, reuse a citação exata em vez de redigir uma nova.
 4. Ajuste os wikilinks em `## Conexões` das páginas tocadas, nos dois sentidos quando fizer sentido, no formato de `## Regra de links` em `conventions/SKILL.md`.
-5. Se a fonte revelar um conceito/entidade sem página própria e central o bastante, crie a página (mesma lógica de `/chapter`) — `tags:` reusa o vocabulário controlado, checando `tags_in_use` em `wiki/index.json` antes de criar tag nova (ver passo 6).
-6. Atualize `wiki/sources/map.md` (status: "Absorvido em [[slug-pagina-a|Página A]], [[slug-pagina-b|Página B]]") e `manifest.md` se a fonte ainda não tiver entrada — raro, mas possível se foi arquivada manualmente. Se `manifest.md` já tiver a entrada mas faltar `Tags:` (fonte antiga, de antes desse campo existir), aproveite e preencha — vocabulário controlado, cheque `tags_in_use` em `wiki/index.json` (gerado por `python scripts/build_index.py`; rode-o primeiro se estiver desatualizado) e só use tag nova se nenhuma existente cobrir o tema.
+5. Se a fonte revelar um conceito/entidade sem página própria e central o bastante, crie a página (mesma lógica de `/chapter`) — `tags:` reusa o vocabulário controlado (`## Reuso de vocabulário controlado` em `conventions/SKILL.md`).
+6. Atualize `wiki/sources/map.md` (status: "Absorvido em [[slug-pagina-a|Página A]], [[slug-pagina-b|Página B]]") e `manifest.md` se a fonte ainda não tiver entrada — raro, mas possível se foi arquivada manualmente. Se `manifest.md` já tiver a entrada mas faltar `Tags:` (fonte antiga, de antes desse campo existir), aproveite e preencha (`## Reuso de vocabulário controlado` em `conventions/SKILL.md`).
 7. Se o passo 3 acrescentou entrada em `## Referências` de algum essay, rode `python scripts/build_references.py` para regenerar `wiki/references.json`/`.md`.
-8. Para cada essay tocado, feche com a checagem mecânica daquele essay, sem acionar `/organize` inteiro:
-
-   ```bash
-   python scripts/check_wiki.py <slug>
-   python scripts/fix_lint.py <slug>
-   ```
-
-   Aplique os achados automáticos e reporte o restante.
+8. Para cada essay tocado, feche com o `## Fechamento padrão de essay único` de `conventions/SKILL.md`.
 9. Log: `## [YYYY-MM-DD] absorb | Fonte → páginas afetadas`
 
 Uma única fonte pode tocar 10-15 páginas. Isso é normal.

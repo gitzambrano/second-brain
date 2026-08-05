@@ -57,7 +57,7 @@ Combine com o tipo de pergunta:
 Cite sempre o essay de origem via wikilink, no formato de `## Regra de links` em `conventions/SKILL.md`.
 
 
-> Segundo [[mente-aumentada|Mente Aumentada]], o padrão LLM Wiki resolve o problema clássico do second brain fazendo a manutenção da malha de conexões automática. Isso se conecta ao que [[Autopoiese, Consciência e os Limites do Vivo]] discute sobre sistemas que se auto-mantêm.
+> Segundo [[mente-aumentada|Mente Aumentada]], o padrão LLM Wiki resolve o problema clássico do second brain fazendo a manutenção da malha de conexões automática. Isso se conecta ao que [[autopoiese-consciencia-e-os-limites-do-vivo|Autopoiese, Consciência e os Limites do Vivo]] discute sobre sistemas que se auto-mantêm.
 
 ### Ofereça salvar respostas valiosas
 

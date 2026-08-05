@@ -12,7 +12,8 @@ e essay -> referência para cada `cited_by` de wiki/references.json.
 Outputs:
     output/graph/graph.html  - rich interactive D3 force-directed graph
     output/graph/graph.md    - lightweight Mermaid fallback (no browser needed)
-    output/graph/graph.json  - raw node/edge data, for reuse by other tools
+    output/graph/graph.json  - raw node/edge data, e tag_gaps/isolated para reuso por outras
+                                ferramentas (ex: /organize lê isso sem abrir o HTML)
 
 Recursos do HTML interativo:
   - Legenda clicável (Essay/Concept/Entity/Insight/Reference): cada tipo
@@ -3149,7 +3150,8 @@ def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     (OUTPUT_DIR / "graph.json").write_text(
-        json.dumps({"nodes": nodes, "edges": edges, "tag_gaps": tag_gaps}, ensure_ascii=False, indent=2),
+        json.dumps({"nodes": nodes, "edges": edges, "tag_gaps": tag_gaps, "isolated": isolated},
+                   ensure_ascii=False, indent=2),
         encoding="utf-8",
     )
     (OUTPUT_DIR / "graph.md").write_text(

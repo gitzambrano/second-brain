@@ -1,19 +1,24 @@
 ---
 name: continuity
 description: >
-  Audita a continuidade lógica e narrativa de um essay do início ao
-  fim: conceitos usados antes de serem explicados, saltos abruptos
-  entre seções, tese não sustentada de forma consistente, ou conclusão
-  que não fecha o argumento aberto na introdução. Use quando o Usuário
-  disser "verifica a continuidade", "faz sentido do início ao fim?",
-  "a conclusão fecha bem o argumento?", ou depois de uma reorganização/
-  adição, para confirmar que o essay ainda se sustenta.
+  Audita a coerência estrutural de um essay do início ao fim: conceitos
+  usados antes de serem explicados, saltos abruptos entre seções, tese
+  sustentada de forma consistente entre capítulos, ou conclusão que não
+  fecha o argumento aberto na introdução. É o componente estrutural do
+  peer review: /review invoca este skill como primeiro passo e foca a
+  própria análise na força dos argumentos em si, não na organização.
+  Use quando o Usuário disser "verifica a continuidade", "faz sentido
+  do início ao fim?", "a conclusão fecha bem o argumento?", ou depois
+  de uma reorganização/adição, para confirmar que o essay ainda se
+  sustenta.
 allowed-tools: Bash Read Grep
 ---
 
 # Continuity
 
-Auditoria de coerência lógica e narrativa do essay do início ao fim. **Só diagnostica e reporta — não corrige silenciosamente.** A melhor solução geralmente depende de uma decisão editorial do Usuário (adicionar uma ponte, reordenar um bloco, cortar algo que não serve mais ao argumento), então o relatório vem antes de qualquer edição.
+Auditoria de coerência **estrutural** do essay do início ao fim — a tese se mantém ao longo dos capítulos, cada seção prepara a seguinte, a conclusão fecha o que a introdução abriu. **Só diagnostica e reporta — não corrige silenciosamente.** A melhor solução geralmente depende de uma decisão editorial do Usuário (adicionar uma ponte, reordenar um bloco, cortar algo que não serve mais ao argumento), então o relatório vem antes de qualquer edição.
+
+**Relação com `/review`**: este skill é o componente estrutural do peer review completo — `/review` o invoca como passo 2 e usa o resultado para alimentar seu próprio relatório, em vez de rechecar a mesma coisa. Quando chamado direto pelo Usuário (fora de `/review`), este skill se comporta exatamente como descrito abaixo, sem nenhuma etapa a menos.
 
 ## O que verificar
 
@@ -45,5 +50,6 @@ Segue a regra de status (batch vs específico) de `## Status de essay` em `conve
 
 ## Skills relacionadas
 
+- `/review` — invoca este skill como passo 2 (coerência estrutural); a análise crítica de conteúdo em si é do `/review`
 - `/chapter`, `/expand` — aplicam as correções apontadas aqui
 - `/sweep`
