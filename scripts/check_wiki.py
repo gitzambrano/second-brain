@@ -646,12 +646,17 @@ def check_essay(filepath: Path) -> dict:
     # -----------------------------------------------------------------------
     # 12. Travessões (—) — max 2 por essay
     # -----------------------------------------------------------------------
-    em_dash_count = content.count("—")
-    em_dashes_in_wikilinks = len(re.findall(r"\[\[[^\]]+—[^\]]+\]\]", content))
+    # Conta só a prosa. `## Referências` e `## Conexões` são estruturais: o
+    # formato AIAA exige `—` antes da nota de cada entrada, e cada linha de
+    # Conexões usa `—` antes da descrição. Nenhum dos dois é escolha de estilo.
+    prose_for_dashes = re.split(r"(?m)^## Refer[êe]ncias\s*$", content)[0]
+    prose_for_dashes = re.split(r"(?m)^## Conex[õo]es\s*$", prose_for_dashes)[0]
+    em_dash_count = prose_for_dashes.count("—")
+    em_dashes_in_wikilinks = len(re.findall(r"\[\[[^\]]+—[^\]]+\]\]", prose_for_dashes))
     effective_dashes = em_dash_count - em_dashes_in_wikilinks
     if effective_dashes > 2:
-        add("WARNING", "TOO_MANY_EM_DASHES",
-            f"{effective_dashes} travessão(ões) (—) no essay "
+        add("INFO", "TOO_MANY_EM_DASHES",
+            f"{effective_dashes} travessão(ões) (—) na prosa "
             "(máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)")
 
     # -----------------------------------------------------------------------
@@ -876,8 +881,25 @@ def check_dead_wikilinks(title_map, essay_only_file=None):
 
 
 def check_orphans(title_map):
+    """Dois graus de orfandade.
+
+    ORPHAN_PAGE (WARNING) — ninguém cita, em lugar nenhum. Órfão de verdade.
+    ORPHAN_NO_ESSAY (INFO) — concept/entity citada só por outra concept/entity
+    ou por insight, nunca por essay. Legítimo enquanto o insight não virar
+    essay, ou quando um concept se apoia noutro; informativo, não defeito.
+    """
     corpus = []
-    essay_content = "".join(load(f) for f in ESSAYS_DIR.glob("*.md")) if ESSAYS_DIR.exists() else ""
+
+    def concat(*categories):
+        out = []
+        for c in categories:
+            d = DIRS.get(c)
+            if d and d.exists():
+                out.extend(load(f) for f in d.glob("*.md"))
+        return "".join(out)
+
+    essay_content = concat("essays")
+    outro_content = concat("concepts", "entities", "insights")
 
     for category in ("concepts", "entities"):
         dir_path = DIRS[category]
@@ -893,10 +915,17 @@ def check_orphans(title_map):
             # como órfã.
             alvos = "|".join(re.escape(a) for a in (file.stem, title))
             pattern = re.compile(r"\[\[(?:" + alvos + r")(\|[^\]]+)?\]\]")
-            if not pattern.search(essay_content):
+            if pattern.search(essay_content):
+                continue
+            if pattern.search(outro_content):
+                corpus.append({
+                    "section": "ORPHANS", "severity": "INFO", "code": "ORPHAN_NO_ESSAY",
+                    "message": f"{category}: '{title}' ({category}/{file.name}) é citada só por concept/entity/insight, nunca por um essay",
+                })
+            else:
                 corpus.append({
                     "section": "ORPHANS", "severity": "WARNING", "code": "ORPHAN_PAGE",
-                    "message": f"{category}: '{title}' ({category}/{file.name}) não é referenciada por nenhum essay",
+                    "message": f"{category}: '{title}' ({category}/{file.name}) não é referenciada por nenhuma página",
                 })
     return corpus
 

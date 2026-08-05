@@ -50,8 +50,9 @@ Dashboard **read-only**. Só relata, nunca corrige — esse é o trabalho de `/o
 ## O que o script cobre
 
 - **Essays**: contagem total, por `Tipo` (Ensaio/White Paper/Estudo/etc), e distribuição de tags do vocabulário controlado — que é a única classificação temática da wiki, já que `Categoria` não existe mais.
-- **Sinais de lint rápidos**: essays com `## Resumo Executivo` residual (não deveria existir mais, ver `conventions/SKILL.md`), essays com mais de 2 travessões, essays sem `## Sumário`/`## Referências`/`## Conexões`. Isso é uma varredura rasa (regex), não substitui `check_wiki.py` nem o julgamento humano do lint completo.
-- **Órfãos**: concepts/entities em `wiki/concepts/` e `wiki/entities/` que não aparecem em nenhuma seção `## Conexões` de essay.
+- **Sinais de lint rápidos**: essays com `## Resumo Executivo` residual (informativo — ver `conventions/SKILL.md`; converter só ao editar o essay por outro motivo), essays com mais de 2 travessões na prosa, essays sem `## Sumário`/`## Referências`/`## Conexões`. Isso é uma varredura rasa (regex), não substitui `check_wiki.py` nem o julgamento humano do lint completo.
+- **Órfãos**: concepts/entities que nenhuma página cita. Reporte como pendência.
+- **Sem essay**: citados só por concept/entity/insight. Estado legítimo — reporte como informativo, sem propor correção.
 - **Sources**: total de arquivos em `wiki/sources/**`, distribuição por subpasta de tipo, quantos não têm entrada em `manifest.md`, quantos estão em uma subpasta fora do vocabulário controlado, quantas entradas do manifesto não têm `Tags:` preenchido, e a distribuição de tags em uso no manifesto — mesmo vocabulário controlado dos essays (ver `## Sources, Tags e Vocabulários Controlados` no AGENTS.md).
 - **Handouts**: quantos existem em `wiki/handouts/`.
 - **Plano**: quantos itens em `plan/plano.md`, por seção (Tarefas / Fontes para Ingerir / Revisões / Estudos / Essays Futuros) e por status.

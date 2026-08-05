@@ -111,18 +111,31 @@ def lookup(title, scopes=ALL_SCOPES):
 
 
 def orphans(scopes=None):
-    """Páginas nos escopos dados sem nenhum backlink de scope algum (busca em ALL_SCOPES)."""
+    """Dois graus de orfandade, nos escopos dados.
+
+    Devolve (totais, sem_essay):
+      totais    — ninguém cita, em lugar nenhum. Órfão de verdade.
+      sem_essay — citada só por concept/entity/insight, nunca por essay.
+                  Legítimo (insight que ainda não virou essay, concept que se
+                  apoia noutro); informativo, não defeito.
+    """
     target_scopes = scopes or DEFAULT_ORPHAN_SCOPE
     index, all_pages = build_backlink_index(ALL_SCOPES)
-    result = []
+    totais, sem_essay = [], []
     for title, (node_type, path) in all_pages.items():
+        if node_type not in target_scopes:
+            continue
         # Um wikilink pode apontar pelo slug do arquivo (`[[andy-clark|...]]`,
         # forma canônica que o Obsidian resolve) ou pelo H1 antigo. A página só
         # é órfã quando NENHUMA das duas grafias aparece em lugar nenhum.
         slug = Path(path).stem
-        if node_type in target_scopes and title not in index and slug not in index:
-            result.append((title, node_type, path))
-    return sorted(result, key=lambda x: (x[1], x[0]))
+        fontes = index.get(title, []) + index.get(slug, [])
+        if not fontes:
+            totais.append((title, node_type, path))
+        elif not any(src_type == "essays" for _, src_type, _ in fontes):
+            sem_essay.append((title, node_type, path))
+    ordena = lambda r: sorted(r, key=lambda x: (x[1], x[0]))
+    return ordena(totais), ordena(sem_essay)
 
 
 def main():
@@ -141,14 +154,21 @@ def main():
         args.orphans = True
 
     if args.orphans:
-        found = orphans(args.scope)
-        if not found:
+        totais, sem_essay = orphans(args.scope)
+        if not totais and not sem_essay:
             scopes_label = ", ".join(args.scope or DEFAULT_ORPHAN_SCOPE)
             print(f"Nenhum órfão encontrado (escopo: {scopes_label}).")
             return 0
-        print(f"{len(found)} órfão(s) (sem nenhum backlink):")
-        for title, node_type, path in found:
-            print(f"  - [{node_type}] {title} ({path})")
+        if totais:
+            print(f"{len(totais)} órfão(s) TOTAL (nenhuma página cita):")
+            for title, node_type, path in totais:
+                print(f"  - [{node_type}] {title} ({path})")
+        if sem_essay:
+            if totais:
+                print()
+            print(f"{len(sem_essay)} sem essay (citada só por concept/entity/insight — informativo):")
+            for title, node_type, path in sem_essay:
+                print(f"  - [{node_type}] {title} ({path})")
         return 0
 
     scopes = args.scope or ALL_SCOPES

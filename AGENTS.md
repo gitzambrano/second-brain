@@ -117,7 +117,7 @@ Tag entre colchetes indica como a skill trabalha: **[script]** roda ferramenta e
 
 ## Essays — Tema Central
 
-1. **Todo caminho leva a um essay.** Concept/entity sem essay que o referencie é órfão e precisa de um essay-pai.
+1. **Todo caminho leva a um essay.** Concept/entity que nenhuma página cita é órfã e precisa de um essay-pai. Citada só por concept/entity/insight é estado legítimo — informativo, não defeito.
 2. `wiki/index.md` contém só essays, lista plana por data de criação, com `summary` e `tags`. Gerado por `build_index.py`, nunca editado à mão. Formato exato em `conventions/SKILL.md`.
 3. **Dois tipos de essay**: originais (de `raw/`, texto intacto) e criados (pela wiki, livremente editáveis). Detalhes em `conventions/SKILL.md`.
 4. Todo essay carrega frontmatter YAML completo, byline padronizada, `## Sumário`, links externos inline, `## Referências` e `## Conexões`. Formato exato em `conventions/SKILL.md`.
@@ -174,6 +174,19 @@ Pendência de curto prazo (o que ficou em aberto na sessão) fica em `wiki/statu
   Nunca decide conteúdo — nunca funde página, nunca resolve contradição, nunca escreve prosa. Chame só ao fechar `/organize`, `/sweep`, `/status update`, ou sob pedido direto ("atualiza tudo", "sincroniza") — nunca antes das edições. Nunca versiona `wiki/`, `plan/`, `raw/`, `output/` (ver `## Notas` no README.md).
 
 - **`lint-report`** — roda `check_wiki.py`, `check_references.py`, `check_dedupe.py` e `check_gaps.py` em modo `--json` e devolve o resumo já agrupado por prioridade (Crítico/Atenção/Informativo). Não corrige nada. Só sob pedido direto do Usuário — nenhuma skill chama este subagent automaticamente.
+
+### Escrever e modificar skills e agentes
+
+Vale para todo arquivo em `.agents/skills/` e `.agents/agents/`.
+
+- Escreva para execução: o que fazer, em que ordem, com que comando. Corte o resto.
+- Frase direta e legível — prosa curta, não telegrama.
+- Justifique uma regra só quando o motivo mudar a decisão do agente.
+- Não descreva o que outra skill faz. Cite o comando (`/organize`) ou o arquivo (`conventions/SKILL.md`) e siga.
+- Não registre histórico de mudança: a skill descreve o comportamento atual. O resto é o git.
+- Restrinja só o necessário. Reserve "nunca" e "sempre" para o que quebra a wiki se violado; no resto, dê a direção e deixe a margem de julgamento ("prefira X", "só sob pedido").
+- Mudou o comportamento, ajuste a `description:` do frontmatter — é ela que decide quando a skill dispara.
+- Editou, rode `python scripts/sync_skills.py` (ver `### Fonte única para múltiplos agentes`).
 
 ## Ferramentas
 

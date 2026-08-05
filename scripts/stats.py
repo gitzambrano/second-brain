@@ -165,21 +165,41 @@ def collect_wikilinks(content):
 
 
 def orphan_stats(essay_titles):
-    """Concepts/entities not referenced by any essay's ## Conexões."""
-    referenced = set()
-    if ESSAYS_DIR.exists():
-        for e in ESSAYS_DIR.glob("*.md"):
-            referenced.update(collect_wikilinks(load(e)))
+    """Dois graus de orfandade (mesma regra de check_wiki.py/find_backlinks.py).
+
+    orphans      — nenhuma página cita. Órfão de verdade.
+    sem_essay    — citada só por concept/entity/insight, nunca por essay.
+    """
+    def referenced_by(dirs):
+        ref = set()
+        for d in dirs:
+            if d.exists():
+                for f in d.glob("*.md"):
+                    ref.update(collect_wikilinks(load(f)))
+        return ref
+
+    por_essay = referenced_by([ESSAYS_DIR])
+    por_outros = referenced_by([CONCEPTS_DIR, ENTITIES_DIR, INSIGHTS_DIR])
 
     orphans = defaultdict(list)
+    sem_essay = defaultdict(list)
     for label, d in [("concepts", CONCEPTS_DIR), ("entities", ENTITIES_DIR)]:
         if not d.exists():
             continue
         for f in d.glob("*.md"):
             title = get_h1(load(f))
-            if title and title not in referenced:
+            if not title:
+                continue
+            # A forma canônica é `[[slug|Título]]`: casa pelo slug do arquivo E
+            # pelo H1, senão todo link canônico conta como órfão.
+            grafias = {title, f.stem}
+            if grafias & por_essay:
+                continue
+            if grafias & por_outros:
+                sem_essay[label].append(title)
+            else:
                 orphans[label].append(title)
-    return orphans
+    return orphans, sem_essay
 
 
 def source_stats():
@@ -305,7 +325,7 @@ def insights_stats():
     }
 
 
-def format_report(essay, orphans, sources, handouts, insights, plan):
+def format_report(essay, orphans, sem_essay, sources, handouts, insights, plan):
     lines = []
     lines.append(f"# Second Brain Stats — {datetime.date.today().isoformat()}")
     lines.append("")
@@ -338,10 +358,20 @@ def format_report(essay, orphans, sources, handouts, insights, plan):
     lines.append(f"- Essays sem `## Conexões`: {len(essay['missing_conexoes'])}")
     lines.append("")
 
-    lines.append("## Órfãos (concepts/entities sem essay que os referencie)")
+    lines.append("## Órfãos (nenhuma página os referencia)")
     total_orphans = sum(len(v) for v in orphans.values())
     lines.append(f"- Total: {total_orphans}")
     for label, items in orphans.items():
+        if items:
+            lines.append(f"- {label}:")
+            for i in items:
+                lines.append(f"  - {i}")
+    lines.append("")
+
+    lines.append("## Sem essay (citados só por concept/entity/insight — informativo)")
+    total_sem_essay = sum(len(v) for v in sem_essay.values())
+    lines.append(f"- Total: {total_sem_essay}")
+    for label, items in sem_essay.items():
         if items:
             lines.append(f"- {label}:")
             for i in items:
@@ -407,13 +437,13 @@ def main():
     args = parser.parse_args()
 
     essay = essay_stats()
-    orphans = orphan_stats(essay["titles"])
+    orphans, sem_essay = orphan_stats(essay["titles"])
     sources = source_stats()
     handouts = handout_stats()
     insights = insights_stats()
     plan = plan_stats()
 
-    report = format_report(essay, orphans, sources, handouts, insights, plan)
+    report = format_report(essay, orphans, sem_essay, sources, handouts, insights, plan)
     print(report)
 
     if args.save:

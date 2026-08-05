@@ -52,7 +52,10 @@ Nunca cole o relatório bruto de `check_wiki.py` — é genérico de propósito.
    ```
 
    Guarde as duas saídas `--json` — usadas nos passos 4, 14, 15 e 18. Aplique `fix_lint.py` em todo essay, inclusive `finalizado`/`maduro`.
-2. **[script]** Órfãos: `python scripts/find_backlinks.py --orphans`. **[leitura]** Para cada concept/entity sem essay que o referencie, decida com o Usuário: essay novo, anexar a existente, ou remover.
+2. **[script]** Órfãos: `python scripts/find_backlinks.py --orphans`. Devolve dois graus:
+
+   - **Órfão total** (nenhuma página cita): entra em "Atenção". **[leitura]** Decida com o Usuário: essay novo, anexar a existente, ou remover.
+   - **Sem essay** (citada só por concept/entity/insight): entra em "Informativo". É estado legítimo — insight que ainda não virou essay, ou concept que se apoia noutro. Não proponha correção; só sinalize se acumular numa mesma área temática, aí ofereça `/plan add` (Essay futuro).
 3. **[leitura]** Contradições e claims desatualizados: ao ler os essays (achados do stats ou amostragem), sinalize contradições entre páginas e claims superados, seguindo `## Regra de contradição entre fontes` de `conventions/SKILL.md` — nunca escolha um lado sozinho. Se a correção não for imediata, ofereça registrar `Revisão` em `plan/plano.md` via `/plan add`.
 4. **[script]** Confirme `wiki/index.md`/`index.json` regenerados (passo 1). Se essay novo/editado/removido não refletir, rode `build_index.py` de novo.
 
@@ -88,8 +91,8 @@ Nunca cole o relatório bruto de `check_wiki.py` — é genérico de propósito.
 
     - **Corrigido automaticamente** (mecânico, já aplicado).
     - **Crítico — precisa de decisão** (sources sem essay, wikilinks mortos sem alvo, contradições, seções do plano fora do vocabulário, `[[wikilink]]` fora de `## Conexões`, `## Conexões`/`## Sumário` ausente).
-    - **Atenção — vale revisar** (notas órfãs, páginas isoladas no grafo, pares de tag sem conexão, tags quase-duplicadas, tags com cobertura rasa, quase-duplicatas de título/referência, `## Referências` sem link ou fora do padrão, estrutura de pastas faltando, byline malformado, aspas/apóstrofo ASCII, parágrafo em inglês, HTML residual, símbolo residual, travessão em excesso).
-    - **Informativo** (contagens do stats).
+    - **Atenção — vale revisar** (órfãos totais, páginas isoladas no grafo, pares de tag sem conexão, tags quase-duplicadas, tags com cobertura rasa, quase-duplicatas de título/referência, `## Referências` sem link ou fora do padrão, estrutura de pastas faltando, byline malformado, aspas/apóstrofo ASCII, parágrafo em inglês, HTML residual, símbolo residual, travessão em excesso).
+    - **Informativo** (contagens do stats, páginas sem essay, travessões na prosa, `## Resumo Executivo` residual).
     - **Liste nominalmente os essays com `FM_NO_SUMMARY`.**
     - **[leitura]** `EMPTY_REFERENCIAS`, `REF_BOLD_AUTHOR`, `REF_TITLE_IS_AUTHOR`, `REF_MISSING_TITLE` nunca são auto-corrigíveis — exigem descobrir o título/autor real de fonte externa, o que `fix_lint.py` não navega a web para fazer.
 

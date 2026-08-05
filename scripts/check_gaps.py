@@ -148,6 +148,29 @@ def extract_capitalized_phrases(body):
 NOISE_TERMS = {
     "portanto", "assim", "logo", "porém", "contudo", "entretanto",
     "referências", "conexões", "sumário", "índice",
+    # Conectivos e abertura de frase — capitalizados por posição, não por serem
+    # nome próprio. O heurístico de maiúscula os pega em toda página.
+    "quando", "enquanto", "embora", "porque", "portanto", "todavia",
+    "ainda", "apenas", "talvez", "sempre", "nunca", "então", "mesmo",
+    "outro", "outra", "outros", "outras", "cada", "todo", "toda",
+    # Substantivos abstratos genéricos — aparecem em toda prosa argumentativa e
+    # nunca são o conceito que mereceria página própria.
+    "teoria", "teorias", "hipótese", "hipóteses", "problema", "problemas",
+    "conclusão", "conclusões", "introdução", "discussão", "resultado",
+    "resultados", "análise", "exemplo", "exemplos", "caso", "casos",
+    "questão", "questões", "ideia", "ideias", "ponto", "pontos",
+    "forma", "formas", "parte", "partes", "tipo", "tipos", "nível",
+    "ordem", "número", "valor", "valores", "modelo", "modelos",
+    "método", "métodos", "princípio", "princípios", "limite", "limites",
+    "capítulo", "seção", "figura", "tabela", "autor", "autores",
+    "objetivo", "objetivos", "critério", "critérios", "aspecto",
+    "antes", "depois", "mundo", "universidade", "paradoxo", "teorema",
+    "teoremas", "argumento", "argumentos", "sistema", "sistemas",
+    "filósofo", "filósofos", "cientista", "cientistas", "teste", "testes",
+    "existe", "existem", "nenhum", "nenhuma", "todos", "todas",
+    "alguns", "algumas", "muitos", "muitas", "isso", "isto",
+    "esse", "essa", "este", "esta", "aqui", "agora", "hoje",
+    "também", "sobre", "entre", "durante", "segundo", "primeiro",
 }
 
 
@@ -194,13 +217,35 @@ def collect_existing_pages():
     return pages
 
 
-def analyze_gap_candidates(sources, existing_pages):
+def collect_entity_surnames(existing_pages):
+    """Último token do nome de cada entity — a prosa cita "Gödel", a página é
+    `kurt-godel.md`. Sem isso, toda entity de pessoa reaparece como candidata a
+    página nova. Só entities: em concept o último token é substantivo comum
+    ("Teoria da *Informação*") e suprimiria candidato legítimo."""
+    surnames = {}
+    for nome, (rel, node_type) in existing_pages.items():
+        if node_type != "entities":
+            continue
+        tokens = nome.split()
+        if len(tokens) < 2:
+            continue
+        ultimo = tokens[-1]
+        if len(ultimo) >= 4 and ultimo not in surnames:
+            surnames[ultimo] = (rel, node_type)
+    return surnames
+
+
+def analyze_gap_candidates(sources, existing_pages, entity_surnames):
     # term -> {"pages": set((node_type, filename)), "total": int, "kinds": set()}
     stats = defaultdict(lambda: {"pages": set(), "total": 0, "kinds": set()})
 
     for path, (content, node_type) in sources.items():
         body = strip_frontmatter(content)
         wikilink_targets = extract_wikilinks(body)
+        # `## Referências` e `## Conexões` são boilerplate de formato, não prosa:
+        # a entrada AIAA produz "Wikipedia", "Link", "Autor" em todo essay.
+        body = re.split(r"(?m)^## Refer[êe]ncias\s*$", body)[0]
+        body = re.split(r"(?m)^## Conex[õo]es\s*$", body)[0]
         body_no_code = strip_code_and_urls(body)
 
         candidates_this_page = []
@@ -217,7 +262,7 @@ def analyze_gap_candidates(sources, existing_pages):
                 continue
             if norm in wikilink_targets:
                 continue  # já promovido a wikilink nesta página
-            if norm in existing_pages:
+            if norm in existing_pages or norm in entity_surnames:
                 continue  # já tem página — não é gap, é possível wikilink faltando (ver Parte 2)
             stats[term]["pages"].add((node_type, path.name))
             stats[term]["total"] += 1
@@ -363,7 +408,8 @@ def main():
 
     existing_pages = collect_existing_pages()
 
-    print_part1(analyze_gap_candidates(sources, existing_pages))
+    print_part1(analyze_gap_candidates(sources, existing_pages,
+                                       collect_entity_surnames(existing_pages)))
     print_part2(analyze_unlinked_existing_pages(sources, existing_pages))
     if not args.skip_tags:
         print_part3(analyze_tag_balance())

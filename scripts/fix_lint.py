@@ -320,6 +320,44 @@ def fix_sumario_anchors(text):
     return text[:inicio] + novo_bloco + text[fim:]
 
 
+def fix_ascii_double_quotes(segment):
+    """Aspas retas (") viram tipográficas (“ ”) na prosa.
+
+    Só aspas duplas. O apóstrofo reto (') fica como está: na wiki ele aparece
+    exclusivamente dentro de título de obra em inglês (*The Emperor's New Mind*,
+    *Bramwell's Helicopter Dynamics*), string bibliográfica que deve casar com a
+    fonte, e como linha (prime) em LaTeX (`x'`, `\\theta''`).
+
+    Trechos mascarados antes da troca: código inline, math `$...$`/`$$...$$`,
+    alvo de link markdown, tag HTML. Math é o caso crítico — 21 dos 35 essays
+    têm `$...$`, e trocar aspas ali quebra o LaTeX na exportação a PDF.
+    """
+    masked = []
+
+    def mask(m):
+        masked.append(m.group(0))
+        return f"\x00{len(masked) - 1}\x00"
+
+    protected = re.compile(
+        r"\$\$.*?\$\$"          # math display
+        r"|\$[^$\n]+\$"          # math inline
+        r"|`[^`\n]*`"            # código inline
+        r"|\]\([^)\n]*\)"        # alvo de link markdown
+        r"|<[^>\n]+>",           # tag HTML
+        re.DOTALL,
+    )
+    segment = protected.sub(mask, segment)
+
+    # Abre se vier depois de início/espaço/abertura; senão fecha.
+    def troca(m):
+        anterior = m.string[m.start() - 1] if m.start() > 0 else ""
+        abre = anterior == "" or anterior in " \t\n([{—–-*_>"
+        return "“" if abre else "”"
+
+    segment = re.sub(r'"', troca, segment)
+    return re.sub(r"\x00(\d+)\x00", lambda m: masked[int(m.group(1))], segment)
+
+
 def fix_content(content):
     frontmatter, body = split_frontmatter(content)
     body = apply_outside_fences(body, fix_hr_needs_blank_line)
@@ -328,6 +366,7 @@ def fix_content(content):
     body = apply_outside_fences(body, fix_heading_spacing)
     body = apply_outside_fences(body, fix_wikilinks_colons)
     body = apply_outside_fences(body, fix_double_spaces)
+    body = apply_outside_fences(body, fix_ascii_double_quotes)
     body = apply_outside_fences(body, fix_ampersand_entity)
     body = fix_excess_blank_lines(body)
     return frontmatter + body

@@ -86,6 +86,8 @@ Campo `status:`, só em `wiki/essays/`, nunca em `concepts/`/`entities/`.
 - `/import` (texto pronto do autor): nasce `finalizado` por padrão, ou `draft` se ficar claro que é rascunho do autor.
 - Essay antigo sem o campo: default `draft`, corrigido depois via `/organize`.
 
+O status protege a **prosa**, não a formatação. `/organize` e `fix_lint.py` aplicam correção mecânica (aspas, espaçamento, headings, wikilinks) em todo essay, inclusive `finalizado`/`maduro` — nada disso altera o que o texto diz. Só as skills abaixo respeitam o status.
+
 **Regra para skills que editam prosa** (`/sweep`, `/expand`, `/chapter`, `/proofread`, `/polish`, `/continuity`, `/linkify`). Depende de o Usuário ter nomeado um essay, não de quantos a skill acaba tocando.
 
 - **Batch** ("/sweep tudo", "revisa todos"): pule `finalizado`/`maduro`, sem perguntar nem avisar durante a execução. No resumo final, informe quantos foram pulados.
@@ -108,7 +110,7 @@ Logo após `# Título`, com linha vazia entre título e byline:
 
 ## Estrutura obrigatória do essay
 
-1. **Sem resumo executivo interno** — abre com a byline e vai direto ao `## Sumário`. A primeira seção `##` já é a introdução. Resumo condensado é `/handout`, nunca embutido.
+1. **Evite resumo executivo interno** — prefira uma introdução. Abra com a byline, vá direto ao `## Sumário`, e faça da primeira seção `##` a introdução. Resumo condensado sob demanda é `/handout`. Essay antigo com `## Resumo Executivo` não é erro a corrigir de ofício: converta em introdução só ao editar aquele essay por outro motivo.
 2. **`## Sumário` obrigatório**, logo após a byline, com links para todas as seções `##` (exceto Referências e Conexões):
 
    ```
@@ -215,7 +217,7 @@ Artefatos gerados por `scripts/build_references.py` ao final de `/essay`, `/expa
 Vale para todo trecho escrito/reescrito pela wiki — não retroage sobre texto original de `raw/`, a menos que `/polish` ou `/proofread` seja pedido explicitamente.
 
 1. **Evitar bullets no corpo.** Prosa argumentativa em parágrafos com transições explícitas. Bullets só em `## Sumário`, `## Referências`, e tabelas genuinamente mais claras que prosa.
-2. **Travessões (—) extremamente raros**: no máximo 1 a 2 no essay inteiro, não por parágrafo. Prefira vírgula, dois-pontos, parênteses, ou reestruture a frase. Não conta o `·` da byline.
+2. **Travessões (—) extremamente raros**: no máximo 1 a 2 na prosa, não por parágrafo. Prefira vírgula, dois-pontos, parênteses, ou reestruture a frase. Não conta o `·` da byline, nem o `—` de `## Referências` (obrigatório antes da nota) e `## Conexões` (antes da descrição), que são estruturais. `check_wiki.py` conta só a prosa e emite `TOO_MANY_EM_DASHES` como INFO: é alvo de estilo para texto novo, não dívida a saldar no corpus existente.
 
 ## Formato do índice (`wiki/index.md`)
 

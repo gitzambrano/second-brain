@@ -33,7 +33,7 @@ Se o argumento for ambíguo (casa com mais de uma página/tema), pergunte antes 
 ## O que este skill reusa (não reimplementa)
 
 - **Toda a identificação de candidatos** — mecânica, léxica, semântica — é `/gaps`, invocado no passo 1 com o mesmo argumento de escopo recebido aqui. `/connect` nunca roda `check_gaps.py` nem `qmd query` de forma independente; consome a lista que `/gaps` já produziu.
-- **Órfão reverso** (página sem nenhum essay que a referencie): `find_backlinks.py --orphans`.
+- **Órfão reverso**: `find_backlinks.py --orphans`. Priorize os **órfãos totais** (nenhuma página cita) — são os que precisam de conexão. Os listados como **sem essay** (citados só por concept/entity/insight) já estão conectados; não force um link a essay só para zerar a lista.
 - **Quase-duplicata** (duas páginas que parecem a mesma coisa): `check_dedupe.py`, antes de criar qualquer página nova.
 - **Nome de página novo**: `check_title.py "Título Proposto"` sempre antes de nomear um arquivo, evita nascer quase-duplicata por grafia diferente.
 
