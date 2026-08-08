@@ -175,11 +175,9 @@ GRAPH_STYLE = {
     # forceX/Y acima de ~0.6 já ficam bem rígidos (quase trava o nó no
     # lugar), por isso o slider vai só até ali.
     "homeStrength": 0.25,
-    # "auto" | "alta" | "media" | "baixa" — ver PERFORMANCE_TIERS no HTML
-    # gerado. "auto" decide pelo tamanho do grafo e pelo aparelho (celular
-    # entra em "baixa"/"média" sozinho); as wikis grandes se beneficiam
-    # de deixar em "auto" e não pensar mais nisso.
-    "performance": "auto",
+    # "alta" | "media" | "baixa" — ver PERFORMANCE_TIERS no HTML
+    # gerado. "alta" é o padrão tanto no Desktop quanto no Mobile.
+    "performance": "alta",
     # Força de colisão do d3 (evita nós sobrepostos). Ligada por padrão —
     # pedido explícito do Usuário — mas o usuário pode desligar no painel de
     # Estilo em aparelhos fracos: é uma das forças mais caras por tick em
@@ -948,7 +946,7 @@ const FACTORY_STYLE = data.defaultStyle || {
     reference: "#8a8f96", edge: "#9aa0a8", background: "#1b1e21" },
   edgeOpacity: 0.55, edgeVisibility: "sempre", radiusBase: 5, radiusScale: 3, labelSize: 10,
   glow: "leve", labels: "sempre", starfield: true, gradient: true, sizeMode: "degree",
-  spacing: 1.8, performance: "auto", collision: true,
+  spacing: 1.8, performance: "alta", collision: true,
   linkStrength: 3.5, chargeStrength: 2.5, friction: 0.65, homeStrength: 0.25,
   sphereShading: false, tagTint: false,
 };
@@ -988,23 +986,8 @@ const PERFORMANCE_TIERS = {
 };
 function resolvePerformanceTier(cfg) {
   if (cfg.performance && cfg.performance !== "auto") return cfg.performance;
-  const n = data.nodes.length;
-  if (DEVICE_IS_MOBILE) {
-    // `hardwareConcurrency` é o sinal mais barato de "aparelho fraco de
-    // verdade" dentro do universo já filtrado por DEVICE_IS_MOBILE: a
-    // maioria dos celulares de entrada reporta 4 núcleos lógicos ou menos.
-    // Esse grupo cai para "baixa" com um grafo bem menor do que um celular
-    // topo de linha aguentaria em "média" — sem isso, um Galaxy A com 1100
-    // nós tentaria rodar no mesmo tier de um iPhone recente.
-    const fewCores = (navigator.hardwareConcurrency || 8) <= 4;
-    return n > (fewCores ? 90 : 140) ? "baixa" : "media";
-  }
-  // Desktop nunca cai de tier sozinho: fica sempre em "alta" (o usuário
-  // pode escolher "média"/"baixa" à mão no painel de Estilo se um aparelho
-  // desktop específico não aguentar). Diferente do celular, aqui não há
-  // sinal barato de "máquina fraca" pra decidir por baixo do usuário — e
-  // quem roda o gerador num desktop já tende a ter CPU de sobra pro tamanho
-  // desta wiki.
+  // Tanto Desktop quanto Mobile iniciam em "alta" por padrão.
+  // O usuário ainda pode escolher "média" ou "baixa" manualmente no painel de Estilo se necessário.
   return "alta";
 }
 
@@ -1169,6 +1152,28 @@ let zoomTransform = d3.zoomIdentity;
 
 const nodeById = new Map(data.nodes.map(n => [n.id, n]));
 const endpoint = (v) => (typeof v === "object" ? v : nodeById.get(v));
+
+// Pre-calcular effectiveTags para TODOS os nós (incluindo conceitos, entidades, etc)
+// propagando tags de vizinhos para que clusters inteiros participem do tingimento por tag.
+const nodeTagSets = new Map();
+data.nodes.forEach(n => {
+  const s = new Set(n.tags || []);
+  nodeTagSets.set(n.id, s);
+});
+data.edges.forEach(e => {
+  const srcId = typeof e.source === "object" ? e.source.id : e.source;
+  const tgtId = typeof e.target === "object" ? e.target.id : e.target;
+  const srcSet = nodeTagSets.get(srcId);
+  const tgtSet = nodeTagSets.get(tgtId);
+  if (srcSet && tgtSet) {
+    srcSet.forEach(t => tgtSet.add(t));
+    tgtSet.forEach(t => srcSet.add(t));
+  }
+});
+data.nodes.forEach(n => {
+  const set = nodeTagSets.get(n.id);
+  n.effectiveTags = set ? Array.from(set) : [];
+});
 
 // Quadtree para hit-testing barato: em vez de testar distância contra os
 // ~1100 nós a cada clique/arrasto/hover, a árvore descarta ramos inteiros
@@ -1653,37 +1658,48 @@ function drawLabel(n) {
 }
 
 // ---- Tingimento de fundo por tag ------------------------------------------
-// Hash determinístico (djb2) de string pra matiz 0-360: a mesma tag sempre
-// cai na mesma cor entre recarregamentos, sem precisar guardar um mapa em
-// lugar nenhum.
+const TAG_HUE_MAP = {
+  "Filosofia": 270,
+  "Inteligência-Artificial": 205,
+  "Engenharia": 35,
+  "Aerodinâmica": 190,
+  "Dinâmica-de-Voo": 210,
+  "Rotores": 25,
+  "Estatística": 160,
+  "Biologia": 120,
+  "Consciência": 285,
+  "Física": 45,
+  "Cosmologia": 240,
+  "Matemática": 330,
+  "Computação": 175,
+  "Gestão": 15,
+  "Sociedade": 140,
+  "Ética": 50,
+  "Livre-Arbítrio": 260,
+  "Metafísica": 295,
+  "Epistemologia": 225,
+  "Futebol": 130,
+  "Amor": 345,
+  "Literatura": 30,
+  "Psicologia": 310,
+  "Exobiologia": 165,
+  "Efeito-Solo": 200,
+  "Estabilidade": 40,
+  "Controle": 220,
+  "Diversidade": 320,
+  "Vida-Pessoal": 350,
+};
+
 function tagHue(tag) {
+  if (TAG_HUE_MAP[tag] !== undefined) return TAG_HUE_MAP[tag];
   let h = 5381;
   for (let i = 0; i < tag.length; i++) h = ((h * 33) ^ tag.charCodeAt(i)) >>> 0;
   return h % 360;
 }
 
-// Um blob GLOBAL por tag (centro de massa + raio de dispersão de TODOS os
-// nós daquela tag) foi a primeira tentativa aqui, e não funcionava: tag não
-// entra na física do layout (só wikilink entra), então a maioria das tags
-// está espalhada pelo grafo inteiro — o "blob" saía do tamanho do grafo
-// inteiro, com opacidade quase uniforme em qualquer ponto da tela.
-// Efetivamente invisível.
-//
-// A solução é local, não global: um "dab" pequeno e bem fraco em cima de
-// CADA nó, pra cada tag que ele carrega, com blend ADITIVO
-// (globalCompositeOperation "lighter"). Um dab sozinho quase não muda nada;
-// mas onde vários nós da MESMA tag caem perto uns dos outros no layout (o
-// que tende a acontecer de verdade — essays da mesma tag costumam se citar
-// e o wikilink os aproxima), os dabs se empilham e a região acumula cor,
-// revelando a densidade real da tag naquele ponto do grafo. "Pinta mais ou
-// menos" literalmente: mais onde a tag está concentrada, quase nada onde
-// está isolada ou espalhada.
-//
-// Sprite cacheado por tag (não por nó): mesma ideia de getNodeSprite() —
-// sem isso seriam milhares de createRadialGradient()+fill() por frame (um
-// por par nó×tag), caro demais até pra uma opção já opt-in.
-const TAG_DAB_SIZE = 110; // diâmetro do dab em px "de mundo", antes do dpr
+const TAG_DAB_SIZE = 380; // diâmetro amplo em px de mundo para permitir alcance longo e blend atmosférico
 const tagTintSprites = new Map(); // tag -> HTMLCanvasElement
+
 function getTagTintSprite(tag) {
   let sprite = tagTintSprites.get(tag);
   if (sprite) return sprite;
@@ -1696,29 +1712,24 @@ function getTagTintSprite(tag) {
   sctx.scale(px / TAG_DAB_SIZE, px / TAG_DAB_SIZE);
   const c = TAG_DAB_SIZE / 2;
   const g = sctx.createRadialGradient(c, c, 0, c, c, c);
-  // Saturação e luminosidade um pouco acima do fundo (que já é bem escuro,
-  // ~12% de luminosidade no padrão de fábrica): perto DEMAIS do preto de
-  // fundo e o "lighter" não tem o que somar — o efeito também sumiria,
-  // igual ao blob antigo. Ainda assim continua escuro (11%), só o
-  // suficiente pra ler como matiz, não como cor chapada.
-  g.addColorStop(0, `hsla(${hue}, 60%, 11%, 0.9)`);
-  g.addColorStop(1, `hsla(${hue}, 60%, 11%, 0)`);
+  // Gradiente radial multi-stop suave com opacidade calibrada para blend aditivo ("lighter")
+  g.addColorStop(0, `hsla(${hue}, 70%, 16%, 0.30)`);
+  g.addColorStop(0.3, `hsla(${hue}, 65%, 12%, 0.18)`);
+  g.addColorStop(0.7, `hsla(${hue}, 55%, 8%, 0.06)`);
+  g.addColorStop(1, `hsla(${hue}, 50%, 5%, 0)`);
   sctx.fillStyle = g;
   sctx.fillRect(0, 0, TAG_DAB_SIZE, TAG_DAB_SIZE);
   tagTintSprites.set(tag, sprite);
   return sprite;
 }
 
-// Desenhado ANTES de arestas/nós, ainda dentro do bloco de transform de
-// mundo (mesmo pan/zoom) — funciona como camada de fundo. `inView` (já
-// calculado pelo chamador pra cull de nó/aresta) também limita o custo aqui:
-// não pinta o que está fora da tela.
 function drawTagTint(inView) {
   ctx.globalCompositeOperation = "lighter";
   const half = TAG_DAB_SIZE / 2;
   data.nodes.forEach(n => {
-    if (!isNodeVisible(n) || n.x == null || !n.tags || !n.tags.length || !inView(n)) return;
-    n.tags.forEach(tag => {
+    const tags = (n.effectiveTags && n.effectiveTags.length) ? n.effectiveTags : n.tags;
+    if (!isNodeVisible(n) || n.x == null || !tags || !tags.length || !inView(n)) return;
+    tags.forEach(tag => {
       ctx.drawImage(getTagTintSprite(tag), n.x - half, n.y - half, TAG_DAB_SIZE, TAG_DAB_SIZE);
     });
   });
@@ -2575,8 +2586,8 @@ function renderStylePanel(seed) {
       <label class="style-row">
         <span>Nível de desempenho</span>
         <select id="st-performance">
-          <option value="auto" ${(draft.performance ?? "auto") === "auto" ? "selected" : ""}>Automático (recomendado)</option>
-          <option value="alta" ${draft.performance === "alta" ? "selected" : ""}>Alta</option>
+          <option value="alta" ${(draft.performance ?? "alta") === "alta" ? "selected" : ""}>Alta (recomendado)</option>
+          <option value="auto" ${draft.performance === "auto" ? "selected" : ""}>Automático</option>
           <option value="media" ${draft.performance === "media" ? "selected" : ""}>Média</option>
           <option value="baixa" ${draft.performance === "baixa" ? "selected" : ""}>Baixa</option>
         </select>
