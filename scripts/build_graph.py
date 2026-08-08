@@ -161,7 +161,7 @@ GRAPH_STYLE = {
     # 0.5 é o padrão atual (ver comentário junto de `.velocityDecay` no
     # HTML gerado) — reduzido de 0.55 pra deixar as bolinhas um pouco mais
     # nervosas/flutuantes por padrão, sem exagerar (um degrau do slider).
-    "friction": 0.65,
+    "friction": 0.70,
     # Elasticidade de retorno: puxa cada nó de volta pra sua posição no
     # layout calculado (n.x0/n.y0, ver compute_layout() no Python) sempre
     # que ele se afasta dali — na prática, é o que faz uma bolinha arrastada
@@ -980,9 +980,10 @@ let styleConfig = mergeWithDefaults(loadSavedStyle());
 // por tick mesmo com a árvore já aproximando; `collideIterations` é quantas
 // vezes o d3 relaxa colisões por tick (mais = menos sobreposição, mais CPU).
 const PERFORMANCE_TIERS = {
-  alta: { theta: 0.9, distanceMax: 900, collideIterations: 2, labelsAlways: true },
-  media: { theta: 1.1, distanceMax: 550, collideIterations: 1, labelsAlways: true },
-  baixa: { theta: 1.4, distanceMax: 320, collideIterations: 1, labelsAlways: false },
+  // Menos precisão nos modos baratos, mas sem mudar demais a física.
+  alta: { theta: 0.65, distanceMax: 1300, collideIterations: 4, labelsAlways: true, damping: 0.68, collisionScale: 1.16 },
+  media: { theta: 0.90, distanceMax: 900, collideIterations: 3, labelsAlways: true, damping: 0.76, collisionScale: 1.18 },
+  baixa: { theta: 1.15, distanceMax: 700, collideIterations: 4, labelsAlways: false, damping: 0.80, collisionScale: 1.24 },
 };
 function resolvePerformanceTier(cfg) {
   if (cfg.performance && cfg.performance !== "auto") return cfg.performance;
@@ -1396,12 +1397,16 @@ function applyForces(cfg) {
   if (cfg.collision === false) {
     simulation.force("collide", null);
   } else {
-    simulation.force("collide", d3.forceCollide().radius(d => (7 + radiusOf(d)) * spacing)
+    simulation.force("collide", d3.forceCollide().radius(d => (7.8 + radiusOf(d)) * spacing * currentTier.collisionScale)
+      .strength(1.25)
       .iterations(currentTier.collideIterations));
   }
-  // Atrito (slider "Atrito") — pode ser reaplicado a qualquer momento no d3,
-  // mesmo com a simulação já rodando, então não precisa de restart especial.
-  simulation.velocityDecay(cfg.friction ?? 0.6);
+  // Atrito: o valor do usuário continua prevalecendo; quando não há valor
+  // explícito, cada tier usa um damping um pouco diferente.
+  const requestedDamping = cfg.friction ?? 0.70;
+  // Cada tier tem um piso de damping. Assim BAIXA continua barata e estável
+  // mesmo quando um estilo antigo salvou um atrito menor.
+  simulation.velocityDecay(Math.max(requestedDamping, currentTier.damping));
   updateLabelVisibility(zoomTransform.k);
 }
 
@@ -1421,12 +1426,12 @@ const simulation = d3.forceSimulation(data.nodes)
   // arranque saía com velocidade mediana ~11px/tick, e num aparelho que
   // renderiza a 15fps cada frame vira um salto visível — daí a impressão de
   // agitação. Continua havendo expansão visível, só que sem o esticão inicial.
-  .alpha(0.7)
-  .alphaDecay(0.025)
+  .alpha(0.65)
+  .alphaDecay(0.035)
   // Parar em 0.005 em vez do padrão 0.001 corta as últimas dezenas de ticks,
   // que só produzem tremor sub-pixel invisível mas mantêm o rAF girando (e o
   // celular acordado) sem nada acontecer na tela.
-  .alphaMin(0.005)
+  .alphaMin(0.002)
   // velocityDecay é atrito: quanto menor, mais o nó carrega a velocidade do
   // tick anterior. Em 0.35 (abaixo até do padrão 0.4 do d3) os nós guardavam
   // momento demais, passavam do ponto de equilíbrio e voltavam, ficando
@@ -1435,7 +1440,7 @@ const simulation = d3.forceSimulation(data.nodes)
   // fica fixo aqui — applyForces() (chamado logo abaixo) já reaplica a partir
   // de cfg.friction, então o slider "Atrito" do painel de Estilo sobrescreve
   // isto no mesmo tick, sem período em que o valor fixo esteja realmente em vigor.
-  .velocityDecay(0.55);
+  .velocityDecay(0.70);
 
 applyForces(styleConfig);
 
@@ -1876,7 +1881,38 @@ function draw() {
   ctx.restore();
 }
 
+// Damping adaptativo simples: só atua quando há pouco movimento e muitos
+// nós estão invertendo a velocidade ao mesmo tempo — padrão típico de
+// oscilação residual. Não interfere no movimento normal do layout.
+let adaptiveDampingTicks = 0;
+let previousVx = data.nodes.map(n => n.vx || 0);
+let previousVy = data.nodes.map(n => n.vy || 0);
+
 simulation.on("tick", () => {
+  let moving = 0;
+  let reversals = 0;
+  data.nodes.forEach((n, i) => {
+    const vx = n.vx || 0, vy = n.vy || 0;
+    const speed = Math.hypot(vx, vy);
+    if (speed > 0.15) moving++;
+    if (speed > 0.15 && Math.hypot(previousVx[i], previousVy[i]) > 0.15 &&
+        vx * previousVx[i] + vy * previousVy[i] < 0) reversals++;
+    previousVx[i] = vx;
+    previousVy[i] = vy;
+  });
+
+  const reversalRatio = moving ? reversals / moving : 0;
+  if (adaptiveDampingTicks > 0) {
+    adaptiveDampingTicks--;
+    if (adaptiveDampingTicks === 0) simulation.velocityDecay(
+      Math.max(styleConfig.friction ?? 0.70, currentTier.damping)
+    );
+  } else if (moving > 0 && reversalRatio > 0.30) {
+    adaptiveDampingTicks = 8;
+    simulation.velocityDecay(Math.min(0.88,
+      Math.max(styleConfig.friction ?? 0.70, currentTier.damping) + 0.14));
+  }
+
   rebuildQuadtree();
   scheduleDraw();
 });
@@ -1897,7 +1933,7 @@ scheduleDraw();
 // nó largado. Grafos grandes usam um alvo bem mais baixo: o suficiente pra
 // arestas/colisão do próprio nó arrastado acompanharem o mouse, sem jogar
 // energia extra no resto do sistema.
-const DRAG_ALPHA_TARGET = data.nodes.length > 300 ? 0.06 : 0.3;
+const DRAG_ALPHA_TARGET = data.nodes.length > 300 ? 0.025 : 0.12;
 let dragMoved = false;
 
 // Em Canvas não há elemento por nó pra prender um d3.drag — o "subject" faz
@@ -2116,7 +2152,8 @@ function updateVisibility() {
   if (styleConfig.collision === false) {
     simulation.force("collide", null);
   } else {
-    simulation.force("collide", d3.forceCollide().radius(d => (7 + radiusOf(d)) * (styleConfig.spacing || 1))
+    simulation.force("collide", d3.forceCollide().radius(d => (7.8 + radiusOf(d)) * (styleConfig.spacing || 1) * currentTier.collisionScale)
+      .strength(1.25)
       .iterations(currentTier.collideIterations));
   }
   simulation.alpha(0.35).restart();
