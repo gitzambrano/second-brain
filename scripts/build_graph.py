@@ -1153,28 +1153,6 @@ let zoomTransform = d3.zoomIdentity;
 const nodeById = new Map(data.nodes.map(n => [n.id, n]));
 const endpoint = (v) => (typeof v === "object" ? v : nodeById.get(v));
 
-// Pre-calcular effectiveTags para TODOS os nós (incluindo conceitos, entidades, etc)
-// propagando tags de vizinhos para que clusters inteiros participem do tingimento por tag.
-const nodeTagSets = new Map();
-data.nodes.forEach(n => {
-  const s = new Set(n.tags || []);
-  nodeTagSets.set(n.id, s);
-});
-data.edges.forEach(e => {
-  const srcId = typeof e.source === "object" ? e.source.id : e.source;
-  const tgtId = typeof e.target === "object" ? e.target.id : e.target;
-  const srcSet = nodeTagSets.get(srcId);
-  const tgtSet = nodeTagSets.get(tgtId);
-  if (srcSet && tgtSet) {
-    srcSet.forEach(t => tgtSet.add(t));
-    tgtSet.forEach(t => srcSet.add(t));
-  }
-});
-data.nodes.forEach(n => {
-  const set = nodeTagSets.get(n.id);
-  n.effectiveTags = set ? Array.from(set) : [];
-});
-
 // Quadtree para hit-testing barato: em vez de testar distância contra os
 // ~1100 nós a cada clique/arrasto/hover, a árvore descarta ramos inteiros
 // fora do raio de busca. Reconstruída a cada tick (a simulação move os nós),
@@ -1658,48 +1636,37 @@ function drawLabel(n) {
 }
 
 // ---- Tingimento de fundo por tag ------------------------------------------
-const TAG_HUE_MAP = {
-  "Filosofia": 270,
-  "Inteligência-Artificial": 205,
-  "Engenharia": 35,
-  "Aerodinâmica": 190,
-  "Dinâmica-de-Voo": 210,
-  "Rotores": 25,
-  "Estatística": 160,
-  "Biologia": 120,
-  "Consciência": 285,
-  "Física": 45,
-  "Cosmologia": 240,
-  "Matemática": 330,
-  "Computação": 175,
-  "Gestão": 15,
-  "Sociedade": 140,
-  "Ética": 50,
-  "Livre-Arbítrio": 260,
-  "Metafísica": 295,
-  "Epistemologia": 225,
-  "Futebol": 130,
-  "Amor": 345,
-  "Literatura": 30,
-  "Psicologia": 310,
-  "Exobiologia": 165,
-  "Efeito-Solo": 200,
-  "Estabilidade": 40,
-  "Controle": 220,
-  "Diversidade": 320,
-  "Vida-Pessoal": 350,
-};
-
+// Hash determinístico (djb2) de string pra matiz 0-360: a mesma tag sempre
+// cai na mesma cor entre recarregamentos, sem precisar guardar um mapa em
+// lugar nenhum.
 function tagHue(tag) {
-  if (TAG_HUE_MAP[tag] !== undefined) return TAG_HUE_MAP[tag];
   let h = 5381;
   for (let i = 0; i < tag.length; i++) h = ((h * 33) ^ tag.charCodeAt(i)) >>> 0;
   return h % 360;
 }
 
-const TAG_DAB_SIZE = 380; // diâmetro amplo em px de mundo para permitir alcance longo e blend atmosférico
+// Um blob GLOBAL por tag (centro de massa + raio de dispersão de TODOS os
+// nós daquela tag) foi a primeira tentativa aqui, e não funcionava: tag não
+// entra na física do layout (só wikilink entra), então a maioria das tags
+// está espalhada pelo grafo inteiro — o "blob" saía do tamanho do grafo
+// inteiro, com opacidade quase uniforme em qualquer ponto da tela.
+// Efetivamente invisível.
+//
+// A solução é local, não global: um "dab" pequeno e bem fraco em cima de
+// CADA nó, pra cada tag que ele carrega, com blend ADITIVO
+// (globalCompositeOperation "lighter"). Um dab sozinho quase não muda nada;
+// mas onde vários nós da MESMA tag caem perto uns dos outros no layout (o
+// que tende a acontecer de verdade — essays da mesma tag costumam se citar
+// e o wikilink os aproxima), os dabs se empilham e a região acumula cor,
+// revelando a densidade real da tag naquele ponto do grafo. "Pinta mais ou
+// menos" literalmente: mais onde a tag está concentrada, quase nada onde
+// está isolada ou espalhada.
+//
+// Sprite cacheado por tag (não por nó): mesma ideia de getNodeSprite() —
+// sem isso seriam milhares de createRadialGradient()+fill() por frame (um
+// por par nó×tag), caro demais até pra uma opção já opt-in.
+const TAG_DAB_SIZE = 170; // diâmetro do dab em px "de mundo", antes do dpr — raio de ação maior que o original (110)
 const tagTintSprites = new Map(); // tag -> HTMLCanvasElement
-
 function getTagTintSprite(tag) {
   let sprite = tagTintSprites.get(tag);
   if (sprite) return sprite;
@@ -1712,24 +1679,29 @@ function getTagTintSprite(tag) {
   sctx.scale(px / TAG_DAB_SIZE, px / TAG_DAB_SIZE);
   const c = TAG_DAB_SIZE / 2;
   const g = sctx.createRadialGradient(c, c, 0, c, c, c);
-  // Gradiente radial multi-stop suave com opacidade calibrada para blend aditivo ("lighter")
-  g.addColorStop(0, `hsla(${hue}, 70%, 16%, 0.30)`);
-  g.addColorStop(0.3, `hsla(${hue}, 65%, 12%, 0.18)`);
-  g.addColorStop(0.7, `hsla(${hue}, 55%, 8%, 0.06)`);
-  g.addColorStop(1, `hsla(${hue}, 50%, 5%, 0)`);
+  // Saturação e luminosidade um pouco acima do fundo (que já é bem escuro,
+  // ~12% de luminosidade no padrão de fábrica): perto DEMAIS do preto de
+  // fundo e o "lighter" não tem o que somar — o efeito também sumiria,
+  // igual ao blob antigo. Ainda assim continua escuro (11%), só o
+  // suficiente pra ler como matiz, não como cor chapada.
+  g.addColorStop(0, `hsla(${hue}, 60%, 11%, 0.9)`);
+  g.addColorStop(1, `hsla(${hue}, 60%, 11%, 0)`);
   sctx.fillStyle = g;
   sctx.fillRect(0, 0, TAG_DAB_SIZE, TAG_DAB_SIZE);
   tagTintSprites.set(tag, sprite);
   return sprite;
 }
 
+// Desenhado ANTES de arestas/nós, ainda dentro do bloco de transform de
+// mundo (mesmo pan/zoom) — funciona como camada de fundo. `inView` (já
+// calculado pelo chamador pra cull de nó/aresta) também limita o custo aqui:
+// não pinta o que está fora da tela.
 function drawTagTint(inView) {
   ctx.globalCompositeOperation = "lighter";
   const half = TAG_DAB_SIZE / 2;
   data.nodes.forEach(n => {
-    const tags = (n.effectiveTags && n.effectiveTags.length) ? n.effectiveTags : n.tags;
-    if (!isNodeVisible(n) || n.x == null || !tags || !tags.length || !inView(n)) return;
-    tags.forEach(tag => {
+    if (!isNodeVisible(n) || n.x == null || !n.tags || !n.tags.length || !inView(n)) return;
+    n.tags.forEach(tag => {
       ctx.drawImage(getTagTintSprite(tag), n.x - half, n.y - half, TAG_DAB_SIZE, TAG_DAB_SIZE);
     });
   });
