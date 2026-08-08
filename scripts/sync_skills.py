@@ -28,6 +28,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 PAIRS = [
     (REPO_ROOT / ".agents" / "skills", REPO_ROOT / ".claude" / "skills"),
     (REPO_ROOT / ".agents" / "agents", REPO_ROOT / ".claude" / "agents"),
+    (REPO_ROOT / ".agents" / "skills", REPO_ROOT / ".codex" / "skills"),
 ]
 
 
