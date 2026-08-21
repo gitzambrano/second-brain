@@ -227,6 +227,7 @@ Vale para todo trecho escrito/reescrito pela wiki — não retroage sobre texto 
 
 Vale só para essay de tema técnico (engenharia, ciências exatas, software) — julgamento editorial pelo assunto, sem campo de frontmatter dedicado.
 
+0. **Português claro, conciso e formal.** Tom técnico, nunca coloquial.
 1. **Uma ideia por frase.** Não empilhe fato e consequência na mesma oração.
 2. **Voz ativa quando o agente é conhecido.** "O solver calcula a velocidade induzida", não "A velocidade induzida é calculada pelo solver".
 3. **Verbo em vez de nominalização.** "Verifique o resíduo", não "faça uma verificação do resíduo".
@@ -239,6 +240,7 @@ Vale só para essay de tema técnico (engenharia, ciências exatas, software) �
 10. **Palavra simples em vez de jargão evitável.** Jargão genuíno do domínio fica; sinônimo rebuscado sem necessidade, não.
 11. **"Por exemplo", "ou seja" por extenso** — sem abreviação latina solta ("e.g.", "i.e.") na prosa.
 12. **Concisão não é telegrama.** Frase curta ainda leva verbo, artigo e advérbio de ligação quando a clareza pede — não corte esses elementos só para encurtar. "Se a tabela de perfil estiver ausente, carregue um polar padrão", não "Tabela ausente: carregar polar padrão".
+13. **Sem exagero, superlativo ou adjetivo de marketing** ("robusto", "poderoso", "perfeito", "revolucionário") **nem hedge vazio** ("pode potencialmente ajudar a melhorar"). Declare o dado factual, ou apague a palavra, sem mudar a força real da afirmação.
 
 ## Formato do índice (`wiki/index.md`)
 
