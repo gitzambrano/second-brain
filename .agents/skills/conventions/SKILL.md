@@ -216,8 +216,29 @@ Artefatos gerados por `scripts/build_references.py` ao final de `/essay`, `/expa
 
 Vale para todo trecho escrito/reescrito pela wiki — não retroage sobre texto original de `raw/`, a menos que `/polish` ou `/proofread` seja pedido explicitamente.
 
+### Regras gerais (todo essay)
+
 1. **Evitar bullets no corpo.** Prosa argumentativa em parágrafos com transições explícitas. Bullets só em `## Sumário`, `## Referências`, e tabelas genuinamente mais claras que prosa.
-2. **Travessões (—) extremamente raros**: no máximo 1 a 2 na prosa, não por parágrafo. Prefira vírgula, dois-pontos, parênteses, ou reestruture a frase. Não conta o `·` da byline, nem o `—` de `## Referências` (obrigatório antes da nota) e `## Conexões` (antes da descrição), que são estruturais. `check_wiki.py` conta só a prosa e emite `TOO_MANY_EM_DASHES` como INFO: é alvo de estilo para texto novo, não dívida a saldar no corpus existente.
+2. **Termo consistente para o mesmo conceito.** Nunca alterne sinônimo para a mesma coisa dentro de um essay — escolha um termo na primeira menção e mantenha até o fim.
+3. **Prefira abrir o parágrafo situando o assunto.** Não é regra rígida de primeira frase, mas o leitor não deveria precisar do parágrafo inteiro para descobrir do que ele trata.
+4. **Travessões (—) extremamente raros**: no máximo 1 a 2 na prosa, não por parágrafo. Prefira vírgula, dois-pontos, parênteses, ou reestruture a frase. Não conta o `·` da byline, nem o `—` de `## Referências` (obrigatório antes da nota) e `## Conexões` (antes da descrição), que são estruturais. `check_wiki.py` conta só a prosa e emite `TOO_MANY_EM_DASHES` como INFO: é alvo de estilo para texto novo, não dívida a saldar no corpus existente.
+
+### Regras adicionais para essays técnicos
+
+Vale só para essay de tema técnico (engenharia, ciências exatas, software) — julgamento editorial pelo assunto, sem campo de frontmatter dedicado.
+
+1. **Uma ideia por frase.** Não empilhe fato e consequência na mesma oração.
+2. **Voz ativa quando o agente é conhecido.** "O solver calcula a velocidade induzida", não "A velocidade induzida é calculada pelo solver".
+3. **Verbo em vez de nominalização.** "Verifique o resíduo", não "faça uma verificação do resíduo".
+4. **Divida frases unidas por ponto e vírgula** em duas frases.
+5. **Conector lógico explícito** ("portanto", "assim", "porém", "no entanto") quando uma frase depende da anterior — não deixe a ligação implícita.
+6. **Substitua pronome ou "isso/isto" ambíguo pelo substantivo** quando mais de um antecedente é possível.
+7. **Frase muito longa, divida.** Alvo prático: ~30 palavras; mais que isso, geralmente há uma frase escondida dentro da outra.
+8. **Um tema por parágrafo, até 6 frases.**
+9. **Termo técnico com grafia única** — não alterne o nome em português com o termo em inglês depois de traduzido uma vez (unidades, siglas, nomes de variável).
+10. **Palavra simples em vez de jargão evitável.** Jargão genuíno do domínio fica; sinônimo rebuscado sem necessidade, não.
+11. **"Por exemplo", "ou seja" por extenso** — sem abreviação latina solta ("e.g.", "i.e.") na prosa.
+12. **Concisão não é telegrama.** Frase curta ainda leva verbo, artigo e advérbio de ligação quando a clareza pede — não corte esses elementos só para encurtar. "Se a tabela de perfil estiver ausente, carregue um polar padrão", não "Tabela ausente: carregar polar padrão".
 
 ## Formato do índice (`wiki/index.md`)
 
