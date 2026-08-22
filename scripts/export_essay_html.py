@@ -45,6 +45,7 @@ from export_essay_pdf import (
     AUTHOR,
 )
 from html_preprocess import transform_markdown
+from fetch_fonts import ensure_local_fonts
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 ESSAYS_DIR = ROOT_DIR / "wiki" / "essays"
@@ -192,6 +193,14 @@ def export_essay(filepath, output_dir=None, source_dir=None):
         '-f', 'markdown+smart+tex_math_dollars+pipe_tables+strikeout+superscript+subscript+implicit_figures+gfm_auto_identifiers',
 
     ]
+
+    # Fontes: baixa so subsets latinos para cache local (fetch_fonts.py).
+    # Offline -> None e o template cai nas serifas do sistema.
+    fonts_css = ensure_local_fonts(output_dir)
+    if fonts_css:
+        # ~460KB de woff2 (latin/latin-ext) em vez dos ~1.5MB que o
+        # --embed-resources baixaria do css2 completo (todas as subsets).
+        cmd += ['--css', str(fonts_css)]
 
     # Only pull in MathJax (CDN, ~3MB once embedded) for essays that actually use math.
     # Keeps non-technical essays small and exportable without network access.

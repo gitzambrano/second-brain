@@ -67,6 +67,9 @@ VERDICT_RE = re.compile(
 
 ORNAMENT_RE = re.compile(r'^[·•∙∞⑂✻❦🌍🫧\s]{1,15}$')
 
+# Linha-meta de ficha de agente/ferramenta: "Modelos: a · b", "Backend: x · y"
+META_LINE_RE = re.compile(r'^[A-Za-zÀ-ÿ][\wÀ-ÿ ]{0,18}:\s')
+
 ATTRIB_MAX_LEN = 100
 
 
@@ -318,39 +321,65 @@ def _is_label_candidate(grp):
     return len(t) <= 48 and not re.search(r'[.!?:;]\s*$', t)
 
 
-def _transform_group(grp, next_grp):
-    """Retorna linhas geradas para um grupo de blockquote."""
-    if next_grp is not None and _is_label_candidate(grp):
+def _transform_group(grp, next_grp, raw_chain=None):
+    """Transforma um grupo de blockquote.
+
+    Retorna (linhas, used) onde `used` informa quantos blocos ALEM do
+    proprio grupo foram consumidos: 0 = nada; 'q' = o next_quote (fusao
+    de caixa); N = os N primeiros blocos de raw_chain (caixa rotulo+conteudo).
+    O chamador avanca o cursor de acordo — assim regras que NAO usam o
+    contexto seguinte (stat, card, quote simples) nunca engolem conteudo."""
+    raw_chain = raw_chain or []
+
+    # 1. Rotulo + bloco de citacao na sequencia -> caixa tipada fundida.
+    #    (Se o bloco seguinte tambem e rotulo, nao funde: cada um com seu
+    #    proprio destino.)
+    if next_grp is not None and _is_label_candidate(grp) \
+            and not _is_label_candidate(next_grp):
         label = _strip_bold(grp.stanzas()[0][0])
         cls = _classify_label(label) or 'generico'
-        flat = [ln for st in next_grp.stanzas() for ln in st]
+        flat = [ln for s in next_grp.stanzas() for ln in s]
         title = flat[0] if flat else ''
         body_lines = flat[1:]
         body, verdicts = _extract_verdicts(body_lines)
-        return emit_typed_box(cls, label, title, body, verdicts)
+        return emit_typed_box(cls, label, title, body, verdicts), 'q'
 
     st = grp.stanzas()
     flat = [ln for s in st for ln in s]
+    is_label = _is_label_candidate(grp)
 
-    # Callout estatistico: blockquote so com numero ("58%", "1997").
-    if next_grp is None and len(flat) == 1 \
-            and re.match(r'^\d+([.,]\d+)?%?$', flat[0].strip()):
-        return ['<div class="stat">%s</div>' % flat[0].strip(), '']
+    # 2. Callout estatistico: blockquote so com numero ("58%", "1997").
+    if len(flat) == 1 and re.match(r'^\d+([.,]\d+)?%?$', flat[0].strip()):
+        return ['<div class="stat">%s</div>' % flat[0].strip(), ''], 0
 
-    # Rotulo solto sem outro blockquote na sequencia: mini-cabecalho mono
-    # antes de prosa/lista (ex.: "**Ideia 01**", avisos com lista fora).
-    if next_grp is None and _is_label_candidate(grp):
-        return _div('label-solo', [_strip_bold(flat[0])])
+    # 3. Rotulo + prosa/lista/heading -> caixa generica (badge + conteudo).
+    #    Consistencia: todo rotulo seguido de conteudo vira quadro.
+    #    (Heading inicial e permitido — ex.: "**Ideia 01**" -> "### O Problema".
+    #    Seguro: o chamador so consome a cadeia quando a caixa e emitida.)
+    if is_label and raw_chain:
+        label = _strip_bold(flat[0])
+        cls = _classify_label(label) or 'generico'
+        body_lines = []
+        for blk in raw_chain:
+            body_lines.extend(ln.rstrip() for ln in blk if ln.strip())
+            body_lines.append('')
+        while body_lines and not body_lines[-1].strip():
+            body_lines.pop()
+        return emit_typed_box(cls, label, '', body_lines, []), len(raw_chain)
+
+    # 4. Rotulo solto sem conteudo aproveitado: mini-cabecalho mono.
+    if is_label:
+        return _div('label-solo', [_strip_bold(flat[0])]), 0
 
     # Card de filosofo: nome / datas·instituicao / bio
     if len(flat) >= 3 and PHILO_RE.match(flat[1].strip()):
-        return emit_card('filosofo', flat[0], flat[1], flat[2:])
+        return emit_card('filosofo', flat[0], flat[1], flat[2:]), 0
 
     # Card de livro/filme: titulo / Autor · Ano / corpo
     if len(flat) >= 2 and len(flat[0]) <= 60 \
             and BOOK_RE.match(flat[1].strip()) \
             and not PHILO_RE.match(flat[1].strip()):
-        return emit_card('livro', flat[0], flat[1], flat[2:])
+        return emit_card('livro', flat[0], flat[1], flat[2:]), 0
 
     # Pull quote: ultima linha e atribuicao (estrofe unica ou multipla)
     if len(flat) >= 2 and _is_attribution(flat[-1]):
@@ -359,16 +388,16 @@ def _transform_group(grp, next_grp):
             body_st[-1].pop()
             if not body_st[-1]:
                 body_st.pop()
-        return emit_pull_quote(body_st, flat[-1])
+        return emit_pull_quote(body_st, flat[-1]), 0
 
     # Citação de uma linha só já com atribuição embutida: "..." — Autor
     if len(st) == 1 and len(st[0]) == 1:
         m = re.match(r'^(.+[”"])\s*[—–]\s*(.{3,60})$', st[0][0].strip())
         if m:
-            return emit_pull_quote([[m.group(1)]], m.group(2))
+            return emit_pull_quote([[m.group(1)]], m.group(2)), 0
 
     # Citação simples
-    return emit_quote(st)
+    return emit_quote(st), 0
 
 
 def transform_markdown(body):
@@ -382,14 +411,27 @@ def transform_markdown(body):
         kind, payload = blocks[i]
 
         if kind == 'quote':
-            nxt = None
             j = i + 1
-            while j < len(blocks) and blocks[j][0] == 'blank':
-                j += 1
-            if j < len(blocks) and blocks[j][0] == 'quote':
-                nxt = blocks[j][1]
-            out.extend(_transform_group(payload, nxt))
-            i = (j + 1) if nxt is not None else i + 1
+            nxt_quote, raw_chain = None, []
+            if j < len(blocks):
+                if blocks[j][0] == 'quote':
+                    nxt_quote = blocks[j][1]
+                elif blocks[j][0] == 'raw':
+                    # Cadeia de blocos brutos consecutivos (prosa/lista/
+                    # headings): candidatos a conteudo de caixa de um rotulo.
+                    raw_chain.append(blocks[j][1])
+                    k = j + 1
+                    while k < len(blocks) and blocks[k][0] == 'raw':
+                        raw_chain.append(blocks[k][1])
+                        k += 1
+            lines_out, used = _transform_group(payload, nxt_quote, raw_chain)
+            out.extend(lines_out)
+            if used == 'q':
+                i = j + 1          # grupo + quote fundidos
+            elif isinstance(used, int) and used > 0:
+                i = j + used       # grupo + N blocos brutos na caixa
+            else:
+                i = i + 1          # nada consumido alem do proprio grupo
             continue
 
         if kind == 'raw':
@@ -401,6 +443,23 @@ def transform_markdown(body):
                 out.append('')
                 i += 1
                 continue
+
+            # Subtitulo de agente/ferramenta: linha-nome curta seguida de
+            # linha-meta "Label: ... · ..." (ex.: "Claude Code Anthropic" /
+            # "Modelos: ... · ..."). O nome vira heading (###); regra simples,
+            # bate 5/5 agentes no corpus, 0 falsos positivos.
+            nxt2 = blocks[i + 1] if i + 1 < len(blocks) else None
+            meta_line = '\n'.join(nxt2[1]).strip() \
+                if (nxt2 and nxt2[0] == 'raw' and len(nxt2[1]) == 1) else ''
+            if ('\n' not in text and len(text) <= 44 and len(text.split()) <= 5
+                    and not re.search(r'[.:!?;,)\]]$', text)
+                    and not HEADING_RE.match(payload[0])
+                    and META_LINE_RE.match(meta_line) and '·' in meta_line
+                    and len(meta_line) <= 70):
+                out += ['### ' + text, '']
+                i += 1
+                continue
+
             out.extend(payload)
             out.append('')
             i += 1
@@ -410,6 +469,11 @@ def transform_markdown(body):
         i += 1
 
     result = '\n'.join(out)
+    # Stats adjacentes identicos ("35%" / "35%") viram um so — o fonte
+    # duplicava o callout; empilhados, parecem numeros perdidos em caixa.
+    result = re.sub(
+        r'(<div class="stat">([^<]+)</div>\s*)(?:<div class="stat">\2</div>\s*)+',
+        r'\1', result)
     # Normaliza 3+ linhas vazias.
     result = re.sub(r'\n{3,}', '\n\n', result)
     return result.strip() + '\n'

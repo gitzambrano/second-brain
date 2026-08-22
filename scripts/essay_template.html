@@ -9,17 +9,19 @@ $if(summary)$
 <meta property="og:description" content="$summary$">
 $endif$
 <meta property="og:type" content="article">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400;1,700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono&display=swap" rel="stylesheet">
+$for(css)$
+<link rel="stylesheet" href="$css$">
+$endfor$
 $if(math)$
 $math$
 $endif$
 <style>
 /* ------------------------------------------------------------------ */
-/* Tokens: escuro editorial por padrao, claro sob data-theme           */
+/* Tokens: mobile = escuro editorial (padrao)                          */
+/*         desktop = claro/branco (menos rebuscado), toggle sobrepoe   */
 /* ------------------------------------------------------------------ */
 :root{
+  --font-display:'Playfair Display',Georgia,'Times New Roman',serif;
   --bg:#0A0A0A;
   --surface:#111111;
   --surface2:#181818;
@@ -36,19 +38,41 @@ $endif$
   --max-width:700px;
 }
 [data-theme="light"]{
-  --bg:#FAF6EE;
-  --surface:#F2ECDF;
-  --surface2:#E9E1D0;
-  --border:#D8CEBB;
+  --bg:#FFFFFF;
+  --surface:#F6F3EC;
+  --surface2:#EDE9DE;
+  --border:#DCD5C5;
   --text:#3A342B;
   --text-dim:#7E7566;
-  --text-bright:#211B12;
+  --text-bright:#171310;
   --gold:#96690F;
   --gold-dim:#B08A2E;
   --rust:#A03C28;
   --rust-bright:#B4432C;
   --accent:#35708A;
   --amber:#8F6212;
+}
+@media (min-width:901px){
+  /* Desktop: claro/branco por padrao, coluna mais larga, serifas mais
+     simples (Georgia em vez de Playfair). data-theme="dark" devolve o
+     editorial escuro para quem preferir. */
+  :root:not([data-theme="dark"]){
+    --bg:#FFFFFF;
+    --surface:#F7F5EF;
+    --surface2:#EEEAE0;
+    --border:#D9D3C4;
+    --text:#33302B;
+    --text-dim:#7E7566;
+    --text-bright:#15120E;
+    --gold:#8F6510;
+    --gold-dim:#A98A2E;
+    --rust:#A03C28;
+    --rust-bright:#B4432C;
+    --accent:#35708A;
+    --amber:#8F6212;
+    --font-display:Georgia,'Times New Roman',serif;
+    --max-width:800px;
+  }
 }
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -96,7 +120,7 @@ body{
   color:var(--text-dim);margin-bottom:1.4rem;
 }
 .hero-title{
-  font-family:'Playfair Display',Georgia,serif;
+  font-family:var(--font-display);
   font-size:clamp(2.1rem,8.5vw,4.4rem);
   font-weight:900;line-height:1.05;color:var(--text-bright);
   letter-spacing:-.02em;text-wrap:balance;
@@ -113,7 +137,7 @@ body{
 /* ------------------------------------------------------------------ */
 .content{max-width:var(--max-width);margin:0 auto;padding:2.8rem 1.2rem 5rem;}
 
-h1,h2,h3,h4,h5,h6{font-family:'Playfair Display',Georgia,serif;color:var(--text-bright);line-height:1.25;}
+h1,h2,h3,h4,h5,h6{font-family:var(--font-display);color:var(--text-bright);line-height:1.25;}
 .content h1{display:none;} /* titulo vive no masthead */
 
 .content{counter-reset:sb-h2;}
@@ -143,9 +167,28 @@ a{color:var(--gold);text-decoration:none;border-bottom:1px solid color-mix(in sr
 a:hover{color:var(--text-bright);border-bottom-color:var(--text-bright);}
 strong{color:var(--text-bright);font-weight:600;}
 
+/* Ensaios com capitulos auto-numerados ("## I. ..." / "## 3. ..."):
+   a classe .self-numbered (aplicada por JS) desliga o contador, senao
+   a numeracao duplica e desalinha com o Sumario. */
+.content.self-numbered h2::before{content:none;}
+
+/* Listas: o reset global zera o padding da UA — sem isto, os marcadores
+   (position:outside) penduram alem da borda e saem da tela no mobile. */
+ul,ol{margin:0 0 1.05em;padding-left:1.7em;}
+li{margin-bottom:.35em;}
+li::marker{color:var(--gold-dim);}
+/* Listas dentro de componentes: alinhadas com o recuo do texto */
+.box :is(ul,ol),.card :is(ul,ol),.quote :is(ul,ol){
+  margin:.4rem 1.3rem 1rem;padding-left:1.5em;
+}
+/* Headings dentro de caixas: mesmo recuo dos paragrafos (sem isso ficam
+   colados na borda enquanto o texto tem 1.3rem — recuo esquisito) */
+.box > :is(h3,h4,h5){margin:1.1rem 1.3rem .45rem;}
+.card > :is(h3,h4,h5){margin:.6rem 0 .45rem;}
+
 /* Drop cap no primeiro paragrafo de cada capitulo */
 .content > h2:not(#sumário):not(#referências) + p::first-letter{
-  font-family:'Playfair Display',Georgia,serif;
+  font-family:var(--font-display);
   font-size:3.4rem;font-weight:900;float:left;line-height:.78;
   margin-right:.09em;margin-top:.06em;color:var(--rust-bright);
 }
@@ -196,7 +239,7 @@ hr{border:none;border-top:1px solid var(--border);margin:2.6rem 0;}
   background:var(--surface);border-left:3px solid var(--gold);
 }
 .pull-quote p{
-  font-family:'Playfair Display',Georgia,serif;font-style:italic;
+  font-family:var(--font-display);font-style:italic;
   font-size:clamp(1.02rem,3vw,1.2rem);line-height:1.55;color:var(--text-bright);
   margin-bottom:1rem;
 }
@@ -230,7 +273,7 @@ hr{border:none;border-top:1px solid var(--border);margin:2.6rem 0;}
   padding:.28rem .75rem;
 }
 .box-title{
-  font-family:'Playfair Display',Georgia,serif;font-weight:700;
+  font-family:var(--font-display);font-weight:700;
   font-size:1.08rem;line-height:1.3;color:var(--text-bright);
   padding:1.05rem 1.3rem .35rem;
 }
@@ -255,7 +298,7 @@ hr{border:none;border-top:1px solid var(--border);margin:2.6rem 0;}
   margin:2.1rem 0;padding:1.15rem 1.3rem;
   background:var(--surface);border-left:3px solid var(--gold-dim);
 }
-.card-name{font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:1.05rem;color:var(--text-bright);}
+.card-name{font-family:var(--font-display);font-weight:700;font-size:1.05rem;color:var(--text-bright);}
 .card.livro .card-name{font-style:italic;}
 .card-meta{
   font-family:'JetBrains Mono',Consolas,monospace;
@@ -274,7 +317,7 @@ hr{border:none;border-top:1px solid var(--border);margin:2.6rem 0;}
 .stat{
   display:table;margin:2.6rem auto;padding:.35rem 1.6rem;
   border-top:1px solid var(--border);border-bottom:1px solid var(--border);
-  font-family:'Playfair Display',Georgia,serif;font-weight:900;
+  font-family:var(--font-display);font-weight:900;
   font-size:clamp(2.8rem,9vw,4.2rem);color:var(--gold);line-height:1.15;
 }
 .ornament{
@@ -398,13 +441,19 @@ $body$
     fill.style.width=(max>0?(h.scrollTop/max)*100:0)+"%";
     toTop.classList.toggle("visible",h.scrollTop>600);
   }
-  /* Tema */
+  /* Tema: inverte o tema EFETIVO (considerando o padrao do dispositivo:
+     claro no desktop, escuro no mobile) e persiste a escolha. */
   var root=document.documentElement,tgl=document.getElementById("sbThemeToggle");
   try{var saved=localStorage.getItem("sb-theme");if(saved){root.setAttribute("data-theme",saved);}}catch(e){}
+  function effectiveTheme(){
+    var a=root.getAttribute("data-theme");
+    if(a)return a;
+    return window.matchMedia("(min-width:901px)").matches?"light":"dark";
+  }
   tgl.addEventListener("click",function(){
-    var cur=root.getAttribute("data-theme")==="light"?"dark":"light";
-    root.setAttribute("data-theme",cur);
-    try{localStorage.setItem("sb-theme",cur);}catch(e){}
+    var next=effectiveTheme()==="dark"?"light":"dark";
+    root.setAttribute("data-theme",next);
+    try{localStorage.setItem("sb-theme",next);}catch(e){}
   });
   /* Voltar ao topo */
   var toTop=document.getElementById("sbToTop");
@@ -418,6 +467,14 @@ $body$
     a.setAttribute("aria-label","Link para esta seção");
     h.appendChild(a);
   });
+  /* Capitulos auto-numerados no fonte ("## I. ..." / "## 3. ..."):
+     desliga o contador CAPITULO NN, que duplicaria a numeracao. */
+  var content=document.querySelector(".content");
+  var h2s=content?content.querySelectorAll("h2:not(#sumário):not(#referências)"):[];
+  var selfNum=Array.prototype.some.call(h2s,function(h){
+    return /^\s*(?:\d+|[IVXLC]+)[.\s—–:-]/.test(h.textContent);
+  });
+  if(selfNum&&content){content.classList.add("self-numbered");}
 })();
 </script>
 </body>
