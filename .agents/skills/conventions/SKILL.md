@@ -21,8 +21,8 @@ allowed-tools: Read
 ## Onde as coisas vão — tabela canônica
 
 | Pasta | Contém | Quem escreve | Quando |
-| ------------------------- | --------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------- |
-| `wiki/essays/` | Ensaio/white paper completo, tese sustentada do início ao fim | `/essay`, `/import` | Ideia já é (ou virou, via `/insight promote`) argumento completo |
+| ------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| `wiki/essays/` | Ensaio/white paper completo, tese sustentada do início ao fim | `/essay`, `/import` | Ideia já é (ou virou, via`/insight promote`) argumento completo |
 | `wiki/concepts/` | Definição/explicação curta de um conceito, sem tese própria | `/essay`, `/expand`, `/absorb`, `/digest`, `/chapter` | Termo citado sem página própria |
 | `wiki/entities/` | Página curta sobre pessoa/obra/instituição nomeada | mesmas skills que concepts | Entidade nomeada sem página própria |
 | `wiki/insights/` | Fragmento denso de ideia — semente, síntese, observação, mini-argumento | `/insight` (também via `/query`, que passa a ideia para `/insight add`) | Ideia nova sem lar, não é essay nem concept/entity |
@@ -63,16 +63,16 @@ Campo `tags:` (essay/concept/entity/insight) e `Tags:` (`wiki/sources/manifest.m
 
 Campo `Tipo:` do manifesto — cada tipo define a subpasta física, nunca escolhida à mão.
 
-| Tipo (manifesto) | Subpasta | O que entra |
-| ------------------------- | ------------------------- | --------------------------------------------------------------------- |
-| Ensaio Completo Importado | `ensaio-importado/` | Ensaio/white paper pronto vindo de fora, virou essay preservando o texto integral |
-| Web Clipping | `web-clipping/` | Recorte de página web: post, thread, matéria online |
-| Artigo Acadêmico | `artigo-academico/` | Paper com peer review, DOI, ou publicado em periódico/conferência |
-| Livro | `livro/` | Livro ou capítulo, inteiro ou em trecho relevante |
-| Documentação Técnica | `documentacao-tecnica/` | Manuais, specs, normas, documentação de ferramenta/API |
-| Transcrição | `transcricao/` | Palestra, podcast, entrevista, aula |
-| Ideias | `ideias/` | Texto curto e não estruturado, ainda não formal |
-| Outro | `outro/` | Só quando nenhuma categoria acima cobre o caso |
+| Tipo (manifesto)          | Subpasta                  | O que entra                                                                       |
+| ------------------------- | ------------------------- | --------------------------------------------------------------------------------- |
+| Ensaio Completo Importado | `ensaio-importado/`     | Ensaio/white paper pronto vindo de fora, virou essay preservando o texto integral |
+| Web Clipping              | `web-clipping/`         | Recorte de página web: post, thread, matéria online                             |
+| Artigo Acadêmico         | `artigo-academico/`     | Paper com peer review, DOI, ou publicado em periódico/conferência               |
+| Livro                     | `livro/`                | Livro ou capítulo, inteiro ou em trecho relevante                                |
+| Documentação Técnica   | `documentacao-tecnica/` | Manuais, specs, normas, documentação de ferramenta/API                          |
+| Transcrição             | `transcricao/`          | Palestra, podcast, entrevista, aula                                               |
+| Ideias                    | `ideias/`               | Texto curto e não estruturado, ainda não formal                                 |
+| Outro                     | `outro/`                | Só quando nenhuma categoria acima cobre o caso                                   |
 
 Reuse um tipo existente antes de criar novo. `/organize` e `/stats` auditam consistência entre `Tipo:` e subpasta real.
 
@@ -130,12 +130,12 @@ Logo após `# Título`, com linha vazia entre título e byline:
 
 O `.md` é lido no Obsidian antes de virar PDF/HTML — a sintaxe gravada é a que esse leitor entende; exportadores traduzem na hora de gerar.
 
-| O que | Forma correta | Por quê |
-| --- | --- | --- |
-| Link para outra página | `[[slug-do-arquivo\|Título Visível]]` | Obsidian resolve por **nome de arquivo**, não por H1 nem `aliases:`. |
-| Link para seção | `[[#Texto Exato Do Heading]]` ou `[[#Texto\|Display]]` | `[texto](#slug-github)` não navega no Obsidian, só no PDF/HTML. |
-| Heading | Nunca com link markdown dentro | Heading com `[texto](url)` fica inalcançável por qualquer link. |
-| Artefato gerado | Markdown puro, nunca HTML solto | `<span>` sem fechamento engole o resto da entrada no Obsidian. |
+| O que                   | Forma correta                                             | Por quê                                                                     |
+| ----------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Link para outra página | `[[slug-do-arquivo\|Título Visível]]`                  | Obsidian resolve por**nome de arquivo**, não por H1 nem `aliases:`. |
+| Link para seção       | `[[#Texto Exato Do Heading]]` ou `[[#Texto\|Display]]` | `[texto](#slug-github)` não navega no Obsidian, só no PDF/HTML.          |
+| Heading                 | Nunca com link markdown dentro                            | Heading com`[texto](url)` fica inalcançável por qualquer link.           |
+| Artefato gerado         | Markdown puro, nunca HTML solto                           | `<span>` sem fechamento engole o resto da entrada no Obsidian.             |
 
 Exportadores convertem `[[#Heading]]` em `[Display](#slug)` (`convert_heading_wikilinks`), removem `## Conexões` e limpam wikilinks residuais — nada disso precisa estar na fonte.
 
@@ -222,25 +222,25 @@ Vale para todo trecho escrito/reescrito pela wiki — não retroage sobre texto 
 2. **Termo consistente para o mesmo conceito.** Nunca alterne sinônimo para a mesma coisa dentro de um essay — escolha um termo na primeira menção e mantenha até o fim.
 3. **Prefira abrir o parágrafo situando o assunto.** Não é regra rígida de primeira frase, mas o leitor não deveria precisar do parágrafo inteiro para descobrir do que ele trata.
 4. **Travessões (—) extremamente raros**: no máximo 1 a 2 na prosa, não por parágrafo. Prefira vírgula, dois-pontos, parênteses, ou reestruture a frase. Não conta o `·` da byline, nem o `—` de `## Referências` (obrigatório antes da nota) e `## Conexões` (antes da descrição), que são estruturais. `check_wiki.py` conta só a prosa e emite `TOO_MANY_EM_DASHES` como INFO: é alvo de estilo para texto novo, não dívida a saldar no corpus existente.
+5. **Conector lógico explícito** ("portanto", "assim", "porém", "no entanto") quando uma frase depende da anterior — não deixe a ligação implícita.
+6. **Divida frases unidas por ponto e vírgula** em duas frases.
+7. **Frase muito longa, divida.** Alvo prático: ~30 palavras; mais que isso, geralmente há uma frase escondida dentro da outra.
 
 ### Regras adicionais para essays técnicos
 
-Vale só para essay de tema técnico (engenharia, ciências exatas, software) — julgamento editorial pelo assunto, sem campo de frontmatter dedicado.
+Regras adicionais para para essays específicos de tema técnico (engenharia, ciências exatas, software) — julgamento editorial pelo assunto, sem campo de frontmatter dedicado.
 
 0. **Português claro, conciso e formal.** Tom técnico, nunca coloquial.
 1. **Uma ideia por frase.** Não empilhe fato e consequência na mesma oração.
 2. **Voz ativa quando o agente é conhecido.** "O solver calcula a velocidade induzida", não "A velocidade induzida é calculada pelo solver".
 3. **Verbo em vez de nominalização.** "Verifique o resíduo", não "faça uma verificação do resíduo".
-4. **Divida frases unidas por ponto e vírgula** em duas frases.
-5. **Conector lógico explícito** ("portanto", "assim", "porém", "no entanto") quando uma frase depende da anterior — não deixe a ligação implícita.
-6. **Substitua pronome ou "isso/isto" ambíguo pelo substantivo** quando mais de um antecedente é possível.
-7. **Frase muito longa, divida.** Alvo prático: ~30 palavras; mais que isso, geralmente há uma frase escondida dentro da outra.
-8. **Um tema por parágrafo, até 6 frases.**
-9. **Termo técnico com grafia única** — não alterne o nome em português com o termo em inglês depois de traduzido uma vez (unidades, siglas, nomes de variável).
-10. **Palavra simples em vez de jargão evitável.** Jargão genuíno do domínio fica; sinônimo rebuscado sem necessidade, não.
-11. **"Por exemplo", "ou seja" por extenso** — sem abreviação latina solta ("e.g.", "i.e.") na prosa.
-12. **Concisão não é telegrama.** Frase curta ainda leva verbo, artigo e advérbio de ligação quando a clareza pede — não corte esses elementos só para encurtar. "Se a tabela de perfil estiver ausente, carregue um polar padrão", não "Tabela ausente: carregar polar padrão".
-13. **Sem exagero, superlativo ou adjetivo de marketing** ("robusto", "poderoso", "perfeito", "revolucionário") **nem hedge vazio** ("pode potencialmente ajudar a melhorar"). Declare o dado factual, ou apague a palavra, sem mudar a força real da afirmação.
+4. **Substitua pronome ou "isso/isto" ambíguo pelo substantivo** quando mais de um antecedente é possível.
+5. **Um tema por parágrafo, até 6 frases.**
+6. **Termo técnico com grafia única** — não alterne o nome em português com o termo em inglês depois de traduzido uma vez (unidades, siglas, nomes de variável).
+7. **Palavra simples em vez de jargão evitável.** Jargão genuíno do domínio fica; sinônimo rebuscado sem necessidade, não.
+8. **"Por exemplo", "ou seja" por extenso** — sem abreviação latina solta ("e.g.", "i.e.") na prosa.
+9. **Sem exagero, superlativo ou adjetivo de marketing** ("robusto", "poderoso", "perfeito", "revolucionário") **nem hedge vazio** ("pode potencialmente ajudar a melhorar"). Declare o dado factual, ou apague a palavra, sem mudar a força real da afirmação.
+10. **Concisão não é telegrama.** Frase curta ainda leva verbo, artigo e advérbio de ligação quando a clareza pede — não corte esses elementos só para encurtar. "Se a tabela de perfil estiver ausente, carregue um polar padrão", não "Tabela ausente: carregar polar padrão".
 
 ## Formato do índice (`wiki/index.md`)
 
