@@ -44,6 +44,7 @@ from export_essay_pdf import (
     resolve_image_paths,
     AUTHOR,
 )
+from html_preprocess import transform_markdown
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 ESSAYS_DIR = ROOT_DIR / "wiki" / "essays"
@@ -94,8 +95,8 @@ def remove_h1_and_byline(body):
     return '\n'.join(result)
 
 
-def prepare_for_pandoc(filepath):
-    """Prepare a markdown file for Pandoc HTML conversion. Returns (markdown_text, title, subtitle, author_date)."""
+def prepare_body(filepath):
+    """Limpeza comum: frontmatter fora, wikilinks, H1/byline, imagens."""
     with open(filepath, 'r', encoding='utf-8') as f:
         content = f.read()
 
@@ -113,7 +114,20 @@ def prepare_for_pandoc(filepath):
     body = remove_h1_and_byline(body)
     body = resolve_image_paths(body, Path(filepath).parent)
 
-    return body, title, subtitle, author_date
+    return body, meta, title, subtitle, author_date
+
+
+def prepare_for_pandoc(filepath):
+    """Prepare a markdown file for Pandoc HTML conversion.
+
+    Returns (markdown_text, title, subtitle, author_date, summary)."""
+    body, meta, title, subtitle, author_date = prepare_body(filepath)
+
+    # Caixas de realce -> fenced divs semanticos (ver html_preprocess.py).
+    body = transform_markdown(body)
+
+    summary = str(meta.get('summary', '') or '')
+    return body, title, subtitle, author_date, summary
 
 
 MATH_PATTERN = re.compile(r'(?<!\\)\$[^\s$][^$]*\$|\\\[.*?\\\]|\\\(.*?\\\)', re.DOTALL)
@@ -141,7 +155,7 @@ def export_essay(filepath, output_dir=None, source_dir=None):
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    body, title, subtitle, author_date = prepare_for_pandoc(filepath)
+    body, title, subtitle, author_date, summary = prepare_for_pandoc(filepath)
 
     temp_path = output_dir / f"_temp_{filepath.stem}.md"
     with open(temp_path, 'w', encoding='utf-8') as f:
@@ -150,6 +164,7 @@ def export_essay(filepath, output_dir=None, source_dir=None):
     html_path = output_dir / f"{filepath.stem}.html"
     safe_subtitle = subtitle.replace('"', '\\"')
     safe_author = author_date.replace('"', '\\"')
+    safe_summary = summary.replace('"', "'").replace('\n', ' ')
 
     cmd = [
         'pandoc',
@@ -162,13 +177,19 @@ def export_essay(filepath, output_dir=None, source_dir=None):
         '-V', f'title={title}',
         '-V', f'subtitle={safe_subtitle}',
         '-V', f'author={safe_author}',
+        '-V', f'summary={safe_summary}',
         f'--resource-path={filepath.parent}',
         # +gfm_auto_identifiers: o Sumário dos essays é escrito na convenção do
         # GitHub/Obsidian, que preserva o número do capítulo no anchor
         # (`## 1. Visão Geral` -> `#1-visão-geral`). A regra nativa do Pandoc
         # descarta tudo antes da primeira letra e geraria `#visão-geral`,
         # quebrando silenciosamente todos os links internos no export.
-        '-f', 'markdown+smart+tex_math_dollars+pipe_tables+strikeout+superscript+subscript+implicit_figures+hard_line_breaks+gfm_auto_identifiers',
+        #
+        # Sem +hard_line_breaks desde a reformulação das caixas: as quebras
+        # duras agora são aplicadas apenas DENTRO das citações pelo
+        # pré-processador (html_preprocess.py); globalmente, elas transformavam
+        # todo parágrafo corrido em uma pilha de <br>.
+        '-f', 'markdown+smart+tex_math_dollars+pipe_tables+strikeout+superscript+subscript+implicit_figures+gfm_auto_identifiers',
 
     ]
 

@@ -37,16 +37,24 @@ AUTHOR = "Gustavo Zambrano"
 
 
 def extract_frontmatter(content):
-    """Extract YAML frontmatter and body from markdown content."""
+    """Extract YAML frontmatter and body from markdown content.
+
+    O delimitador de fechamento precisa ser uma linha so com '---'. Um split
+    ingenuo em '---' quebrava frontmatter cujo summary continha a sequencia
+    dentro do texto citado (ex.: "... ele roda? ---"), truncando o bloco e
+    invalidando o YAML inteiro."""
     if content.startswith('---'):
-        parts = content.split('---', 2)
-        if len(parts) >= 3:
-            try:
-                meta = yaml.safe_load(parts[1])
-                body = parts[2].lstrip('\n')
-                return meta, body
-            except yaml.YAMLError:
-                pass
+        lines = content.split('\n')
+        for i in range(1, len(lines)):
+            if re.match(r'^---\s*$', lines[i]):
+                fm_text = '\n'.join(lines[1:i])
+                body = '\n'.join(lines[i + 1:])
+                try:
+                    meta = yaml.safe_load(fm_text)
+                    return meta, body.lstrip('\n')
+                except yaml.YAMLError:
+                    pass
+                break
     return {}, content
 
 
@@ -87,15 +95,30 @@ def convert_heading_wikilinks(text):
 
     Precisa rodar ANTES de `clean_residual_wikilinks`, que apagaria a sintaxe
     `[[...]]` e deixaria só o texto, sem link nenhum.
+
+    O padrão tolera um link markdown aninhado dentro do alvo/display
+    (`[[#Capítulo: Vida como [Termo](url)]]`) usando lookahead em vez da
+    classe negada — colchetes internos antes encerravam a captura cedo demais,
+    sobrando o wikil inteiro como texto literal no HTML/PDF.
     """
     from check_wiki import heading_anchor
+
+    def _strip_md_links(s):
+        """Remove `[texto](url)` mantendo o texto — para alvo e display."""
+        return re.sub(r'\[([^\]]+)\]\([^)]*\)', r'\1', s)
 
     def repl(m):
         alvo = m.group(1).strip()
         display = m.group(2) if m.group(2) else alvo
-        return '[%s](#%s)' % (display, heading_anchor(alvo))
+        return '[%s](#%s)' % (
+            _strip_md_links(display),
+            heading_anchor(_strip_md_links(alvo)),
+        )
 
-    return re.sub(r'\[\[#([^\]\|]+)(?:\|([^\]]+))?\]\]', repl, text)
+    return re.sub(
+        r'\[\[#((?:(?!\]\])(?!\|).)+)(?:\|((?:(?!\]\]).)+))?\]\]',
+        repl, text,
+    )
 
 
 def clean_residual_wikilinks(text):

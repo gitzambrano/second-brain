@@ -4,158 +4,356 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>$title$</title>
+<meta property="og:title" content="$title$">
+$if(summary)$
+<meta property="og:description" content="$summary$">
+$endif$
+<meta property="og:type" content="article">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400;1,700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono&display=swap" rel="stylesheet">
 $if(math)$
 $math$
 $endif$
 <style>
+/* ------------------------------------------------------------------ */
+/* Tokens: escuro editorial por padrao, claro sob data-theme           */
+/* ------------------------------------------------------------------ */
 :root{
-  --title-blue:#1E3A5F;
-  --link-blue:#2563EB;
-  --subtle-gray:#6B7280;
-  --rule-gray:#E5E7EB;
-  --code-bg:#F4F5F7;
-  --callout-bg:#F8FAFC;
-  --page-bg:#FFFFFF;
-  --text:#1F2937;
-  --max-width:760px;
+  --bg:#0A0A0A;
+  --surface:#111111;
+  --surface2:#181818;
+  --border:#2A2A2A;
+  --text:#D4CFC8;
+  --text-dim:#8A857E;
+  --text-bright:#EDE8DF;
+  --gold:#C9922A;
+  --gold-dim:#8A6520;
+  --rust:#A03C28;
+  --rust-bright:#C44A30;
+  --accent:#4A8FA8;
+  --amber:#B07A1E;
+  --max-width:700px;
 }
-*{box-sizing:border-box;}
-html{-webkit-text-size-adjust:100%;}
+[data-theme="light"]{
+  --bg:#FAF6EE;
+  --surface:#F2ECDF;
+  --surface2:#E9E1D0;
+  --border:#D8CEBB;
+  --text:#3A342B;
+  --text-dim:#7E7566;
+  --text-bright:#211B12;
+  --gold:#96690F;
+  --gold-dim:#B08A2E;
+  --rust:#A03C28;
+  --rust-bright:#B4432C;
+  --accent:#35708A;
+  --amber:#8F6212;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;overflow-x:hidden;}
+
 body{
-  margin:0;
-  padding:0;
-  background:var(--page-bg);
+  background:var(--bg);
   color:var(--text);
-  font-family:Georgia,"Times New Roman",serif;
-  font-size:19px;
-  line-height:1.68;
+  font-family:'Source Serif 4',Georgia,'Times New Roman',serif;
+  font-size:17.5px;
+  line-height:1.78;
   -webkit-font-smoothing:antialiased;
+  transition:background .25s ease,color .25s ease;
 }
-.essay-shell{
-  max-width:var(--max-width);
-  margin:0 auto;
-  padding:64px 24px 96px;
+
+/* ------------------------------------------------------------------ */
+/* Chrome fixo: progresso / tema / topo                                */
+/* ------------------------------------------------------------------ */
+.sb-progress{position:fixed;top:0;left:0;right:0;height:3px;z-index:60;background:transparent;}
+.sb-progress-fill{height:100%;width:0;background:linear-gradient(90deg,var(--rust),var(--gold));}
+#sbThemeToggle{
+  position:fixed;top:14px;right:14px;z-index:61;width:38px;height:38px;
+  border-radius:50%;border:1px solid var(--border);background:var(--surface);
+  color:var(--gold);font-size:1rem;cursor:pointer;transition:border-color .15s,color .15s;
 }
-header.essay-header{
-  margin-bottom:2.6em;
-  text-align:center;
+#sbThemeToggle:hover{border-color:var(--gold);}
+#sbToTop{
+  position:fixed;bottom:22px;right:18px;z-index:61;width:40px;height:40px;
+  border-radius:50%;border:1px solid var(--border);background:var(--surface);
+  color:var(--text-dim);font-size:1rem;cursor:pointer;opacity:0;pointer-events:none;
+  transition:opacity .25s,border-color .15s;
 }
-header.essay-header h1{
-  font-family:Georgia,serif;
-  font-size:2.15em;
-  line-height:1.25;
-  color:var(--title-blue);
-  margin:0 0 0.5em;
+#sbToTop.visible{opacity:1;pointer-events:auto;}
+#sbToTop:hover{border-color:var(--gold);color:var(--gold);}
+
+/* ------------------------------------------------------------------ */
+/* Masthead                                                            */
+/* ------------------------------------------------------------------ */
+.masthead{background:var(--surface);border-bottom:1px solid var(--border);text-align:center;}
+.stripe{height:4px;background:linear-gradient(90deg,var(--rust) 0%,var(--gold) 50%,var(--rust) 100%);}
+.masthead-inner{max-width:820px;margin:0 auto;padding:2.4rem 1.2rem 2rem;}
+.journal-label{
+  font-family:'JetBrains Mono',Consolas,monospace;
+  font-size:.7rem;letter-spacing:.24em;text-transform:uppercase;
+  color:var(--text-dim);margin-bottom:1.4rem;
 }
-.essay-subtitle{
-  color:var(--subtle-gray);
-  font-size:1.05em;
-  font-style:italic;
-  margin:0 0 0.35em;
+.hero-title{
+  font-family:'Playfair Display',Georgia,serif;
+  font-size:clamp(2.1rem,8.5vw,4.4rem);
+  font-weight:900;line-height:1.05;color:var(--text-bright);
+  letter-spacing:-.02em;text-wrap:balance;
 }
-.essay-byline{
-  color:var(--subtle-gray);
-  font-size:0.92em;
-  margin:0;
+.hero-title em{font-style:italic;color:var(--gold);}
+.masthead-rule{border:none;border-top:1px solid var(--border);width:110px;margin:1.5rem auto 1.1rem;}
+.byline{
+  font-family:'JetBrains Mono',Consolas,monospace;
+  font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--text-dim);
 }
-header.essay-header hr{
-  border:none;
-  border-top:1px solid var(--rule-gray);
-  width:72px;
-  margin:1.6em auto 0;
+
+/* ------------------------------------------------------------------ */
+/* Conteudo                                                            */
+/* ------------------------------------------------------------------ */
+.content{max-width:var(--max-width);margin:0 auto;padding:2.8rem 1.2rem 5rem;}
+
+h1,h2,h3,h4,h5,h6{font-family:'Playfair Display',Georgia,serif;color:var(--text-bright);line-height:1.25;}
+.content h1{display:none;} /* titulo vive no masthead */
+
+.content{counter-reset:sb-h2;}
+.content h2{
+  counter-increment:sb-h2;
+  font-size:clamp(1.45rem,4.6vw,2rem);font-weight:700;
+  margin:3.4rem 0 1.4rem;letter-spacing:-.01em;text-wrap:balance;
 }
-h1,h2,h3,h4,h5,h6{
-  font-family:Georgia,serif;
-  color:var(--title-blue);
-  line-height:1.3;
-  margin:1.7em 0 0.6em;
+.content h2::before{
+  content:"CAPÍTULO " counter(sb-h2,decimal-leading-zero);
+  display:block;font-family:'JetBrains Mono',Consolas,monospace;
+  font-size:.58rem;font-weight:400;letter-spacing:.24em;
+  color:var(--gold);margin-bottom:.55rem;
 }
-h2{font-size:1.5em;border-bottom:1px solid var(--rule-gray);padding-bottom:0.25em;}
-h3{font-size:1.22em;color:color-mix(in srgb, var(--title-blue) 80%, black);}
-h4{font-size:1.05em;color:color-mix(in srgb, var(--title-blue) 65%, black);}
-p{margin:0 0 1.05em;}
-a{color:var(--link-blue);text-decoration:none;border-bottom:1px solid rgba(37,99,235,0.35);}
-a:hover{border-bottom-color:var(--link-blue);}
-strong{color:var(--text);}
-em{font-style:italic;}
-ul,ol{margin:0 0 1.05em;padding-left:1.4em;}
-li{margin-bottom:0.35em;}
-blockquote{
-  margin:1.4em 0;
-  padding:0.9em 1.3em;
-  background:var(--callout-bg);
-  border-left:4px solid var(--title-blue);
-  border-radius:0 6px 6px 0;
-  color:var(--text);
-  font-size:0.97em;
+.content h2::after{
+  content:"";display:block;width:42px;height:2px;background:var(--rust);
+  margin-top:.85rem;
 }
-blockquote p:last-child{margin-bottom:0;}
+.content h2#sumário{display:none;}
+.content h2#sumário::before,.content h2#sumário::after{display:none;}
+.content h2#referências{counter-increment:none;}
+.content h2#referências::before{content:"APÊNDICE";}
+h3{font-size:1.18rem;margin:2rem 0 .8rem;color:color-mix(in srgb,var(--text-bright) 88%,transparent);}
+
+p{margin:0 0 1.25rem;hyphens:auto;word-break:break-word;}
+a{color:var(--gold);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--gold) 40%,transparent);transition:border-color .15s,color .15s;}
+a:hover{color:var(--text-bright);border-bottom-color:var(--text-bright);}
+strong{color:var(--text-bright);font-weight:600;}
+
+/* Drop cap no primeiro paragrafo de cada capitulo */
+.content > h2:not(#sumário):not(#referências) + p::first-letter{
+  font-family:'Playfair Display',Georgia,serif;
+  font-size:3.4rem;font-weight:900;float:left;line-height:.78;
+  margin-right:.09em;margin-top:.06em;color:var(--rust-bright);
+}
+
+/* Ancora discreta nos titulos */
+.hlink{border-bottom:none;margin-left:.45rem;font-size:.6em;vertical-align:.35em;color:var(--border);transition:color .15s;}
+.hlink:hover{color:var(--gold);}
+
+hr{border:none;border-top:1px solid var(--border);margin:2.6rem 0;}
+
+/* ------------------------------------------------------------------ */
+/* Sumario                                                             */
+/* ------------------------------------------------------------------ */
+#sumário + ul{
+  list-style:none;counter-reset:sb-toc;
+  background:var(--surface);border:1px solid var(--border);
+  padding:1.5rem 1.4rem;margin:2.2rem 0;
+}
+#sumário + ul::before{
+  content:"ÍNDICE";display:block;text-align:center;
+  font-family:'JetBrains Mono',Consolas,monospace;
+  font-size:.6rem;letter-spacing:.22em;color:var(--gold);margin-bottom:1rem;
+}
+#sumário + ul li{
+  counter-increment:sb-toc;display:flex;gap:.7rem;align-items:baseline;
+  font-size:.88rem;line-height:1.5;margin-bottom:.5rem;
+}
+#sumário + ul li::before{
+  content:counter(sb-toc,upper-roman);
+  font-family:'JetBrains Mono',Consolas,monospace;
+  font-size:.56rem;color:var(--gold);min-width:1.7rem;flex-shrink:0;
+}
+#sumário + ul a{border-bottom:1px solid var(--border);color:var(--text);}
+#sumário + ul a:hover{color:var(--gold);border-bottom-color:var(--gold);}
+
+/* ------------------------------------------------------------------ */
+/* Citacoes                                                            */
+/* ------------------------------------------------------------------ */
+.quote{
+  margin:2rem 0;padding:1.05rem 1.3rem;
+  background:var(--surface2);border-left:2px solid var(--gold-dim);
+}
+.quote p{font-size:.97rem;color:var(--text);margin-bottom:1rem;}
+.quote p:last-child{margin-bottom:0;}
+
+.pull-quote{
+  margin:2.4rem 0;padding:1.35rem 1.4rem 1.2rem;
+  background:var(--surface);border-left:3px solid var(--gold);
+}
+.pull-quote p{
+  font-family:'Playfair Display',Georgia,serif;font-style:italic;
+  font-size:clamp(1.02rem,3vw,1.2rem);line-height:1.55;color:var(--text-bright);
+  margin-bottom:1rem;
+}
+.pq-cite{
+  font-family:'JetBrains Mono',Consolas,monospace;font-style:normal;
+  font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);
+}
+
+/* ------------------------------------------------------------------ */
+/* Caixas tipadas                                                      */
+/* ------------------------------------------------------------------ */
+.box{
+  --boxc:var(--gold);
+  margin:2.6rem 0;border:1px solid var(--border);
+  background:color-mix(in srgb,var(--boxc) 4%,var(--surface));
+  overflow:hidden;
+}
+.box.experimento{--boxc:var(--rust);}
+.box.evidencia{--boxc:var(--accent);}
+.box.mapa{--boxc:var(--gold);}
+.box.ataque{--boxc:var(--rust);}
+.box.aviso{--boxc:var(--amber);}
+.box.nivel{--boxc:var(--accent);}
+.box.ideia{--boxc:var(--gold-dim);}
+.box.generico{--boxc:var(--gold-dim);}
+
+.box-badge{
+  display:inline-block;background:var(--boxc);color:#fff;
+  font-family:'JetBrains Mono',Consolas,monospace;
+  font-size:.56rem;letter-spacing:.18em;text-transform:uppercase;
+  padding:.28rem .75rem;
+}
+.box-title{
+  font-family:'Playfair Display',Georgia,serif;font-weight:700;
+  font-size:1.08rem;line-height:1.3;color:var(--text-bright);
+  padding:1.05rem 1.3rem .35rem;
+}
+.box > p{font-size:.94rem;line-height:1.72;margin:0 0 1rem;padding:0 1.3rem;color:var(--text);}
+.box > p:last-of-type{margin-bottom:1.2rem;}
+.box-title p,.box-badge p{margin:0;padding:0;}
+
+.box-verdict{
+  margin-top:1.4rem;padding:1.05rem 1.3rem 1.1rem;
+  background:color-mix(in srgb,var(--gold) 7%,var(--bg));
+  border-top:1px solid var(--gold);border-bottom:3px solid var(--gold);
+}
+.box-verdict p{margin:0 0 .7rem;font-size:.92rem;color:var(--text-bright);}
+.verdict-tag{
+  display:block;font-family:'JetBrains Mono',Consolas,monospace;
+  font-size:.58rem;letter-spacing:.26em;text-transform:uppercase;
+  color:var(--gold);margin-bottom:.5rem;
+}
+
+/* Cards: filosofos e obras */
+.card{
+  margin:2.1rem 0;padding:1.15rem 1.3rem;
+  background:var(--surface);border-left:3px solid var(--gold-dim);
+}
+.card-name{font-family:'Playfair Display',Georgia,serif;font-weight:700;font-size:1.05rem;color:var(--text-bright);}
+.card.livro .card-name{font-style:italic;}
+.card-meta{
+  font-family:'JetBrains Mono',Consolas,monospace;
+  font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--gold);margin:.2rem 0 .7rem;
+}
+.card p{font-size:.93rem;line-height:1.7;margin-bottom:.7rem;}
+.card p:last-child{margin-bottom:0;}
+
+/* Rotulo solto / estatistica / ornamento */
+.label-solo{
+  font-family:'JetBrains Mono',Consolas,monospace;
+  font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--gold);margin:2.3rem 0 .9rem;
+}
+.stat{
+  display:table;margin:2.6rem auto;padding:.35rem 1.6rem;
+  border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  font-family:'Playfair Display',Georgia,serif;font-weight:900;
+  font-size:clamp(2.8rem,9vw,4.2rem);color:var(--gold);line-height:1.15;
+}
+.ornament{
+  text-align:center;margin:2.7rem 0;color:var(--border);
+  letter-spacing:.9em;padding-left:.9em;font-size:1.02rem;
+}
+
+/* ------------------------------------------------------------------ */
+/* Tabelas / codigo / figuras                                          */
+/* ------------------------------------------------------------------ */
+table{width:100%;border-collapse:collapse;margin:2rem 0;font-size:.86rem;}
+th{
+  background:var(--surface2);color:var(--gold);text-align:left;
+  font-family:'JetBrains Mono',Consolas,monospace;font-weight:500;
+  font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;
+  padding:.6rem .8rem;border-bottom:1px solid var(--border);
+}
+td{padding:.65rem .8rem;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.55;}
+tr:last-child td{border-bottom:none;}
+
 code{
-  font-family:"Consolas","SFMono-Regular",Menlo,monospace;
-  background:var(--code-bg);
-  padding:0.15em 0.4em;
-  border-radius:4px;
-  font-size:0.85em;
+  font-family:'JetBrains Mono',Consolas,monospace;
+  background:var(--surface2);padding:.15em .4em;border-radius:4px;font-size:.82em;
 }
 pre{
-  background:var(--code-bg);
-  padding:1em 1.2em;
-  border-radius:8px;
-  overflow-x:auto;
-  font-size:0.85em;
-  line-height:1.5;
-  border:1px solid var(--rule-gray);
+  background:var(--surface2);border:1px solid var(--border);
+  padding:1em 1.2em;border-radius:6px;overflow-x:auto;
+  font-size:.8em;line-height:1.55;
 }
 pre code{background:none;padding:0;}
-figure{margin:2em 0;text-align:center;}
-figure img{max-width:100%;height:auto;border-radius:6px;}
-figcaption{
-  margin-top:0.6em;
-  font-size:0.85em;
-  color:var(--subtle-gray);
-  font-style:italic;
-}
+
+figure{margin:2.2rem 0;text-align:center;}
+figure img{max-width:100%;height:auto;border-radius:6px;border:1px solid var(--border);}
+figcaption{margin-top:.7rem;font-size:.84em;color:var(--text-dim);font-style:italic;}
 img{max-width:100%;height:auto;}
-table{
-  width:100%;
-  border-collapse:collapse;
-  margin:1.6em 0;
-  font-size:0.92em;
-}
-th,td{
-  border:1px solid var(--rule-gray);
-  padding:0.55em 0.75em;
-  text-align:left;
-}
-th{background:var(--code-bg);color:var(--title-blue);}
-hr{border:none;border-top:1px solid var(--rule-gray);margin:2.4em 0;}
-/* Sumário: first <ul> following the "Sumário" heading gets a nav look */
-#sumário + ul, #sumario + ul{
-  list-style:none;
-  padding-left:0;
-  background:var(--callout-bg);
-  border-radius:8px;
-  padding:1em 1.4em;
-}
-#sumário + ul li, #sumario + ul li{margin-bottom:0.5em;}
-#sumário + ul a, #sumario + ul a{border-bottom:none;}
-::selection{background:rgba(37,99,235,0.18);}
+
+/* Notas de rodape */
+.footnotes hr{display:none;}
+.footnotes{border-top:1px solid var(--border);margin-top:3.5rem;padding-top:1.6rem;}
+.footnotes ol{padding-left:1.4rem;font-size:.83rem;color:var(--text-dim);line-height:1.65;}
+.footnotes li{margin-bottom:.6rem;}
+
+::selection{background:color-mix(in srgb,var(--gold) 30%,transparent);}
+
+/* ------------------------------------------------------------------ */
+/* Responsivo                                                          */
+/* ------------------------------------------------------------------ */
 @media (max-width:640px){
-  body{font-size:17px;}
-  .essay-shell{padding:40px 18px 72px;}
-  header.essay-header h1{font-size:1.6em;}
-  h2{font-size:1.28em;}
-  h3{font-size:1.1em;}
-  pre{font-size:0.78em;padding:0.85em;}
-  /* Tabela larga rola dentro de si mesma, em vez de esticar a página: sem
-     isto, uma comparativa de 3 colunas estoura o viewport do celular e o
-     corpo inteiro do texto passa a rolar na horizontal. */
-  table{display:block;width:max-content;max-width:100%;overflow-x:auto;}
+  body{font-size:16.5px;}
+  .masthead-inner{padding:1.9rem 1rem 1.6rem;}
+  .content{padding:2rem 1.05rem 4rem;}
+  .content h2{margin-top:2.7rem;}
+  pre{font-size:.72em;}
+  /* Tabela larga rola dentro de si mesma em vez de estourar o viewport. */
+  table{display:block;width:max-content;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .quote,.card{padding:.95rem 1.05rem;}
+  .box > p{margin-left:1.05rem;margin-right:1.05rem;}
+  .box-title{padding:1rem 1.05rem .3rem;}
+  .box-verdict{padding:.95rem 1.05rem 1rem;}
 }
+
+/* ------------------------------------------------------------------ */
+/* Impressao                                                           */
+/* ------------------------------------------------------------------ */
 @media print{
-  body{font-size:12pt;}
+  :root{
+    --bg:#fff;--surface:#fff;--surface2:#F5F2EA;--border:#CCC5B4;
+    --text:#222;--text-dim:#666;--text-bright:#000;
+    --gold:#8A6410;--gold-dim:#A98A2E;--rust:#8A3322;--rust-bright:#8A3322;
+    --accent:#2C6076;--amber:#7A5A10;
+  }
+  body{font-size:11pt;background:#fff;}
+  .sb-progress,#sbThemeToggle,#sbToTop,.hlink{display:none !important;}
+  .masthead{border-bottom:1px solid var(--border);}
+  .content{max-width:100%;padding:1.5rem 0 0;}
   a{color:inherit;border-bottom:none;}
-  .essay-shell{max-width:100%;padding:0;}
+  .box,.card,.pull-quote,.quote{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .box-verdict{break-inside:avoid;}
+  h2{break-after:avoid;}
 }
 $if(highlighting-css)$
 $highlighting-css$
@@ -163,20 +361,64 @@ $endif$
 </style>
 </head>
 <body>
-<div class="essay-shell">
-<header class="essay-header">
-<h1>$title$</h1>
-$if(subtitle)$
-<p class="essay-subtitle">$subtitle$</p>
-$endif$
-$if(author)$
-<p class="essay-byline">$for(author)$$author$$sep$, $endfor$</p>
-$endif$
-<hr>
+<div class="sb-progress"><div class="sb-progress-fill" id="sb-progress-fill"></div></div>
+<button id="sbThemeToggle" title="Alternar tema" aria-label="Alternar tema">◐</button>
+
+<header class="masthead">
+  <div class="stripe"></div>
+  <div class="masthead-inner">
+    <p class="journal-label">$if(subtitle)$$subtitle$$else$Second Brain$endif$</p>
+    <h1 class="hero-title">$title$</h1>
+    <hr class="masthead-rule">
+    <p class="byline">$author$</p>
+  </div>
 </header>
-<article>
+
+<main class="content">
 $body$
-</article>
-</div>
+</main>
+
+<footer style="text-align:center;padding:0 1rem 4rem;">
+  <div class="ornament">❦</div>
+  <p style="font-family:'JetBrains Mono',Consolas,monospace;font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--text-dim);">
+    Second Brain · $author$
+  </p>
+</footer>
+
+<button id="sbToTop" title="Voltar ao topo" aria-label="Voltar ao topo">↑</button>
+
+<script>
+(function(){
+  "use strict";
+  /* Progresso de leitura */
+  var fill=document.getElementById("sb-progress-fill");
+  function onScroll(){
+    var h=document.documentElement;
+    var max=h.scrollHeight-h.clientHeight;
+    fill.style.width=(max>0?(h.scrollTop/max)*100:0)+"%";
+    toTop.classList.toggle("visible",h.scrollTop>600);
+  }
+  /* Tema */
+  var root=document.documentElement,tgl=document.getElementById("sbThemeToggle");
+  try{var saved=localStorage.getItem("sb-theme");if(saved){root.setAttribute("data-theme",saved);}}catch(e){}
+  tgl.addEventListener("click",function(){
+    var cur=root.getAttribute("data-theme")==="light"?"dark":"light";
+    root.setAttribute("data-theme",cur);
+    try{localStorage.setItem("sb-theme",cur);}catch(e){}
+  });
+  /* Voltar ao topo */
+  var toTop=document.getElementById("sbToTop");
+  toTop.addEventListener("click",function(){window.scrollTo({top:0,behavior:"smooth"});});
+  window.addEventListener("scroll",onScroll,{passive:true});
+  onScroll();
+  /* Ancoras discretas nos capitulos */
+  document.querySelectorAll(".content h2[id]").forEach(function(h){
+    var a=document.createElement("a");
+    a.className="hlink";a.href="#"+h.id;a.textContent="§";
+    a.setAttribute("aria-label","Link para esta seção");
+    h.appendChild(a);
+  });
+})();
+</script>
 </body>
 </html>
