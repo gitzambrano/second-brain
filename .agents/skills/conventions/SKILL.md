@@ -223,7 +223,7 @@ Vale para todo trecho escrito/reescrito pela wiki — não retroage sobre texto 
 3. **Prefira abrir o parágrafo situando o assunto.** Não é regra rígida de primeira frase, mas o leitor não deveria precisar do parágrafo inteiro para descobrir do que ele trata.
 4. **Travessões (—) extremamente raros**: no máximo 1 a 2 na prosa, não por parágrafo. Prefira vírgula, dois-pontos, parênteses, ou reestruture a frase. Não conta o `·` da byline, nem o `—` de `## Referências` (obrigatório antes da nota) e `## Conexões` (antes da descrição), que são estruturais. `check_wiki.py` conta só a prosa e emite `TOO_MANY_EM_DASHES` como INFO: é alvo de estilo para texto novo, não dívida a saldar no corpus existente.
 5. **Conector lógico explícito** ("portanto", "assim", "porém", "no entanto") quando uma frase depende da anterior — não deixe a ligação implícita.
-6. **Divida frases unidas por ponto e vírgula** em duas frases.
+6. **Divida frases unidas por ponto e vírgula** em duas frases. Ponto e vírgula deve ser evitado ao máximo.
 7. **Frase muito longa, divida.** Alvo prático: ~30 palavras; mais que isso, geralmente há uma frase escondida dentro da outra.
 
 ### Regras adicionais para essays técnicos

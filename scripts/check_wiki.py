@@ -116,9 +116,13 @@ SOURCE_TYPE_TO_FOLDER = {
 }
 UTILITY_SOURCE_FOLDERS = {"resumos"}
 
-# `summary:` é resumo de uma linha; acima disto vira parágrafo e quebra o
-# layout de wiki/index.md (ver `## Frontmatter` em conventions/SKILL.md).
-SUMMARY_MAX_CHARS = 120
+# `summary:` é o resumo de uma linha usado por build_index.py. O corpus
+# consolidou um padrão descritivo de arco argumentativo: mediana ~375
+# caracteres, máximo observado 462 (distribuição dos essays antigos).
+# Acima do teto vira parágrafo e quebra o layout de wiki/index.md;
+# abaixo do piso não descreve o arco do essay.
+SUMMARY_MAX_CHARS = 480
+SUMMARY_MIN_CHARS = 250
 
 # Heurística de idioma: palavras funcionais que só existem em inglês vs. em
 # português. Não é um detector de idioma robusto, é um sinal barato para
@@ -355,6 +359,10 @@ def check_essay(filepath: Path) -> dict:
         add("WARNING", "FM_LONG_SUMMARY",
             f"'summary' com {len(summary.strip())} caracteres "
             f"(máximo {SUMMARY_MAX_CHARS}) — é um resumo de uma linha, não um parágrafo")
+    elif len(summary.strip()) < SUMMARY_MIN_CHARS:
+        add("WARNING", "FM_SHORT_SUMMARY",
+            f"'summary' com {len(summary.strip())} caracteres "
+            f"(mínimo {SUMMARY_MIN_CHARS}) — deve descrever o arco do argumento, não só o tema")
 
     status = fm_data.get("status")
     if status is None:

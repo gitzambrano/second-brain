@@ -9,7 +9,6 @@ description: >
   que ele argumenta.
 allowed-tools: Bash Read Write Edit Glob Grep
 ---
-
 # Polish
 
 Ajuste de tom, ritmo e elegância de prosa, sem alterar conteúdo. Aplica o `## Estilo de prosa` de `conventions/SKILL.md`.
@@ -23,6 +22,7 @@ Leia o essay inteiro antes de reescrever qualquer trecho — estilo é sobre coe
 1. **Bullets no corpo argumentativo.** Ideias em lista devem virar prosa corrida com transições explícitas entre elas. Bullets ficam só em `## Sumário`, `## Referências`, e tabelas genuinamente mais claras que prosa (comparações numéricas).
 2. **Travessões.** Conte quantos `—` existem no essay inteiro, excluindo a byline (`Tipo`) e os separadores de display text de wikilinks no index. **Máximo 2 no essay inteiro.** Se passar, reescreva os excedentes com vírgula, dois-pontos, parênteses ou reestruturação da frase — nunca troque um travessão por outro em outro ponto do texto.
 3. **Ritmo e variação de frase.** Frases muito uniformes em tamanho/estrutura cansam — varie, mas sem sacrificar clareza.
+4. **Divida frases unidas por ponto e vírgula** em duas frases. Ponto e vírgula deve ser evitado ao máximo.
 
 ## O que preservar
 
@@ -37,6 +37,7 @@ Resuma o que foi ajustado (ex: "3 travessões reescritos, 2 blocos de bullets co
 Feche com o `## Fechamento padrão de essay único` de `conventions/SKILL.md`.
 
 Atualize `updated:` no frontmatter. Log se o ajuste foi extenso:
+
 ```
 ## [YYYY-MM-DD] polish | Título do Essay
 Resumo do ajuste de estilo.
