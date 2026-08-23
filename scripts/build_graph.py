@@ -721,7 +721,7 @@ def render_reader_fragments(essay_nodes):
     for i, node in enumerate(essay_nodes, 1):
         path = ROOT_DIR / node["file"]
         try:
-            body, _meta, title, subtitle, author_date, summary = prepare_for_pandoc(path)
+            body, title, subtitle, author_date, summary = prepare_for_pandoc(path)
         except Exception as e:  # noqa: BLE001 - essay problemático não derruba o build
             print(f"  aviso: falha ao preparar leitor de {path.name}: {e}")
             continue
@@ -2584,6 +2584,7 @@ const MATURIDADE_LABELS = { solta: "Solta", germinando: "Germinando", madura: "M
 // MathJax não enxerga dentro de shadow: o fragmento é tipografado num
 // staging no light-DOM e só então enxertado.
 const READER_BY_SLUG = READER_DATA.essays || {};
+const READER_CSS = READER_DATA.css || "";
 const readerOverlay = document.getElementById("reader-overlay");
 const readerArticle = document.getElementById("reader-article");
 const readerScrollEl = document.getElementById("reader-scroll");
