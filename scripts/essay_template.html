@@ -71,7 +71,7 @@ $endif$
     --accent:#35708A;
     --amber:#8F6212;
     --font-display:Georgia,'Times New Roman',serif;
-    --max-width:800px;
+    --max-width:1024px;
   }
 }
 
@@ -126,6 +126,10 @@ body{
   letter-spacing:-.02em;text-wrap:balance;
 }
 .hero-title em{font-style:italic;color:var(--gold);}
+/* Desktop: titulo menor — o clamp mobile-first estourava em telas largas. */
+@media (min-width:901px){
+  .hero-title{font-size:clamp(2rem,4.6vw,3.05rem);}
+}
 .masthead-rule{border:none;border-top:1px solid var(--border);width:110px;margin:1.5rem auto 1.1rem;}
 .byline{
   font-family:'JetBrains Mono',Consolas,monospace;
@@ -149,7 +153,7 @@ h1,h2,h3,h4,h5,h6{font-family:var(--font-display);color:var(--text-bright);line-
 .content h2::before{
   content:"CAPÍTULO " counter(sb-h2,decimal-leading-zero);
   display:block;font-family:'JetBrains Mono',Consolas,monospace;
-  font-size:.58rem;font-weight:400;letter-spacing:.24em;
+  font-size:.78rem;font-weight:400;letter-spacing:.18em;
   color:var(--gold);margin-bottom:.55rem;
 }
 .content h2::after{
@@ -158,8 +162,12 @@ h1,h2,h3,h4,h5,h6{font-family:var(--font-display);color:var(--text-bright);line-
 }
 .content h2#sumário{display:none;}
 .content h2#sumário::before,.content h2#sumário::after{display:none;}
+/* Seções sem número de capítulo: Introdução, Conclusão etc. recebem
+   data-label via JS; Referências é rotulada pelo próprio nome. */
+.content h2.no-chapter{counter-increment:none;}
+.content h2[data-label]::before{content:attr(data-label);}
 .content h2#referências{counter-increment:none;}
-.content h2#referências::before{content:"APÊNDICE";}
+.content h2#referências::before{content:"REFERÊNCIAS";}
 h3{font-size:1.18rem;margin:2rem 0 .8rem;color:color-mix(in srgb,var(--text-bright) 88%,transparent);}
 
 p{margin:0 0 1.25rem;hyphens:auto;word-break:break-word;}
@@ -167,9 +175,10 @@ a{color:var(--gold);text-decoration:none;border-bottom:1px solid color-mix(in sr
 a:hover{color:var(--text-bright);border-bottom-color:var(--text-bright);}
 strong{color:var(--text-bright);font-weight:600;}
 
-/* Ensaios com capitulos auto-numerados ("## I. ..." / "## 3. ..."):
-   a classe .self-numbered (aplicada por JS) desliga o contador, senao
-   a numeracao duplica e desalinha com o Sumario. */
+/* Ensaios com capitulos auto-numerados no proprio titulo ("## I. ..." /
+   "## 3. ..."): a classe .self-numbered (aplicada por JS) desliga TODO
+   rotulo dourado — o numero ja vive no texto. Regra da casa: ou todos os
+   capitulos tem rotulo, ou nenhum tem (INTRODUCAO/CONCLUSAO inclusive). */
 .content.self-numbered h2::before{content:none;}
 
 /* Listas: o reset global zera o padding da UA — sem isto, os marcadores
@@ -185,13 +194,6 @@ li::marker{color:var(--gold-dim);}
    colados na borda enquanto o texto tem 1.3rem — recuo esquisito) */
 .box > :is(h3,h4,h5){margin:1.1rem 1.3rem .45rem;}
 .card > :is(h3,h4,h5){margin:.6rem 0 .45rem;}
-
-/* Drop cap no primeiro paragrafo de cada capitulo */
-.content > h2:not(#sumário):not(#referências) + p::first-letter{
-  font-family:var(--font-display);
-  font-size:3.4rem;font-weight:900;float:left;line-height:.78;
-  margin-right:.09em;margin-top:.06em;color:var(--rust-bright);
-}
 
 /* Ancora discreta nos titulos */
 .hlink{border-bottom:none;margin-left:.45rem;font-size:.6em;vertical-align:.35em;color:var(--border);transition:color .15s;}
@@ -210,7 +212,7 @@ hr{border:none;border-top:1px solid var(--border);margin:2.6rem 0;}
 #sumário + ul::before{
   content:"ÍNDICE";display:block;text-align:center;
   font-family:'JetBrains Mono',Consolas,monospace;
-  font-size:.6rem;letter-spacing:.22em;color:var(--gold);margin-bottom:1rem;
+  font-size:.78rem;letter-spacing:.18em;color:var(--gold);margin-bottom:1rem;
 }
 #sumário + ul li{
   counter-increment:sb-toc;display:flex;gap:.7rem;align-items:baseline;
@@ -221,6 +223,10 @@ hr{border:none;border-top:1px solid var(--border);margin:2.6rem 0;}
   font-family:'JetBrains Mono',Consolas,monospace;
   font-size:.56rem;color:var(--gold);min-width:1.7rem;flex-shrink:0;
 }
+/* Titulos ja numerados no proprio texto ("## I. ..."): o contador do
+   indice duplicaria/mascalaria a numeracao — some. */
+#sumário + ul.sb-toc-plain li{gap:0;}
+#sumário + ul.sb-toc-plain li::before{content:none;}
 #sumário + ul a{border-bottom:1px solid var(--border);color:var(--text);}
 #sumário + ul a:hover{color:var(--gold);border-bottom-color:var(--gold);}
 
@@ -238,14 +244,16 @@ hr{border:none;border-top:1px solid var(--border);margin:2.6rem 0;}
   margin:2.4rem 0;padding:1.35rem 1.4rem 1.2rem;
   background:var(--surface);border-left:3px solid var(--gold);
 }
+/* Mesma fonte e corpo da .quote — a distincao fica na borda e no fundo,
+   nao no tamanho (citacoes do mesmo essay nao podem parecer componentes
+   diferentes). */
 .pull-quote p{
-  font-family:var(--font-display);font-style:italic;
-  font-size:clamp(1.02rem,3vw,1.2rem);line-height:1.55;color:var(--text-bright);
+  font-style:italic;
+  font-size:.97rem;line-height:1.72;color:var(--text);
   margin-bottom:1rem;
 }
 .pq-cite{
-  font-family:'JetBrains Mono',Consolas,monospace;font-style:normal;
-  font-size:.6rem;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim);
+  font-size:.85rem;color:var(--text-dim);font-style:normal;
 }
 
 /* ------------------------------------------------------------------ */
@@ -274,17 +282,17 @@ hr{border:none;border-top:1px solid var(--border);margin:2.6rem 0;}
 }
 .box-title{
   font-family:var(--font-display);font-weight:700;
-  font-size:1.08rem;line-height:1.3;color:var(--text-bright);
-  padding:1.05rem 1.3rem .35rem;
+  font-size:1rem;line-height:1.35;color:var(--text-bright);
+  padding:1rem 1.3rem .3rem;
 }
-.box > p{font-size:.94rem;line-height:1.72;margin:0 0 1rem;padding:0 1.3rem;color:var(--text);}
+.box > p{font-size:.95rem;line-height:1.72;margin:0 0 1rem;padding:0 1.3rem;color:var(--text);}
 .box > p:last-of-type{margin-bottom:1.2rem;}
 .box-title p,.box-badge p{margin:0;padding:0;}
 
 .box-verdict{
-  margin-top:1.4rem;padding:1.05rem 1.3rem 1.1rem;
-  background:color-mix(in srgb,var(--gold) 7%,var(--bg));
-  border-top:1px solid var(--gold);border-bottom:3px solid var(--gold);
+  margin-top:1.3rem;padding:1rem 1.3rem 1.05rem;
+  background:var(--surface2);
+  border-top:1px solid var(--border);
 }
 .box-verdict p{margin:0 0 .7rem;font-size:.92rem;color:var(--text-bright);}
 .verdict-tag{
@@ -298,42 +306,36 @@ hr{border:none;border-top:1px solid var(--border);margin:2.6rem 0;}
   margin:2.1rem 0;padding:1.15rem 1.3rem;
   background:var(--surface);border-left:3px solid var(--gold-dim);
 }
-.card-name{font-family:var(--font-display);font-weight:700;font-size:1.05rem;color:var(--text-bright);}
+.card-name{font-family:var(--font-display);font-weight:700;font-size:1rem;color:var(--text-bright);}
 .card.livro .card-name{font-style:italic;}
 .card-meta{
   font-family:'JetBrains Mono',Consolas,monospace;
-  font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--gold);margin:.2rem 0 .7rem;
+  font-size:.72rem;letter-spacing:.05em;
+  color:var(--text-dim);margin:.25rem 0 .75rem;
 }
-.card p{font-size:.93rem;line-height:1.7;margin-bottom:.7rem;}
+.card p{font-size:.95rem;line-height:1.7;margin-bottom:.7rem;}
 .card p:last-child{margin-bottom:0;}
 
-/* Rotulo solto / estatistica / ornamento */
+/* Rotulo solto / ornamento */
 .label-solo{
   font-family:'JetBrains Mono',Consolas,monospace;
   font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;
   color:var(--gold);margin:2.3rem 0 .9rem;
 }
-.stat{
-  display:table;margin:2.6rem auto;padding:.35rem 1.6rem;
-  border-top:1px solid var(--border);border-bottom:1px solid var(--border);
-  font-family:var(--font-display);font-weight:900;
-  font-size:clamp(2.8rem,9vw,4.2rem);color:var(--gold);line-height:1.15;
-}
 .ornament{
-  text-align:center;margin:2.7rem 0;color:var(--border);
+  text-align:center;margin:2.7rem 0;color:var(--text-dim);opacity:.6;
   letter-spacing:.9em;padding-left:.9em;font-size:1.02rem;
 }
 
 /* ------------------------------------------------------------------ */
 /* Tabelas / codigo / figuras                                          */
 /* ------------------------------------------------------------------ */
-table{width:100%;border-collapse:collapse;margin:2rem 0;font-size:.86rem;}
+table{width:100%;border-collapse:collapse;margin:2rem 0;font-size:.95rem;}
 th{
   background:var(--surface2);color:var(--gold);text-align:left;
   font-family:'JetBrains Mono',Consolas,monospace;font-weight:500;
-  font-size:.58rem;letter-spacing:.12em;text-transform:uppercase;
-  padding:.6rem .8rem;border-bottom:1px solid var(--border);
+  font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;
+  padding:.65rem .8rem;border-bottom:1px solid var(--border);
 }
 td{padding:.65rem .8rem;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.55;}
 tr:last-child td{border-bottom:none;}
@@ -422,7 +424,7 @@ $body$
 </main>
 
 <footer style="text-align:center;padding:0 1rem 4rem;">
-  <div class="ornament">❦</div>
+  <div class="ornament">· · ·</div>
   <p style="font-family:'JetBrains Mono',Consolas,monospace;font-size:.6rem;letter-spacing:.2em;text-transform:uppercase;color:var(--text-dim);">
     Second Brain · $author$
   </p>
@@ -474,7 +476,20 @@ $body$
   var selfNum=Array.prototype.some.call(h2s,function(h){
     return /^\s*(?:\d+|[IVXLC]+)[.\s—–:-]/.test(h.textContent);
   });
-  if(selfNum&&content){content.classList.add("self-numbered");}
+  if(selfNum&&content){
+    content.classList.add("self-numbered");
+    var toc=document.querySelector("#sum\u00e1rio + ul");
+    if(toc){toc.classList.add("sb-toc-plain");}
+  }
+  /* Rotulos semanticos: Introducao/Conclusao/Prefacio etc. nao recebem
+     "CAPITULO NN" — o rotulo passa a ser a propria secao (data-label). */
+  var SECTION_RE=/^\s*(introdu[çc][aã]o|conclus[aã]o|pref[áa]cio|pr[óo]logo|ep[íi]logo|posf[áa]cio|p[óo]s-?escrito|agradecimentos|ap[êe]ndice)\b/i;
+  Array.prototype.forEach.call(h2s,function(h){
+    var m=SECTION_RE.exec(h.textContent);
+    if(!m){return;}
+    h.setAttribute("data-label",m[1].toUpperCase());
+    h.classList.add("no-chapter");
+  });
 })();
 </script>
 </body>

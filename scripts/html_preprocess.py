@@ -67,6 +67,16 @@ VERDICT_RE = re.compile(
 
 ORNAMENT_RE = re.compile(r'^[·•∙∞⑂✻❦🌍🫧\s]{1,15}$')
 
+# Glifos de origem com cobertura fontes fragil -> substitutos universais.
+# Mapa extensivel: chave = glifo problemático no fonte, valor = seguro.
+GLYPH_MAP = {
+    '\u2442': '\u2234',   # OCR fork -> therefore
+}
+
+
+def _safe_glyph(g):
+    return GLYPH_MAP.get(g, g)
+
 # Linha-meta de ficha de agente/ferramenta: "Modelos: a · b", "Backend: x · y"
 META_LINE_RE = re.compile(r'^[A-Za-zÀ-ÿ][\wÀ-ÿ ]{0,18}:\s')
 
@@ -105,6 +115,82 @@ def _classify_label(text):
 
 def _strip_bold(text):
     return re.sub(r'^\*{1,2}(.*?)\*{1,2}$', r'\1', text.strip())
+
+
+def _title_like(t):
+    """Linha curta, sem pontuacao final e sem marca de citacao/enfase:
+    candidato a titulo de caixa. Regra de FORMA, nao de conteudo."""
+    t = t.strip()
+    if not t or len(t) > 60:
+        return False
+    if re.search(r'[.!?:;,]$', t):
+        return False
+    if re.match(r'^[*_“”"\x27‘’—–\-•·]', t):
+        return False
+    if HEADING_RE.match(t):
+        return False
+    return True
+
+
+def _split_titled(stanzas):
+    """Divide um bloco de citacao em caixas guiadas por linhas-titulo.
+
+    Regra generica de forma: cada segmento abre com linha-titulo e contem
+    ao menos uma linha de corpo (nao-titulo); glifos-ornamento entre
+    segmentos sao devolvidos para emissao intermediaria. Se o padrao nao
+    cobre o bloco INTEIRO, retorna ([], {}) e o chamador cai para citação
+    simples — nunca pela metade.
+    """
+    lines = [ln.strip() for s in stanzas for ln in s if ln.strip()]
+    items = []                       # ('seg', [linhas]) | ('orn', glifo)
+    cur = None
+
+    def close():
+        nonlocal cur
+        if cur:
+            items.append(('seg', cur))
+            cur = None
+
+    for ln in lines:
+        if ORNAMENT_RE.match(ln):
+            close()
+            items.append(('orn', ln.split()[0]))
+            continue
+        if cur is not None and _title_like(ln) \
+                and any(not _title_like(x) for x in cur):
+            close()                  # titulo no meio do corpo: novo segmento
+        if cur is None:
+            cur = [ln]
+        else:
+            cur.append(ln)
+    close()
+
+    segs = [it[1] for it in items if it[0] == 'seg']
+    if not segs:
+        return [], {}
+
+    def _seg_kind(s):
+        if s and _title_like(s[0]) and any(not _title_like(x) for x in s[1:]):
+            return 'box'          # titulo + corpo: caixa propriamente dita
+        if s and all(_title_like(x) for x in s):
+            return 'intro'        # so linhas-titulo: lenda/caption do conjunto
+        return 'plain'
+
+    kinds = [_seg_kind(s) for s in segs]
+    if kinds.count('box') < 1 or any(k == 'plain' for k in kinds):
+        return [], {}
+
+    ornaments = {}
+    pending, idx = None, 0
+    for kind_i, val in items:
+        if kind_i == 'orn':
+            pending = val
+        else:
+            if pending and idx > 0:
+                ornaments[idx] = _safe_glyph(pending)
+            pending = None
+            idx += 1
+    return segs, ornaments
 
 
 # ---------------------------------------------------------------------------
@@ -206,6 +292,17 @@ def _prev_was_quote(lines, i):
     return k >= 0 and QUOTE_RE.match(lines[k])
 
 
+def _section_boundary(blk):
+    """Bloco inicia nova secao? H1/H2 ou regua horizontal (---)."""
+    first = blk[0].strip() if blk else ''
+    if not first:
+        return False
+    if re.match(r'^(-{3,}|_{3,}|\*{3,})$', first):
+        return True
+    m = HEADING_RE.match(first)
+    return bool(m and len(first) - len(first.lstrip('#')) <= 2)
+
+
 # ---------------------------------------------------------------------------
 # Emissores
 # ---------------------------------------------------------------------------
@@ -302,19 +399,14 @@ def _is_label_candidate(grp):
     if len(st) != 1 or len(st[0]) != 1:
         return False
     t = st[0][0].strip()
-    if t.startswith(('(', '“', '"')) or t.endswith(('.', '?', '!', ':', ';', ')')):
+    if t.startswith(('(', '“', '"')):
         return False
-    if _classify_label(t) or AVISO_RE.match(t):
-        return True
-    return len(t) <= 48 and not re.search(r'[.!?:;]\s*$', t)
-
-
-def _is_label_candidate(grp):
-    st = grp.stanzas()
-    if len(st) != 1 or len(st[0]) != 1:
+    # Itálico (*texto* / _texto_): é citação, não rótulo.
+    # ('**Negrito**' continua candidato — ex.: "**Ideia 01**".)
+    if re.match(r'^(\*[^*\s]|_[^\s])', t):
         return False
-    t = st[0][0].strip()
-    if t.startswith(('(', '“', '"')) or t.endswith(('.', '?', '!', ':', ';', ')')):
+    # Numero puro ("58%", "1997") nunca é rótulo.
+    if not re.search(r'[^\W\d_]', t):
         return False
     if _classify_label(t) or AVISO_RE.match(t):
         return True
@@ -348,24 +440,19 @@ def _transform_group(grp, next_grp, raw_chain=None):
     flat = [ln for s in st for ln in s]
     is_label = _is_label_candidate(grp)
 
-    # 2. Callout estatistico: blockquote so com numero ("58%", "1997").
-    if len(flat) == 1 and re.match(r'^\d+([.,]\d+)?%?$', flat[0].strip()):
-        return ['<div class="stat">%s</div>' % flat[0].strip(), ''], 0
-
     # 3. Rotulo + prosa/lista/heading -> caixa generica (badge + conteudo).
-    #    Consistencia: todo rotulo seguido de conteudo vira quadro.
-    #    (Heading inicial e permitido — ex.: "**Ideia 01**" -> "### O Problema".
-    #    Seguro: o chamador so consome a cadeia quando a caixa e emitida.)
+    #    Linhas de um mesmo bloco entram com quebra dura: listas associativas
+    #    ("A" -> risco / "B" -> risco) nao colapsam em prosa corrida.
     if is_label and raw_chain:
         label = _strip_bold(flat[0])
         cls = _classify_label(label) or 'generico'
         body_lines = []
         for blk in raw_chain:
-            body_lines.extend(ln.rstrip() for ln in blk if ln.strip())
-            body_lines.append('')
-        while body_lines and not body_lines[-1].strip():
-            body_lines.pop()
-        return emit_typed_box(cls, label, '', body_lines, []), len(raw_chain)
+            body = '  \n'.join(ln.rstrip() for ln in blk if ln.strip())
+            if body:
+                body_lines.append(body)
+        body, verdicts = _extract_verdicts(body_lines)
+        return emit_typed_box(cls, label, '', body, verdicts), len(raw_chain)
 
     # 4. Rotulo solto sem conteudo aproveitado: mini-cabecalho mono.
     if is_label:
@@ -396,6 +483,24 @@ def _transform_group(grp, next_grp, raw_chain=None):
         if m:
             return emit_pull_quote([[m.group(1)]], m.group(2)), 0
 
+    # Divisao em caixas por linha-titulo (genérica): citações contínuas
+    # estruturadas por linhas-título ("Nível I — ...", "A Analogia do Dado")
+    # viram caixas simples título+corpo; legendas sem corpo viram citação
+    # simples; glifos entre elas viram ornamentos.
+    segments, ornaments = _split_titled(st)
+    if segments:
+        out_lines = []
+        for idx, seg in enumerate(segments):
+            if idx > 0 and ornaments.get(idx):
+                out_lines += ['<div class="ornament">%s</div>' % ornaments[idx], '']
+            is_intro = all(_title_like(x) for x in seg)
+            if is_intro:
+                out_lines += emit_quote([seg])
+            else:
+                body_p, verdicts = _extract_verdicts(['  \n'.join(seg[1:])])
+                out_lines += emit_typed_box('generico', '', seg[0], body_p, verdicts)
+        return out_lines, 0
+
     # Citação simples
     return emit_quote(st), 0
 
@@ -419,9 +524,13 @@ def transform_markdown(body):
                 elif blocks[j][0] == 'raw':
                     # Cadeia de blocos brutos consecutivos (prosa/lista/
                     # headings): candidatos a conteudo de caixa de um rotulo.
+                    # Fronteira generica: H1/H2 ou regua horizontal encerram
+                    # a cadeia — sao inicio de nova secao, nao conteudo da
+                    # caixa (H3+ pode: subsecoes internas sao comuns).
                     raw_chain.append(blocks[j][1])
                     k = j + 1
-                    while k < len(blocks) and blocks[k][0] == 'raw':
+                    while k < len(blocks) and blocks[k][0] == 'raw' \
+                            and not _section_boundary(blocks[k][1]):
                         raw_chain.append(blocks[k][1])
                         k += 1
             lines_out, used = _transform_group(payload, nxt_quote, raw_chain)
@@ -438,7 +547,7 @@ def transform_markdown(body):
             # Paragrafo-so-de-glifos vira ornamento.
             text = '\n'.join(payload).strip()
             if text and ORNAMENT_RE.match(text) and not HEADING_RE.match(payload[0]):
-                glyph = text.split()[0]
+                glyph = _safe_glyph(text.split()[0])
                 out.append('<div class="ornament">%s</div>' % glyph)
                 out.append('')
                 i += 1
@@ -464,16 +573,20 @@ def transform_markdown(body):
             out.append('')
             i += 1
             continue
-
         # blank
         i += 1
 
     result = '\n'.join(out)
-    # Stats adjacentes identicos ("35%" / "35%") viram um so — o fonte
-    # duplicava o callout; empilhados, parecem numeros perdidos em caixa.
+    # Citacoes simples identicas adjacentes viram uma so — fontes as vezes
+    # duplicam o callout; empilhadas, parecem numeros perdidos.
     result = re.sub(
-        r'(<div class="stat">([^<]+)</div>\s*)(?:<div class="stat">\2</div>\s*)+',
+        r'(::: \{\.quote\}\n\n([^\n]+)\n\n:::\n)'
+        r'(?:\s*::: \{\.quote\}\n\n\2\n\n:::\n?)+',
         r'\1', result)
     # Normaliza 3+ linhas vazias.
     result = re.sub(r'\n{3,}', '\n\n', result)
+    # Glifos fragis (GLYPH_MAP) viram substitutos universais em QUALQUER
+    # posicao — podem viver em titulos de caixa, nao so em linhas-ornamento.
+    for _bad, _good in GLYPH_MAP.items():
+        result = result.replace(_bad, _good)
     return result.strip() + '\n'

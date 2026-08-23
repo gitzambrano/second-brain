@@ -202,11 +202,18 @@ def export_essay(filepath, output_dir=None, source_dir=None):
         # --embed-resources baixaria do css2 completo (todas as subsets).
         cmd += ['--css', str(fonts_css)]
 
-    # Only pull in MathJax (CDN, ~3MB once embedded) for essays that actually use math.
+    # Only pull in MathJax (CDN once embedded) for essays that actually use math.
     # Keeps non-technical essays small and exportable without network access.
+    #
+    # tex-SVG-full: saida SVG embute os TRACOS dos glifos no proprio script —
+    # nenhuma fonte woff e baixada ao abrir o arquivo. O build CHTML dependia
+    # do CDN na hora da VISUALIZACAO (fontURL -> jsdelivr); sem rede, chave
+    # de underbrace e o vinculo da raiz viravam quadros vazios. O sufixo
+    # -full ja embute todas as extensoes ([tex]/boldsymbol etc.), evitando
+    # carga dinamica relativa que quebra com --embed-resources.
     needs_math = body_has_math(body)
     if needs_math:
-        cmd.insert(6, '--mathjax=https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js')
+        cmd.insert(6, '--mathjax=https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js')
 
     print(f"  Exporting: {filepath.name} -> {html_path.name}")
 

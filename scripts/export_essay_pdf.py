@@ -26,7 +26,13 @@ from pathlib import Path
 
 import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
 
+# Mesmo preprocessador do export HTML: converte blockquotes padrao do corpus
+# (caixas tipadas, cards, pull-quotes, rotulos) em fenced divs semanticos,
+# que o filtro scripts/pdf_boxes.lua mapeia para ambientes tcolorbox no LaTeX.
+from html_preprocess import transform_markdown
+
 ROOT_DIR = Path(__file__).resolve().parent.parent
+LUA_FILTER = Path(__file__).resolve().parent / "pdf_boxes.lua"
 ESSAYS_DIR = ROOT_DIR / "wiki" / "essays"
 HANDOUTS_DIR = ROOT_DIR / "wiki" / "handouts"
 OUTPUT_DIR = ROOT_DIR / "output" / "pdf"
@@ -213,61 +219,11 @@ def resolve_image_paths(text, essay_dir):
     return re.sub(r'!\[([^\]]*)\]\(([^)]+)\)', replace_img, text)
 
 
-def prepare_for_pandoc(filepath):
-    """Prepare a markdown file for Pandoc PDF conversion."""
-    with open(filepath, 'r', encoding='utf-8') as f:
-        content = f.read()
-    
-    meta, body = extract_frontmatter(content)
-    
-    # Extract title from H1
-    title = extract_title(body)
-    
-    # Parse byline from the body to get subtitle and author/date line
-    subtitle = ''
-    author_date = ''
-    for line in body.split('\n'):
-        # Byline is always in the preamble — stop at first section heading
-        if re.match(r'^##', line):
-            break
-        line_stripped = line.strip()
-        if line_stripped.startswith('>'):
-            clean = line_stripped.lstrip('> ').strip()
-            # First byline: "Ensaio" (sem categoria — ver conventions/SKILL.md)
-            if any(kw in clean for kw in ['Ensaio', 'White Paper', 'Estudo', 'Análise', 'Brainstorm']):
-                subtitle = clean
-            # Second byline: "Gustavo Zambrano · Mês de Ano"
-            elif 'Zambrano' in clean or 'Gustavo' in clean:
-                author_date = clean
-    
-    # Fallback: use frontmatter date if no byline date found
-    if not author_date:
-        date = meta.get('updated', meta.get('created', ''))
-        if date:
-            author_date = f"{AUTHOR} · {date}"
-        else:
-            author_date = AUTHOR
-    
-    # Strip Conexões section
-    body = strip_conexoes_section(body)
-    
-    # Clean residual wikilinks
-    body = convert_heading_wikilinks(body)
-    body = clean_residual_wikilinks(body)
-    
-    # Strip italic/bold markers from headings to fix TOC spacing in LuaLaTeX
-    body = strip_italic_from_headings(body)
-    
-    # Remove H1 and byline (Pandoc will generate from metadata)
-    body = remove_h1_and_byline(body)
-    
-    # Replace --- horizontal rules with *** to avoid Pandoc YAML block parsing
-    body = re.sub(r'^---\s*$', '***', body, flags=re.MULTILINE)
-    
-    # Resolve image paths to absolute
-    body = resolve_image_paths(body, Path(filepath).parent)
-    
-    # Escape quotes in title for YAML
+# NOTE: havia aqui uma primeira copia morta de `prepare_for_pandoc`
+# (sobrescrita pela definicao real mais abaixo). Foi removida — manter duas
+# versoes desse tamanho no mesmo arquivo fez esta sessao quase editar a
+# copia errada.
+
 HEADER_TEX = r"""\usepackage{fancyhdr}
 \usepackage{xcolor}
 \usepackage{titlesec}
@@ -301,16 +257,23 @@ luaotfload.add_fallback
    }
   )
 }
-\setmainfont{Segoe UI}[RawFeature={fallback=mainfallback}]
+% Corpo em serifa de paper técnico: Latin Modern casa com a fonte das
+% equações (unicode-math usa Latin Modern Math por padrão no LuaLaTeX),
+% dando unidade texto↔fórmula. Fallback cobre símbolos/emoji que a LM
+% não tem (⚠, ✦, setas etc.).
+\setmainfont{Latin Modern Roman}[RawFeature={fallback=mainfallback}]
 \setmonofont{Consolas}[RawFeature={fallback=mainfallback}]
 
 \definecolor{linkblue}{HTML}{2563EB}
-\definecolor{titleblue}{HTML}{1E3A5F}
 \definecolor{subtlegray}{HTML}{6B7280}
 \definecolor{codebg}{HTML}{F8FAFC}
 \definecolor{codeframe}{HTML}{CBD5E1}
-\definecolor{blockquotebg}{HTML}{F8FAFC}
-\definecolor{blockquoteborder}{HTML}{2563EB}
+
+% Paleta neutra das caixas semanticas (ver pdf_boxes.lua): cinza claro de
+% fundo, borda/filete grafite. Sem cores saturadas na mancha de texto.
+\definecolor{boxbg}{HTML}{F7F7F5}
+\definecolor{boxline}{HTML}{BFC4CB}
+\definecolor{quoteline}{HTML}{6B7280}
 
 \hypersetup{
   colorlinks=true,
@@ -318,6 +281,10 @@ luaotfload.add_fallback
   urlcolor=linkblue,
   citecolor=linkblue
 }
+
+% Legendas de figura reais (ambiente figure) ficam menores que o corpo.
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf,width=.95\linewidth}
 
 \fvset{
   breaklines=true,
@@ -380,15 +347,12 @@ luaotfload.add_fallback
     enhanced,
     breakable,
     frame hidden,
-    interior hidden,
-    boxrule=0pt,
-    leftrule=3.5pt,
-    colback=blockquotebg,
-    colframe=blockquoteborder,
     arc=0pt,
-    outer arc=0pt,
-    top=6pt,
-    bottom=6pt,
+    interior style={fill=boxbg},
+    borderline west={2.5pt}{0pt}{quoteline},
+    boxrule=0pt,
+    top=7pt,
+    bottom=7pt,
     left=12pt,
     right=10pt,
     parbox=false
@@ -397,14 +361,54 @@ luaotfload.add_fallback
   \end{tcolorbox}%
 }
 
+% ---------------------------------------------------------------------
+% Caixas semanticas (fenced divs -> pdf_boxes.lua). Mesma estrutura que
+% o template HTML estiliza: wikibox (rotulo+titulo+corpo+veredicto),
+% wikiquote, wikipull, wikicard. Tipografia contida: mesma serifa do
+% corpo, hierarquia por peso/tamanho, nada de troca de familia.
+% parbox=false mantem o espacamento de paragrafo natural dentro da caixa.
+% ---------------------------------------------------------------------
+\newtcolorbox{wikibox}{enhanced,breakable,
+  colback=boxbg,colframe=boxline,boxrule=0.5pt,arc=1.5pt,
+  left=10pt,right=10pt,top=8pt,bottom=8pt,parbox=false}
+
+\newtcolorbox{wikiquote}{enhanced,breakable,
+  frame hidden,arc=0pt,
+  interior style={fill=boxbg},
+  borderline west={2.5pt}{0pt}{quoteline},
+  left=12pt,right=10pt,top=7pt,bottom=7pt,parbox=false}
+
+\newenvironment{wikipull}
+  {\begin{tcolorbox}[enhanced,breakable,
+     frame hidden,arc=0pt,
+     interior style={fill=boxbg},
+     borderline west={3pt}{0pt}{quoteline},
+     left=12pt,right=10pt,top=8pt,bottom=7pt,parbox=false]\itshape}
+  {\end{tcolorbox}}
+
+\newtcolorbox{wikicard}{enhanced,breakable,
+  frame hidden,arc=0pt,
+  interior style={fill=boxbg},
+  borderline west={3pt}{0pt}{boxline},
+  left=12pt,right=10pt,top=8pt,bottom=8pt,parbox=false}
+
+\newcommand{\wbbadge}[1]{\par\noindent{\footnotesize\bfseries\MakeUppercase{#1}}\par\vspace{1pt}}
+\newcommand{\wbtitle}[1]{\par\noindent{\large\bfseries #1}\par\vspace{4pt}}
+\newcommand{\cardname}[1]{\par\noindent{\bfseries#1}\par\vspace{1pt}}
+\newcommand{\cardmeta}[1]{\par\noindent{\footnotesize\color{subtlegray}#1}\par\vspace{0.6em}}
+\newcommand{\parahead}[1]{\par\vspace{0.9em}\noindent{\footnotesize\bfseries#1}\par\vspace{0.35em}}
+\newcommand{\ornamentglyph}[1]{{\setlength{\fboxsep}{0pt}#1}}
+
 \pagestyle{fancy}
 \fancyhf{}
 \fancyhead[L]{\small\textcolor{subtlegray}{AUTHOR_PLACEHOLDER}}
 \fancyhead[R]{\small\textcolor{subtlegray}{\thepage}}
 \renewcommand{\headrulewidth}{0.4pt}
-\titleformat{\section}{\Large\bfseries\color{titleblue}}{}{0em}{}
-\titleformat{\subsection}{\large\bfseries\color{titleblue!80}}{}{0em}{}
-\titleformat{\subsubsection}{\normalsize\bfseries\color{titleblue!60}}{}{0em}{}
+% Titulos em preto, hierarquia por peso/tamanho (subsubsecao em italico,
+% estilo paper classico) — nada de azul na mancha.
+\titleformat{\section}{\Large\bfseries}{}{0em}{}
+\titleformat{\subsection}{\large\bfseries}{}{0em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries\itshape}{}{0em}{}
 \titlespacing*{\section}{0pt}{2em}{0.8em}
 \titlespacing*{\subsection}{0pt}{1.5em}{0.5em}
 \titlespacing*{\subsubsection}{0pt}{1em}{0.3em}
@@ -467,6 +471,13 @@ def prepare_for_pandoc(filepath):
     
     # Resolve image paths to absolute
     body = resolve_image_paths(body, Path(filepath).parent)
+    
+    # Caixas de realce -> fenced divs semanticos (mesmo preprocessador do
+    # HTML; o filtro pdf_boxes.lua os converte em ambientes LaTeX). Roda
+    # DEPOIS de remove_h1_and_byline — senao as bylines `> Ensaio` /
+    # `> Gustavo Zambrano ...` seriam classificadas como rotulo+conteudo
+    # e virariam caixa.
+    body = transform_markdown(body)
     
     # Escape quotes in title for YAML
     safe_title = title.replace('"', '\\"')
@@ -560,6 +571,9 @@ def export_essay(filepath, output_dir=None, source_dir=None):
         '-V', 'linkcolor=blue',
         '-V', 'citecolor=blue',
         f'--resource-path={filepath.parent}',
+        # Fenced divs semanticos -> ambientes tcolorbox (wikibox/wikiquote/
+        # wikipull/wikicard) + legendas "Fig. N" em corpo menor.
+        f'--lua-filter={LUA_FILTER}',
         # +gfm_auto_identifiers: o Sumário dos essays é escrito na convenção do
         # GitHub/Obsidian, que preserva o número do capítulo no anchor
         # (`## 1. Visão Geral` -> `#1-visão-geral`). A regra nativa do Pandoc
@@ -570,7 +584,11 @@ def export_essay(filepath, output_dir=None, source_dir=None):
         # ainda envolvia a imagem num float com legenda automática tirada do alt
         # (`Figure 7: Rotor Analysis 3`), duplicando a legenda e soltando o float
         # para longe do texto — os plots do anexo caíam dentro de `## Referências`.
-        '-f', 'markdown+smart+tex_math_dollars+pipe_tables+strikeout+superscript+subscript-implicit_figures+hard_line_breaks+gfm_auto_identifiers',
+        # Sem +hard_line_breaks (mesma decisão do export HTML): as quebras
+        # duras agora são aplicadas apenas DENTRO das caixas pelo
+        # pré-processador; globalmente, transformavam todo parágrafo corrido
+        # em uma pilha de quebras de linha.
+        '-f', 'markdown+smart+tex_math_dollars+pipe_tables+strikeout+superscript+subscript-implicit_figures+gfm_auto_identifiers',
     ]
     
     print(f"  Exporting: {filepath.name} -> {pdf_path.name}")
