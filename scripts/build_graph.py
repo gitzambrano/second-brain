@@ -28,13 +28,14 @@ Recursos do HTML interativo:
   - Botão "Índice": modal com abas por tipo, busca por título, filtro por
     tag (chips combináveis por E) e ordenação por coluna. Clicar numa linha
     fecha o modal e seleciona o nó no grafo.
-  - Leitor embutido (OPCIONAL, --reader): os essays vão renderizados dentro
-    do próprio arquivo com o MESMO template do export HTML (masthead, caixas,
-    fontes, tema claro/escuro via Shadow Root). Botão "📖 Ler" no cartão de
-    detalhe e na linha do índice; duplo clique/toque no nó abre a leitura.
-    Deep-link: #read=<slug>. MathJax compartilhado (uma cópia) com typeset
-    no light-DOM antes da enxertia no shadow. DEFAULT: sem embed — o botão
-    vira link para o .md local (arquivo fica ~0,9 MB).
+  - Leitor embutido: os essays vão renderizados dentro do próprio arquivo
+    com o MESMO template do export HTML (masthead, caixas, fontes, tema
+    claro/escuro via Shadow Root). Botão "📖 Ler" no cartão de detalhe e na
+    linha do índice; duplo clique/toque no nó abre a leitura. Deep-link:
+    #read=<slug>. MathJax compartilhado (uma cópia) com typeset no light-DOM
+    antes da enxertia no shadow. O default é controlado pela constante
+    DEFAULT_EMBED_READER no topo deste arquivo; --reader/--no-reader
+    sobrepõem na linha de comando.
   - Navegação: roda do mouse dá zoom, arrastar com o botão esquerdo move um
     nó, e arrastar com o botão do meio (clique na rodinha) faz pan do grafo
     inteiro, inclusive começando em cima de um nó.
@@ -88,12 +89,26 @@ INSIGHTS_DIR = WIKI_ROOT / "insights"
 REFERENCES_JSON_PATH = WIKI_ROOT / "references.json"
 OUTPUT_DIR = ROOT_DIR / "output" / "graph"
 
-# Arquivo único compartilhável: grafo + (opcional, --reader) leitor de
-# essays com o MESMO template do export HTML. Sem --reader, o botão de
-# leitura vira link para o .md local. graph.json/graph.md mantêm os nomes
-# canônicos — outras ferramentas (/organize, gaps) leem o JSON e não sabem
-# deste nome aqui.
+# Arquivo único compartilhável: grafo + leitor de essays com o MESMO
+# template do export HTML (default). --no-reader gera o arquivo leve
+# (grafo + link .md). graph.json/graph.md mantêm os nomes canônicos —
+# outras ferramentas (/organize, gaps) leem o JSON e não sabem deste nome
+# aqui.
 OUTPUT_HTML_NAME = "MySecondBrain.html"
+
+# >>> DEFAULT DO LEITOR EMBUTIDO <<<
+# False = arquivo LEVE (grafo + botão de leitura apontando para o .md local).
+# True  = essays renderizados dentro do arquivo com o template do export
+#         HTML (arquivo ~5,5 MB, leitura premium offline).
+# É o default usado quando NENHUM flag de linha de comando é passado.
+# Flags --reader / --no-reader sobrescrevem esta variável.
+READER_DEFAULT = False
+
+# DEFAULT do build quando nenhum flag é passado na linha de comando:
+#   False = arquivo leve (grafo + link para o .md, ~0,6 MB)
+#   True  = essays embutidos no template do export (~5,5 MB)
+# Os flags --reader / --no-reader sobrepõem este default ponto a ponto.
+DEFAULT_EMBED_READER = False
 
 MATHJAX_URL = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js"
 MATHJAX_CACHE = OUTPUT_DIR / "_mathjax_cache.js"
@@ -958,9 +973,12 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   .idx-summary-row:hover td { background: rgba(255,255,255,.02) !important; }
   .idx-summary-row td { padding-top: 2px; padding-bottom: 14px; background: rgba(255,255,255,.02); }
   .idx-summary { margin: 0; font-size: 12px; color: var(--ink-dim); line-height: 1.5; max-width: 60ch; }
-  .idx-expand { background: none; border: none; color: var(--ink-dim); cursor: pointer; font-family: inherit;
-    font-size: 11px; padding: 0 7px 0 0; line-height: 1; vertical-align: middle; }
-  .idx-expand:hover { color: var(--instrument-blue); }
+  .idx-expand { width: 28px; height: 28px; padding: 0; border-radius: 50%; flex: none;
+    border: 1px solid var(--panel-border); background: #1b1e21; color: var(--ink-dim);
+    cursor: pointer; font-family: inherit; font-size: 13px; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center; }
+  .idx-expand:hover { color: var(--instrument-blue); border-color: var(--instrument-blue);
+    background: rgba(79,168,255,.12); }
   #modal .close { cursor: pointer; color: var(--ink-dim); font-size: 12px; font-family: inherit;
     background: rgba(255,255,255,.05); border: 1px solid var(--panel-border); border-radius: 999px;
     padding: 9px 18px; letter-spacing: .02em; }
@@ -1176,6 +1194,8 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     .read-btn::after { content: ""; position: absolute; inset: -7px; }
     .idx-read { position: relative; }
     .idx-read::after { content: ""; position: absolute; inset: -8px; }
+    .idx-expand { position: relative; }
+    .idx-expand::after { content: ""; position: absolute; inset: -8px; }
   }
   .idx-read { width: 30px; height: 30px; margin-left: auto; padding: 0; border-radius: 50%;
     border: 1px solid var(--panel-border); background: #1b1e21; color: var(--ink-dim);
@@ -2493,7 +2513,7 @@ function openNode(d) {
     return;
   }
   // Essay com leitor embutido abre a leitura direto; fallback (default sem
-  // --reader ou payload ausente) mantém o comportamento histórico do .md cru.
+  // --no-reader ou payload ausente) mantém o comportamento histórico do .md cru.
   // Checagem sincrona no mapa: openReader é async e sempre devolve Promise.
   if (d.type === "essay") {
     const slug = essaySlugOf(d);
@@ -2682,12 +2702,25 @@ function initReaderShadow() {
   readerShadow.innerHTML = `<style>${READER_DATA.css || ""}</style><div class="rd-root"></div>`;
   readerRoot = readerShadow.querySelector(".rd-root");
   // Navegação por âncora DENTRO do shadow: o navegador não rola por #id que
-  // só existe na árvore shadow — intercepta e rola aqui.
+  // só existe na árvore shadow — intercepta e rola aqui. Fallback normalizado
+  // (sem acentos/pontuação): slugs do Sumário escrito à mão podem divergir
+  // do id que o gfm_auto_identifiers gerou para o heading.
+  function normSlug(s) {
+    return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  }
   readerRoot.addEventListener("click", (e) => {
     const a = e.target.closest && e.target.closest('a[href^="#"]');
     if (!a) return;
     const id = decodeURIComponent(a.getAttribute("href").slice(1));
-    const t = readerRoot.querySelector('[id="' + id.replace(/"/g, '\\"') + '"]');
+    let t = null;
+    try { t = readerRoot.querySelector('[id="' + id.replace(/"/g, '\\"') + '"]'); } catch (_) {}
+    if (!t) {
+      const nid = normSlug(id);
+      for (const el of readerRoot.querySelectorAll("[id]")) {
+        if (normSlug(el.id) === nid) { t = el; break; }
+      }
+    }
     if (t) { e.preventDefault(); t.scrollIntoView({ behavior: "smooth", block: "start" }); }
   });
 }
@@ -3782,12 +3815,13 @@ def render_html(nodes, edges, tag_gaps, reader_payload):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Gera o grafo da wiki (MySecondBrain.html). --reader embute "
-                    "os essays com o template do export HTML; sem ele, o botão "
-                    "de leitura aponta para o .md local.")
-    parser.add_argument("--reader", action="store_true",
-                        help="embute os essays renderizados (arquivo fica ~10 MB); "
-                             "default: sem embed, link para o .md")
+        description="Gera o grafo da wiki (MySecondBrain.html). O default é "
+                    f"controlado por DEFAULT_EMBED_READER = {DEFAULT_EMBED_READER} "
+                    "(topo do arquivo); os flags sobrepõem sem editar o código.")
+    parser.add_argument("--reader", action=argparse.BooleanOptionalAction,
+                        default=DEFAULT_EMBED_READER,
+                        help="embute os essays no arquivo (default: %(default)s); "
+                             "--no-reader gera a versão leve (grafo + link .md)")
     args = parser.parse_args()
 
     nodes, edges, isolated = build_graph()
@@ -3799,7 +3833,10 @@ def main():
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    if args.reader:
+    if not args.reader:
+        reader_payload = {"essays": {}, "mathjax": "", "css": ""}
+        print("Arquivo leve (--no-reader): grafo + link .md, sem essays embutidos.")
+    else:
         frag_start = time.perf_counter()
         essay_nodes = [n for n in nodes if n["type"] == "essay"]
         print(f"Leitor embutido: renderizando {len(essay_nodes)} essays…")
@@ -3812,9 +3849,6 @@ def main():
         print(f"  leitor pronto em {(time.perf_counter()-frag_start):.0f}s "
               f"({len(essays)} fragmentos, mathjax={'sim' if mathjax else 'não'}, "
               f"css={len(reader_css)//1024} KB)")
-    else:
-        reader_payload = {"essays": {}, "mathjax": "", "css": ""}
-        print("Leitor embutido desligado (default). Use --reader para embutir os essays.")
 
     (OUTPUT_DIR / "graph.json").write_text(
         json.dumps({"nodes": nodes, "edges": edges, "tag_gaps": tag_gaps, "isolated": isolated},
