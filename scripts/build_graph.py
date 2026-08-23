@@ -10,10 +10,11 @@ título H1 (a convenção de link da própria wiki — ver conventions/SKILL.md)
 e essay -> referência para cada `cited_by` de wiki/references.json.
 
 Outputs:
-    output/graph/graph.html  - rich interactive D3 force-directed graph
+    output/graph/MySecondBrain.html - grafo interativo + leitor de essays
+                                      embutido (arquivo único compartilhável)
     output/graph/graph.md    - lightweight Mermaid fallback (no browser needed)
-    output/graph/graph.json  - raw node/edge data, e tag_gaps/isolated para reuso por outras
-                                ferramentas (ex: /organize lê isso sem abrir o HTML)
+    output/graph/graph.json  - raw node/edge data, e tag_gaps/isolated para reuso por
+                                outras ferramentas (ex: /organize lê isso sem abrir o HTML)
 
 Recursos do HTML interativo:
   - Legenda clicável (Essay/Concept/Entity/Insight/Reference): cada tipo
@@ -27,6 +28,11 @@ Recursos do HTML interativo:
   - Botão "Índice": modal com abas por tipo, busca por título, filtro por
     tag (chips combináveis por E) e ordenação por coluna. Clicar numa linha
     fecha o modal e seleciona o nó no grafo.
+  - Leitor embutido: os essays vão renderizados dentro do próprio arquivo —
+    botão "📖 Ler" no cartão de detalhe e na linha do índice; duplo
+    clique/toque no nó abre a leitura direto. Deep-link: #read=<slug>.
+    MathJax compartilhado (uma cópia) com typeset sob demanda. --no-reader
+    desliga (arquivo fica só com o grafo).
   - Navegação: roda do mouse dá zoom, arrastar com o botão esquerdo move um
     nó, e arrastar com o botão do meio (clique na rodinha) faz pan do grafo
     inteiro, inclusive começando em cima de um nó.
@@ -53,11 +59,16 @@ Usage:
     python scripts/build_graph.py
 """
 
+import argparse
+import base64
 import json
 import math
 import random
 import re
+import subprocess
+import tempfile
 import time
+import urllib.request
 from collections import defaultdict
 from pathlib import Path
 
@@ -73,6 +84,14 @@ ENTITIES_DIR = WIKI_ROOT / "entities"
 INSIGHTS_DIR = WIKI_ROOT / "insights"
 REFERENCES_JSON_PATH = WIKI_ROOT / "references.json"
 OUTPUT_DIR = ROOT_DIR / "output" / "graph"
+
+# Arquivo único compartilhável: grafo + leitor de essays num só .html.
+# graph.json/graph.md mantêm os nomes canônicos — outras ferramentas
+# (/organize, gaps) leem o JSON e não sabem deste nome aqui.
+OUTPUT_HTML_NAME = "MySecondBrain.html"
+
+MATHJAX_URL = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js"
+MATHJAX_CACHE = OUTPUT_DIR / "_mathjax_cache.js"
 
 DIRS = {
     "essay": ESSAYS_DIR,
@@ -512,6 +531,151 @@ def render_mermaid(nodes, edges):
     return "\n".join(lines)
 
 
+# ---- Leitor embutido (MySecondBrain) ------------------------------------
+
+def ensure_mathjax():
+    """Retorna o fonte do MathJax tex-svg-full (uma única cópia compartilhada
+    por todos os essays no arquivo único). Cache local em output/graph/ —
+    builds offline reutilizam; sem cache e sem rede, devolve None e o leitor
+    mostra LaTeX cru (mesmo comportamento tolerado pelo export de HTML)."""
+    if MATHJAX_CACHE.exists() and MATHJAX_CACHE.stat().st_size > 100_000:
+        return MATHJAX_CACHE.read_text(encoding="utf-8", errors="replace")
+    try:
+        OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+        with urllib.request.urlopen(MATHJAX_URL, timeout=60) as resp:
+            src = resp.read().decode("utf-8", errors="replace")
+        MATHJAX_CACHE.write_text(src, encoding="utf-8")
+        return src
+    except Exception as e:  # noqa: BLE001 - qualquer falha de rede degrada
+        print(f"  aviso: MathJax indisponível ({e}); fórmulas ficarão como LaTeX cru no leitor.")
+        return None
+
+
+_IMG_SRC_RE = re.compile(r'(<img\b[^>]*?\bsrc=")([^"]+)(")')
+_MIME_BY_EXT = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+                ".gif": "image/gif", ".svg": "image/svg+xml", ".webp": "image/webp"}
+
+# Compressão de imagens embutidas: o arquivo único circula por e-mail/WhatsApp
+# e é re-parseado pelo navegador a cada abertura — plots originais de 300-600 KB
+# viram JPEG de 30-80 KB sem perda visível em tela. Largura máxima cobre
+# retina 2x numa coluna de leitura de ~700px.
+_READER_IMG_MAX_WIDTH = 1400
+_READER_JPEG_QUALITY = 85
+
+
+def _compress_image(p):
+    """Retorna (bytes, mime) comprimidos quando Pillow está disponível e a
+    imagem é raster grande; caso contrário devolve o arquivo original."""
+    if p.suffix.lower() == ".svg":
+        return p.read_bytes(), _MIME_BY_EXT[".svg"]
+    try:
+        from io import BytesIO
+        from PIL import Image
+        img = Image.open(p)
+        needs_alpha = False
+        if img.mode in ("RGBA", "LA", "PA") or (
+                img.mode == "P" and "transparency" in img.info):
+            rgba = img.convert("RGBA")
+            alpha = rgba.getchannel("A")
+            lo, hi = alpha.getextrema()
+            # Alfa totalmente opaco é artefato de export (matplotlib): não
+            # precisa de PNG — JPEG sobre fundo branco é idêntico na tela.
+            needs_alpha = lo < 255
+            img = rgba
+        if img.width > _READER_IMG_MAX_WIDTH:
+            ratio = _READER_IMG_MAX_WIDTH / img.width
+            img = img.resize((_READER_IMG_MAX_WIDTH, max(1, round(img.height * ratio))),
+                             Image.LANCZOS)
+        buf = BytesIO()
+        if needs_alpha:
+            img.save(buf, format="PNG", optimize=True)
+            return buf.getvalue(), "image/png"
+        if img.mode != "RGB":
+            img = img.convert("RGB")
+        img.save(buf, format="JPEG", quality=_READER_JPEG_QUALITY, optimize=True)
+        return buf.getvalue(), "image/jpeg"
+    except Exception:  # noqa: BLE001 - sem Pillow/imagem exótica: manda cru
+        return p.read_bytes(), _MIME_BY_EXT.get(p.suffix.lower(), "application/octet-stream")
+
+
+def _embed_images(fragment):
+    """Converte <img src="caminho-local"> em data URI — pré-requisito para o
+    arquivo único circular por e-mail/WhatsApp sem carregar a pasta assets."""
+    def repl(m):
+        import urllib.parse
+        src = m.group(2)
+        if src.startswith(("http://", "https://", "data:", "#")):
+            return m.group(0)
+        # Pandoc percent-encode espaços/acentos no src; decodifica antes de
+        # resolver no disco.
+        p = Path(urllib.parse.unquote(src))
+        if not p.exists():
+            p = Path(str(p).replace("\\", "/"))
+        if not p.exists() or not p.is_file():
+            print(f"    aviso: imagem não encontrada para embutir: {src}")
+            return m.group(0)
+        data, mime = _compress_image(p)
+        b64 = base64.b64encode(data).decode("ascii")
+        return f'{m.group(1)}data:{mime};base64,{b64}{m.group(3)}'
+    return _IMG_SRC_RE.sub(repl, fragment)
+
+
+_PANDOC_READER_FMT = ("markdown+smart+tex_math_dollars+pipe_tables+strikeout"
+                      "+superscript+subscript+implicit_figures+gfm_auto_identifiers")
+
+
+def render_reader_fragments(essay_nodes):
+    """Gera {slug: {t, tags, html}} convertendo cada essay .md em fragmento
+    HTML via o MESMO pipeline do export (prepare_body + transform_markdown +
+    pandoc), mas sem template próprio — o CSS do leitor é compartilhado."""
+    from export_essay_html import prepare_body  # conversão wikilinks/byline/imagens
+    from html_preprocess import transform_markdown
+
+    payload = {}
+    total = len(essay_nodes)
+    for i, node in enumerate(essay_nodes, 1):
+        path = ROOT_DIR / node["file"]
+        try:
+            body, _meta, _title, _sub, _by = prepare_body(path)
+            body = transform_markdown(body)
+        except Exception as e:  # noqa: BLE001 - essay problemático não derruba o build
+            print(f"  aviso: falha ao preparar leitor de {path.name}: {e}")
+            continue
+        with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False,
+                                         encoding="utf-8", dir=str(OUTPUT_DIR)) as tmp:
+            tmp.write(body)
+            tmp_path = Path(tmp.name)
+        try:
+            result = subprocess.run(
+                ["pandoc", str(tmp_path), "-f", _PANDOC_READER_FMT, "-t", "html",
+                 # --mathjax aqui NÃO embute nada: só muda o formato de saída
+                 # da matemática para delimitadores \(..\) que o MathJax
+                 # compartilhado do leitor processa. Sem a flag, o pandoc
+                 # trata $..$ como texto e as fórmulas viram <em>.
+                 "--mathjax",
+                 f"--resource-path={path.parent}"],
+                capture_output=True, timeout=120, encoding="utf-8", errors="replace",
+            )
+            if result.returncode != 0:
+                print(f"  aviso: pandoc falhou para {path.name}: {result.stderr[:200]}")
+                continue
+            fragment = result.stdout
+        except FileNotFoundError:
+            print("  ERRO: pandoc não encontrado — leitor embutido desabilitado neste build.")
+            return {}
+        finally:
+            tmp_path.unlink(missing_ok=True)
+        fragment = _embed_images(fragment)
+        payload[node["id"].removeprefix("essay:")] = {
+            "t": node["title"],
+            "tags": node.get("tags") or [],
+            "html": fragment,
+        }
+        if i % 10 == 0 or i == total:
+            print(f"  leitor: {i}/{total} essays renderizados")
+    return payload
+
+
 HTML_TEMPLATE = """<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -865,6 +1029,82 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   #export-svg-popover.open { display: flex; }
   #export-svg-popover .btn { width: 100%; margin-top: 0; text-align: center; }
   #export-svg-popover p { font-size: 11px; color: var(--ink-dim); margin: 0 0 2px; line-height: 1.4; }
+
+  /* ---- Leitor embutido (MySecondBrain) --------------------------------
+     Overlay próprio, separado do #modal-overlay de propósito: o leitor pode
+     ser aberto POR CIMA do índice (botão 📖 na linha) e tem z-index acima.
+     Tipografia em serifa do sistema — zero webfont embutida para não inflar
+     o arquivo único que circula por e-mail/WhatsApp. */
+  .read-btn { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
+    padding: 8px 16px; min-height: 34px; border-radius: 999px;
+    border: 1px solid var(--instrument-blue); background: var(--instrument-blue);
+    color: #0b1220; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  .read-btn:hover { filter: brightness(1.08); }
+  /* Área de toque real ≥44px no toque grosso sem inflar o desenho: pseudo-
+     elemento invisível expande o alvo ao redor do botão pequeno. */
+  @media (pointer: coarse) {
+    .read-btn::before { content: ""; position: absolute; }
+    .read-btn { position: relative; }
+    .read-btn::after { content: ""; position: absolute; inset: -7px; }
+    .idx-read { position: relative; }
+    .idx-read::after { content: ""; position: absolute; inset: -8px; }
+  }
+  .idx-read { width: 30px; height: 30px; margin-left: auto; padding: 0; border-radius: 50%;
+    border: 1px solid var(--panel-border); background: #1b1e21; color: var(--ink-dim);
+    cursor: pointer; font-size: 14px; line-height: 1; flex: none; vertical-align: middle; }
+  .idx-read:hover { color: var(--instrument-blue); border-color: var(--instrument-blue);
+    background: rgba(79,168,255,.12); }
+  #reader-overlay { display: none; position: fixed; inset: 0; z-index: 60; background: var(--bg); }
+  #reader-overlay.open { display: block; }
+  #reader-head { position: sticky; top: 0; z-index: 2; display: flex; align-items: flex-start;
+    gap: 12px; padding: calc(14px + env(safe-area-inset-top)) clamp(16px,4vw,56px) 10px;
+    background: linear-gradient(var(--bg) 82%, transparent); }
+  #reader-title { font-size: clamp(17px, 2.4vw, 22px); font-weight: 600; margin: 0;
+    line-height: 1.25; color: var(--ink); }
+  #reader-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  #reader-tags span { font-size: 10px; color: var(--ink-dim);
+    background: rgba(255,255,255,.06); border-radius: 4px; padding: 2px 7px; }
+  #reader-close { margin-left: auto; flex: none; cursor: pointer; color: var(--ink-dim);
+    font-size: 12px; font-family: inherit; background: rgba(255,255,255,.05);
+    border: 1px solid var(--panel-border); border-radius: 999px; padding: 8px 14px; }
+  #reader-close:hover { color: var(--ink); border-color: var(--instrument-blue); }
+  #reader-scroll { height: 100dvh; overflow-y: auto; -webkit-overflow-scrolling: touch;
+    touch-action: pan-y; padding: 0 clamp(18px,5vw,72px) calc(60px + env(safe-area-inset-bottom)); }
+  #reader-article { max-width: 74ch; margin: 0 auto; font-family: Georgia, "Times New Roman", serif;
+    font-size: 16.5px; line-height: 1.65; color: var(--ink); }
+  #reader-article h1, #reader-article h2, #reader-article h3, #reader-article h4,
+  #reader-article h5 {
+    font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    line-height: 1.3; margin: 1.6em 0 .55em; color: var(--ink); }
+  #reader-article h2 { font-size: 1.35em; border-bottom: 1px solid var(--panel-border);
+    padding-bottom: .25em; }
+  #reader-article a { color: var(--instrument-blue); }
+  #reader-article blockquote { margin: 1.2em 0; padding: .1em 1.1em;
+    border-left: 3px solid var(--edge); background: rgba(255,255,255,.03);
+    border-radius: 0 8px 8px 0; }
+  #reader-article img { max-width: 100%; height: auto; border-radius: 8px; }
+  #reader-article table { border-collapse: collapse; width: 100%; font-size: .92em;
+    display: block; overflow-x: auto; }
+  #reader-article th, #reader-article td { border: 1px solid var(--panel-border);
+    padding: 7px 10px; text-align: left; }
+  #reader-article code { background: rgba(255,255,255,.07); padding: 2px 5px;
+    border-radius: 5px; font-size: .9em; font-family: Consolas, Menlo, monospace; }
+  #reader-article pre { background: #14171a; border: 1px solid var(--panel-border);
+    border-radius: 10px; padding: 12px 14px; overflow-x: auto; }
+  #reader-article pre code { background: none; padding: 0; }
+  #reader-article hr { border: none; border-top: 1px solid var(--panel-border); margin: 2em 0; }
+  /* Caixas semanticas vindas do html_preprocess via pandoc fenced divs:
+     estilizacao generica para qualquer div customizada + casos conhecidos. */
+  #reader-article div[class] { border: 1px solid var(--panel-border);
+    border-radius: 10px; padding: 12px 16px; margin: 1.2em 0;
+    background: rgba(255,255,255,.03); }
+  #reader-article div[class*="quote"], #reader-article div[class*="pull"] {
+    border-left: 3px solid var(--edge); border-radius: 0 10px 10px 0; }
+  @media (max-width: 720px), (pointer: coarse) and (max-width: 900px) {
+    #reader-head { gap: 8px; padding-left: 16px; padding-right: 16px; align-items: center; }
+    #reader-close { padding: 11px 14px; }   /* alvo de toque maior no dedo */
+    #reader-article { font-size: 16px; }
+  }
 </style>
 </head>
 <body>
@@ -903,8 +1143,20 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   </div>
 </div>
 
+<div id="reader-overlay" role="dialog" aria-modal="true" aria-label="Leitor de ensaio">
+  <div id="reader-head">
+    <div>
+      <h2 id="reader-title"></h2>
+      <div id="reader-tags"></div>
+    </div>
+    <button id="reader-close" aria-label="Fechar leitor">✕ Fechar</button>
+  </div>
+  <div id="reader-scroll"><article id="reader-article"></article></div>
+</div>
+
 <script>
 const data = __DATA_JSON__;
+const READER_DATA = __READER_JSON__;
 
 // Toque grosso (dedo, não mouse) OU tela pequena — cobre tablet/celular
 // mesmo quando `matchMedia("pointer: coarse")` falha (alguns Android
@@ -2095,6 +2347,8 @@ function selectNode(d) {
   scheduleDraw();
 
   const target = d.type === "reference" ? d.url : (d.file ? "../../" + d.file : null);
+  const slug = essaySlugOf(d);
+  const hasReader = slug && READER_BY_SLUG[slug];
   // O cartão de detalhe mora dentro do painel, mas o painel só deve abrir
   // por ação explícita no botão ☰ — nunca sozinho por causa de um toque no
   // grafo. Num celular com o painel recolhido, o destaque no próprio grafo
@@ -2104,13 +2358,26 @@ function selectNode(d) {
   detailEl.innerHTML =
     `<div class="detail-title">${escapeHtml(d.title)}</div>` +
     `<div class="detail-tags">${(d.tags || []).map(x => `<span>${escapeHtml(x)}</span>`).join("")}</div>` +
-    (target ? `<a class="detail-open" href="${escapeHtml(target)}" target="_blank">abrir</a>` : "");
+    (hasReader ? `<button type="button" class="read-btn" data-read="${escapeHtml(slug)}">📖 Ler</button>` : "") +
+    (target ? `<a class="detail-open" href="${escapeHtml(target)}" target="_blank">${d.type === "essay" ? ".md" : "abrir"}</a>` : "");
+  const readBtn = detailEl.querySelector(".read-btn");
+  if (readBtn) readBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    openReader(readBtn.getAttribute("data-read"));
+  });
 }
 
 function openNode(d) {
+  if (!d) return;
   if (d.type === "reference") {
     if (d.url) window.open(d.url, "_blank");
     return;
+  }
+  // Essay com leitor embutido abre a leitura direto; fallback (payload
+  // ausente ou --no-reader) mantém o comportamento histórico do .md cru.
+  if (d.type === "essay") {
+    const slug = essaySlugOf(d);
+    if (slug && openReader(slug)) return;
   }
   if (d.file) {
     window.open("../../" + d.file, "_blank");
@@ -2238,6 +2505,103 @@ function escapeHtml(s) {
 }
 
 const MATURIDADE_LABELS = { solta: "Solta", germinando: "Germinando", madura: "Madura", absorvida: "Absorvida" };
+
+// ---- Leitor embutido -----------------------------------------------------
+// READER_DATA.essays[slug] = { t, tags, html }; mathjax = fonte compartilhado
+// ou "". Conceitos/entidades/referências não têm entrada — caem no fallback
+// de sempre (abrir o arquivo cru / URL).
+const READER_BY_SLUG = READER_DATA.essays || {};
+const readerOverlay = document.getElementById("reader-overlay");
+const readerArticle = document.getElementById("reader-article");
+const readerScrollEl = document.getElementById("reader-scroll");
+let readerOpenState = false;
+let readerLastFocus = null;
+let mathJaxInjected = false;
+
+function essaySlugOf(node) {
+  return node && node.type === "essay" ? node.id.slice("essay:".length) : null;
+}
+
+function ensureMathJaxInjected() {
+  if (mathJaxInjected || !READER_DATA.mathjax) return;
+  mathJaxInjected = true;
+  const s = document.createElement("script");
+  s.textContent = READER_DATA.mathjax;
+  document.head.appendChild(s); // executa inline, sincrono ao inserir
+}
+
+function typesetReaderMath() {
+  if (!window.MathJax || !window.MathJax.typesetPromise) return false;
+  try { window.MathJax.typesetPromise([readerArticle]).catch(() => {}); return true; } catch (_) { return false; }
+}
+
+// O startup do MathJax v3 é async (promise interna): um typeset imediato ou
+// com timeout curto cai antes da lib estar pronta e é engolido. Poll até o
+// startup existir — 40×150ms cobre cold-start de arquivo grande em celular.
+function typesetReaderMathWhenReady() {
+  if (typesetReaderMath()) return;
+  let tries = 0;
+  const t = setInterval(() => {
+    if (++tries > 40) { clearInterval(t); return; }
+    if (typesetReaderMath()) clearInterval(t);
+  }, 150);
+}
+
+function openReader(slug) {
+  const entry = READER_BY_SLUG[slug];
+  if (!entry) return false;
+  const node = nodeById.get("essay:" + slug);
+  document.getElementById("reader-title").textContent = node ? node.title : entry.t;
+  document.getElementById("reader-tags").innerHTML =
+    (entry.tags || []).map(t => `<span>${escapeHtml(t)}</span>`).join("");
+  readerArticle.innerHTML = entry.html;
+  readerScrollEl.scrollTop = 0;
+  readerOverlay.classList.add("open");
+  ensureMathJaxInjected();
+  typesetReaderMathWhenReady();
+  if (!readerOpenState) {
+    readerLastFocus = document.activeElement;
+    history.pushState({ rd: slug }, "", "#read=" + encodeURIComponent(slug));
+  } else {
+    history.replaceState({ rd: slug }, "", "#read=" + encodeURIComponent(slug));
+  }
+  readerOpenState = true;
+  document.getElementById("reader-close").focus({ preventScroll: true });
+  return true;
+}
+
+function closeReader(fromPop) {
+  if (!readerOpenState) return;
+  readerOverlay.classList.remove("open");
+  readerOpenState = false;
+  if (readerLastFocus && readerLastFocus.focus) readerLastFocus.focus({ preventScroll: true });
+  // Só volta no histórico se a entrada atual foi empilhada por nós; num
+  // deep-link direto (#read=... colado na URL) não há entry para estourar.
+  if (!fromPop && history.state && history.state.rd) history.back();
+}
+
+document.getElementById("reader-close").addEventListener("click", () => closeReader(false));
+window.addEventListener("popstate", () => {
+  if (!(history.state && history.state.rd)) closeReader(true);
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && readerOpenState) closeReader(false);
+});
+
+// Deep-link: MySecondBrain.html#read=<slug> abre direto no essay.
+(function () {
+  const m = location.hash.match(/^#read=([^\s]+)$/);
+  if (!m) return;
+  requestAnimationFrame(() => openReader(decodeURIComponent(m[1])));
+})();
+
+// Navegação fragment-only (colar outro #read= na mesma aba, voltar/avançar
+// entre deep-links) NÃO recarrega o documento — sem este listener, colar um
+// link novo num hash diferente de nada mudaria a tela.
+window.addEventListener("hashchange", () => {
+  const m = location.hash.match(/^#read=([^\s]+)$/);
+  if (m) openReader(decodeURIComponent(m[1]));
+});
 
 function highlightMatch(text, q) {
   const safe = escapeHtml(text);
@@ -2373,10 +2737,14 @@ function renderTypeIndex() {
     const showSummary = state.type === "essay";
     tbody.innerHTML = rows.map(n => {
       const hasSummary = showSummary && n.summary;
+      const rSlug = essaySlugOf(n);
+      const readBtn = (rSlug && READER_BY_SLUG[rSlug])
+        ? `<button type="button" class="idx-read" data-read="${escapeHtml(rSlug)}" aria-label="Ler ${escapeHtml(n.title)}" title="Ler">📖</button>`
+        : "";
       const row = `<tr data-id="${escapeHtml(n.id)}">
-      <td data-label="Título">${hasSummary
+      <td data-label="Título"><span style="display:flex;align-items:center;gap:8px;">${hasSummary
         ? `<button type="button" class="idx-expand" aria-label="Mostrar resumo" aria-expanded="false">▸</button> `
-        : ""}${highlightMatch(n.title, state.query)}</td>
+        : ""}<span style="flex:1;min-width:0;">${highlightMatch(n.title, state.query)}</span>${readBtn}</span></td>
       <td class="idx-tagcell" data-label="Tags">${(n.tags || []).map(t => `<span>${escapeHtml(t)}</span>`).join("")}</td>
       <td data-label="Conexões">${n.degree}</td>
       <td data-label="Tamanho">${sizeOf(n) ? sizeOf(n) + " linhas" : "—"}</td></tr>`;
@@ -2403,6 +2771,14 @@ function renderTypeIndex() {
         summaryRow.hidden = !willOpen;
         btn.textContent = willOpen ? "▾" : "▸";
         btn.setAttribute("aria-expanded", String(willOpen));
+      });
+    });
+
+    // 📖 na linha abre o leitor sem fechar o índice nem navegar o grafo.
+    tbody.querySelectorAll(".idx-read").forEach(b => {
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openReader(b.getAttribute("data-read"));
       });
     });
 
@@ -3144,7 +3520,7 @@ if (window.visualViewport) {
 """
 
 
-def render_html(nodes, edges, tag_gaps):
+def render_html(nodes, edges, tag_gaps, reader_payload):
     data_json = json.dumps(
         {
             "nodes": nodes,
@@ -3155,11 +3531,22 @@ def render_html(nodes, edges, tag_gaps):
         },
         ensure_ascii=False,
     )
+    reader_json = json.dumps(reader_payload, ensure_ascii=False)
+    # '<\/' dentro de string JSON é escape válido (produz o mesmo '</') —
+    # impede um "</script>" vindo de corpo de essay/MathJax de fechar o tag
+    # do bloco que carrega os dados.
+    reader_json = reader_json.replace("</", "<\\/")
     html = HTML_TEMPLATE.replace("__DATA_JSON__", data_json)
+    html = html.replace("__READER_JSON__", reader_json)
     return html
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Gera o grafo da wiki (+ leitor embutido)")
+    parser.add_argument("--no-reader", action="store_true",
+                        help="pula a conversão dos essays para o leitor embutido")
+    args = parser.parse_args()
+
     nodes, edges, isolated = build_graph()
     tag_gaps = compute_tag_gaps(nodes, edges)
 
@@ -3168,6 +3555,19 @@ def main():
     layout_ms = (time.perf_counter() - layout_start) * 1000
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    if args.no_reader:
+        reader_payload = {"essays": {}, "mathjax": ""}
+        print("Leitor embutido desligado (--no-reader).")
+    else:
+        frag_start = time.perf_counter()
+        essay_nodes = [n for n in nodes if n["type"] == "essay"]
+        print(f"Leitor embutido: renderizando {len(essay_nodes)} essays…")
+        essays = render_reader_fragments(essay_nodes)
+        mathjax = ensure_mathjax() or ""
+        reader_payload = {"essays": essays, "mathjax": mathjax}
+        print(f"  leitor pronto em {(time.perf_counter()-frag_start):.0f}s "
+              f"({len(essays)} fragmentos, mathjax={'sim' if mathjax else 'não'})")
 
     (OUTPUT_DIR / "graph.json").write_text(
         json.dumps({"nodes": nodes, "edges": edges, "tag_gaps": tag_gaps, "isolated": isolated},
@@ -3178,11 +3578,20 @@ def main():
         f"# Grafo da Wiki\n\n{len(nodes)} páginas, {len(edges)} conexões.\n\n" + render_mermaid(nodes, edges) + "\n",
         encoding="utf-8",
     )
-    (OUTPUT_DIR / "graph.html").write_text(render_html(nodes, edges, tag_gaps), encoding="utf-8")
+    out_path = OUTPUT_DIR / OUTPUT_HTML_NAME
+    out_path.write_text(render_html(nodes, edges, tag_gaps, reader_payload), encoding="utf-8")
+    # Legado: quem tinha atalho pro graph.html continua funcionando.
+    legacy = OUTPUT_DIR / "graph.html"
+    stub = ('<!DOCTYPE html><meta charset="utf-8">'
+            f'<meta http-equiv="refresh" content="0; url={OUTPUT_HTML_NAME}">'
+            f'<title>Movido</title><a href="{OUTPUT_HTML_NAME}">{OUTPUT_HTML_NAME}</a>')
+    if not legacy.exists() or legacy.read_text(encoding="utf-8", errors="replace") != stub:
+        legacy.write_text(stub, encoding="utf-8")
 
+    size_mb = out_path.stat().st_size / (1024 * 1024)
     print(f"Grafo gerado: {len(nodes)} nós, {len(edges)} conexões.")
     print(f"  layout pré-calculado em {layout_ms:.0f}ms")
-    print(f"  {OUTPUT_DIR / 'graph.html'} (interativo)")
+    print(f"  {out_path} (interativo, {size_mb:.1f} MB)")
     print(f"  {OUTPUT_DIR / 'graph.md'} (mermaid)")
     print(f"  {OUTPUT_DIR / 'graph.json'} (dados)")
     if isolated:

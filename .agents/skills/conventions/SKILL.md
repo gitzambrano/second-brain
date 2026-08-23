@@ -341,6 +341,8 @@ Lista plana de tudo já processado ou pendente, sem agrupamento — classificaç
 - Caracteres LaTeX especiais no subtítulo (`&`, `#`, `%`, `_`) são escapados.
 - Wikilinks residuais `[[Target|Display]]` viram texto puro.
 - Handouts exportam pelo mesmo pipeline via `--handout`.
+- Corpo em Latin Modern Roman (mesma família da matemática), títulos pretos, legendas "Fig. N - ..." em corpo menor.
+- Blockquotes passam pelo mesmo preprocessador do HTML (`html_preprocess.transform_markdown`); o filtro `scripts/pdf_boxes.lua` converte os fenced divs em caixas LaTeX (wikibox/wikiquote/wikipull/wikicard), cinza-claras com filete à esquerda.
 
 ## Regra de contradição entre fontes
 

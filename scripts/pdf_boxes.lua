@@ -128,9 +128,13 @@ end
 function Para(el)
   local text = stringify(el)
   if text:match('^Fig%.%s*%d') or text:match('^Figura%s+%d') then
-    local out = { pandoc.RawInline('latex', '\\begingroup\\small%') }
+    -- Sem '%': o wrapper e INLINE e pode cair no meio de uma linha fisica
+    -- do .tex — '%' comentaria o resto da linha (incluindo o '\emph{' que
+    -- vem junto), deixando '}' orfaos ("Extra }" no LuaLaTeX). Um espaco
+    -- depois de \small termina o comando com seguranca.
+    local out = { pandoc.RawInline('latex', '\\begingroup\\small ') }
     for _, inl in ipairs(el.content) do table.insert(out, inl) end
-    table.insert(out, pandoc.RawInline('latex', '\\endgroup%'))
+    table.insert(out, pandoc.RawInline('latex', '\\endgroup'))
     return pandoc.Para(out)
   end
   return nil

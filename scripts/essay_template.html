@@ -351,6 +351,18 @@ pre{
 }
 pre code{background:none;padding:0;}
 
+/* MathJax (saida SVG): equacoes nunca podem empurrar a largura da pagina.
+   Display mantem o tamanho e rola internamente; inline escala para caber
+   (scrollbar no meio de uma frase e pior que fonte menor). */
+mjx-container{max-width:100%;}
+mjx-container[display="true"]{
+  display:block;
+  overflow-x:auto;
+  overflow-y:hidden;
+  padding-bottom:.3rem;
+}
+mjx-container:not([display="true"]) svg{max-width:100%;height:auto;}
+
 figure{margin:2.2rem 0;text-align:center;}
 figure img{max-width:100%;height:auto;border-radius:6px;border:1px solid var(--border);}
 figcaption{margin-top:.7rem;font-size:.84em;color:var(--text-dim);font-style:italic;}

@@ -49,6 +49,8 @@ python scripts/export_essay_pdf.py nome-do-essay --output caminho/custom
 4. Resolve caminhos relativos de imagem (`../assets/...`) para absolutos.
 5. Remove `[[wikilinks]]` residuais, convertendo para texto puro.
 6. Ativa hyperlinks clicáveis (`colorlinks`), matemática (`tex_math_dollars`), tabelas, código.
+7. Converte blockquotes padrão do corpus em caixas semânticas (mesmo preprocessador do export HTML) via filtro Lua `scripts/pdf_boxes.lua` — wikibox, wikiquote, wikipull, wikicard.
+8. Corpo em Latin Modern Roman (harmoniza com a matemática), títulos pretos, legendas "Fig. N - ..." em corpo menor que o texto.
 
 ## Exportar um handout em vez de um essay
 
