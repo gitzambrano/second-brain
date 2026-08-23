@@ -71,6 +71,7 @@ import subprocess
 import tempfile
 import time
 import urllib.request
+import zlib
 from collections import defaultdict
 from pathlib import Path
 
@@ -96,6 +97,29 @@ OUTPUT_HTML_NAME = "MySecondBrain.html"
 
 MATHJAX_URL = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js"
 MATHJAX_CACHE = OUTPUT_DIR / "_mathjax_cache.js"
+
+# JS vendorado (scripts/vendor/, versionado no git): builds e visualização
+# funcionam 100% offline — nada de CDN no caminho crítico do grafo.
+VENDOR_DIR = Path(__file__).resolve().parent / "vendor"
+D3_VENDORED = VENDOR_DIR / "d3.v7.min.js"
+PAKO_VENDORED = VENDOR_DIR / "pako.min.js"
+
+# Payloads (grafo, leitor) vão comprimidos (deflate-raw + base64) em tags
+# <script type="application/json">: o navegador NÃO parseia nada até o
+# bootstrap pedir — primeira pintura não espera os MB de dados. Pako embutido
+# infla de forma síncrona, sem reestruturar o script principal.
+def _deflate_b64(text):
+    comp = zlib.compressobj(9, zlib.DEFLATED, -15)
+    data = comp.compress(text.encode("utf-8")) + comp.flush()
+    return base64.b64encode(data).decode("ascii")
+
+
+def _json_for_script_tag(obj):
+    """Serializa para dentro de <script type="application/json">. O escape
+    \\u002f é válido em JSON e impede que um '</script' vindo de conteúdo
+    feche a tag cedo."""
+    s = json.dumps(obj, ensure_ascii=False)
+    return s.replace("</", "<\\u002f")
 
 DIRS = {
     "essay": ESSAYS_DIR,
@@ -561,10 +585,10 @@ _MIME_BY_EXT = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"
 
 # Compressão de imagens embutidas: o arquivo único circula por e-mail/WhatsApp
 # e é re-parseado pelo navegador a cada abertura — plots originais de 300-600 KB
-# viram JPEG de 30-80 KB sem perda visível em tela. Largura máxima cobre
-# retina 2x numa coluna de leitura de ~700px.
-_READER_IMG_MAX_WIDTH = 1400
-_READER_JPEG_QUALITY = 85
+# viram JPEG de 20-60 KB sem perda relevante em tela (qualidade/limiar
+# rebaixados a pedido do Usuário: carregar leve > fidelidade de zoom).
+_READER_IMG_MAX_WIDTH = 1200
+_READER_JPEG_QUALITY = 80
 
 
 def _compress_image(p):
@@ -785,12 +809,14 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Grafo — Second Brain</title>
-<script src="https://d3js.org/d3.v7.min.js"></script>
-<!-- canvas2svg: mock de CanvasRenderingContext2D que, em vez de rasterizar,
-     acumula os comandos de desenho e serializa como SVG. Usado só no export
-     vetorial (ver drawForSvgExport() e o handler de "btn-export-svg" mais
-     abaixo) — o desenho normal do grafo continua 100% Canvas/rAF. -->
-<script src="https://cdn.jsdelivr.net/npm/canvas2svg@1.0.16/canvas2svg.min.js"></script>
+<!-- d3 vendorado (inline): o arquivo único funciona sem rede — CDN aqui
+     quebraria o caso "mandei o arquivo pra alguém abrir offline". -->
+<script>__D3__</script>
+<!-- canvas2svg (mock de CanvasRenderingContext2D que serializa SVG) é
+     carregado SOB DEMANDA, só quando o usuário exporta SVG (ensureC2S()
+     abaixo): são ~50 KB que 99% das sessões nunca usam, e é o único
+     recurso que ainda depende de CDN — exportar SVG offline não funciona,
+     o resto da página sim. -->
 <style>
   :root {
     --bg: #1b1e21;
@@ -1224,9 +1250,32 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <div id="reader-scroll"><div id="reader-article"></div></div>
 </div>
 
+<script>__PAKO__</script>
+<script type="application/json" id="sb-graph-data">__GRAPH_B64__</script>
+<script type="application/json" id="sb-reader-data">__READER_B64__</script>
 <script>
-const data = __DATA_JSON__;
-const READER_DATA = __READER_JSON__;
+// Payloads chegam comprimidos (deflate-raw + base64) em tags JSON: o parser
+// de JS não vê os MB de dados na inicialização — cada payload é inflado
+// sincronamente (pako) só quando quem o consome precisa.
+function b64ToU8(b64) {
+  const bin = atob(b64.trim());
+  const u = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+  return u;
+}
+function inflateJsonFromTag(id) {
+  const el = document.getElementById(id);
+  if (!el || !el.textContent.trim()) return null;
+  return JSON.parse(pako.inflate(b64ToU8(el.textContent), { raw: true, to: "string" }));
+}
+const data = inflateJsonFromTag("sb-graph-data");
+let READER_DATA = { essays: {}, mathjax: "", css: "" };
+function ensureReaderData() {
+  if (READER_DATA.__loaded) return;
+  const d = inflateJsonFromTag("sb-reader-data");
+  if (d) READER_DATA = d;
+  READER_DATA.__loaded = true;
+}
 
 // Toque grosso (dedo, não mouse) OU tela pequena — cobre tablet/celular
 // mesmo quando `matchMedia("pointer: coarse")` falha (alguns Android
@@ -2418,7 +2467,7 @@ function selectNode(d) {
 
   const target = d.type === "reference" ? d.url : (d.file ? "../../" + d.file : null);
   const slug = essaySlugOf(d);
-  const hasReader = slug && READER_BY_SLUG[slug];
+  const hasReader = slug && readerEssays()[slug];
   // O cartão de detalhe mora dentro do painel, mas o painel só deve abrir
   // por ação explícita no botão ☰ — nunca sozinho por causa de um toque no
   // grafo. Num celular com o painel recolhido, o destaque no próprio grafo
@@ -2448,7 +2497,7 @@ function openNode(d) {
   // Checagem sincrona no mapa: openReader é async e sempre devolve Promise.
   if (d.type === "essay") {
     const slug = essaySlugOf(d);
-    if (slug && READER_BY_SLUG[slug]) { openReader(slug); return; }
+    if (slug && readerEssays()[slug]) { openReader(slug); return; }
   }
   if (d.file) {
     window.open("../../" + d.file, "_blank");
@@ -2583,7 +2632,8 @@ const MATURIDADE_LABELS = { solta: "Solta", germinando: "Germinando", madura: "M
 // template (tokens/masthead/caixas/fontes) já adaptado para Shadow Root.
 // MathJax não enxerga dentro de shadow: o fragmento é tipografado num
 // staging no light-DOM e só então enxertado.
-const READER_BY_SLUG = READER_DATA.essays || {};
+const READER_BY_SLUG = null; // legado — usar readerEssays() (payload é lazy)
+function readerEssays() { ensureReaderData(); return READER_DATA.essays || {}; }
 const READER_CSS = READER_DATA.css || "";
 const readerOverlay = document.getElementById("reader-overlay");
 const readerArticle = document.getElementById("reader-article");
@@ -2692,7 +2742,8 @@ document.getElementById("reader-theme").addEventListener("click", () => {
 });
 
 async function openReader(slug) {
-  const entry = READER_BY_SLUG[slug];
+  ensureReaderData();
+  const entry = readerEssays()[slug];
   if (!entry) return false;
   readerCurrentSlug = slug;
   initReaderShadow();
@@ -2897,7 +2948,7 @@ function renderTypeIndex() {
     tbody.innerHTML = rows.map(n => {
       const hasSummary = showSummary && n.summary;
       const rSlug = essaySlugOf(n);
-      const readBtn = (rSlug && READER_BY_SLUG[rSlug])
+      const readBtn = (rSlug && readerEssays()[rSlug])
         ? `<button type="button" class="idx-read" data-read="${escapeHtml(rSlug)}" aria-label="Ler ${escapeHtml(n.title)}" title="Ler">📖</button>`
         : "";
       const row = `<tr data-id="${escapeHtml(n.id)}">
@@ -3633,8 +3684,25 @@ exportSvgBtn.addEventListener("click", (e) => {
   if (exportSvgPopover.classList.contains("open")) { closeExportSvgPopover(); return; }
   openExportSvgPopover();
 });
-document.getElementById("btn-export-svg-completo").addEventListener("click", () => { closeExportSvgPopover(); exportSvgFile(false); });
-document.getElementById("btn-export-svg-simples").addEventListener("click", () => { closeExportSvgPopover(); exportSvgFile(true); });
+// canvas2svg (~50 KB) só existe para o export vetorial: carrega sob demanda
+// da CDN na primeira exportação. Único recurso dependente de rede — exportar
+// SVG offline mostra aviso claro; PNG e todo o resto funcionam offline.
+let c2sPromise = null;
+function ensureC2S() {
+  if (window.C2S) return Promise.resolve();
+  if (!c2sPromise) {
+    c2sPromise = new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = "https://cdn.jsdelivr.net/npm/canvas2svg@1.0.16/canvas2svg.min.js";
+      s.onload = () => resolve();
+      s.onerror = () => { c2sPromise = null; reject(new Error("sem rede para carregar o canvas2svg")); };
+      document.head.appendChild(s);
+    });
+  }
+  return c2sPromise;
+}
+document.getElementById("btn-export-svg-completo").addEventListener("click", () => { closeExportSvgPopover(); ensureC2S().then(() => exportSvgFile(false)).catch(err => alert("Exportar SVG requer conexão: " + err.message)); });
+document.getElementById("btn-export-svg-simples").addEventListener("click", () => { closeExportSvgPopover(); ensureC2S().then(() => exportSvgFile(true)).catch(err => alert("Exportar SVG requer conexão: " + err.message)); });
 document.addEventListener("click", (e) => {
   if (exportSvgPopover.classList.contains("open") && !exportSvgPopover.contains(e.target)) closeExportSvgPopover();
 });
@@ -3680,23 +3748,32 @@ if (window.visualViewport) {
 
 
 def render_html(nodes, edges, tag_gaps, reader_payload):
-    data_json = json.dumps(
+    graph_b64 = _deflate_b64(_json_for_script_tag(
         {
             "nodes": nodes,
             "edges": edges,
             "tag_gaps": tag_gaps,
             "defaultStyle": GRAPH_STYLE,
             "defaultStyleMobileOverrides": GRAPH_STYLE_MOBILE_OVERRIDES,
-        },
-        ensure_ascii=False,
-    )
-    reader_json = json.dumps(reader_payload, ensure_ascii=False)
-    # '<\/' dentro de string JSON é escape válido (produz o mesmo '</') —
-    # impede um "</script>" vindo de corpo de essay/MathJax de fechar o tag
-    # do bloco que carrega os dados.
-    reader_json = reader_json.replace("</", "<\\/")
-    html = HTML_TEMPLATE.replace("__DATA_JSON__", data_json)
-    html = html.replace("__READER_JSON__", reader_json)
+        }
+    ))
+    reader_b64 = ""
+    if reader_payload.get("essays"):
+        reader_b64 = _deflate_b64(_json_for_script_tag(reader_payload))
+
+    d3_src = D3_VENDORED.read_text(encoding="utf-8")
+    pako_src = PAKO_VENDORED.read_text(encoding="utf-8")
+    # Injeção é como <script> inline: um '</script' dentro do vendor fecharia
+    # a tag no meio do arquivo. Vendor auditado, mas a rede de segurança fica.
+    for name, src in (("d3", d3_src), ("pako", pako_src)):
+        if "</script" in src.lower():
+            raise RuntimeError(f"vendor {name} contém '</script' — não pode ir inline")
+
+    html = HTML_TEMPLATE
+    html = html.replace("__GRAPH_B64__", graph_b64)
+    html = html.replace("__READER_B64__", reader_b64)
+    html = html.replace("__D3__", d3_src)
+    html = html.replace("__PAKO__", pako_src)
     return html
 
 
