@@ -2675,8 +2675,11 @@ function typesetElement(el) {
 
 function initReaderShadow() {
   if (readerShadow) return;
+  ensureReaderData();
   readerShadow = readerArticle.attachShadow({ mode: "open" });
-  readerShadow.innerHTML = `<style>${READER_CSS}</style><div class="rd-root"></div>`;
+  // CSS lido AQUI, não no load: o payload é lazy — no load READER_DATA.css
+  // ainda é "" (placeholder), e o shadow nasceria sem estilo nenhum.
+  readerShadow.innerHTML = `<style>${READER_DATA.css || ""}</style><div class="rd-root"></div>`;
   readerRoot = readerShadow.querySelector(".rd-root");
   // Navegação por âncora DENTRO do shadow: o navegador não rola por #id que
   // só existe na árvore shadow — intercepta e rola aqui.
