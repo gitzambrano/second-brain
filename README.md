@@ -47,7 +47,7 @@ scripts/                     lint, stats, grafo de conexões, export (PDF/HTML),
   fix_lint.py                único fixer mecânico: aplica tudo que for inequívoco sem perguntar
   stats.py                   dashboard read-only (usado por /stats)
   check_gaps.py              heurística léxica e semântica de cobertura da wiki
-  build_graph.py             gera output/graph/graph.html (interativo) e graph.md (Mermaid)
+  build_sphere.py             gera output/graph/graph.html (interativo) e graph.md (Mermaid)
   find_text.py               busca com trecho (grep -n com contexto) escopada à wiki
   build_index.py             gera wiki/index.md e wiki/index.json a partir do frontmatter
   build_references.py        gera wiki/references.md e .json das ## Referências dos essays

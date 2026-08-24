@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-build_graph.py - Generate a connection graph of the entire wiki.
+build_sphere.py - Generate a connection graph of the entire wiki.
 
 Nodes: essays, concepts, entities, insights pages, e referências (a partir
 de wiki/references.json, geradas por build_references.py — uma por
@@ -59,7 +59,7 @@ Recursos do HTML interativo:
     antes de rodar o script.
 
 Usage:
-    python scripts/build_graph.py
+    python scripts/build_sphere.py
 """
 
 import argparse
@@ -303,7 +303,7 @@ def load_references():
     return data.get("references", [])
 
 
-def build_graph():
+def build_sphere():
     nodes = {}          # id -> node dict
     title_to_id = {}     # H1 title -> node id
     bodies = {}          # id -> body text (for edge extraction)
@@ -494,6 +494,25 @@ def compute_layout(nodes, edges, width=1600, height=1000, iterations=None, seed=
             # demais no primeiro carregamento.
             pos[nid][0] = min(width, max(0, pos[nid][0]))
             pos[nid][1] = min(height, max(0, pos[nid][1]))
+
+    # Preenchimento 360°: centra a nuvem no centróide e estica a bounding
+    # box para o canvas inteiro (com margem de respiro). Sem isto, o FR
+    # deixa a nuvem assimétrica — densa num quadrante, vazia no oposto — e
+    # o grafo abre ocupando "só uma parte" da tela em vez de se distribuir
+    # nos 360°. A topologia do grafo é preservada (é uma transformação
+    # afim de escala/translate, não um re-layout).
+    xs = [pos[nid][0] for nid in node_ids]
+    ys = [pos[nid][1] for nid in node_ids]
+    min_x, max_x = min(xs), max(xs)
+    min_y, max_y = min(ys), max(ys)
+    span_x = max(max_x - min_x, 1e-6)
+    span_y = max(max_y - min_y, 1e-6)
+    fill_margin = 0.04  # 4% de respiro em cada borda
+    sx = width * (1 - 2 * fill_margin) / span_x
+    sy = height * (1 - 2 * fill_margin) / span_y
+    for nid in node_ids:
+        pos[nid][0] = width * fill_margin + (pos[nid][0] - min_x) * sx
+        pos[nid][1] = height * fill_margin + (pos[nid][1] - min_y) * sy
 
     for node in nodes:
         x, y = pos[node["id"]]
@@ -3824,7 +3843,7 @@ def main():
                              "--no-reader gera a versão leve (grafo + link .md)")
     args = parser.parse_args()
 
-    nodes, edges, isolated = build_graph()
+    nodes, edges, isolated = build_sphere()
     tag_gaps = compute_tag_gaps(nodes, edges)
 
     layout_start = time.perf_counter()

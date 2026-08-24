@@ -84,7 +84,7 @@ python scripts/check_wiki.py <slug>
 python scripts/fix_lint.py <slug>
 ```
 
-Se alguma página nova foi criada (Parte C): `python scripts/build_index.py`. Se o escopo foi corpus inteiro, rode `python scripts/build_graph.py` ao final para refletir as conexões novas no grafo, e ofereça abrir `output/graph/graph.html`.
+Se alguma página nova foi criada (Parte C): `python scripts/build_index.py`. Se o escopo foi corpus inteiro, rode `python scripts/build_sphere.py` ao final para refletir as conexões novas no grafo, e ofereça abrir `output/graph/graph.html`.
 
 Log:
 

@@ -6,7 +6,7 @@ description: >
   manifesto ou na subpasta errada, sinais de travessão/formatação,
   contagem de handouts, itens do plano por seção, notas atômicas por
   maturidade. Pode também gerar o grafo visual de conexões
-  (scripts/build_graph.py). Use quando o Usuário disser "como ta minha
+  (scripts/build_sphere.py). Use quando o Usuário disser "como ta minha
   wiki", "dashboard", "stats da wiki", "quantos essays eu tenho",
   "quais sources não tem manifest", "mostra o grafo/mapa de conexões",
   ou quiser um retrato rápido de saúde sem rodar o lint completo.
@@ -42,7 +42,7 @@ Dashboard **read-only**. Só relata, nunca corrige — esse é o trabalho de `/o
 4. Se o Usuário quiser **ver** as conexões, não só contá-las, rode o grafo:
 
    ```bash
-   python scripts/build_graph.py
+   python scripts/build_sphere.py
    ```
 
    Gera `output/graph/graph.html` (visualização interativa: zoom, arraste, clique num nó para destacar vizinhos, busca por título/tag) e `output/graph/graph.md` (versão Mermaid, sem precisar abrir navegador). É a forma mais rápida de enxergar clusters isolados — por exemplo, se os ensaios de filosofia nunca se conectam aos de engenharia, isso aparece visualmente como dois blocos separados no grafo. Ofereça isso sempre que o Usuário perguntar algo como "como as coisas se conectam" ou depois de um `/organize` substancial.

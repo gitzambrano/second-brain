@@ -7,7 +7,7 @@ description: >
   estrutura canônica de pastas, plano, insights, quase-duplicatas),
   corrige links quebrados ou órfãos, atualiza wiki/index.md,
   wiki/sources/map.md, tags, e gera o grafo de conexões via
-  scripts/build_graph.py. Aceita escopo corpus inteiro (/organize) ou
+  scripts/build_sphere.py. Aceita escopo corpus inteiro (/organize) ou
   essay único (/organize <slug>) — nesse modo só formatação mecânica,
   referências e wikilinks daquele essay, pulando tudo que exige o
   corpus. Use quando o Usuário disser "organiza a wiki inteira", "vê
@@ -111,7 +111,7 @@ Nunca cole o relatório bruto de `check_wiki.py` — é genérico de propósito.
 
    `check_wiki.py <slug>` já pula sozinho, com aviso, o que exige corpus (órfãos, index, manifesto, plano, insights) — só reporta formatação e wikilinks mortos originados nele.
 3. **[script]** Aplique fixes automáticos sem perguntar. Reporte o restante por categoria (Estrutura obrigatória, Qualidade de referência, Resumo do índice, Byline, Links, LaTeX/aspas, Espaçamento, Estilo, Residuais, Idioma, Referências).
-4. **Não rode** `build_graph.py`, `stats.py`, nem auditorias de manifesto/plano/insights/órfãos — avise que foram puladas por serem checagens de corpus inteiro.
+4. **Não rode** `build_sphere.py`, `stats.py`, nem auditorias de manifesto/plano/insights/órfãos — avise que foram puladas por serem checagens de corpus inteiro.
 5. **[script]** `## Referências` mudou → `build_references.py`. `summary`/`tags` mudou → `build_index.py`.
 6. Apresente: issues corrigidos, issues restantes por categoria, aviso do que foi pulado.
 

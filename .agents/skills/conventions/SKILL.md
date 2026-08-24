@@ -47,7 +47,7 @@ updated: YYYY-MM-DD
 ---
 ```
 
-Essays têm dois campos a mais: `status: draft | maduro | finalizado` (ver `## Status de essay`) e `summary:` (resumo usado por `build_index.py` e `build_graph.py`). O valor de `summary:` deve estar SEMPRE entre aspas duplas (`summary: "..."`), para evitar quebras no parser YAML quando houver dois-pontos (`:`) ou caracteres especiais.
+Essays têm dois campos a mais: `status: draft | maduro | finalizado` (ver `## Status de essay`) e `summary:` (resumo usado por `build_index.py` e `build_sphere.py`). O valor de `summary:` deve estar SEMPRE entre aspas duplas (`summary: "..."`), para evitar quebras no parser YAML quando houver dois-pontos (`:`) ou caracteres especiais.
 
 ## Tags — Vocabulário Controlado
 
