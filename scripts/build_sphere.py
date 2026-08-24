@@ -475,6 +475,9 @@ SPHERE_HTML_TEMPLATE = """<!DOCTYPE html>
     .idx-tags { flex-wrap: nowrap; overflow-x: auto; max-height: none; padding-bottom: 4px; }
     .idx-chip { flex: none; }
     #modal table, #modal tbody, #modal tbody tr, #modal td { display: block; width: 100%; }
+    /* display:block vence o [hidden] do UA e impede de esconder a linha do
+       resumo no mobile — restaura o comportamento do atributo. */
+    #modal tbody tr[hidden] { display: none; }
     #modal thead { display: block; }
     #modal thead tr { display: flex; gap: 6px; }
     #modal th { flex: 1; text-align: center; font-size: 10px; padding: 9px 4px;

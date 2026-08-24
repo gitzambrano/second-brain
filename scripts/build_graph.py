@@ -1075,6 +1075,9 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     .idx-chip { flex: none; }
     /* Tabela em coluna: cabeçalho de tabela não cabe em tela estreita. */
     #modal table, #modal tbody, #modal tbody tr, #modal td { display: block; width: 100%; }
+    /* display:block vence o [hidden] do UA e impede de esconder a linha do
+       resumo no mobile — restaura o comportamento do atributo. */
+    #modal tbody tr[hidden] { display: none; }
     /* O cabeçalho vira barra de ordenação em vez de sumir: sem ele o índice
        perderia a ordenação por coluna justamente onde a lista é mais longa. */
     #modal thead { display: block; }
