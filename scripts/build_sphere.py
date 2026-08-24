@@ -102,7 +102,11 @@ def compute_sphere_layout(nodes, edges, iterations=None, seed=42):
     1. Fibonacci sphere: sequência de ponto áureo dá cobertura uniforme da
        casca sem clusters nem polos densos (problema clássico de lat/long
        uniforme). Jitter minúsculo quebra coincidências exatas que travariam
-       a repulsão.
+       a repulsão. A ordem dos índices é embaralhada (mesma seed) antes da
+       atribuição: os nós chegam em blocos contíguos por tipo (todos os
+       essays primeiro, depois concepts, entities, references) e, sem o
+       shuffle, pontos consecutivos da espiral formam uma faixa contínua —
+       todas as bolinhas grandes de um tipo cairiam no mesmo gorro polar.
 
     2. Relaxamento local restrito à superfície: repulsão de curto alcance
        entre vizinhos (grade espacial 3D — só pares a menos de `cutoff`
@@ -134,13 +138,18 @@ def compute_sphere_layout(nodes, edges, iterations=None, seed=42):
     pz = [0.0] * n
 
     golden_angle = math.pi * (3.0 - math.sqrt(5.0))
-    for i in range(n):
+    # Shuffle determinístico: quebra os blocos contíguos por tipo antes da
+    # espiral (ver docstring) — essays/concepts/entities/references passam a
+    # se espalhar pelo globo inteiro em vez de ocupar faixas polares.
+    order = list(range(n))
+    rng.shuffle(order)
+    for k, i in enumerate(order):
         if n == 1:
             px[0], py[0], pz[0] = 0.0, 0.0, 1.0
             break
-        y = 1.0 - (i / (n - 1)) * 2.0
+        y = 1.0 - (k / (n - 1)) * 2.0
         r = math.sqrt(max(0.0, 1.0 - y * y))
-        theta = golden_angle * i
+        theta = golden_angle * k
         x, z = math.cos(theta) * r, math.sin(theta) * r
         x += rng.uniform(-1, 1) * 1e-4
         y += rng.uniform(-1, 1) * 1e-4
@@ -148,12 +157,26 @@ def compute_sphere_layout(nodes, edges, iterations=None, seed=42):
         norm = math.sqrt(x * x + y * y + z * z) or 1.0
         px[i], py[i], pz[i] = x / norm, y / norm, z / norm
 
+    # Âncoras: cópia das posições Fibonacci. A mola fraca para a âncora
+    # (SPHERE_ANCHOR_GAIN) é o que GARANTE cobertura da superfície inteira:
+    # sem ela, a atração das arestas contrai o componente gigante num lobo
+    # contíguo e metade do globo fica vazia. Perto da âncora a mola é quase
+    # nula — aglomerados temáticos locais seguem livres.
+    sax = px[:]
+    say = py[:]
+    saz = pz[:]
+
     # Separação angular "ideal" entre vizinhos: área da esfera dividida por
     # nó (4π/n) virada em distância — mesmo papel do k de Fruchterman-Reingold.
     k = math.sqrt(4.0 * math.pi / n)
     # Alcance da repulsão em 2.0×k (calibrado na wiki real: dá NN mediano
     # ~5.3° contra ideal 5.9° para n≈1200, sem sufocar os aglomerados).
     cutoff = 2.0 * k
+    # Calibração na wiki real (n≈1240): 6.0 equilibra as dezenas de arestas
+    # dos hubs e mantém o peso visual (nó grande = alto grau) distribuído —
+    # cones de 60° ficam entre 21–28% da massa contra ~25% do uniforme.
+    # Ganho menor (<1.5) devolve o componente gigante a um lobo só.
+    SPHERE_ANCHOR_GAIN = 6.0
 
     if iterations is None:
         iterations = 380 if n <= 300 else (240 if n <= 800 else 150)
@@ -230,6 +253,16 @@ def compute_sphere_layout(nodes, edges, iterations=None, seed=42):
             disp[b][0] += dx * f
             disp[b][1] += dy * f
             disp[b][2] += dz * f
+
+        # Mola à âncora Fibonacci: puxa cada nó de volta ao seu ponto semente
+        # com força proporcional à distância (quase zero perto dela, forte
+        # longe). É o contrapeso global da atração das arestas — impede que o
+        # componente gigante contraia num lobo e garanta os 360°.
+        ag = SPHERE_ANCHOR_GAIN * k
+        for i in range(n):
+            disp[i][0] += ag * (sax[i] - px[i])
+            disp[i][1] += ag * (say[i] - py[i])
+            disp[i][2] += ag * (saz[i] - pz[i])
 
         any_moved = False
         for i in range(n):
