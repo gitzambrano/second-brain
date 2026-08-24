@@ -20,7 +20,7 @@ Subagent mecânico. Executa scripts e reporta resultado — nunca interpreta.
 
 1. `python scripts/build_index.py`
 2. `python scripts/build_references.py`
-3. `python scripts/build_sphere.py` → `output/graph/graph.html`, `graph.md`, `graph.json`
+3. `python scripts/build_graph.py` → `output/graph/graph.html`, `graph.md`, `graph.json`
 4. `python scripts/stats.py --save` → `output/stats/stats-YYYY-MM-DD.md`
 5. `python scripts/fix_lint.py` (ou `fix_lint.py <slug>` se o agente principal passou escopo de essay único)
 6. `qmd status` — se disponível, `qmd update && qmd embed`. Sem qmd, pule sem avisar.
@@ -41,7 +41,7 @@ git: <hash curto> "<primeira linha da mensagem>"  (ou "nada a commitar")
 erros: nenhum  (ou uma linha por erro/warning real: "erro: <script> — <mensagem>")
 ```
 
-Sempre inclua `stats:` e `grafo:` com o caminho. Os contadores de `grafo:` vêm do stdout de `build_sphere.py` (linhas "página(s) sem nenhuma conexão" e "par(es) de tags que nunca se conectam") — omita o parêntese quando os dois forem zero. Omita `qmd`/`sync_skills` do relato quando não houver drift.
+Sempre inclua `stats:` e `grafo:` com o caminho. Os contadores de `grafo:` vêm do stdout de `build_graph.py` (linhas "página(s) sem nenhuma conexão" e "par(es) de tags que nunca se conectam") — omita o parêntese quando os dois forem zero. Omita `qmd`/`sync_skills` do relato quando não houver drift.
 
 ## O que nunca fazer
 

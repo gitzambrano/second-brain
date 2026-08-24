@@ -169,7 +169,7 @@ Pendência de curto prazo (o que ficou em aberto na sessão) fica em `wiki/statu
 
 `.agents/agents/` guarda subagents: sessão própria, mais barata, pra trabalho mecânico. Espelhado em `.claude/agents/` via `scripts/sync_skills.py`.
 
-- **`update`** — roda a bateria de fechamento (`build_index.py`, `build_references.py`, `build_sphere.py`, `stats.py --save`, `fix_lint.py`, `qmd update && qmd embed`, `sync_skills.py`) e commita/dá push da camada versionada (`git add -A`; sem mudança, commit não faz nada).
+- **`update`** — roda a bateria de fechamento (`build_index.py`, `build_references.py`, `build_graph.py`, `stats.py --save`, `fix_lint.py`, `qmd update && qmd embed`, `sync_skills.py`) e commita/dá push da camada versionada (`git add -A`; sem mudança, commit não faz nada).
 
   Nunca decide conteúdo — nunca funde página, nunca resolve contradição, nunca escreve prosa. Chame só ao fechar `/organize`, `/sweep`, `/status update`, ou sob pedido direto ("atualiza tudo", "sincroniza") — nunca antes das edições. Nunca versiona `wiki/`, `plan/`, `raw/`, `output/` (ver `## Notas` no README.md).
 

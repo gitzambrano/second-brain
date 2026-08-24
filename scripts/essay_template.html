@@ -53,9 +53,14 @@ $endif$
   --amber:#8F6212;
 }
 @media (min-width:901px){
-  /* Desktop: claro/branco por padrao, coluna mais larga, serifas mais
-     simples (Georgia em vez de Playfair). data-theme="dark" devolve o
+  /* Desktop: coluna larga (~70% da tela) em AMBOS os temas — antes o override
+     valia só para o claro e o escuro ficava preso nos 700px da base,
+     virando uma faixa estreita no centro. Cores/serifas continuam
+     por tema: claro/branco por padrao, data-theme="dark" devolve o
      editorial escuro para quem preferir. */
+  :root{
+    --max-width:70vw;
+  }
   :root:not([data-theme="dark"]){
     --bg:#FFFFFF;
     --surface:#F7F5EF;
@@ -71,7 +76,6 @@ $endif$
     --accent:#35708A;
     --amber:#8F6212;
     --font-display:Georgia,'Times New Roman',serif;
-    --max-width:80vw;
   }
 }
 
@@ -113,7 +117,7 @@ body{
 /* ------------------------------------------------------------------ */
 .masthead{background:var(--surface);border-bottom:1px solid var(--border);text-align:center;}
 .stripe{height:4px;background:linear-gradient(90deg,var(--rust) 0%,var(--gold) 50%,var(--rust) 100%);}
-.masthead-inner{max-width:820px;margin:0 auto;padding:2.4rem 1.2rem 2rem;}
+.masthead-inner{max-width:var(--max-width);margin:0 auto;padding:2.4rem 1.2rem 2rem;}
 .journal-label{
   font-family:'JetBrains Mono',Consolas,monospace;
   font-size:.7rem;letter-spacing:.24em;text-transform:uppercase;
