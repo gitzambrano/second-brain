@@ -1336,6 +1336,9 @@ function findNodeAtScreen(px, py) {
 
 const pointers = new Map();
 let pinchDist = 0, downX = 0, downY = 0, downTime = 0, dragMoved = false;
+// Nó agarrado pelo ponteiro: enquanto != null, mover o dedo/mouse arrasta A
+// BOLINHA pela superfície em vez de girar o globo.
+let dragNode = null;
 const DOUBLE_TAP_MS = 350;
 const DOUBLE_TAP_PX = 30;
 let lastTap = null;
@@ -1349,6 +1352,26 @@ function setZoom(k) {
   updateLabelVisibility();
 }
 
+// Arrasta o nó pela superfície: inverte a projeção ortográfica do cursor
+// (disco da esfera → frente do casco) e desfaz yaw/pitch para obter o vetor
+// unitário no modelo. Cursor fora do disco gruda no horizonte.
+function dragNodeTo(n, cx_, cy_) {
+  const R = viewRadius();
+  let x1 = (cx_ - width / 2) / R;
+  let y2 = (height / 2 - cy_) / R;
+  const d2 = x1 * x1 + y2 * y2;
+  let z2 = 0;
+  if (d2 >= 1) { const s = 1 / Math.sqrt(d2); x1 *= s; y2 *= s; }
+  else z2 = Math.sqrt(1 - d2);
+  const cy = Math.cos(rotY), sy = Math.sin(rotY);
+  const cx = Math.cos(rotX), sx = Math.sin(rotX);
+  const uy = y2 * cx + z2 * sx;   // desfaz Rx
+  const z1 = -y2 * sx + z2 * cx;
+  const ux = x1 * cy - z1 * sy;   // desfaz Ry
+  const uz = x1 * sy + z1 * cy;
+  n.ux = ux; n.uy = uy; n.uz = uz;
+}
+
 canvas.addEventListener("pointerdown", (e) => {
   canvas.setPointerCapture(e.pointerId);
   pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -1356,8 +1379,12 @@ canvas.addEventListener("pointerdown", (e) => {
     downX = e.clientX; downY = e.clientY;
     downTime = performance.now();
     dragMoved = false;
+    // Acertou uma bolinha da frente: este ponteiro arrasta o nó, não o globo.
+    dragNode = findNodeAtScreen(e.clientX, e.clientY);
+    if (dragNode) userRotated = true;
   } else if (pointers.size === 2) {
     pinchDist = ptrDist();
+    dragNode = null; // pinça é zoom: solta a bolinha
   }
 });
 
@@ -1368,7 +1395,11 @@ canvas.addEventListener("pointermove", (e) => {
   p.x = e.clientX; p.y = e.clientY;
   if (pointers.size === 1) {
     if (Math.hypot(e.clientX - downX, e.clientY - downY) > 4) dragMoved = true;
-    if (dragMoved) {
+    if (dragNode && dragMoved) {
+      // Conteúdo segue o dedo: a bolinha gruda no cursor e desliza na casca.
+      dragNodeTo(dragNode, e.clientX, e.clientY);
+      scheduleDraw();
+    } else if (dragMoved) {
       // Conteúdo segue o dedo: yaw com o horizontal, pitch com o vertical.
       userRotated = true;
       rotY += dx * 0.005;
@@ -1376,6 +1407,7 @@ canvas.addEventListener("pointermove", (e) => {
       scheduleDraw();
     }
   } else if (pointers.size === 2) {
+    dragNode = null;
     const d = ptrDist();
     if (pinchDist > 0 && d > 0) setZoom(zoomK * d / pinchDist);
     pinchDist = d;
@@ -1403,9 +1435,10 @@ function endPointer(e) {
   pointers.delete(e.pointerId);
   if (wasSingle && !dragMoved && performance.now() - downTime < 600) handleTap(e);
   if (pointers.size < 2) pinchDist = 0;
+  dragNode = null;
 }
 canvas.addEventListener("pointerup", endPointer);
-canvas.addEventListener("pointercancel", (e) => { pointers.delete(e.pointerId); pinchDist = 0; });
+canvas.addEventListener("pointercancel", (e) => { pointers.delete(e.pointerId); pinchDist = 0; dragNode = null; });
 
 // Zoom NÃO conta como "usuário assumiu a visão": girar sozinho com o globo
 // ampliado continua sendo agradável — só o ARRASTO desliga a rotação.
