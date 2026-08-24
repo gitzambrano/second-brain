@@ -19,10 +19,13 @@ Leia o essay inteiro antes de reescrever qualquer trecho — estilo é sobre coe
 
 ## O que corrigir
 
-1. **Bullets no corpo argumentativo.** Ideias em lista devem virar prosa corrida com transições explícitas entre elas. Bullets ficam só em `## Sumário`, `## Referências`, e tabelas genuinamente mais claras que prosa (comparações numéricas).
-2. **Travessões.** Conte quantos `—` existem no essay inteiro, excluindo a byline (`Tipo`) e os separadores de display text de wikilinks no index. **Máximo 2 no essay inteiro.** Se passar, reescreva os excedentes com vírgula, dois-pontos, parênteses ou reestruturação da frase — nunca troque um travessão por outro em outro ponto do texto.
-3. **Ritmo e variação de frase.** Frases muito uniformes em tamanho/estrutura cansam — varie, mas sem sacrificar clareza.
-4. **Divida frases unidas por ponto e vírgula** em duas frases. Ponto e vírgula deve ser evitado ao máximo.
+1. **Uma proposição por frase.** Divida períodos longos e orações subordinadas encadeadas em frases curtas com ponto final.
+2. **Sobriedade de conectores.** Remova conectores empilhados ou desnecessários.
+3. **Bullets no corpo argumentativo.** Converta listas de ideias em prosa contínua. Bullets ficam só em `## Sumário`, `## Referências` e tabelas comparativas.
+4. **Travessões.** Máximo 2 no essay inteiro. Reescreva excedentes com ponto final, vírgula, dois-pontos ou reestruturação.
+5. **Sem ponto e vírgula.** Divida frases unidas por ponto e vírgula em frases autônomas.
+6. **Tipografia e símbolos.** Elimine barras (`/`), til (`~`), remissões abreviadas e intervalos numéricos com hífen na prosa.
+7. **Essays técnicos.** Elimine antropomorfização (*"o código vê"*), gerúndios soltos de consequência, locuções verbais pesadas e superlativos vazios.
 
 ## O que preservar
 

@@ -218,29 +218,33 @@ Vale para todo trecho escrito/reescrito pela wiki — não retroage sobre texto 
 
 ### Regras gerais (todo essay)
 
-1. **Evitar bullets no corpo.** Prosa argumentativa em parágrafos com transições explícitas. Bullets só em `## Sumário`, `## Referências`, e tabelas genuinamente mais claras que prosa.
-2. **Termo consistente para o mesmo conceito.** Nunca alterne sinônimo para a mesma coisa dentro de um essay — escolha um termo na primeira menção e mantenha até o fim.
-3. **Prefira abrir o parágrafo situando o assunto.** Não é regra rígida de primeira frase, mas o leitor não deveria precisar do parágrafo inteiro para descobrir do que ele trata.
-4. **Travessões (—) extremamente raros**: no máximo 1 a 2 na prosa, não por parágrafo. Prefira vírgula, dois-pontos, parênteses, ou reestruture a frase. Não conta o `·` da byline, nem o `—` de `## Referências` (obrigatório antes da nota) e `## Conexões` (antes da descrição), que são estruturais. `check_wiki.py` conta só a prosa e emite `TOO_MANY_EM_DASHES` como INFO: é alvo de estilo para texto novo, não dívida a saldar no corpus existente.
-5. **Conector lógico explícito** ("portanto", "assim", "porém", "no entanto") quando uma frase depende da anterior — não deixe a ligação implícita.
-6. **Divida frases unidas por ponto e vírgula** em duas frases. Ponto e vírgula deve ser evitado ao máximo.
-7. **Frase muito longa, divida.** Alvo prático: ~30 palavras; mais que isso, geralmente há uma frase escondida dentro da outra.
+1. **Uma proposição por frase.** Um único fato, asserção ou instrução por período. Divida com ponto final em vez de encadear orações subordinadas e explicativas com vírgulas.
+2. **Sobriedade de conectores.** Não empilhe conectores (*portanto*, *visto que*, *assim sendo*). Confie na ordem lógica direta das frases; use conectores apenas quando a transição lógica não for óbvia.
+3. **Evitar bullets no corpo.** Prosa argumentativa em parágrafos contínuos. Bullets apenas em `## Sumário`, `## Referências` e tabelas comparativas.
+4. **Termo consistente para o mesmo conceito.** Nunca alterne sinônimos para o mesmo conceito dentro do essay.
+5. **Abertura direta do parágrafo.** Situe o tema logo na primeira frase (tópico frasal). Um tema por parágrafo, até 6 frases.
+6. **Travessões (—) extremamente raros.** Máximo de 1 a 2 na prosa do essay inteiro. Use ponto final, vírgula, dois-pontos ou reestruture.
+7. **Sem ponto e vírgula.** Divida orações unidas por ponto e vírgula em frases autônomas.
+8. **Parênteses curtos.** Parênteses apenas para siglas ou notas mínimas. Se a informação sustenta a tese, transforme-a em frase independente.
+9. **Tipografia e símbolos limpos na prosa:**
+   - **Sem barras oblíquas (`/`)**: escreva "e" ou "ou" por extenso (*"estabilidade e controle"*, não *"estabilidade/controle"*).
+   - **Sem símbolos de atalho (`~`, `--`)**: escreva *"aproximadamente"*, *"cerca de"*.
+   - **Intervalos numéricos por extenso**: *"5 a 30 iterações"*, *"de 10 a 20 mm"* (não *"5-30"*).
+   - **Remissões completas**: *"Capítulo 3"*, *"Seção 2"* (não *"Cap. 3"*, *"Sec. 2"*).
 
 ### Regras adicionais para essays técnicos
 
-Regras adicionais para para essays específicos de tema técnico (engenharia, ciências exatas, software) — julgamento editorial pelo assunto, sem campo de frontmatter dedicado.
-
-0. **Português claro, conciso e formal.** Tom técnico, nunca coloquial.
-1. **Uma ideia por frase.** Não empilhe fato e consequência na mesma oração.
-2. **Voz ativa quando o agente é conhecido.** "O solver calcula a velocidade induzida", não "A velocidade induzida é calculada pelo solver".
-3. **Verbo em vez de nominalização.** "Verifique o resíduo", não "faça uma verificação do resíduo".
-4. **Substitua pronome ou "isso/isto" ambíguo pelo substantivo** quando mais de um antecedente é possível.
-5. **Um tema por parágrafo, até 6 frases.**
-6. **Termo técnico com grafia única** — não alterne o nome em português com o termo em inglês depois de traduzido uma vez (unidades, siglas, nomes de variável).
-7. **Palavra simples em vez de jargão evitável.** Jargão genuíno do domínio fica; sinônimo rebuscado sem necessidade, não.
-8. **"Por exemplo", "ou seja" por extenso** — sem abreviação latina solta ("e.g.", "i.e.") na prosa.
-9. **Sem exagero, superlativo ou adjetivo de marketing** ("robusto", "poderoso", "perfeito", "revolucionário") **nem hedge vazio** ("pode potencialmente ajudar a melhorar"). Declare o dado factual, ou apague a palavra, sem mudar a força real da afirmação.
-10. **Concisão não é telegrama.** Frase curta ainda leva verbo, artigo e advérbio de ligação quando a clareza pede — não corte esses elementos só para encurtar. "Se a tabela de perfil estiver ausente, carregue um polar padrão", não "Tabela ausente: carregar polar padrão".
+0. **Português claro, conciso e formal.** Tom técnico e assertivo, nunca coloquial.
+1. **Sem antropomorfização de código ou teorias.** Descreva a computação ou o modelo factual (*"o solver calcula"*, *"a teoria modela"* — nunca *"o código vê/sabe"*, *"a teoria tenta"*).
+2. **Voz ativa quando o agente é conhecido.** *"O solver calcula a velocidade induzida"*, não *"A velocidade induzida é calculada pelo solver"*.
+3. **Verbo direto em vez de nominalização ou locução pesada.** *"Verifique o resíduo"* (não *"faça uma verificação"*); *"o modelo divergiu"* (não *"veio a apresentar divergência"*).
+4. **Corte de gerúndios soltos e gerundismos.** Evite orações reduzidas de consequência ambíguas. Transforme em frase coordenada com ponto final.
+5. **Substantivo no lugar de pronome ou "isso/isto" ambíguo.**
+6. **Sem empilhamento excessivo de preposições ("de/da/do").** Simplifique sintagmas nominais longos.
+7. **Termo técnico com grafia única.** Mantenha a mesma tradução/grafia (unidades, siglas, variáveis).
+8. **"Por exemplo", "ou seja" por extenso.** Sem abreviações latinas soltas (*e.g.*, *i.e.*).
+9. **Sem exagero, marketing ou hedge vazio.** Elimine superlativos (*"robusto"*, *"revolucionário"*) e hedges desnecessários (*"pode potencialmente ajudar"*). Declare o fato.
+10. **Concisão não é telegrama.** Frase curta preserva artigo, verbo e sujeito.
 
 ## Formato do índice (`wiki/index.md`)
 
