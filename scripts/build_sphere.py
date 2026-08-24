@@ -390,9 +390,15 @@ SPHERE_HTML_TEMPLATE = """<!DOCTYPE html>
   .detail-tags span, .idx-tagcell span {
     font-size: 10px; color: var(--ink-dim); background: rgba(255,255,255,.05);
     border-radius: 4px; padding: 2px 6px; white-space: nowrap; }
-  .detail-open { display: inline-block; margin-top: 10px; font-size: 11px;
-    color: var(--instrument-blue); text-decoration: none; }
-  .detail-open:hover { text-decoration: underline; }
+  /* Ações do cartão de detalhe: LER e .MD lado a lado, mesmo tamanho. */
+  .detail-actions { display: flex; gap: 8px; margin-top: 12px; }
+  .detail-actions > * { flex: 1; display: inline-flex; align-items: center;
+    justify-content: center; gap: 6px; min-height: 34px; padding: 8px 10px;
+    border-radius: 999px; font-size: 12px; font-weight: 600; cursor: pointer;
+    text-decoration: none; font-family: inherit; }
+  .detail-open { border: 1px solid var(--panel-border); background: transparent;
+    color: var(--ink-dim); }
+  .detail-open:hover { color: var(--ink); border-color: var(--instrument-blue); text-decoration: none; }
 
   #modal-overlay { display:none; position: fixed; inset: 0; background: rgba(9,11,13,.72);
     backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); z-index: 20; }
@@ -563,14 +569,14 @@ SPHERE_HTML_TEMPLATE = """<!DOCTYPE html>
   #export-svg-popover p { font-size: 11px; color: var(--ink-dim); margin: 0 0 2px; line-height: 1.4; }
 
   /* ---- Leitor embutido (mesmo chrome do grafo plano) ------------------- */
-  .read-btn { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
-    padding: 8px 16px; min-height: 34px; border-radius: 999px;
-    border: 1px solid var(--instrument-blue); background: var(--instrument-blue);
-    color: #0b1220; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  /* Botão primário do cartão de detalhe (LER): só a cor é dele — geometria
+     vem de .detail-actions > *. */
+  .read-btn { border: 1px solid var(--instrument-blue); background: var(--instrument-blue);
+    color: #0b1220; }
   .read-btn:hover { filter: brightness(1.08); }
   @media (pointer: coarse) {
-    .read-btn { position: relative; }
-    .read-btn::after { content: ""; position: absolute; inset: -7px; }
+    .detail-actions > * { position: relative; }
+    .detail-actions > *::after { content: ""; position: absolute; inset: -7px; }
     .idx-read { position: relative; }
     .idx-read::after { content: ""; position: absolute; inset: -8px; }
     .idx-expand { position: relative; }
@@ -1501,11 +1507,13 @@ function selectNode(d) {
   const slug = essaySlugOf(d);
   const hasReader = slug && readerEssays()[slug];
   detailEl.hidden = false;
+  const actions =
+    (hasReader ? `<button type="button" class="read-btn" data-read="${escapeHtml(slug)}">📖 Ler</button>` : "") +
+    (target ? `<a class="detail-open" href="${escapeHtml(target)}" target="_blank">${d.type === "essay" ? ".MD" : "Abrir"}</a>` : "");
   detailEl.innerHTML =
     `<div class="detail-title">${escapeHtml(d.title)}</div>` +
     `<div class="detail-tags">${(d.tags || []).map(x => `<span>${escapeHtml(x)}</span>`).join("")}</div>` +
-    (hasReader ? `<button type="button" class="read-btn" data-read="${escapeHtml(slug)}">📖 Ler</button>` : "") +
-    (target ? `<a class="detail-open" href="${escapeHtml(target)}" target="_blank">${d.type === "essay" ? ".md" : "abrir"}</a>` : "");
+    (actions ? `<div class="detail-actions">${actions}</div>` : "");
   const readBtn = detailEl.querySelector(".read-btn");
   if (readBtn) readBtn.addEventListener("click", (ev) => {
     ev.stopPropagation();

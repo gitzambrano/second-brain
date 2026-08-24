@@ -892,9 +892,15 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   .detail-tags span, .idx-tagcell span {
     font-size: 10px; color: var(--ink-dim); background: rgba(255,255,255,.05);
     border-radius: 4px; padding: 2px 6px; white-space: nowrap; }
-  .detail-open { display: inline-block; margin-top: 10px; font-size: 11px;
-    color: var(--instrument-blue); text-decoration: none; }
-  .detail-open:hover { text-decoration: underline; }
+  /* Ações do cartão de detalhe: LER e .MD lado a lado, mesmo tamanho. */
+  .detail-actions { display: flex; gap: 8px; margin-top: 12px; }
+  .detail-actions > * { flex: 1; display: inline-flex; align-items: center;
+    justify-content: center; gap: 6px; min-height: 34px; padding: 8px 10px;
+    border-radius: 999px; font-size: 12px; font-weight: 600; cursor: pointer;
+    text-decoration: none; font-family: inherit; }
+  .detail-open { border: 1px solid var(--panel-border); background: transparent;
+    color: var(--ink-dim); }
+  .detail-open:hover { color: var(--ink); border-color: var(--instrument-blue); text-decoration: none; }
   .node-title { font-size: var(--label-size); fill: var(--ink); pointer-events: none; opacity: .85; }
   .link { stroke: var(--edge); stroke-width: 1.2px; opacity: var(--edge-opacity); }
   .link.reference { stroke: var(--edge-ref); stroke-dasharray: 3,3; }
@@ -1175,16 +1181,16 @@ HTML_TEMPLATE = """<!DOCTYPE html>
      (tokens, masthead, caixas, fontes, highlighting) é gerado pelo build a
      partir do próprio essay_template.html e vive DENTRO do Shadow Root
      (READER_DATA.css). Aqui só existe o chrome do overlay. */
-  .read-btn { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px;
-    padding: 8px 16px; min-height: 34px; border-radius: 999px;
-    border: 1px solid var(--instrument-blue); background: var(--instrument-blue);
-    color: #0b1220; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; }
+  /* Botão primário do cartão de detalhe (LER): só a cor é dele — geometria
+     vem de .detail-actions > *. */
+  .read-btn { border: 1px solid var(--instrument-blue); background: var(--instrument-blue);
+    color: #0b1220; }
   .read-btn:hover { filter: brightness(1.08); }
   /* Área de toque real ≥44px no toque grosso sem inflar o desenho: pseudo-
-     elemento invisível expande o alvo ao redor do botão pequeno. */
+     elemento invisível expande o alvo ao redor de cada botão da linha. */
   @media (pointer: coarse) {
-    .read-btn { position: relative; }
-    .read-btn::after { content: ""; position: absolute; inset: -7px; }
+    .detail-actions > * { position: relative; }
+    .detail-actions > *::after { content: ""; position: absolute; inset: -7px; }
     .idx-read { position: relative; }
     .idx-read::after { content: ""; position: absolute; inset: -8px; }
     .idx-expand { position: relative; }
@@ -2487,11 +2493,13 @@ function selectNode(d) {
   // (nós vizinhos) já é o feedback da seleção; o cartão de detalhe fica
   // pronto e some ao abrir o painel manualmente.
   detailEl.hidden = false;
+  const actions =
+    (hasReader ? `<button type="button" class="read-btn" data-read="${escapeHtml(slug)}">📖 Ler</button>` : "") +
+    (target ? `<a class="detail-open" href="${escapeHtml(target)}" target="_blank">${d.type === "essay" ? ".MD" : "Abrir"}</a>` : "");
   detailEl.innerHTML =
     `<div class="detail-title">${escapeHtml(d.title)}</div>` +
     `<div class="detail-tags">${(d.tags || []).map(x => `<span>${escapeHtml(x)}</span>`).join("")}</div>` +
-    (hasReader ? `<button type="button" class="read-btn" data-read="${escapeHtml(slug)}">📖 Ler</button>` : "") +
-    (target ? `<a class="detail-open" href="${escapeHtml(target)}" target="_blank">${d.type === "essay" ? ".md" : "abrir"}</a>` : "");
+    (actions ? `<div class="detail-actions">${actions}</div>` : "");
   const readBtn = detailEl.querySelector(".read-btn");
   if (readBtn) readBtn.addEventListener("click", (e) => {
     e.stopPropagation();
