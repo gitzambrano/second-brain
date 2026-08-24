@@ -1,43 +1,30 @@
 #!/usr/bin/env python3
 """
-check_references.py — Verificador da seção `## Referências` de essays.
+check_references.py - Valida o conteúdo da seção `## Referências` dos
+essays contra o padrão AIAA (conventions/SKILL.md). Somente-leitura: a
+correção mecânica é do fix_lint.py, que importa os parsers deste módulo.
 
-Complementa `check_wiki.py`, que só checa se a seção existe (`NO_REFERENCIAS`);
-aqui o conteúdo dela é validado contra o padrão AIAA definido em
-`conventions/SKILL.md`, seção `## Formato de "## Referências" — padrão AIAA`.
-Chamado por `/linkify`, e pela varredura mecânica de `/organize`.
+Lê:
+    wiki/essays/*.md  (todos, ou um essay via slug/--file)
 
-Códigos emitidos:
-
-    REFERENCIA_FORMATO_INVALIDO  ERROR    entrada fora do padrão `[N] ...` com
-                                          título em itálico, ou numeração fora
-                                          de ordem
-    DUPLICATE_REFERENCIA         ERROR    duas entradas com a mesma URL
-                                          normalizada no MESMO essay
-    LINK_NOT_IN_REFERENCIAS      ERROR    URL usada no corpo sem entrada
-                                          correspondente em `## Referências`
-    REFERENCIA_SEM_LINK          WARNING  entrada sem link; legítima só para
-                                          fonte sem edição digital confiável
-    REFERENCIA_NAO_USADA         WARNING  entrada `[N]` nunca citada no corpo
-
-`NO_REFERENCIAS` continua sendo emitido por `check_wiki.py` e não é duplicado
-aqui: este script assume que a seção existe e apenas pula o essay se não achar.
-
-Este script é **somente-leitura** (validação + `--json`): não escreve em nenhum
-arquivo. A migração mecânica para o padrão AIAA, que antes vivia aqui como
-`--fix-format`, foi inteiramente movida para `scripts/fix_lint.py` — o único
-fixer da wiki, e o único script de lint autorizado a escrever.
-
-O que ficou aqui são os primitivos de parsing (`parse_entries`,
-`citation_and_note`, `try_fix_quoted_title`, `TAIL_LINK_RE`, `URL_PAT`...), base
-da validação, que `fix_lint.py` importa em vez de duplicar. A fronteira entre os
-dois módulos é a permissão de escrever, não o assunto.
+Gera:
+    stdout (relatório ou JSON com --json). Códigos:
+    REFERENCIA_FORMATO_INVALIDO  ERROR    entrada fora do padrão [N] *Título*...
+    DUPLICATE_REFERENCIA         ERROR    mesma URL duas vezes no mesmo essay
+    LINK_NOT_IN_REFERENCIAS      ERROR    URL citada no corpo sem entrada
+    REFERENCIA_SEM_LINK          WARNING  entrada sem link
+    REFERENCIA_NAO_USADA         WARNING  entrada nunca citada no corpo
 
 Uso:
-    python check_references.py                    # todos os essays
-    python check_references.py meu-essay           # essay único (slug ou .md)
-    python check_references.py --file meu-essay   # mesma coisa, forma explícita
-    python check_references.py --json             # saída JSON para a skill parsear
+    python scripts/check_references.py              # todos os essays
+    python scripts/check_references.py meu-essay    # essay único (slug)
+    python scripts/check_references.py --file x.md  # caminho explícito
+    python scripts/check_references.py --json       # saída JSON
+
+Flags:
+    slug        essay alvo (posicional, opcional)
+    --file/-f   caminho do essay (alternativa ao slug)
+    --json      saída JSON para parse programático
 """
 
 import argparse

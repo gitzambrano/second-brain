@@ -1,40 +1,27 @@
 #!/usr/bin/env python3
 """
-check_gaps.py — camada léxica de /gaps: candidatos a página nova e a
-wikilink ausente entre páginas já existentes, tratando essays, concepts,
-entities e insights como peers (os mesmos quatro tipos que /connect trata
-como peers em ## Conexões).
+check_gaps.py - Camada léxica de /gaps: candidatos a página nova ("órfão de
+cobertura": termo recorrente que nunca virou wikilink/página) e a wikilink
+ausente entre páginas existentes ("menção sem link"), tratando essays,
+concepts, entities e insights como peers. Heurístico: só lista candidatos
+ranqueados, nunca escreve em disco.
 
-Cobre a direção que check_wiki.py e /organize (passo 2) NÃO cobrem:
-  - check_wiki.py: wikilinks que já existem e apontam pra nada -> "link morto"
-  - /organize passo 2: concept/entity que já existe sem essay que o linke -> "órfão reverso"
-  - este script: termo citado repetidamente na prosa de QUALQUER tipo de
-    página (via link externo, negrito, ou nome próprio capitalizado) que
-    NUNCA foi promovido a wikilink e não corresponde a nenhuma página
-    existente -> "órfão de cobertura" (PARTE 1); e o caso em que a página
-    já existe mas outra página a cita sem linkar -> "menção sem link"
-    (PARTE 2), agora nas duas direções entre os quatro tipos, não só
-    essay -> concept/entity.
+Lê:
+    wiki/{essays,concepts,entities,insights}/*.md
+    wiki/index.json  (cache de títulos/tags)
 
-É heurístico por natureza (não há NLP real aqui) — produz listas de
-CANDIDATOS ranqueadas para quem chamou decidir, nunca escreve em disco
-sozinho. Falso positivo é esperado e ok; falso negativo silencioso é o
-que queremos evitar.
+Gera:
+    stdout - Parte 1 (cobertura), Parte 2 (menções sem link),
+    Parte 3 (balanço por tag)
 
-Usado por:
-  - /gaps (.agents/skills/gaps/SKILL.md) — camada léxica da identificação;
-    roda com --skip-tags, já que balanço de tag agora é auditado por
-    /organize, não por /gaps.
-  - /organize (.agents/skills/organize/SKILL.md) — só a Parte 3
-    (--tags-only), balanço de cobertura por tag.
-  - /connect (.agents/skills/connect/SKILL.md) não chama este script
-    diretamente: invoca /gaps como passo 1 e reusa a lista que /gaps já
-    produziu (ver "## O que este skill reusa" em connect/SKILL.md).
-
-Usage:
+Uso:
     python scripts/check_gaps.py                # as três partes
-    python scripts/check_gaps.py --skip-tags     # só Partes 1 e 2 (usado por /gaps)
+    python scripts/check_gaps.py --skip-tags     # só Partes 1-2 (usado por /gaps)
     python scripts/check_gaps.py --tags-only     # só Parte 3 (usado por /organize)
+
+Flags:
+    --skip-tags   roda só cobertura e menções sem link
+    --tags-only   roda só o balanço de cobertura por tag
 """
 
 import argparse

@@ -1,14 +1,11 @@
-"""Força UTF-8 na saída de console dos scripts da wiki.
+"""Força UTF-8 (errors="replace") em stdout/stderr dos scripts da wiki.
 
-Basta importar: o efeito acontece no import, não há função a chamar.
+Efeito acontece no import - não há função a chamar. Necessário porque o
+console padrão do Windows (cp1252) não cobre caracteres como `─` e `⚠`
+usados nos relatórios.
 
-O console padrão do Windows usa cp1252, que não cobre os caracteres de caixa
-(`─`), o sinal de aviso (`⚠`) nem parte da pontuação usada nos relatórios. Sem
-isto, `check_wiki.py`, `stats.py` e `build_graph.py` abortam com UnicodeEncodeError
-depois de já terem feito todo o trabalho, e a saída se perde.
-
-`errors="replace"` em vez de `"strict"` porque um caractere que o terminal não
-consegue desenhar nunca deve derrubar um relatório inteiro.
+Uso:
+    import console_encoding  # noqa: F401  (primeiro import do script)
 """
 
 import sys

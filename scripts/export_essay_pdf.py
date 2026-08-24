@@ -1,18 +1,28 @@
 #!/usr/bin/env python3
 """
-export_essay_pdf.py - Export Second Brain essays to beautiful PDFs via Pandoc.
+export_essay_pdf.py - Exporta essays para PDF via Pandoc + LaTeX (filtro
+pdf_boxes.lua mapeia fenced divs em caixas tcolorbox). Remove `## Conexões`,
+preserva `## Referências`, converte frontmatter em página de título.
 
-Usage:
-    python export_essay_pdf.py <essay_filename_or_path>    # Export single essay
-    python export_essay_pdf.py --all                        # Export all essays
-    python export_essay_pdf.py --list                       # List available essays
+Lê:
+    wiki/essays/*.md (ou um essay via argumento); wiki/handouts/ com --handout
+    html_preprocess.py, scripts/pdf_boxes.lua
 
-Features:
-    - Strips ## Conexões section (internal wiki links, not for PDF)
-    - Preserves ## Referências (bibliographic references)
-    - Converts YAML frontmatter to elegant title block with author/date
-    - Removes any residual [[wikilinks]]
-    - Generates professional PDF via Pandoc + LaTeX
+Gera:
+    output/pdf/<slug>.pdf          (output/handouts/<slug>.pdf com --handout)
+
+Uso:
+    python scripts/export_essay_pdf.py <arquivo-ou-slug>
+    python scripts/export_essay_pdf.py --all                  # todos os essays
+    python scripts/export_essay_pdf.py --list                 # lista disponíveis
+    python scripts/export_essay_pdf.py <slug> --handout       # handout
+
+Flags:
+    essay        essay/handout alvo (posicional)
+    --all        exporta todos os essays
+    --list       lista essays disponíveis e sai
+    --handout    lê de wiki/handouts/ e grava em output/handouts/
+    --output/-o  caminho de saída alternativo
 """
 
 import re

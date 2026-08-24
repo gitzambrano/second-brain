@@ -1,42 +1,24 @@
 #!/usr/bin/env python3
 """
-html_preprocess.py - Converte os padroes de caixa do corpus em fenced divs
-semanticos que o template HTML estiliza como componentes.
+html_preprocess.py - Converte padrões de caixa do corpus em fenced divs
+semânticos que o template HTML estiliza como componentes. No-op seguro para
+textos sem caixas (handouts, por exemplo). Usado APENAS no fluxo HTML - o
+PDF tem pipeline próprio.
 
-Roda DEPOIS de remove_h1_and_byline e ANTES do Pandoc, apenas no fluxo HTML
-(o PDF mantem seu proprio pipeline e nao passa por aqui).
+Lê:
+    Markdown de essay/handout já sem H1/byline (texto em memória)
 
-Padroes reconhecidos (genericos valem para qualquer essay futuro):
+Gera:
+    Markdown transformado via transform_markdown(body)
 
-1. Rotulo + bloco      "> Experimento Mental I"   /  "> Evidencia Empirica II"
-   (blockquote de uma  "> Mapa Conceitual", "> Precisao Conceitual"
-   linha so, seguido   "> Ataque I", "> Nivel III", "**Ideia 01**",
-   de outro bloco)     avisos com ⚠/🚫  ->  ::: .box .<tipo>
-                        com badge, titulo, corpo em paragrafos proprios
-                        e faixa de veredito (**Veredicto:** extraido).
+Regras: rótulo + blockquote -> .box tipada; card de filósofo -> .card.filosofo;
+obra -> .card.livro; citação com atribuição -> .pull-quote; blockquote
+genérico -> .quote; rótulo solto -> .label-solo; parágrafo só de glifos ->
+ornamento.
 
-2. Card de filosofo    nome / "AAAA – AAAA · instituicao" / bio
-                       -> ::: .card .filosofo
-
-3. Card de obra        titulo / "Autor · Ano" (+ corpo, inclusive em
-   continuacao         continuacao preguicosa de blockquote)
-   preguicosa          -> ::: .card .livro
-
-4. Citacao destacada   ultima linha casa padrao de atribuicao
-                       ("Autor, Obra (ano)", "(parafrase)", "- Autor")
-                       -> ::: .pull-quote com .pq-cite
-
-5. Bloco de citacao    qualquer outro blockquote -> ::: .quote
-   simples             preservando versos via quebra dura dentro do paragrafo.
-
-6. Rotulo solto        rotulo de uma linha NAO seguido de outro blockquote
-                       -> ::: .label-solo (mini-cabecalho mono antes de listas)
-
-7. Ornamento           paragrafo so de glifos ("· · ·", "infinito") ->
-                       <div class="ornament">
-
-Tudo que nao casa sai intocado: o transformador e no-op seguro para essays
-sem caixas (handouts, por exemplo).
+Uso:
+    from html_preprocess import transform_markdown
+    body = transform_markdown(body)
 """
 
 import re

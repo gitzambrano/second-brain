@@ -1,29 +1,21 @@
 #!/usr/bin/env python3
 """
-build_index.py - Gera wiki/index.json e wiki/index.md: cache leve de
-metadados + índice navegável de essays.
+build_index.py - Cache de metadados da wiki: índice navegável de essays +
+títulos/tags de todos os tipos. Evita re-parsear o frontmatter da wiki
+inteira a cada consulta (/query, /stats, /gaps, check_title...). Artefato
+gerado - nunca editar à mão; a fonte da verdade são os arquivos em disco.
 
-Evita que /query, /stats, /gaps, /insight add, /check_title etc. precisem
-abrir e parsear o frontmatter de cada arquivo toda vez que precisam saber
-"quais títulos já existem" ou "quais tags já estão em uso". Artefato
-descartável e sempre regenerável — mesmo padrão de output/stats/ e
-output/graph/ (ver README.md). A fonte da verdade continua sendo os
-arquivos em disco; este índice é só cache.
+Lê:
+    wiki/essays|concepts|entities|insights/*.md   frontmatter completo
+    wiki/sources/manifest.md                      campo Tags: das fontes
 
-Indexa essays, concepts, entities, insights (título, path, tags, summary,
-status/maturidade) e também wiki/sources/manifest.md — toda fonte agora
-carrega Tags: no manifesto (mesmo vocabulário controlado dos essays, ver
-conventions/SKILL.md), então o índice consolida tags_in_use combinando as
-duas origens numa fonte única de contagem.
+Gera:
+    wiki/index.json   títulos, paths, tags, summary, status/maturidade,
+                      tags_in_use consolidando essays + manifest
+    wiki/index.md     lista plana de essays por created decrescente
 
-`wiki/index.md` é gerado a partir da mesma varredura: lista plana de
-essays ordenada por `created` decrescente, com summary e tags por entrada
-(nunca editado à mão — ver conventions/SKILL.md, ## Formato do índice).
-Continua Markdown, não HTML — abre direto em qualquer editor/viewer sem
-depender de exportação prévia.
-
-Usage:
-    python scripts/build_index.py
+Uso:
+    python scripts/build_index.py             # sem flags
 """
 
 import datetime

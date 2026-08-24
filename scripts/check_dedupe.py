@@ -1,34 +1,24 @@
 #!/usr/bin/env python3
 """
-check_dedupe.py — Relatório de quase-duplicatas na wiki inteira.
+check_dedupe.py - Relatório de quase-duplicatas no corpus inteiro, em 4
+classes: títulos de essays, títulos de concepts/entities, tags (acento/caixa/
+hífen/singular-plural sobre tags_in_use) e referências repetidas entre
+essays diferentes. Só lista candidatos - nunca funde nem apaga.
 
-Quatro classes num relatório único, chamado por `/organize`:
+Lê:
+    wiki/{essays,concepts,entities,insights}/*.md  (títulos, tags, referências)
 
-    1. Títulos de essays              — a mesma heurística que `check_title.py`
-                                        aplica na criação (para nada nascer
-                                        duplicado), agora retroativa ao corpus
-    2. Títulos de concepts/entities   — mesma heurística, mesmo threshold
-    3. Tags                           — normalização de acento/caixa/hífen mais
-                                        singular-plural, sobre `tags_in_use`
-    4. Referências entre essays       — mesma URL normalizada, ou citação AIAA
-                                        quase-idêntica, aparecendo em essays
-                                        DIFERENTES com grafia distinta
-
-A classe 4 não é a mesma coisa que `DUPLICATE_REFERENCIA` do `check_references.py`:
-lá é duplicata **dentro do mesmo essay** (erro de formatação); aqui é a mesma
-fonte catalogada duas vezes **em essays diferentes**, com citação ligeiramente
-diferente — sinal de bibliografia divergindo, não de arquivo malformado.
-
-**Nunca decide, nunca funde, nunca deleta.** Só lista candidatos, para
-`/organize` perguntar ao Usuário caso a caso.
-
-Categoria saiu do escopo: o campo não existe mais na wiki (a classificação
-temática vem só de `tags`), então não há o que deduplicar ali.
+Gera:
+    stdout (relatório agrupado) ou JSON com --json
 
 Uso:
-    python check_dedupe.py                 # relatório completo
-    python check_dedupe.py --json          # saída JSON para a skill parsear
-    python check_dedupe.py --threshold 0.9 # similaridade mínima (padrão 0.85)
+    python scripts/check_dedupe.py                  # relatório completo
+    python scripts/check_dedupe.py --json           # saída JSON
+    python scripts/check_dedupe.py --threshold 0.9  # similaridade mínima
+
+Flags:
+    --threshold N   similaridade fuzzy mínima (default: 0.85)
+    --json          saída JSON para parse programático
 """
 
 import argparse

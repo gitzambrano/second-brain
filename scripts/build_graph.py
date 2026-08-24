@@ -1,29 +1,29 @@
 #!/usr/bin/env python3
 """
-build_graph.py - Grafo PLANO canonico da wiki: nos e conexoes em 2D
-(forca dirigida), HTML interativo com indice, gaps, painel de estilo e
+build_graph.py - Grafo PLANO canônico da wiki: nós e conexões em 2D
+(força-dirigida), HTML interativo com índice, gaps, painel de estilo e
 leitor de essays embutido.
 
-Le:
-    wiki/essays|concepts|entities|insights/*.md   titulos, wikilinks, frontmatter
-    wiki/references.json                          referencias citadas por essay
+Lê:
+    wiki/essays|concepts|entities|insights/*.md   títulos, wikilinks, frontmatter
+    wiki/references.json                          referências citadas por essay
 
 Gera:
-    output/graph/MySecondBrain.html   grafo interativo (arquivo unico compartilhavel)
+    output/graph/MySecondBrain.html   grafo interativo (arquivo único compartilhável)
     output/graph/graph.md             fallback Mermaid
-    output/graph/graph.json           nos/arestas/tag_gaps/isolated (lido por /organize)
+    output/graph/graph.json           nós/arestas/tag_gaps/isolated (lido por /organize)
     output/graph/graph.html           redirect para MySecondBrain.html
 
 Uso:
     python scripts/build_graph.py               # default = DEFAULT_EMBED_READER
-    python scripts/build_graph.py --reader      # embute os essays no HTML (~5,5 MB)
+    python scripts/build_graph.py --reader      # embute os essays no HTML (~6 MB)
     python scripts/build_graph.py --no-reader   # arquivo leve + link .md
 
 Flags:
-    --reader | --no-reader   embute ou nao o conteudo dos essays no HTML
+    --reader | --no-reader   embute ou não o conteúdo dos essays no HTML
                              (default definido em DEFAULT_EMBED_READER, topo do arquivo)
 
-Variante esferica: scripts/build_sphere.py (importa deste arquivo).
+Variante esférica: scripts/build_sphere.py (importa deste arquivo).
 """
 
 import argparse
@@ -73,6 +73,11 @@ READER_DEFAULT = False
 #   True  = essays embutidos no template do export (~5,5 MB)
 # Os flags --reader / --no-reader sobrepõem este default ponto a ponto.
 DEFAULT_EMBED_READER = False
+
+# Preenchimento 360° do grafo PLANO (centra a nuvem no centróide e estica a
+# bounding box até as bordas do canvas). DESLIGADO por padrão — ligue apenas
+# sob pedido explícito do Usuário.
+ENABLE_FILL_360 = False
 
 MATHJAX_URL = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js"
 MATHJAX_CACHE = OUTPUT_DIR / "_mathjax_cache.js"
@@ -459,24 +464,26 @@ def compute_layout(nodes, edges, width=1600, height=1000, iterations=None, seed=
             pos[nid][0] = min(width, max(0, pos[nid][0]))
             pos[nid][1] = min(height, max(0, pos[nid][1]))
 
-    # Preenchimento 360°: centra a nuvem no centróide e estica a bounding
-    # box para o canvas inteiro (com margem de respiro). Sem isto, o FR
-    # deixa a nuvem assimétrica — densa num quadrante, vazia no oposto — e
-    # o grafo abre ocupando "só uma parte" da tela em vez de se distribuir
-    # nos 360°. A topologia do grafo é preservada (é uma transformação
-    # afim de escala/translate, não um re-layout).
-    xs = [pos[nid][0] for nid in node_ids]
-    ys = [pos[nid][1] for nid in node_ids]
-    min_x, max_x = min(xs), max(xs)
-    min_y, max_y = min(ys), max(ys)
-    span_x = max(max_x - min_x, 1e-6)
-    span_y = max(max_y - min_y, 1e-6)
-    fill_margin = 0.04  # 4% de respiro em cada borda
-    sx = width * (1 - 2 * fill_margin) / span_x
-    sy = height * (1 - 2 * fill_margin) / span_y
-    for nid in node_ids:
-        pos[nid][0] = width * fill_margin + (pos[nid][0] - min_x) * sx
-        pos[nid][1] = height * fill_margin + (pos[nid][1] - min_y) * sy
+    # Preenchimento 360° (ENABLE_FILL_360, desligado por padrão): centra a
+    # nuvem no centróide e estica a bounding box para o canvas inteiro (com
+    # margem de respiro). Sem isto, o FR deixa a nuvem assimétrica — densa
+    # num quadrante, vazia no oposto — e o grafo abre ocupando "só uma parte"
+    # da tela em vez de se distribuir nos 360°. A topologia do grafo é
+    # preservada (é uma transformação afim de escala/translate, não um
+    # re-layout).
+    if ENABLE_FILL_360:
+        xs = [pos[nid][0] for nid in node_ids]
+        ys = [pos[nid][1] for nid in node_ids]
+        min_x, max_x = min(xs), max(xs)
+        min_y, max_y = min(ys), max(ys)
+        span_x = max(max_x - min_x, 1e-6)
+        span_y = max(max_y - min_y, 1e-6)
+        fill_margin = 0.04  # 4% de respiro em cada borda
+        sx = width * (1 - 2 * fill_margin) / span_x
+        sy = height * (1 - 2 * fill_margin) / span_y
+        for nid in node_ids:
+            pos[nid][0] = width * fill_margin + (pos[nid][0] - min_x) * sx
+            pos[nid][1] = height * fill_margin + (pos[nid][1] - min_y) * sy
 
     for node in nodes:
         x, y = pos[node["id"]]

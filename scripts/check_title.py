@@ -1,26 +1,24 @@
 #!/usr/bin/env python3
 """
-check_title.py - Checagem exata/fuzzy de título antes de criar página nova.
+check_title.py - Checagem exata/fuzzy de título antes de criar página nova
+(essay/concept/entity/insight): impede quase-duplicatas nascerem.
 
-Chamado por /insight add, /chapter, /essay, /digest, /absorb antes de criar
-uma página nova (essay, concept, entity ou insight) — evita títulos
-quase-duplicados nascerem (ex: "Autopoiese" vs "Auto-poiese") sem precisar
-ler wiki/index.md e varrer concepts/entities manualmente pra saber se um
-wikilink já tem destino. Cobre os 4 tipos de página de uma vez.
+Lê:
+    wiki/index.json  (cache de títulos; com --force-scan, os *.md direto)
 
-Usa o cache de wiki/index.json quando existir (gerado por
-build_index.py); --force-scan ignora o cache e lê os arquivos direto —
-útil se o índice estiver desatualizado no meio de uma sessão.
+Gera:
+    stdout (matches) + exit code programático:
+    0 = título livre | 1 = match exato | 2 = quase-duplicata fuzzy
 
-Exit codes (uso programático):
-    0 - nenhum match: título livre, seguro criar
-    1 - match exato: já existe página com esse título
-    2 - match(es) fuzzy: possível quase-duplicata, revisar antes de criar
-
-Usage:
+Uso:
     python scripts/check_title.py "Autopoiese e Sistemas Vivos"
     python scripts/check_title.py "Auto-poiese" --threshold 0.8
     python scripts/check_title.py "Novo Título" --force-scan
+
+Flags:
+    title           título candidato (posicional)
+    --threshold N   similaridade mínima fuzzy (default: 0.82)
+    --force-scan    ignora o cache e varre os arquivos
 """
 
 import argparse

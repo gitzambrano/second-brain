@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
-"""fetch_fonts.py - Baixa as fontes do Google Fonts (so subsets latinos) e
-as auto-hospeda num cache local para o export HTML.
+"""fetch_fonts.py - Baixa fontes do Google Fonts (só subset latino) e as
+auto-hospeda em cache local para o export HTML - mantém apenas o subset
+`latin`, cortando ~85% do peso das fontes embutidas.
 
-Por que: o css2 do Google Fonts devolve @font-face para TODAS as subsets
-(cyrillic, greek, vietnamese, ...). O --embed-resources do Pandoc baixa
-todas -> ~1.5 MB de fontes por essay. Para pt-BR, o subset `latin`
-(U+0000-00FF + pontuacao geral U+2000-206F: acentos, cedilha, aspas
-curvas, travessoes) basta. Manter apenas latin/latin-ext corta ~85% do peso.
+Lê:
+    CSS e woff2 do Google Fonts (rede)
+
+Gera:
+    output/html/_fonts/fonts.css + woff2 referenciados
+    (cache: nada é rebaixado se já existirem; falha de rede -> None e o
+    export segue com fontes do sistema)
 
 Uso:
     from fetch_fonts import ensure_local_fonts
-    css = ensure_local_fonts(output_dir)   # caminho do fonts.css ou None
+    css_path = ensure_local_fonts(output_dir)   # caminho do fonts.css ou None
 
-Cache em output/html/_fonts/: se fonts.css e os woff2 referenciados ja
-existem, nada e baixado de novo. Falha de rede -> None (o export segue
-com serifas do sistema + WARNING).
+(Chamado pelo export HTML e pelo leitor embutido dos grafos; sem CLI.)
 """
 
 import re

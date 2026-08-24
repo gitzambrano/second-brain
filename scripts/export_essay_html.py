@@ -1,28 +1,29 @@
 #!/usr/bin/env python3
 """
-export_essay_html.py - Export Second Brain essays to standalone HTML via Pandoc.
+export_essay_html.py - Exporta essays para HTML standalone via Pandoc +
+essay_template.html: arquivo único offline (CSS/fontes/imagens embutidas),
+responsivo, MathJax para fórmulas (CDN). Remove `## Conexões`, preserva
+`## Referências` e `## Sumário`, converte frontmatter em masthead.
 
-Usage:
-    python export_essay_html.py <essay_filename_or_path>    # Export single essay
-    python export_essay_html.py --all                        # Export all essays
-    python export_essay_html.py --list                       # List available essays
+Lê:
+    wiki/essays/*.md (ou um essay via argumento); wiki/handouts/ com --handout
+    scripts/essay_template.html; html_preprocess.py; fetch_fonts.py
 
-Features (mirrors export_essay_pdf.py so PDF and HTML stay in sync):
-    - Strips ## Conexões section (internal wiki links, not for export)
-    - Preserves ## Referências, ## Sumário
-    - Converts YAML frontmatter into a title/subtitle/byline header block
-    - Removes any residual [[wikilinks]]
-    - Renders LaTeX math via MathJax, code blocks via Pandoc syntax highlighting
-    - Embeds images/CSS into a single self-contained .html file
-      (--embed-resources --standalone) so the output works offline and is a
-      single file to share, on desktop or mobile (responsive CSS, no JS
-      required except the MathJax CDN script for essays that use math)
+Gera:
+    output/html/<slug>.html        (output/handouts/<slug>.html com --handout)
 
-This script imports its frontmatter/Conexões/wikilink helpers from
-export_essay_pdf.py (same folder) instead of duplicating them. Byline parsing
-(`parse_byline`) is NOT shared — it's a local duplicate kept in sync by
-hand with `prepare_for_pandoc` in export_essay_pdf.py; if you change the byline
-format, update both.
+Uso:
+    python scripts/export_essay_html.py <arquivo-ou-slug>
+    python scripts/export_essay_html.py --all                  # todos os essays
+    python scripts/export_essay_html.py --list                 # lista disponíveis
+    python scripts/export_essay_html.py <slug> --handout       # handout
+
+Flags:
+    essay        essay/handout alvo (posicional)
+    --all        exporta todos os essays
+    --list       lista essays disponíveis e sai
+    --handout    lê de wiki/handouts/ e grava em output/handouts/
+    --output/-o  caminho de saída alternativo
 """
 
 import re

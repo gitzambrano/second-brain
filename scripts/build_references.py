@@ -1,26 +1,19 @@
 #!/usr/bin/env python3
 """
-build_references.py - Gera wiki/references.json e wiki/references.md a
-partir da seção `## Referências` de todos os essays.
+build_references.py - Agrega a seção `## Referências` de todos os essays
+em bibliografia consolidada no padrão AIAA (formato em conventions/SKILL.md).
+Nunca editados à mão - sempre regenerados. Não valida formato
+(check_references.py) nem decide duplicatas (check_dedupe.py).
 
-Mesmo padrão de build_index.py (wiki/index.json + wiki/index.md):
-artefatos na raiz de wiki/, nunca editados à mão, sempre regenerados.
-Chamado ao final de /essay, /expand, /absorb, /digest, /import, /linkify,
-/review, /organize — qualquer skill que crie ou edite `## Referências`
-(ver conventions/SKILL.md, ## `wiki/references.md` e `wiki/references.json`).
+Lê:
+    wiki/essays/*.md   seção `## Referências` de cada essay
 
-Formato esperado de cada entrada (padrão AIAA, ver conventions/SKILL.md,
-## Formato de "## Referências" — padrão AIAA):
+Gera:
+    wiki/references.json   bibliografia consolidada (lida por build_graph.py)
+    wiki/references.md     a mesma bibliografia em Markdown
 
-    [1] Sobrenome, I., *Título*, Fonte, Ano. — nota opcional. [Link](https://exemplo.org/x)
-    [2] Sobrenome, I., *Título*, Editora, Cidade, Ano. — sem link, caso genuíno.
-
-Este script só agrega o que já está escrito nos essays — não valida
-formato (isso é `check_references.py`) e não decide quase-duplicatas entre
-essays diferentes (isso é `check_dedupe.py`).
-
-Usage:
-    python scripts/build_references.py
+Uso:
+    python scripts/build_references.py        # sem flags
 """
 
 import datetime

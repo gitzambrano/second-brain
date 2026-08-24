@@ -1,24 +1,29 @@
 #!/usr/bin/env python3
 """
-find_text.py - Busca com trecho (não arquivo inteiro) na wiki.
+find_text.py - Busca com trecho (não o arquivo inteiro) na wiki: grep -n
+com contexto mesclado, sem dependência externa.
 
-Devolve só os trechos relevantes de cada arquivo (algumas linhas antes/
-depois do match, mescladas em blocos quando se sobrepõem), em vez de forçar
-Read no arquivo inteiro para descobrir se ele é relevante. Não tem
-dependência externa (nem qmd) — é grep -n com contexto, restrito ao
-vocabulário de pastas da wiki.
+Lê:
+    wiki/{essays,concepts,entities,insights}/*.md   (default)
+    + handouts/ e sources/ quando incluídos via --scope
 
-Escopo default: essays, concepts, entities, insights (as páginas de
-conteúdo). sources e handouts ficam de fora por padrão — sources porque
-inclui originais grandes e às vezes binários, handouts porque é derivado
-sob demanda — inclua explicitamente via --scope quando precisar.
+Gera:
+    stdout: caminho:linha + trechos mesclados; --list-only lista só caminhos
 
-Usage:
-    python scripts/find_text.py "termo da busca"
+Uso:
+    python scripts/find_text.py "termo"
     python scripts/find_text.py "termo" --scope essays concepts
     python scripts/find_text.py "auto.?poiese" --regex
-    python scripts/find_text.py "termo" --list-only
     python scripts/find_text.py "termo" --context 4 --ignore-case
+    python scripts/find_text.py "termo" --list-only
+
+Flags:
+    query           termo buscado (posicional)
+    --scope ...     pastas alvo (default: essays concepts entities insights)
+    --regex         trata a query como expressão regular
+    --context N     linhas de contexto por match (default: 2)
+    --ignore-case   ignora diferença de caixa
+    --list-only     imprime só os caminhos com match
 """
 
 import argparse

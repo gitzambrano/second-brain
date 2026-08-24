@@ -1,23 +1,26 @@
 #!/usr/bin/env python3
 """
-retag.py — Renomeia ou consolida uma tag em toda a wiki.
+retag.py - Renomeia/consolida uma tag em toda a wiki: troca no `tags:` do
+frontmatter (essays/concepts/entities/insights) e no `Tags:` de
+wiki/sources/manifest.md. Não decide nada - executa a consolidação já
+decidida (ex.: /organize, tags quase-duplicadas).
 
-Troca uma tag pela outra no campo `tags:` (frontmatter YAML de essays,
-concepts, entities, insights) e no campo `Tags:` de wiki/sources/manifest.md
-— a mesma fonte única de vocabulário descrita em conventions/SKILL.md.
+Lê:
+    wiki/{essays,concepts,entities,insights}/*.md
+    wiki/sources/manifest.md
 
-Usado por /organize passo 6 (tags quase-duplicadas) para aplicar a
-consolidação já decidida com o Usuário — este script não decide nada,
-só executa a troca em massa.
+Gera:
+    mesmos arquivos, in place (tag substituída; se a página já tem a tag
+    nova, a velha é só removida). Depois, regenere o índice: build_index.py.
 
 Uso:
     python scripts/retag.py "tag-velha" "tag-nova"
     python scripts/retag.py "tag-velha" "tag-nova" --dry-run
 
-Se a página já tiver `tag-nova`, `tag-velha` é apenas removida (evita
-duplicata na mesma lista). Depois de rodar, regenere o índice:
-
-    python scripts/build_index.py
+Flags:
+    old_tag     tag atual (posicional)
+    new_tag     tag destino (posicional)
+    --dry-run   lista o que mudaria, não escreve
 """
 
 import argparse

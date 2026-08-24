@@ -1,66 +1,38 @@
 #!/usr/bin/env python3
 """
-check_wiki.py — Lint unificado da wiki: formatação de essay + estrutura/grafo.
+check_wiki.py - Lint unificado da wiki, em dois níveis:
 
-Fusão do antigo verificador de formatação de essay (frontmatter,
-byline, Sumário/Referências/Conexões, tipografia, símbolos residuais, idioma)
-com o antigo check_wiki.py (wikilinks mortos, órfãos, index.md, manifesto de
-sources, plano, insights). Um relatório único, dois níveis:
+- Por essay: issues {severity, code, message} (CRITICAL|ERROR|WARNING|INFO)
+  cobrindo frontmatter obrigatório, H1+byline, Sumário/Referências/Conexões,
+  tipografia, travessões (máx. 2), bullets residuais, HTML/símbolos
+  residuais, idioma, wikilinks mortos e fora de Conexões.
+- De corpus: órfãos, wiki/index.md, manifesto de sources, estrutura de
+  wiki/sources/**, plan/plano.md, insights — pulados com aviso quando o
+  escopo é um essay único.
 
-    - por essay: cada arquivo de wiki/essays/ recebe uma lista de issues
-      {severity, code, message} — CRITICAL | ERROR | WARNING | INFO.
-    - de corpus: checagens que só fazem sentido olhando a wiki inteira
-      (órfãos, index.md, manifesto de sources, plano, insights) — puladas
-      com aviso quando o escopo é um essay só.
+Somente-leitura: a correção mecânica é do fix_lint.py. Regra completa de
+cada checagem em conventions/SKILL.md.
 
-Checagens por essay (ver conventions/SKILL.md para a regra completa de cada
-uma):
-    1.  Frontmatter YAML: campos obrigatórios e status válido
-    2.  H1 + byline: formato exato, separador ·, autor, tipo
-    3.  Byline: sem [[wikilinks]], sem dois-pontos, sem LaTeX chars perigosos
-    4.  Espaço em branco após H1 e após cada heading
-    5.  ## Sumário: presente, links internos batem com headings reais
-    6.  ## Referências: heading exato (H2, nome exato) — o CONTEÚDO da seção
-        (padrão AIAA) é responsabilidade de check_references.py
-    7.  ## Conexões: presente e é a última seção H2
-    8.  Wikilinks fora de Conexões
-    9.  Links externos (mínimo 10 no corpo)
-   10.  Aspas ASCII suspeitas na prosa
-   11.  Caracteres LaTeX perigosos no título/byline
-   12.  Espaços duplos no meio de parágrafos
-   13.  Linhas em branco excessivas (>=3 consecutivas)
-   14.  Travessões (—) — máximo 2 por essay
-   15.  Bullets fora de Sumário/Referências/tabelas
-   16.  HTML residual
-   17.  Símbolos residuais (entidade HTML, replacement char, NBSP...)
-   18.  Idioma: parágrafos possivelmente em inglês (não traduzidos)
-   19.  Loose chapter label (resíduo de import de PDF)
-   20.  Wikilink com dois-pontos no display text (quebra Obsidian)
-   21.  Wikilinks mortos (target sem página correspondente)
+Lê:
+    wiki/{essays,concepts,entities,insights}/*.md, wiki/sources/manifest.md,
+    wiki/index.md, plan/plano.md
 
-Checagens de corpus (puladas em escopo de essay único):
-    - Páginas de apoio (concepts/entities/insights): frontmatter, H1,
-      heading spacing, idioma, símbolos/HTML residuais
-    - Órfãos: concept/entity sem nenhum essay que o referencie
-    - wiki/index.md: título, links mortos/legados, essays faltando
-    - wiki/sources/manifest.md: entradas batendo com o disco nos dois
-      sentidos, vocabulário controlado, Tags:, Ensaio Importado -> Virou:
-    - Estrutura canônica de wiki/sources/** e wiki/handouts/
-    - plan/plano.md: vocabulário fechado de seções e de Status
-    - insights/*.md: maturidade válida, ao menos um wikilink em Conexões
+Gera:
+    stdout (relatório) + output/comprehensive_lint_output.txt no escopo corpus;
+    --json para parse programático. Exit 0 sempre, exceto slug inexistente (1).
 
 Uso:
-    python scripts/check_wiki.py                    # corpus inteiro (default)
-    python scripts/check_wiki.py --all               # idem, explícito
-    python scripts/check_wiki.py xadrez-computacional  # só este essay (posicional)
-    python scripts/check_wiki.py --file <slug>        # alias de --all/posicional,
-                                                        # compatibilidade com skills
-    python scripts/check_wiki.py --json               # saída JSON
+    python scripts/check_wiki.py                       # corpus inteiro (default)
+    python scripts/check_wiki.py --all                 # idem, explícito
+    python scripts/check_wiki.py xadrez-computacional  # essay único (posicional)
+    python scripts/check_wiki.py --file <slug>         # alias de compatibilidade
+    python scripts/check_wiki.py --json                # saída JSON
 
-Sempre sai com exit code 0, exceto se o slug pedido não existir (exit 1) — o
-sinal de "há problemas" é o conteúdo do relatório, não o exit code. Escreve
-também output/comprehensive_lint_output.txt (relatório completo, corpus
-inteiro) para inspeção fora do console.
+Flags:
+    slug        essay alvo (posicional, opcional)
+    --file/-f   caminho do essay (alternativa ao slug)
+    --all       força corpus inteiro
+    --json      saída JSON para parse programático
 """
 
 import argparse

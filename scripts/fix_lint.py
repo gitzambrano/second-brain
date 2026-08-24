@@ -1,39 +1,33 @@
 #!/usr/bin/env python3
 """
-fix_lint.py — único fixer mecânico da wiki. Aplica tudo que for inequívoco,
-sem perguntar.
+fix_lint.py - Único fixer mecânico da wiki: aplica correções inequívocas
+sem perguntar. Escreve apenas em essays/concepts/entities/insights - nunca
+em AGENTS.md, README.md, .agents/** ou wiki/sources/**. Correções de prosa
+nunca tocam frontmatter nem blocos de código.
 
-Escopo intencional: apenas wiki/essays, wiki/concepts, wiki/entities,
-wiki/insights — nunca AGENTS.md, README.md, .agents/skills/**, nem
-wiki/sources/** (documentos originais, imutáveis).
+Correções: linha em branco após heading; ':' dentro de [[wikilink]] -> '—';
+espaços duplos em prosa; '&amp;' residual; 3+ linhas em branco -> 1;
+`## Referências` no formato antigo -> padrão AIAA [N] (renumera, normaliza
+itálico, move link para o fim).
 
-Todas as correções de texto corrido são aplicadas apenas FORA do frontmatter
-YAML e de blocos de código (``` ... ```) para não reescrever exemplos de
-código.
+Lê:
+    wiki/{essays,concepts,entities,insights}/*.md
 
-Correções aplicadas:
-  1. Linha em branco após heading Markdown (#, ##, ... ######).
-  2. Dois-pontos dentro de [[wikilink]] target/display text → em dash
-     (Obsidian quebra com ':' dentro de [[...]]).
-  3. Espaços duplos no meio de linhas de prosa → espaço simples
-     (exceto início de linha e linhas de tabela).
-  4. `&amp;` residual (de import HTML/PDF) → `&`.
-  5. Três ou mais linhas em branco consecutivas → duas linhas em branco
-     (convenção wiki: máximo uma linha em branco entre parágrafos).
-  6. `## Referências` no formato antigo (bullet `- Autor. *Título.* ...`) →
-     padrão AIAA `[N] ...` (mecânica migrada de
-     `check_references.py --fix-format`, ver `rebuild_section` importado
-     dali). Só a parte mecânica: renumera para `[N]`, normaliza itálico do
-     título, repõe a vírgula separadora e move link para `[Link]` no fim.
-     Entrada sem link nenhum sai sem link — quem sinaliza isso é
-     `REFERENCIA_SEM_LINK`, tratamento editorial de `/linkify`.
+Gera:
+    arquivos corrigidos in place (com --dry-run, só relatório)
 
-Uso (mesma CLI de check_wiki.py):
-    python fix_lint.py                    # corpus inteiro (default)
-    python fix_lint.py --all              # idem, explícito
-    python fix_lint.py meu-essay          # só este essay (slug posicional)
-    python fix_lint.py --file meu-essay   # alias de compatibilidade
-    python fix_lint.py --dry-run          # simula: lista o que mudaria, sem escrever nada
+Uso:
+    python scripts/fix_lint.py                    # corpus inteiro (default)
+    python scripts/fix_lint.py --all              # idem, explícito
+    python scripts/fix_lint.py meu-essay          # essay único (slug posicional)
+    python scripts/fix_lint.py --file meu-essay   # alias de compatibilidade
+    python scripts/fix_lint.py --dry-run          # simula, sem escrever
+
+Flags:
+    slug        essay alvo (posicional, opcional)
+    --file/-f   caminho do essay (alternativa ao slug)
+    --all       força corpus inteiro
+    --dry-run   lista o que mudaria, não escreve
 """
 
 import argparse

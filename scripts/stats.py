@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
 """
-stats.py - Read-only health dashboard for the Second Brain wiki.
+stats.py - Dashboard read-only da saúde da wiki: contagens e sinais de
+integridade (essays por tag/tipo, órfãos, sources sem manifest, handouts,
+itens do plano, travessões). Nunca modifica nada - corrigir é trabalho de
+check_wiki.py/fix_lint.py.
 
-Reports counts and integrity signals. Never modifies anything —
-that is the job of check_wiki.py / fix_lint.py. This script only
-reads and reports, inspired by the PROJECT_MAP.md pattern (a generated,
-always-current snapshot of the workspace) but scoped to counts and
-gaps rather than a full file tree.
+Lê:
+    wiki/{essays,concepts,entities,sources,handouts,insights}/** e plan/plano.md
 
-Usage:
-    python stats.py              # print report to stdout
-    python stats.py --save       # also write to output/stats/stats-YYYY-MM-DD.md
+Gera:
+    stdout (relatório); com --save também output/stats/stats-YYYY-MM-DD.md
+
+Uso:
+    python scripts/stats.py            # imprime o relatório
+    python scripts/stats.py --save     # grava snapshot datado além do stdout
+
+Flags:
+    --save   grava o relatório em output/stats/stats-YYYY-MM-DD.md
 """
 
 import re

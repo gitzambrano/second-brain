@@ -1,18 +1,23 @@
 #!/usr/bin/env python3
-"""Espelha .agents/skills/ e .agents/agents/ para .claude/skills/ e .claude/agents/.
+"""
+sync_skills.py - Espelha .agents/skills/ e .agents/agents/ para
+.claude/skills/, .claude/agents/ e .codex/skills/. Fonte única é sempre
+.agents/ - os espelhos são gerados, nunca editados à mão.
 
-A wiki mantém skills e subagents em dois lugares porque cada agente procura num
-lugar diferente: Claude Code lê `.claude/skills/` e `.claude/agents/`, os demais
-agentes leem `.agents/skills/` e `.agents/agents/`. A fonte única é sempre
-`.agents/` — o par em `.claude/` é artefato gerado, nunca editado à mão.
+Lê:
+    .agents/skills/**, .agents/agents/**
 
-O mesmo vale para a documentação de topo, mas ali não é preciso script:
-`CLAUDE.md` contém apenas `@AGENTS.md`, e o import é resolvido pelo Claude Code.
+Gera:
+    cópias idênticas nos destinos acima (remove espelho sem origem)
 
 Uso:
     python scripts/sync_skills.py            # espelha e reporta o que mudou
-    python scripts/sync_skills.py --check    # não escreve nada; sai 1 se houver drift
-    python scripts/sync_skills.py --quiet    # só reporta se algo mudou (modo hook)
+    python scripts/sync_skills.py --check    # não escreve; exit 1 se houver drift
+    python scripts/sync_skills.py --quiet    # reporta só se algo mudou (modo hook)
+
+Flags:
+    --check   apenas detecta drift, não escreve
+    --quiet   silencia o relatório quando nada muda
 """
 
 import argparse

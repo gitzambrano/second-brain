@@ -1,23 +1,24 @@
 #!/usr/bin/env python3
 """
-find_backlinks.py - Lookup reverso de [[wikilinks]]: quem já linka essa página.
+find_backlinks.py - Lookup reverso de [[wikilinks]]: quem já linka uma
+página (mesma resolução [[Target]]/[[Target|Display]] do build_graph.py).
 
-Sem isso, saber quem referencia uma página exige reler wiki/essays/*.md
-inteiro toda vez (o que /organize passo 2 e stats.py já fazem do zero a
-cada chamada). Este script isola esse cálculo pra reuso por qualquer
-skill: /organize (órfãos), /chapter e /essay (sugerir "## Conexões" com
-contexto real — "esses 3 essays já citam esse concept"), /gaps.
+Lê:
+    wiki/{essays,concepts,entities,insights}/*.md  (corpo sem frontmatter)
 
-Escaneia o corpo inteiro de essays/concepts/entities/insights (depois de
-tirar o frontmatter) por [[Target]] ou [[Target|Display]], igual
-build_graph.py — wikilinks só aparecem em ## Conexões e em páginas de
-concept/entity, nunca inline no corpo do essay (ver conventions/SKILL.md),
-então isso não pega falso positivo de link externo.
+Gera:
+    stdout: páginas que apontam para o título dado; com --orphans, as que
+    não recebem nenhum backlink no escopo
 
-Usage:
+Uso:
     python scripts/find_backlinks.py "Autopoiese"
     python scripts/find_backlinks.py --orphans
     python scripts/find_backlinks.py --orphans --scope concepts entities
+
+Flags:
+    title        título alvo (posicional; obrigatório sem --orphans)
+    --orphans    lista páginas sem nenhum backlink
+    --scope ...  pastas do escopo (default de --orphans: concepts entities)
 """
 
 import argparse

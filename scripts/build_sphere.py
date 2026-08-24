@@ -1,47 +1,27 @@
 #!/usr/bin/env python3
 """
-build_sphere.py - Grafo ESFÉRICO da wiki: os mesmos nós e arestas de
-build_graph.py, mas todos os nós vivem na superfície de uma esfera.
+build_sphere.py - Grafo ESFÉRICO da wiki: os mesmos nós e arestas do
+build_graph.py distribuídos na superfície de uma esfera girável. Layout
+pré-calculado (Fibonacci + relaxamento restrito à casca); o cliente não roda
+simulação nenhuma - apenas rotação e projeção por frame.
 
-O que é igual ao build_graph.py (reusado por import, não copiado):
-  - Nós: essays, concepts, entities, insights e referências
-    (wiki/references.json); arestas: todo [[wikilink]] resolvido por H1/slug
-    + essay -> referência por `cited_by`. Ver build_graph.build_graph().
-  - Gaps entre tags (componentes conectados × tags) — compute_tag_gaps().
-  - Fallback mermaid — render_mermaid().
-  - Leitor embutido (--reader): fragments pandoc com o MESMO template do
-    export HTML, MathJax compartilhado, fontes e CSS escopados para Shadow
-    Root — ensure_mathjax(), render_reader_fragments(), _reader_font_css(),
-    _template_base_css(), _scope_css_for_shadow().
-  - Payload comprimido (deflate-raw + base64) em <script type=json>.
+Lê:
+    idêntico ao build_graph.py (importa dele a extração de nós/arestas,
+    tag gaps, fallback mermaid e leitor embutido):
+    wiki/essays|concepts|entities|insights/*.md + wiki/references.json
 
-O que muda:
-  - Layout: nada de força-dirigida plana. compute_sphere_layout() espalha
-    os nós pela superfície de uma esfera unitária (distribuição Fibonacci)
-    e relaxa localmente: repulsão entre vizinhos próximos + atração ao longo
-    das arestas, sempre renormalizada de volta à superfície. Páginas
-    conectadas formam aglomerados NA casca; nada fica dentro ou fora.
-  - Cliente: SEM simulação d3. A esfera gira (arrasto/pinça), projeta em 2D
-    a cada frame e desenha com cueing de profundidade (lado de trás
-    esmaecido). Rotação automática até o primeiro arrasto. Isso troca o
-    custo O(ticks × forças) por uma projeção linear por frame — roda liso
-    até em aparelho fraco.
-  - Painel de Estilo: controles de física (spacing/elástica/repulsão/
-    atrito/retorno/colisão/desempenho) não existem aqui — entraram os da
-    esfera: rotação automática (on/off + velocidade) e visibilidade do lado
-    de trás. Cores, raio, sizeMode, arestas, rótulos, glow, gradiente,
-    textura esférica, céu estrelado, tint por tag, temas, índice, gaps e
-    leitor continuam. Preferências salvas em chave própria
-    (sb-sphere-style-v1), para não brigar com o estilo salvo do grafo plano.
+Gera (em output/graph/, sem tocar nos artefatos canônicos do plano):
+    MySecondBrain_sphere.html   globo interativo + leitor embutido
+    sphere.json                 grafo completo + ux/uy/uz por nó
+    sphere.md                   fallback Mermaid
 
-Outputs (em output/graph/, sem tocar nos artefatos canônicos do plano):
-    MySecondBrain_sphere.html - globo interativo + leitor embutido
-    sphere.json               - mesmos dados de graph.json + ux/uy/uz por nó
-    sphere.md                 - fallback mermaid
+Uso:
+    python scripts/build_sphere.py               # default = DEFAULT_EMBED_READER
+    python scripts/build_sphere.py --reader      # embute os essays no HTML
+    python scripts/build_sphere.py --no-reader   # arquivo leve + link .md
 
-Usage:
-    python scripts/build_sphere.py            (default = DEFAULT_EMBED_READER)
-    python scripts/build_sphere.py --reader / --no-reader
+Flags:
+    --reader | --no-reader   embute ou não o conteúdo dos essays no HTML
 """
 
 import argparse
@@ -127,9 +107,16 @@ def compute_sphere_layout(nodes, edges, iterations=None, seed=42):
     2. Relaxamento local restrito à superfície: repulsão de curto alcance
        entre vizinhos (grade espacial 3D — só pares a menos de `cutoff`
        interagem, senão seria O(n²) por iteração) + atração ao longo das
-       arestas quando elas estão mais compridas que a separação ideal.
-       Todo deslocamento é renormalizado de volta ao raio 1 — é isso que
-       mantém tudo NA superfície; as forças só escorregam pontos pela casca.
+       arestas quando elas estão mais compridas que a separação ideal +
+       recentramento do centro de massa na origem a cada iteração. Todo
+       deslocamento é renormalizado de volta ao raio 1 — é isso que mantém
+       tudo NA superfície; as forças só escorregam pontos pela casca.
+
+    O recentramento existe porque a atração das arestas, sozinha, contrai
+    o grafo na direção dos hubs e derruba tudo num hemisfério só. Subtrair
+    a média de todos os pontos é uma translação rígida: não altera distâncias
+    entre pares (aglomerados temáticos intactos), apenas zera o viés global
+    e devolve a cobertura 360°.
 
     Resultado: páginas conectadas se aglomeram em regiões temáticas da
     esfera, nós soltos ficam distribuídos uniformemente, e o globo inteiro
@@ -259,6 +246,22 @@ def compute_sphere_layout(nodes, edges, iterations=None, seed=42):
             nx_, ny_, nz_ = px[i] + dx, py[i] + dy, pz[i] + dz
             nm = math.sqrt(nx_ * nx_ + ny_ * ny_ + nz_ * nz_) or 1.0
             px[i], py[i], pz[i] = nx_ / nm, ny_ / nm, nz_ / nm
+
+        # Recentra o centro de massa na origem antes da próxima iteração.
+        # Sem isto, a atração das arestas contrai o grafo na direção dos hubs
+        # e derruba a nuvem inteira num hemisfério só. Subtrair a média de
+        # todos os pontos é uma translação rígida: não altera a distância
+        # entre pares — aglomerados temáticos intactos —, apenas zera o viés
+        # global e mantém a cobertura nos 360° da superfície. A reprojeção
+        # abaixo devolve todo mundo ao raio 1.
+        mx = sum(px) / n
+        my = sum(py) / n
+        mz = sum(pz) / n
+        for i in range(n):
+            nx_, ny_, nz_ = px[i] - mx, py[i] - my, pz[i] - mz
+            nm = math.sqrt(nx_ * nx_ + ny_ * ny_ + nz_ * nz_)
+            if nm > 1e-12:
+                px[i], py[i], pz[i] = nx_ / nm, ny_ / nm, nz_ / nm
 
         if not any_moved:
             break
