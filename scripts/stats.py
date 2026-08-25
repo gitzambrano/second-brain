@@ -280,9 +280,14 @@ PLAN_SECOES = ["Tarefas", "Fontes para Ingerir", "Revisões", "Estudos", "Essays
 
 def plan_stats():
     """Parse plan/plano.md: 5 fixed '## Seção' headings, each with '### Título'
-    items carrying '- Status:' fields."""
+    items carrying '- Status:' fields.
+
+    Formato legado (bullets com 'Status:' indentado fora de bloco ###) é
+    contabilizado à parte em 'legacy' — drift de formato nunca volta a virar
+    total zero silencioso; quem normaliza é /plan."""
     if not PLANO_FILE.exists():
-        return {"total": 0, "by_secao": Counter(), "by_status": Counter(), "missing_secoes": PLAN_SECOES}
+        return {"total": 0, "by_secao": Counter(), "by_status": Counter(),
+                "missing_secoes": PLAN_SECOES, "legacy": 0}
 
     content = load(PLANO_FILE)
     secoes_found = {}
@@ -297,16 +302,28 @@ def plan_stats():
     by_secao = Counter()
     by_status = Counter()
     total = 0
+    legacy_total = 0
     for secao, body in secoes_found.items():
-        items = re.split(r"(?m)^### ", body)[1:]
+        chunks = re.split(r"(?m)^### ", body)
+        items = chunks[1:]
         for item in items:
             status_m = re.search(r"(?m)^- Status:\s*(.+)$", item)
             total += 1
             by_secao[secao] += 1
             by_status[status_m.group(1).strip() if status_m else "(sem status)"] += 1
+        # Fora de blocos ###, qualquer linha Status: pertence a um item em
+        # formato legado (ex.: bullet "- **Título** — ..." com "  Status:").
+        legacy = re.findall(r"(?m)^\s+-?\s*Status:\s*(.+)$", chunks[0])
+        legacy_total += len(legacy)
+        if legacy:
+            total += len(legacy)
+            by_secao[secao] += len(legacy)
+            for sv in legacy:
+                by_status["(legado) " + sv.strip()] += 1
 
     missing_secoes = [s for s in PLAN_SECOES if s not in secoes_found]
-    return {"total": total, "by_secao": by_secao, "by_status": by_status, "missing_secoes": missing_secoes}
+    return {"total": total, "by_secao": by_secao, "by_status": by_status,
+            "missing_secoes": missing_secoes, "legacy": legacy_total}
 
 
 def insights_stats():
@@ -424,6 +441,9 @@ def format_report(essay, orphans, sem_essay, sources, handouts, insights, plan):
 
     lines.append("## Plano (plan/plano.md)")
     lines.append(f"- Total de itens: {plan['total']}")
+    if plan.get("legacy"):
+        lines.append(f"- ⚠ Itens em formato não canônico (bullet com Status: fora de bloco ###): "
+                     f"{plan['legacy']} — rode /plan para normalizar")
     if plan["by_secao"]:
         lines.append("- Por seção: " + ", ".join(
             f"{s} ({plan['by_secao'].get(s, 0)})" for s in PLAN_SECOES

@@ -58,7 +58,7 @@ CREATABLE_TYPES = {"concepts", "entities"}
 
 MIN_PAGE_HITS = 2       # termo precisa aparecer em pelo menos N páginas distintas
 MIN_TOTAL_HITS = 3      # ou N vezes no total (mesma página repetindo)
-TOP_N = 40               # não afoga quem chamou — corta a cauda longa
+TOP_N = 15               # não afoga quem chamou — corta a cauda longa
 
 
 def load_content(path):
@@ -158,6 +158,11 @@ NOISE_TERMS = {
     "alguns", "algumas", "muitos", "muitas", "isso", "isto",
     "esse", "essa", "este", "esta", "aqui", "agora", "hoje",
     "também", "sobre", "entre", "durante", "segundo", "primeiro",
+    # Vazamentos posicionais da rodada de 2026-08: imperativo ("Considere"),
+    # demonstrativo plural, verbo de transição e substantivos genéricos de
+    # prosa técnica que o heurístico de maiúscula pega em abertura de frase.
+    "considere", "essas", "recapitulando", "falta", "resposta",
+    "posição", "categoria", "estado",
 }
 
 
@@ -348,16 +353,18 @@ def print_part1(gap_candidates):
               f"{d['total']} ocorrência(s), sinal: {kinds}")
 
 
-def print_part2(unlinked):
+def print_part2(unlinked, omitted=0):
     print()
     print("=" * 70)
     print("PARTE 2 — página já existe, mas outra página cita sem linkar")
     print("=" * 70)
-    if not unlinked:
+    if not unlinked and not omitted:
         print("Nenhum caso encontrado.")
     for source_type, source_name, term, target_type, target_path in sorted(unlinked):
         print(f"- {source_type}/{source_name} cita \"{term}\" — "
               f"página existe em {target_path} ({target_type}), sem wikilink")
+    if omitted > 0:
+        print(f"(+ {omitted} caso(s) omitido(s) pelo teto de TOP_N={TOP_N})")
 
 
 def print_part3(balance):
@@ -397,7 +404,8 @@ def main():
 
     print_part1(analyze_gap_candidates(sources, existing_pages,
                                        collect_entity_surnames(existing_pages)))
-    print_part2(analyze_unlinked_existing_pages(sources, existing_pages))
+    unlinked = analyze_unlinked_existing_pages(sources, existing_pages)
+    print_part2(unlinked[:TOP_N], omitted=max(0, len(unlinked) - TOP_N))
     if not args.skip_tags:
         print_part3(analyze_tag_balance())
     return 0
