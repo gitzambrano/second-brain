@@ -156,6 +156,15 @@ NOISE_TERMS = {
     "filósofo", "filósofos", "cientista", "cientistas", "teste", "testes",
     "existe", "existem", "nenhum", "nenhuma", "todos", "todas",
     "alguns", "algumas", "muitos", "muitas", "isso", "isto",
+    # Substantivos genéricos confirmados como ruído em duas passadas de /connect
+    # (2026-08-22 e 2026-08-24): aparecem em dezenas de páginas e nunca seriam
+    # o conceito que mereceria página própria. Letras gregas usadas como símbolo
+    # matemático (Omega com 271 ocorrências, Delta com 65) idem.
+    "terra", "simulação", "simulações", "física",
+    "cérebro", "cérebros", "equação", "equações",
+    "velocidade", "velocidades", "ciência", "ciências",
+    "matemático", "matemática", "controle", "controles",
+    "filtro", "filtros", "nobel", "omega", "delta",
     "esse", "essa", "este", "esta", "aqui", "agora", "hoje",
     "também", "sobre", "entre", "durante", "segundo", "primeiro",
     # Vazamentos posicionais da rodada de 2026-08: imperativo ("Considere"),
