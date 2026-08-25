@@ -373,4 +373,4 @@ Antes de criar uma tag nova (essay, concept, entity, insight, ou `Tags:` de sour
 
 Decisões de estilo já resolvidas — não reabra sem evidência nova (um caso real que a regra não cobre, não uma preferência estética isolada).
 
-- [Nenhuma decisão fechada registrada ainda. Adicione aqui conforme surgirem — formato: `- [decisão] (YYYY-MM-DD) — [motivo/link]`.]
+- [Forma canônica de citação em `## Referências`] (2026-08-24) — autores completos até 3, `et al.` acima disso; subtítulo sempre; container completo com cidade; granularidade `Vol./No./pp.`. A nota contextual após o em-dash é livre por essay — dedupe pode listá-la como candidato informativo sem ação.
