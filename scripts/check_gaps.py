@@ -236,7 +236,20 @@ def collect_entity_surnames(existing_pages):
     return surnames
 
 
-def analyze_gap_candidates(sources, existing_pages, entity_surnames):
+def collect_page_prefixes(existing_pages):
+    """Prefixos próprios (1..n-1 tokens) dos nomes de página existentes.
+    "principio antropico" já está coberto pela página "principio antropico
+    v7" — sem isso, o sufixo de versão (-v7 etc.) faz candidato coberto
+    reaparecer como falso positivo na Parte 1."""
+    prefixes = set()
+    for nome in existing_pages:
+        tokens = nome.split()
+        for k in range(1, len(tokens)):
+            prefixes.add(" ".join(tokens[:k]))
+    return prefixes
+
+
+def analyze_gap_candidates(sources, existing_pages, entity_surnames, page_prefixes):
     # term -> {"pages": set((node_type, filename)), "total": int, "kinds": set()}
     stats = defaultdict(lambda: {"pages": set(), "total": 0, "kinds": set()})
 
@@ -265,6 +278,8 @@ def analyze_gap_candidates(sources, existing_pages, entity_surnames):
                 continue  # já promovido a wikilink nesta página
             if norm in existing_pages or norm in entity_surnames:
                 continue  # já tem página — não é gap, é possível wikilink faltando (ver Parte 2)
+            if norm in page_prefixes:
+                continue  # coberto por página com sufixo (ex.: "principio antropico" → "... v7")
             stats[term]["pages"].add((node_type, path.name))
             stats[term]["total"] += 1
             stats[term]["kinds"].add(kind)
@@ -411,8 +426,8 @@ def main():
 
     existing_pages = collect_existing_pages()
 
-    print_part1(analyze_gap_candidates(sources, existing_pages,
-                                       collect_entity_surnames(existing_pages)))
+        print_part1(analyze_gap_candidates(sources, existing_pages,
+        collect_entity_surnames(existing_pages), collect_page_prefixes(existing_pages)))
     unlinked = analyze_unlinked_existing_pages(sources, existing_pages)
     print_part2(unlinked[:TOP_N], omitted=max(0, len(unlinked) - TOP_N))
     if not args.skip_tags:
