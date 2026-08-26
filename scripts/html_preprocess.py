@@ -407,8 +407,9 @@ def _transform_group(grp, next_grp, raw_chain=None):
 
     # 1. Rotulo + bloco de citacao na sequencia -> caixa tipada fundida.
     #    (Se o bloco seguinte tambem e rotulo, nao funde: cada um com seu
-    #    proprio destino.)
-    if next_grp is not None and _is_label_candidate(grp) \
+    #    proprio destino.) Nao vale quando ha cadeia crua no meio — nesse
+    #    caso o titulo solto e parte da caixa (regra 3 abaixo).
+    if next_grp is not None and not raw_chain and _is_label_candidate(grp) \
             and not _is_label_candidate(next_grp):
         label = _strip_bold(grp.stanzas()[0][0])
         cls = _classify_label(label) or 'generico'
@@ -428,6 +429,15 @@ def _transform_group(grp, next_grp, raw_chain=None):
     if is_label and raw_chain:
         label = _strip_bold(flat[0])
         cls = _classify_label(label) or 'generico'
+        # Cadeia curta (titulo solto) + quote na sequencia = badge + titulo
+        # + corpo: o padrao "> Ataque II — X" / "O Original Foi Destruído" /
+        # "> No teletransporte...". Consome a cadeia E a quote (used = N+1).
+        if next_grp is not None and len(raw_chain) == 1:
+            title = '  \n'.join(ln.rstrip() for ln in raw_chain[0] if ln.strip())
+            if 0 < len(title) <= 120:
+                flat_q = [ln for s in next_grp.stanzas() for ln in s]
+                body, verdicts = _extract_verdicts(flat_q)
+                return emit_typed_box(cls, label, title, body, verdicts), len(raw_chain) + 1
         body_lines = []
         for blk in raw_chain:
             body = '  \n'.join(ln.rstrip() for ln in blk if ln.strip())
@@ -515,6 +525,12 @@ def transform_markdown(body):
                             and not _section_boundary(blocks[k][1]):
                         raw_chain.append(blocks[k][1])
                         k += 1
+                    # Quote logo apos a cadeia crua e o CORPO da caixa
+                    # (padrao "rotulo / titulo solto / corpo": "> Ataque II"
+                    # / "O Original Foi Destruído" / "> No teletransporte...").
+                    # Sem isto, o corpo virava .quote separada do quadro.
+                    if k < len(blocks) and blocks[k][0] == 'quote':
+                        nxt_quote = blocks[k][1]
             lines_out, used = _transform_group(payload, nxt_quote, raw_chain)
             out.extend(lines_out)
             if used == 'q':
