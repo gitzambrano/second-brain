@@ -532,6 +532,153 @@ def check_essay(filepath: Path) -> dict:
                 add("WARNING", "REF_MISSING_TITLE",
                     f"Entrada sem título aparente, só autor+ano+container: {e[:70]}")
 
+        # Chamadas de citação [N] no corpo x entradas listadas. Corpo sem
+        # fences e sem links (markdown/wikilink) para não pegar o "[texto]"
+        # de um link; aceita listas do tipo "[1, 3]". Só é chamada de
+        # citação o número dentro do alcance plausível da bibliografia
+        # (até max(listed)+2): [64]/[255] num essay cuja bibliografia vai
+        # a [15] é notação (casas do tabuleiro, índice de vetor), não citação.
+        cite_body = strip_fences(body_before_ref)
+        cite_body = re.sub(r"\[([^\]]*)\]\([^\)]*\)", "", cite_body)
+        cite_body = re.sub(r"\[\[(?:[^\]]*)\]\]", "", cite_body)
+        cited = set()
+        for m in re.finditer(r"\[(\d{1,3}(?:\s*,\s*\d{1,3})*)\]", cite_body):
+            for part in m.group(1).split(","):
+                cited.add(int(part.strip()))
+        listed = {
+            int(m.group(1))
+            for m in (re.match(r"^\[(\d+)\]", e) for e in ref_entries)
+            if m
+        }
+        limit = (max(listed) + 2) if listed else 50
+        missing = sorted(n for n in cited - listed if 1 <= n <= limit)
+        for n in missing:
+            add("WARNING", "CITE_MISSING_REF",
+                f"Chamada [{n}] no corpo sem entrada correspondente em '## Referências'")
+        for n in sorted(listed - cited):
+            add("INFO", "REF_NEVER_CITED",
+                f"Entrada [{n}] em '## Referências' nunca é citada no corpo")
+
+    # -----------------------------------------------------------------------
+    # 5b. Numeração de capítulos (H2) e subseções (H3)
+    #     Essays ou numeram todos os capítulos, ou nenhum; a sequência não
+    #     salta (1,2,3… / I,II,III…); H3 "N.M" exige pai N e M sequencial.
+    # -----------------------------------------------------------------------
+    ROMAN_VALUES = {"I": 1, "V": 5, "X": 10, "L": 50, "C": 100}
+
+    def roman_to_int(s):
+        total, prev = 0, 0
+        for ch in reversed(s.upper()):
+            val = ROMAN_VALUES.get(ch, 0)
+            total = total - val if val < prev else total + val
+            prev = max(prev, val)
+        return total
+
+    # "7. Conclusão" -> ("7", resto); "Seção 9 — X" -> ("9", resto);
+    # "Capítulo II: X" -> ("II", resto); "Introdução" -> (None, texto).
+    # O número só vale seguido de separador/espaço/fim — evita ler o "I"
+    # inicial de "Introdução" como romano.
+    NUM_HEADING_RE = re.compile(
+        r"^(?:(?:se[çc][aã]o|cap[íi]tulo|parte)\s*)?"
+        r"((?:[IVXLC]+|\d+)(?:[.:\-—–]|\s|$))?\s*(.*)$",
+        re.IGNORECASE,
+    )
+
+    def heading_number(text):
+        m = NUM_HEADING_RE.match(text.strip())
+        if not m or not m.group(1):
+            return None, None
+        tok = m.group(1).rstrip(".:—–- ").strip()
+        num = int(tok) if tok.isdigit() else roman_to_int(tok)
+        return num, tok
+
+    num_body = strip_fences(content).split("## Conexões")[0]
+    seq_items = []  # (kind, line_no, text, num, tok, sub)
+    for ln_no, l in enumerate(num_body.splitlines(), 1):
+        m2 = re.match(r"^## (?!#)(.+)$", l)
+        m3 = re.match(r"^### (?!#)(.+)$", l)
+        if m2:
+            txt = m2.group(1).strip()
+            if txt.lower() in ("sumário", "referências"):
+                continue
+            n, tok = heading_number(txt)
+            seq_items.append(("h2", ln_no, txt, n, tok, None))
+        elif m3:
+            txt = m3.group(1).strip()
+            ms = re.match(r"^(\d+)\.(\d+)(?:[.:\-—–]|\s|$)\s*(.*)$", txt)
+            if ms:
+                seq_items.append(("h3", ln_no, txt, int(ms.group(1)), "arabic", int(ms.group(2))))
+            else:
+                seq_items.append(("h3", ln_no, txt, None, None, None))
+
+    # Seções semânticas (Introdução, Conclusão, Resumo Executivo…) são
+    # deliberadamente sem número — não contam como "capítulo sem número".
+    SEM_HEADING_RE = re.compile(
+        r"^(?:se[çc][aã]o|cap[íi]tulo|parte)?\s*(?:\d+|[IVXLC]+)?\s*[.:\-—–]?\s*"
+        r"(introdu[çc][aã]o|conclus[aã]o|resumo(?:\s+executivo)?|pref[áa]cio|"
+        r"pr[óo]logo|ep[íi]logo|posf[áa]cio|p[óo]s-?escrito|agradecimentos|"
+        r"ap[êe]ndice|anexos?)\b",
+        re.IGNORECASE,
+    )
+
+    h2_all = [it for it in seq_items if it[0] == "h2"]
+    h2_content = [it for it in h2_all if not SEM_HEADING_RE.match(it[2])]
+    h2_numbered = [it for it in h2_content if it[3] is not None]
+    h3_numbered = [it for it in seq_items if it[0] == "h3" and it[3] is not None]
+
+    if h2_content and h2_numbered and len(h2_numbered) < len(h2_content):
+        unnum = [f"linha {it[1]}: '{it[2][:40]}'" for it in h2_content if it[3] is None]
+        add("WARNING", "NUMBERING_MIXED",
+            f"{len(unnum)} capítulo(s) H2 sem número em essay numerado: {unnum[:3]}")
+
+    if h2_numbered:
+        expected = 1
+        for it in h2_all:
+            if it[3] is None:
+                continue
+            if it[3] != expected:
+                add("WARNING", "NUMBERING_SEQUENCE",
+                    f"linha {it[1]}: capítulo '{it[2][:44]}' usa '{it[4]}', "
+                    f"esperado '{expected}' — sequência quebrada ou salto")
+                expected = it[3]  # re-sincroniza: um aviso por quebra
+            expected += 1
+
+        cur_parent = None
+        expected_sub = 1
+        for it in seq_items:
+            if it[0] == "h2":
+                cur_parent = it[3]
+                expected_sub = 1
+                continue
+            if it[3] is None:
+                continue  # H3 sem número: legítimo, salvo misto abaixo
+            if cur_parent is None:
+                add("WARNING", "NUMBERING_H3_SEM_PAI",
+                    f"linha {it[1]}: subseção '{it[2][:40]}' numerada antes de "
+                    f"qualquer capítulo H2 numerado")
+                continue
+            if it[3] != cur_parent:
+                add("WARNING", "NUMBERING_H3_PAI",
+                    f"linha {it[1]}: subseção '{it[2][:36]}' usa '{it[3]}.{it[5]}' "
+                    f"mas o capítulo corrente é {cur_parent}")
+                expected_sub = it[5] + 1
+                continue
+            if it[5] != expected_sub:
+                add("WARNING", "NUMBERING_H3_SEQUENCE",
+                    f"linha {it[1]}: subseção '{it[2][:36]}' usa '{it[3]}.{it[5]}', "
+                    f"esperado '{cur_parent}.{expected_sub}'")
+                expected_sub = it[5]
+            expected_sub += 1
+
+        if h3_numbered and len(h3_numbered) < sum(1 for it in seq_items if it[0] == "h3"):
+            unnum = [
+                f"linha {it[1]}: '{it[2][:40]}'"
+                for it in seq_items if it[0] == "h3" and it[3] is None
+            ]
+            add("WARNING", "NUMBERING_MIXED",
+                f"{len(unnum)} subseção(ões) H3 sem número em essay com "
+                f"subseções numeradas: {unnum[:3]}")
+
     # -----------------------------------------------------------------------
     # 6. ## Conexões — presente e última H2
     # -----------------------------------------------------------------------

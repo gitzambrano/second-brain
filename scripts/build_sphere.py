@@ -1680,44 +1680,61 @@ function enhanceReaderDom() {
     });
     h.appendChild(a);
   });
+  // Rotulos dourados: <span class="sb-kicker"> no inicio de cada h2 (a CSS
+  // desenha a regua elastica). Numeros vem do proprio titulo e sao ocultados
+  // por stripSelfNumber; secoes semanticas recebem a palavra; essays sem
+  // numeros usam contador local; subtitulos (h3) nunca recebem.
   const h2s = content.querySelectorAll("h2:not(#sumário):not(#referências)");
   const selfNum = Array.prototype.some.call(h2s,
-    (h) => /^\\s*(?:\\d+|[IVXLC]+)[.\\s—–:-]/.test(h.textContent));
+    (h) => /^\\s*(?:(?:se[çc][aã]o|cap[íi]tulo|parte)\\s+)?(?:\\d+|[IVXLC]+)[.\\s—–:-]/i.test(h.textContent));
   if (selfNum) {
     content.classList.add("self-numbered");
-    const toc = readerRoot.querySelector("#sumário + ul");
+    const toc = readerRoot.querySelector("#sumário + ul,#sumário + ol");
     if (toc) toc.classList.add("sb-toc-plain");
   }
-  const SECTION_RE = /^\\s*(?:(?:\\d+|[IVXLC]+)[.\\s—–:-]+)?(introdu[çc][aã]o|conclus[aã]o|pref[áa]cio|pr[óo]logo|ep[íi]logo|posf[áa]cio|p[óo]s-?escrito|agradecimentos|ap[êe]ndice)\\b/i;
-  // Espelha o template: número do título vira kicker dourado e some do
-  // texto (span.sb-selfnum). O lookahead (?!\d) evita partir número de
-  // subseção ("2.3 Título" fica intocado, sem kicker).
-  const SELFNUM_STRIP_RE = new RegExp("^\\s*((?:\\d+|[IVXLC]+))([.\\s—–:-]+)(?!\\d)([\\s\\S]*)$");
+  const SECTION_RE = /^\\s*(?:(?:se[çc][aã]o|cap[íi]tulo|parte)\\s*)?(?:\\d+|[IVXLC]+)?\\s*[.:\\-—–]?\\s*(introdu[çc][aã]o|conclus[aã]o|resumo(?:\\s+executivo)?|pref[áa]cio|pr[óo]logo|ep[íi]logo|posf[áa]cio|p[óo]s-?escrito|agradecimentos|ap[êe]ndice|anexos?)\\b/i;
+  // Espelha o template: esconde o prefixo de numeração à esquerda do título
+  // e devolve o número para o kicker. O prefixo pode ter rótulo ("Seção 9 —",
+  // "Capítulo II:") — ele some inteiro. O lookahead (?!\d) evita partir
+  // número de subseção ("2.3 Título").
   function stripSelfNumber(h) {
     let n = h.firstChild;
     while (n && n.nodeType !== 3) n = n.nextSibling;
     if (!n) return null;
-    const m = SELFNUM_STRIP_RE.exec(n.data);
+    const m = /^\\s*((?:(?:se[çc][aã]o|cap[íi]tulo|parte)\\s+)?((?:\\d+|[IVXLC]+))(?:[.\\s—–:-]+))(?!\\d)([\\s\\S]*)$/i.exec(n.data);
     if (!m) return null;
     const span = document.createElement("span");
     span.className = "sb-selfnum";
     span.setAttribute("aria-hidden", "true");
-    span.textContent = m[1] + m[2];
+    span.textContent = m[1];
     n.data = m[3];
     h.insertBefore(span, n);
-    return m[1];
+    return m[2].toUpperCase();
   }
+  function makeKicker(text) {
+    const k = document.createElement("span");
+    k.className = "sb-kicker";
+    k.textContent = text;
+    return k;
+  }
+  let chapterNo = 0;
   Array.prototype.forEach.call(h2s, (h) => {
     const sem = SECTION_RE.exec(h.textContent);
     const num = selfNum ? stripSelfNumber(h) : null;
+    let label = null;
     if (sem) {
-      h.setAttribute("data-label", sem[1].toUpperCase());
-      h.classList.add("no-chapter");
+      label = sem[1].toUpperCase();
     } else if (num) {
-      const pad = new RegExp("^\\d+$").test(num) && num.length < 2 ? "0" + num : num;
-      h.setAttribute("data-label", "CAPÍTULO " + pad);
+      const pad = /^[0-9]/.test(num) && num.length < 2 ? "0" + num : num;
+      label = "CAPÍTULO " + pad;
+    } else if (!selfNum) {
+      chapterNo += 1;
+      label = "CAPÍTULO " + (chapterNo < 10 ? "0" + chapterNo : "" + chapterNo);
     }
+    if (label) h.insertBefore(makeKicker(label), h.firstChild);
   });
+  const refs = content.querySelector("h2#referências");
+  if (refs) refs.insertBefore(makeKicker("Referências"), refs.firstChild);
 }
 
 // Tema: mesma regra do template — mobile escuro, desktop claro; toggle

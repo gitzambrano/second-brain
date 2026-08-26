@@ -97,6 +97,69 @@ def remove_h1_and_byline(body):
     return '\n'.join(result)
 
 
+def trim_sumario_to_h2(body):
+    """O Índice mostra apenas capítulos (##): linhas de subcapítulo somem do
+    bloco Sumário — inclusive sub-bullets aninhados em texto puro
+    ("   - 2.1 X"), que não usam wikilink. O .md continua intacto fora do
+    export; essays cujo índice não usa a forma Obsidian [[#...]] ficam
+    intocados (nada é varrido por engano)."""
+    h2_texts = {h.strip() for h in re.findall(r'(?m)^## (.+)$', body)}
+    m = re.search(r'(?ms)^(## Sumário\s*\n)(.*?)(?=^---)', body)
+    if not m:
+        return body
+    keep = []
+    kept_links = 0
+    dropped = 0
+    for line in m.group(2).split('\n'):
+        s = line.strip()
+        if not s:
+            keep.append(line)
+            continue
+        lm = re.match(r'^(?:[-*+]|\d+[.)])\s+\[\[#([^\]\|]+)(?:\|[^\]]+)?\]\]', s)
+        if lm:
+            if lm.group(1).strip() in h2_texts:
+                keep.append(line)
+                kept_links += 1
+            else:
+                dropped += 1
+        else:
+            dropped += 1
+    if not kept_links or not dropped:
+        return body
+    novo = m.group(1) + '\n'.join(keep)
+    return body[:m.start()] + novo + body[m.end():]
+
+
+H3_STRIP_RE = re.compile(r'^(###\s+)(\d+(?:\.\d+)+)\s*[.:\u2013\u2014-]?\s+(.*)$', re.M)
+
+
+def strip_h3_numbers(body):
+    """Subtítulos (###) perdem a numeração no export: "### 2.1 X" -> "### X".
+    Links [[#2.1 X]] são reescritos para o novo texto para não quebrarem
+    (o .md fonte permanece numerado, como no h2, onde o número só some
+    visualmente via kicker)."""
+    mapping = {}
+
+    def _head(m):
+        num, title = m.group(2), m.group(3)
+        mapping[num] = title
+        return m.group(1) + title
+
+    body = H3_STRIP_RE.sub(_head, body)
+    if not mapping:
+        return body
+
+    def _link(m):
+        alvo, disp = m.group(1).strip(), m.group(2)
+        first = alvo.split(None, 1)[0] if alvo else ''
+        key = first.rstrip('.:—–-')
+        if key in mapping:
+            return '[[#' + mapping[key] + ('|' + disp + ']]' if disp else ']]')
+        return m.group(0)
+
+    return re.sub(r'\[\[#([^\]\|]+)(?:\|([^\]]+))?\]\]', _link, body)
+
+
 def prepare_body(filepath):
     """Limpeza comum: frontmatter fora, wikilinks, H1/byline, imagens."""
     with open(filepath, 'r', encoding='utf-8') as f:
@@ -111,6 +174,8 @@ def prepare_body(filepath):
         author_date = f"{AUTHOR} · {date}" if date else AUTHOR
 
     body = strip_conexoes_section(body)
+    body = trim_sumario_to_h2(body)
+    body = strip_h3_numbers(body)
     body = convert_heading_wikilinks(body)
     body = clean_residual_wikilinks(body)
     body = remove_h1_and_byline(body)

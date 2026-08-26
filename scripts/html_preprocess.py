@@ -571,4 +571,12 @@ def transform_markdown(body):
     # posicao — podem viver em titulos de caixa, nao so em linhas-ornamento.
     for _bad, _good in GLYPH_MAP.items():
         result = result.replace(_bad, _good)
+
+    # Epigrafes: pull-quotes de abertura (antes do primeiro capitulo) viram
+    # .epigraph — citacao de livro, centrada, com atribuicao em mono.
+    _h = re.search(r'(?m)^## ', result)
+    if _h:
+        _head, _tail = result[:_h.start()], result[_h.start():]
+        _head = _head.replace('::: {.pull-quote}', '::: {.pull-quote .epigraph}')
+        result = _head + _tail
     return result.strip() + '\n'

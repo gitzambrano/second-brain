@@ -23,9 +23,9 @@ $endif$
 :root{
   --font-display:'Playfair Display',Georgia,'Times New Roman',serif;
   --bg:#0A0A0A;
-  --surface:#111111;
-  --surface2:#181818;
-  --border:#2A2A2A;
+  --surface:#15181C;
+  --surface2:#20252B;
+  --border:#31383F;
   --text:#D4CFC8;
   --text-dim:#8A857E;
   --text-bright:#EDE8DF;
@@ -113,31 +113,44 @@ body{
 #sbToTop:hover{border-color:var(--gold);color:var(--gold);}
 
 /* ------------------------------------------------------------------ */
-/* Masthead                                                            */
+/* Masthead = capa de livro (sempre escura, qualquer tema da pagina)   */
 /* ------------------------------------------------------------------ */
-.masthead{background:var(--surface);border-bottom:1px solid var(--border);text-align:center;}
-.stripe{height:4px;background:linear-gradient(90deg,var(--rust) 0%,var(--gold) 50%,var(--rust) 100%);}
-.masthead-inner{max-width:var(--max-width);margin:0 auto;padding:2.4rem 1.2rem 2rem;}
-.journal-label{
-  font-family:'JetBrains Mono',Consolas,monospace;
-  font-size:.7rem;letter-spacing:.24em;text-transform:uppercase;
-  color:var(--text-dim);margin-bottom:1.4rem;
+.masthead{
+  /* Paleta escura fixa no escopo da capa: as variaveis abaixo vencem
+     as do tema claro/escuro para tudo DENTRO da capa. */
+  --bg:#0A0A0A;--surface:#111111;--surface2:#181818;--border:#2A2A2A;
+  --text:#D4CFC8;--text-dim:#8A857E;--text-bright:#EDE8DF;
+  --gold:#C9922A;--gold-dim:#8A6520;--rust:#A03C28;--rust-bright:#C44A30;
+  background:radial-gradient(120% 90% at 50% 0%,#16130E 0%,var(--bg) 62%);
+  min-height:88svh;
+  display:flex;flex-direction:column;justify-content:center;
+  text-align:center;
+  padding:calc(2.5rem + env(safe-area-inset-top)) 1.2rem calc(2rem + env(safe-area-inset-bottom));
 }
+@media (max-width:900px){
+  .masthead{min-height:92svh;}
+}
+.stripe{height:4px;background:linear-gradient(90deg,var(--rust) 0%,var(--gold) 50%,var(--rust) 100%);}
+.masthead-inner{max-width:var(--max-width);margin:0 auto;padding:0 1.2rem;width:100%;}
 .hero-title{
   font-family:var(--font-display);
-  font-size:clamp(2.1rem,8.5vw,4.4rem);
-  font-weight:900;line-height:1.05;color:var(--text-bright);
+  font-size:clamp(2.2rem,9vw,4.6rem);
+  font-weight:900;line-height:1.08;color:var(--text-bright);
   letter-spacing:-.02em;text-wrap:balance;
 }
 .hero-title em{font-style:italic;color:var(--gold);}
-/* Desktop: titulo menor — o clamp mobile-first estourava em telas largas. */
 @media (min-width:901px){
-  .hero-title{font-size:clamp(2rem,4.6vw,3.05rem);}
+  .hero-title{font-size:clamp(2.2rem,4.8vw,3.6rem);}
 }
-.masthead-rule{border:none;border-top:1px solid var(--border);width:110px;margin:1.5rem auto 1.1rem;}
+.masthead-rule{border:none;border-top:1px solid var(--gold-dim);width:90px;margin:1.7rem auto 1.3rem;}
 .byline{
   font-family:'JetBrains Mono',Consolas,monospace;
   font-size:.7rem;letter-spacing:.18em;text-transform:uppercase;color:var(--text-dim);
+}
+.cover-meta{
+  font-family:'JetBrains Mono',Consolas,monospace;
+  font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--text-dim);opacity:.85;margin-top:.95rem;
 }
 
 /* ------------------------------------------------------------------ */
@@ -148,42 +161,45 @@ body{
 h1,h2,h3,h4,h5,h6{font-family:var(--font-display);color:var(--text-bright);line-height:1.25;}
 .content h1{display:none;} /* titulo vive no masthead */
 
-.content{counter-reset:sb-h2;}
 .content h2{
-  counter-increment:sb-h2;
   font-size:clamp(1.45rem,4.6vw,2rem);font-weight:700;
-  margin:3.4rem 0 1.4rem;letter-spacing:-.01em;text-wrap:balance;
+  margin:2.4rem 0 1.4rem;letter-spacing:-.01em;text-wrap:balance;
 }
-.content h2::before{
-  content:"CAPÍTULO " counter(sb-h2,decimal-leading-zero);
-  display:block;font-family:'JetBrains Mono',Consolas,monospace;
-  font-size:.78rem;font-weight:400;letter-spacing:.18em;
-  color:var(--gold);margin-bottom:.55rem;
+/* Kicker dourado com régua elástica — inserido por JS como primeiro filho
+   do h2 (.sb-kicker). Sem ele o h2 fica sem rótulo, e está tudo bem. */
+.sb-kicker{
+  display:flex;align-items:center;gap:.85rem;
+  font-family:'JetBrains Mono',Consolas,monospace;
+  font-size:.72rem;font-weight:400;letter-spacing:.18em;
+  color:var(--gold);margin-bottom:.6rem;text-transform:uppercase;
 }
-.content h2::after{
-  content:"";display:block;width:42px;height:2px;background:var(--rust);
-  margin-top:.85rem;
+.sb-kicker::after{
+  content:"";flex:1;height:1px;
+  background:color-mix(in srgb,var(--border) 82%,transparent);
 }
 .content h2#sumário{display:none;}
-.content h2#sumário::before,.content h2#sumário::after{display:none;}
-/* Seções sem número de capítulo: Introdução, Conclusão etc. recebem
-   data-label via JS; Referências é rotulada pelo próprio nome. */
-.content h2.no-chapter{counter-increment:none;}
-.content h2[data-label]::before{content:attr(data-label);}
-.content h2#referências{counter-increment:none;}
-.content h2#referências::before{content:"REFERÊNCIAS";}
 h3{font-size:1.18rem;margin:2rem 0 .8rem;color:color-mix(in srgb,var(--text-bright) 88%,transparent);}
 
-p{margin:0 0 1.25rem;hyphens:auto;word-break:break-word;}
-a{color:var(--gold);text-decoration:none;border-bottom:1px solid color-mix(in srgb,var(--gold) 40%,transparent);transition:border-color .15s,color .15s;}
-a:hover{color:var(--text-bright);border-bottom-color:var(--text-bright);}
+p{margin:0 0 1.25rem;word-break:break-word;}
+@media (min-width:901px){
+  .content > p{text-align:justify;}
+}
+a{
+  color:var(--gold);border-bottom:none;
+  text-decoration:underline;text-decoration-thickness:1px;
+  text-decoration-color:color-mix(in srgb,var(--gold) 42%,transparent);
+  text-underline-offset:3px;
+  transition:text-decoration-color .15s,color .15s;
+}
+a:hover{color:var(--rust-bright);text-decoration-color:var(--rust-bright);}
 strong{color:var(--text-bright);font-weight:600;}
 
 /* Ensaios com capitulos auto-numerados no proprio titulo ("## I. ..." /
-   "## 3. ..."): o JS esconde o numero do titulo (span.sb-selfnum) e o
-   promove a rotulo dourado — CAPITULO N extraido do proprio texto;
-   secoes semanticas (Introducao/Conclusao...) recebem a palavra; h2 sem
-   numero e sem palavra semantica fica sem kicker. */
+   "## 3. ...", com ou sem rotulo "Secao/Capitulo/Parte" na frente): o JS
+   esconde o prefixo de numeracao (span.sb-selfnum) e mostra o kicker
+   dourado no lugar — CAPITULO N ou a palavra semantica; a numeracao nao
+   aparece duas vezes. h2 sem numero e sem palavra semantica fica sem
+   kicker. */
 .content.self-numbered h2:not([data-label])::before{content:none;}
 .content .sb-selfnum{display:none;}
 
@@ -205,36 +221,49 @@ li::marker{color:var(--gold-dim);}
 .hlink{border-bottom:none;margin-left:.45rem;font-size:.6em;vertical-align:.35em;color:var(--border);transition:color .15s;}
 .hlink:hover{color:var(--gold);}
 
-hr{border:none;border-top:1px solid var(--border);margin:2.6rem 0;}
+.content hr{
+  border:none;text-align:center;margin:2.6rem auto;line-height:1;
+}
+.content hr::before{
+  content:"\2726";color:var(--gold-dim);font-size:.72rem;
+  letter-spacing:.4em;padding-left:.4rem;opacity:.85;
+}
+/* Fecho: o divisor imediatamente antes de Referências usa infinito. */
+.content hr:has(+ h2#referências)::before{content:"\221E";}
 
 /* ------------------------------------------------------------------ */
 /* Sumario                                                             */
 /* ------------------------------------------------------------------ */
-#sumário + ul{
+#sumário + ul,#sumário + ol{
   list-style:none;counter-reset:sb-toc;
   background:var(--surface);border:1px solid var(--border);
   padding:1.5rem 1.4rem;margin:2.2rem 0;
 }
-#sumário + ul::before{
+#sumário + ul::before,#sumário + ol::before{
   content:"ÍNDICE";display:block;text-align:center;
   font-family:'JetBrains Mono',Consolas,monospace;
   font-size:.78rem;letter-spacing:.18em;color:var(--gold);margin-bottom:1rem;
 }
-#sumário + ul li{
+#sumário + ul li,#sumário + ol li{
   counter-increment:sb-toc;display:flex;gap:.7rem;align-items:baseline;
-  font-size:.88rem;line-height:1.5;margin-bottom:.5rem;
+  font-size:.95rem;line-height:1.55;margin-bottom:.55rem;
 }
-#sumário + ul li::before{
+#sumário + ul li::before,#sumário + ol li::before{
   content:counter(sb-toc,upper-roman);
   font-family:'JetBrains Mono',Consolas,monospace;
   font-size:.56rem;color:var(--gold);min-width:1.7rem;flex-shrink:0;
 }
 /* Titulos ja numerados no proprio texto ("## I. ..."): o contador do
    indice duplicaria/mascalaria a numeracao — some. */
-#sumário + ul.sb-toc-plain li{gap:0;}
-#sumário + ul.sb-toc-plain li::before{content:none;}
-#sumário + ul a{border-bottom:1px solid var(--border);color:var(--text);}
-#sumário + ul a:hover{color:var(--gold);border-bottom-color:var(--gold);}
+#sumário + ul.sb-toc-plain li,#sumário + ol.sb-toc-plain li{gap:0;}
+#sumário + ul.sb-toc-plain li::before,#sumário + ol.sb-toc-plain li::before{content:none;}
+#sumário + ul a,#sumário + ol a{
+  text-decoration-color:color-mix(in srgb,var(--gold) 34%,transparent);
+  color:var(--text);
+}
+#sumário + ul a:hover,#sumário + ol a:hover{
+  color:var(--gold);text-decoration-color:var(--gold);
+}
 
 /* ------------------------------------------------------------------ */
 /* Citacoes                                                            */
@@ -247,8 +276,27 @@ hr{border:none;border-top:1px solid var(--border);margin:2.6rem 0;}
 .quote p:last-child{margin-bottom:0;}
 
 .pull-quote{
-  margin:2.4rem 0;padding:1.35rem 1.4rem 1.2rem;
+  position:relative;
+  margin:2.8rem 0 2.4rem;padding:1.55rem 1.4rem 1.2rem;
   background:var(--surface);border-left:3px solid var(--gold);
+}
+.pull-quote::before{
+  content:"\201C";position:absolute;top:-1.75rem;left:-0.3rem;
+  font-family:Georgia,'Times New Roman',serif;
+  font-size:5rem;line-height:1;color:var(--gold);opacity:.14;pointer-events:none;
+}
+/* Epígrafes: pull-quotes de abertura (antes do 1º capítulo) viram
+   citação de livro — centrada, estreita, atribuição em mono. */
+.pull-quote.epigraph{
+  max-width:40ch;margin-left:auto;margin-right:auto;
+  border-left:none;background:transparent;padding:0 0 .4rem;
+}
+.pull-quote.epigraph::before{display:none;}
+.pull-quote.epigraph p{font-style:italic;color:var(--text-dim);}
+.pull-quote.epigraph p:last-child{
+  font-style:normal;font-family:'JetBrains Mono',Consolas,monospace;
+  font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--gold-dim);margin-top:.9rem;
 }
 /* Mesma fonte e corpo da .quote — a distincao fica na borda e no fundo,
    nao no tamanho (citacoes do mesmo essay nao podem parecer componentes
@@ -281,10 +329,11 @@ hr{border:none;border-top:1px solid var(--border);margin:2.6rem 0;}
 .box.generico{--boxc:var(--gold-dim);}
 
 .box-badge{
-  display:inline-block;background:var(--boxc);color:#fff;
+  display:block;width:fit-content;
+  background:var(--boxc);color:#fff;
   font-family:'JetBrains Mono',Consolas,monospace;
   font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;
-  padding:.28rem .75rem;
+  padding:.34rem .9rem;
 }
 .box-title{
   font-family:var(--font-display);font-weight:700;
@@ -341,9 +390,12 @@ th{
   background:var(--surface2);color:var(--gold);text-align:left;
   font-family:'JetBrains Mono',Consolas,monospace;font-weight:500;
   font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;
-  padding:.65rem .8rem;border-bottom:1px solid var(--border);
+  padding:.85rem 1.1rem;border-bottom:1px solid var(--border);
 }
-td{padding:.65rem .8rem;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.55;}
+td{padding:.85rem 1.1rem;border-bottom:1px solid var(--border);vertical-align:top;line-height:1.55;}
+/* Divisor vertical entre colunas (padrao adotado do white paper de
+   referencia): so ENTRE colunas, nunca nas bordas externas da tabela. */
+th + th,td + td{border-left:1px solid var(--border);}
 tr:last-child td{border-bottom:none;}
 
 code{
@@ -381,6 +433,11 @@ img{max-width:100%;height:auto;}
 .footnotes li{margin-bottom:.6rem;}
 
 ::selection{background:color-mix(in srgb,var(--gold) 30%,transparent);}
+::-webkit-scrollbar{width:10px;height:10px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:6px;border:2px solid var(--bg);}
+::-webkit-scrollbar-thumb:hover{background:var(--gold-dim);}
+html{scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
 
 /* ------------------------------------------------------------------ */
 /* Responsivo                                                          */
@@ -413,7 +470,7 @@ img{max-width:100%;height:auto;}
   .sb-progress,#sbThemeToggle,#sbToTop,.hlink{display:none !important;}
   .masthead{border-bottom:1px solid var(--border);}
   .content{max-width:100%;padding:1.5rem 0 0;}
-  a{color:inherit;border-bottom:none;}
+  a{color:inherit;text-decoration:none;}
   .box,.card,.pull-quote,.quote{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
   .box-verdict{break-inside:avoid;}
   h2{break-after:avoid;}
@@ -430,7 +487,6 @@ $endif$
 <header class="masthead">
   <div class="stripe"></div>
   <div class="masthead-inner">
-    <p class="journal-label">$if(subtitle)$$subtitle$$else$Second Brain$endif$</p>
     <h1 class="hero-title">$title$</h1>
     <hr class="masthead-rule">
     <p class="byline">$author$</p>
@@ -487,54 +543,88 @@ $body$
     a.setAttribute("aria-label","Link para esta seção");
     h.appendChild(a);
   });
-  /* Capitulos auto-numerados no fonte ("## I. ..." / "## 3. ..."):
-     o contador CAPITULO NN sai (duplicaria a numeracao); o numero do
-     titulo vira o proprio rotulo dourado e some do texto (span.sb-selfnum). */
+  /* Rotulos dourados dos capitulos: <span class="sb-kicker"> inserido no
+     inicio de cada h2 — o CSS desenha a regua elastica ate a margem.
+     Numeros vem do proprio titulo ("## 3. ...", com ou sem rotulo
+     "Secao/Capitulo/Parte") e sao ocultados pelo stripSelfNumber;
+     secoes semanticas recebem a palavra; essays sem numeros usam contador
+     local CAPITULO 01, 02... Subtitulos (h3) nunca recebem rotulo. */
   var content=document.querySelector(".content");
   var h2s=content?content.querySelectorAll("h2:not(#sumário):not(#referências)"):[];
   var selfNum=Array.prototype.some.call(h2s,function(h){
-    return /^\s*(?:\d+|[IVXLC]+)[.\s—–:-]/.test(h.textContent);
+    return /^\s*(?:(?:se[çc][aã]o|cap[íi]tulo|parte)\s+)?(?:\d+|[IVXLC]+)[.\s—–:-]/i.test(h.textContent);
   });
   if(selfNum&&content){
     content.classList.add("self-numbered");
-    var toc=document.querySelector("#sum\u00e1rio + ul");
+    var toc=document.querySelector("#sum\u00e1rio + ul,#sum\u00e1rio + ol");
     if(toc){toc.classList.add("sb-toc-plain");}
   }
-  /* Rotulos semanticos: Introducao/Conclusao/Prefacio etc. recebem a
-     propria palavra (data-label), com ou sem numero na frente do titulo. */
-  var SECTION_RE=/^\s*(?:(?:\d+|[IVXLC]+)[.\s—–:-]+)?(introdu[çc][aã]o|conclus[aã]o|pref[áa]cio|pr[óo]logo|ep[íi]logo|posf[áa]cio|p[óo]s-?escrito|agradecimentos|ap[êe]ndice)\b/i;
-  /* Esconde o numero a esquerda do titulo ("3. Dinamica" -> "Dinamica") e
-     devolve o numero para virar kicker. O lookahead (?!\d) evita partir
-     numero de subsecao ("2.3 Titulo" fica intocado, sem kicker). */
+  /* Palavras semanticas: Introducao/Conclusao/Resumo Executivo etc. recebem
+     a propria palavra, com ou sem numero/rotulo na frente ("7. Conclusao",
+     "Secao 9 — Conclusao: ..."). O prefixo evita falso positivo tipo
+     "Previsao de Conclusao com Modelos...", em que a palavra existe mas
+     nao nomeia a secao. */
+  var SECTION_RE=/^\s*(?:(?:se[çc][aã]o|cap[íi]tulo|parte)\s*)?(?:\d+|[IVXLC]+)?\s*[.:\-—–]?\s*(introdu[çc][aã]o|conclus[aã]o|resumo(?:\s+executivo)?|pref[áa]cio|pr[óo]logo|ep[íi]logo|posf[áa]cio|p[óo]s-?escrito|agradecimentos|ap[êe]ndice|anexos?)\b/i;
+  /* Esconde o prefixo de numeracao a esquerda do titulo e devolve o numero
+     para o kicker: o CAPITULO NN dourado substitui o "3."/"Secao 3 —" no
+     texto em vez de repetir a numeracao. O prefixo pode ter rotulo
+     ("Secao 9 —", "Capitulo II:") — ele some inteiro, nao so o numero.
+     O lookahead (?!\d) evita partir numero de subsecao ("2.3 Titulo"). */
   function stripSelfNumber(h){
     var n=h.firstChild;
     while(n&&n.nodeType!==3){n=n.nextSibling;}
     if(!n){return null;}
-    var m=/^\s*((?:\d+|[IVXLC]+))([.\s—–:-]+)(?!\d)([\s\S]*)/.exec(n.data);
+    var m=/^\s*((?:(?:se[çc][aã]o|cap[íi]tulo|parte)\s+)?((?:\d+|[IVXLC]+))(?:[.\s—–:-]+))(?!\d)([\s\S]*)/i.exec(n.data);
     if(!m){return null;}
     var span=document.createElement("span");
     span.className="sb-selfnum";
     span.setAttribute("aria-hidden","true");
-    span.textContent=m[1]+m[2];
+    span.textContent=m[1];
     n.data=m[3];
     h.insertBefore(span,n);
-    return m[1];
+    return m[2].toUpperCase();
   }
+  function makeKicker(text){
+    var k=document.createElement("span");
+    k.className="sb-kicker";
+    k.textContent=text;
+    return k;
+  }
+  var chapterNo=0;
   Array.prototype.forEach.call(h2s,function(h){
     var sem=SECTION_RE.exec(h.textContent);
     var num=selfNum?stripSelfNumber(h):null;
+    var label=null;
     if(sem){
-      h.setAttribute("data-label",sem[1].toUpperCase());
-      h.classList.add("no-chapter");
+      label=sem[1].toUpperCase();
     }else if(num){
       /* Zero à esquerda para casar com o estilo decimal-leading-zero do
          contador dos essays nao-numerados ("CAPITULO 03"). Regex sem o
          cifrao: o compilador de templates do pandoc o trata como abertura
          de expressao. */
       var pad=/^[0-9]/.test(num)&&num.length<2?"0"+num:num;
-      h.setAttribute("data-label","CAPÍTULO "+pad);
+      label="CAPÍTULO "+pad;
+    }else if(!selfNum){
+      chapterNo+=1;
+      label="CAPÍTULO "+(chapterNo<10?"0"+chapterNo:""+chapterNo);
     }
+    if(label){h.insertBefore(makeKicker(label),h.firstChild);}
   });
+  /* Referencias recebe o mesmo kicker (nome fixo, fora do laco). */
+  var refs=content?content.querySelector("h2#refer\u00eancias"):null;
+  if(refs){refs.insertBefore(makeKicker("Refer\u00eancias"),refs.firstChild);}
+  /* Meta-row da capa: tempo de leitura (~200 palavras/min) e capitulos. */
+  if(content&&h2s.length){
+    var words=(content.innerText||"").trim().split(/\s+/).length;
+    var mins=Math.max(1,Math.round(words/200));
+    var by=document.querySelector(".byline");
+    if(by){
+      var meta=document.createElement("p");
+      meta.className="cover-meta";
+      meta.textContent="~"+mins+" min de leitura \u00b7 "+h2s.length+" cap\u00edtulos";
+      by.parentNode.insertBefore(meta,by.nextSibling);
+    }
+  }
 })();
 </script>
 </body>
