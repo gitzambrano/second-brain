@@ -126,6 +126,17 @@ end
 -- ------------------------------------------------------------------
 
 function Para(el)
+  -- Figura solta: paragrafo contendo somente imagem vai para o centro.
+  -- Imagem inline no meio de prosa nao e tocada. As legendas "Fig. N - ..."
+  -- sao paragrafos proprios e continuam alinhadas a esquerda.
+  if #el.content == 1 and el.content[1].t == 'Image' then
+    return {
+      pandoc.RawBlock('latex', '\\begin{center}%'),
+      el,
+      pandoc.RawBlock('latex', '\\end{center}%'),
+    }
+  end
+
   local text = stringify(el)
   if text:match('^Fig%.%s*%d') or text:match('^Figura%s+%d') then
     -- Sem '%': o wrapper e INLINE e pode cair no meio de uma linha fisica

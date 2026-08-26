@@ -347,6 +347,12 @@ Lista plana de tudo já processado ou pendente, sem agrupamento — classificaç
 - Handouts exportam pelo mesmo pipeline via `--handout`.
 - Corpo em Latin Modern Roman (mesma família da matemática), títulos pretos, legendas "Fig. N - ..." em corpo menor.
 - Blockquotes passam pelo mesmo preprocessador do HTML (`html_preprocess.transform_markdown`); o filtro `scripts/pdf_boxes.lua` converte os fenced divs em caixas LaTeX (wikibox/wikiquote/wikipull/wikicard), cinza-claras com filete à esquerda.
+- Página: sem cabeçalho; autor só na capa. Número de página no rodapé, canto inferior direito, `\footnotesize` cinza, sem filete (`\footskip` 65pt). Página 1 = capa + Sumário; `\newpage` antes da primeira seção (`insert_page_break_after_sumario`).
+- Filete de capítulo: desenhado dentro da própria linha do título `##` (strut + `\rlap` elevado, comando `\chaptersepinner`) — linha e título formam um bloco único, nunca separados por quebra de página. `###`/`####` não têm linha; `---` antes de heading é removido do corpo.
+- Hierarquia de títulos (tudo bold, sem itálico): capa `\Huge`; `##` → `\Large`; `###` → `\large`; `####` → `\normalsize` em bloco (nunca run-in).
+- Tabelas (`longtable`) em `\small`, com `\emergencystretch` 2em e `\tabcolsep` 4pt para o texto não estourar em colunas estreitas.
+- Figura solta (parágrafo contendo somente imagem) é centralizada pelo filtro Lua; imagem inline no meio de prosa não é tocada, e a legenda "Fig. N - ..." continua em prosa alinhada à esquerda.
+- Imagem `.svg` usa o `.png` irmão (mesmo nome) quando existe — o caminho LaTeX exige `rsvg-convert`, que não há em toda máquina Windows.
 
 ## Regra de contradição entre fontes
 
