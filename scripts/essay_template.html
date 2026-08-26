@@ -180,10 +180,12 @@ a:hover{color:var(--text-bright);border-bottom-color:var(--text-bright);}
 strong{color:var(--text-bright);font-weight:600;}
 
 /* Ensaios com capitulos auto-numerados no proprio titulo ("## I. ..." /
-   "## 3. ..."): a classe .self-numbered (aplicada por JS) desliga TODO
-   rotulo dourado — o numero ja vive no texto. Regra da casa: ou todos os
-   capitulos tem rotulo, ou nenhum tem (INTRODUCAO/CONCLUSAO inclusive). */
-.content.self-numbered h2::before{content:none;}
+   "## 3. ..."): o JS esconde o numero do titulo (span.sb-selfnum) e o
+   promove a rotulo dourado — CAPITULO N extraido do proprio texto;
+   secoes semanticas (Introducao/Conclusao...) recebem a palavra; h2 sem
+   numero e sem palavra semantica fica sem kicker. */
+.content.self-numbered h2:not([data-label])::before{content:none;}
+.content .sb-selfnum{display:none;}
 
 /* Listas: o reset global zera o padding da UA — sem isto, os marcadores
    (position:outside) penduram alem da borda e saem da tela no mobile. */
@@ -486,7 +488,8 @@ $body$
     h.appendChild(a);
   });
   /* Capitulos auto-numerados no fonte ("## I. ..." / "## 3. ..."):
-     desliga o contador CAPITULO NN, que duplicaria a numeracao. */
+     o contador CAPITULO NN sai (duplicaria a numeracao); o numero do
+     titulo vira o proprio rotulo dourado e some do texto (span.sb-selfnum). */
   var content=document.querySelector(".content");
   var h2s=content?content.querySelectorAll("h2:not(#sumário):not(#referências)"):[];
   var selfNum=Array.prototype.some.call(h2s,function(h){
@@ -497,14 +500,40 @@ $body$
     var toc=document.querySelector("#sum\u00e1rio + ul");
     if(toc){toc.classList.add("sb-toc-plain");}
   }
-  /* Rotulos semanticos: Introducao/Conclusao/Prefacio etc. nao recebem
-     "CAPITULO NN" — o rotulo passa a ser a propria secao (data-label). */
-  var SECTION_RE=/^\s*(introdu[çc][aã]o|conclus[aã]o|pref[áa]cio|pr[óo]logo|ep[íi]logo|posf[áa]cio|p[óo]s-?escrito|agradecimentos|ap[êe]ndice)\b/i;
+  /* Rotulos semanticos: Introducao/Conclusao/Prefacio etc. recebem a
+     propria palavra (data-label), com ou sem numero na frente do titulo. */
+  var SECTION_RE=/^\s*(?:(?:\d+|[IVXLC]+)[.\s—–:-]+)?(introdu[çc][aã]o|conclus[aã]o|pref[áa]cio|pr[óo]logo|ep[íi]logo|posf[áa]cio|p[óo]s-?escrito|agradecimentos|ap[êe]ndice)\b/i;
+  /* Esconde o numero a esquerda do titulo ("3. Dinamica" -> "Dinamica") e
+     devolve o numero para virar kicker. O lookahead (?!\d) evita partir
+     numero de subsecao ("2.3 Titulo" fica intocado, sem kicker). */
+  function stripSelfNumber(h){
+    var n=h.firstChild;
+    while(n&&n.nodeType!==3){n=n.nextSibling;}
+    if(!n){return null;}
+    var m=/^\s*((?:\d+|[IVXLC]+))([.\s—–:-]+)(?!\d)([\s\S]*)/.exec(n.data);
+    if(!m){return null;}
+    var span=document.createElement("span");
+    span.className="sb-selfnum";
+    span.setAttribute("aria-hidden","true");
+    span.textContent=m[1]+m[2];
+    n.data=m[3];
+    h.insertBefore(span,n);
+    return m[1];
+  }
   Array.prototype.forEach.call(h2s,function(h){
-    var m=SECTION_RE.exec(h.textContent);
-    if(!m){return;}
-    h.setAttribute("data-label",m[1].toUpperCase());
-    h.classList.add("no-chapter");
+    var sem=SECTION_RE.exec(h.textContent);
+    var num=selfNum?stripSelfNumber(h):null;
+    if(sem){
+      h.setAttribute("data-label",sem[1].toUpperCase());
+      h.classList.add("no-chapter");
+    }else if(num){
+      /* Zero à esquerda para casar com o estilo decimal-leading-zero do
+         contador dos essays nao-numerados ("CAPITULO 03"). Regex sem o
+         cifrao: o compilador de templates do pandoc o trata como abertura
+         de expressao. */
+      var pad=/^[0-9]/.test(num)&&num.length<2?"0"+num:num;
+      h.setAttribute("data-label","CAPÍTULO "+pad);
+    }
   });
 })();
 </script>

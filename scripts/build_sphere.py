@@ -1688,12 +1688,35 @@ function enhanceReaderDom() {
     const toc = readerRoot.querySelector("#sumário + ul");
     if (toc) toc.classList.add("sb-toc-plain");
   }
-  const SECTION_RE = /^\\s*(introdu[çc][aã]o|conclus[aã]o|pref[áa]cio|pr[óo]logo|ep[íi]logo|posf[áa]cio|p[óo]s-?escrito|agradecimentos|ap[êe]ndice)\\b/i;
+  const SECTION_RE = /^\\s*(?:(?:\\d+|[IVXLC]+)[.\\s—–:-]+)?(introdu[çc][aã]o|conclus[aã]o|pref[áa]cio|pr[óo]logo|ep[íi]logo|posf[áa]cio|p[óo]s-?escrito|agradecimentos|ap[êe]ndice)\\b/i;
+  // Espelha o template: número do título vira kicker dourado e some do
+  // texto (span.sb-selfnum). O lookahead (?!\d) evita partir número de
+  // subseção ("2.3 Título" fica intocado, sem kicker).
+  const SELFNUM_STRIP_RE = new RegExp("^\\s*((?:\\d+|[IVXLC]+))([.\\s—–:-]+)(?!\\d)([\\s\\S]*)$");
+  function stripSelfNumber(h) {
+    let n = h.firstChild;
+    while (n && n.nodeType !== 3) n = n.nextSibling;
+    if (!n) return null;
+    const m = SELFNUM_STRIP_RE.exec(n.data);
+    if (!m) return null;
+    const span = document.createElement("span");
+    span.className = "sb-selfnum";
+    span.setAttribute("aria-hidden", "true");
+    span.textContent = m[1] + m[2];
+    n.data = m[3];
+    h.insertBefore(span, n);
+    return m[1];
+  }
   Array.prototype.forEach.call(h2s, (h) => {
-    const m = SECTION_RE.exec(h.textContent);
-    if (!m) return;
-    h.setAttribute("data-label", m[1].toUpperCase());
-    h.classList.add("no-chapter");
+    const sem = SECTION_RE.exec(h.textContent);
+    const num = selfNum ? stripSelfNumber(h) : null;
+    if (sem) {
+      h.setAttribute("data-label", sem[1].toUpperCase());
+      h.classList.add("no-chapter");
+    } else if (num) {
+      const pad = new RegExp("^\\d+$").test(num) && num.length < 2 ? "0" + num : num;
+      h.setAttribute("data-label", "CAPÍTULO " + pad);
+    }
   });
 }
 

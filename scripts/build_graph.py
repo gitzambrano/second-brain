@@ -735,6 +735,27 @@ def _scope_css_for_shadow(css):
     css = re.sub(r"(?<![}\w])body(?=\s*[,{])", ":host", css)
     # position:fixed do chrome do template não existe no shadow (sem nós
     # correspondentes); o leitor tem seus próprios botões flutuantes.
+    # O MathJax esconde a cópia MathML assistiva de cada fórmula via CSS que
+    # ele mesmo injeta no <head> do documento principal — e que NÃO atravessa
+    # a fronteira do shadow onde o conteúdo tipografado é enxertado. Sem esta
+    # réplica (mesmo padrão sr-only do assistive-mml do MathJax), toda
+    # equação do leitor aparece duplicada: o SVG visível + a cópia MathML
+    # solta, renderizada pelo navegador com outra fonte. A réplica preserva a
+    # cópia no DOM (leitores de tela continuam atendidos) só a esconde.
+    css += (
+        "\nmjx-assistive-mml {"
+        " position: absolute !important;"
+        " clip: rect(1px, 1px, 1px, 1px);"
+        " padding: 1px 0 0 0 !important;"
+        " border: 0 !important;"
+        " margin: 0 !important;"
+        " width: 1px !important;"
+        " height: 1px !important;"
+        " overflow: hidden !important;"
+        " display: block !important;"
+        " user-select: none;"
+        " }"
+    )
     return css
 
 
@@ -2750,12 +2771,34 @@ function enhanceReaderDom() {
     const toc = readerRoot.querySelector("#sumário + ul");
     if (toc) toc.classList.add("sb-toc-plain");
   }
-  const SECTION_RE = /^\s*(introdu[çc][aã]o|conclus[aã]o|pref[áa]cio|pr[óo]logo|ep[íi]logo|posf[áa]cio|p[óo]s-?escrito|agradecimentos|ap[êe]ndice)\b/i;
+  const SECTION_RE = /^\s*(?:(?:\d+|[IVXLC]+)[.\s—–:-]+)?(introdu[çc][aã]o|conclus[aã]o|pref[áa]cio|pr[óo]logo|ep[íi]logo|posf[áa]cio|p[óo]s-?escrito|agradecimentos|ap[êe]ndice)\b/i;
+  // Espelha o template: número do título vira kicker dourado e some do
+  // texto (span.sb-selfnum). O lookahead (?!\d) evita partir número de
+  // subseção ("2.3 Título" fica intocado, sem kicker).
+  function stripSelfNumber(h) {
+    let n = h.firstChild;
+    while (n && n.nodeType !== 3) n = n.nextSibling;
+    if (!n) return null;
+    const m = /^\s*((?:\d+|[IVXLC]+))([.\s—–:-]+)(?!\d)([\s\S]*)$/.exec(n.data);
+    if (!m) return null;
+    const span = document.createElement("span");
+    span.className = "sb-selfnum";
+    span.setAttribute("aria-hidden", "true");
+    span.textContent = m[1] + m[2];
+    n.data = m[3];
+    h.insertBefore(span, n);
+    return m[1];
+  }
   Array.prototype.forEach.call(h2s, (h) => {
-    const m = SECTION_RE.exec(h.textContent);
-    if (!m) return;
-    h.setAttribute("data-label", m[1].toUpperCase());
-    h.classList.add("no-chapter");
+    const sem = SECTION_RE.exec(h.textContent);
+    const num = selfNum ? stripSelfNumber(h) : null;
+    if (sem) {
+      h.setAttribute("data-label", sem[1].toUpperCase());
+      h.classList.add("no-chapter");
+    } else if (num) {
+      const pad = /^\d+$/.test(num) && num.length < 2 ? "0" + num : num;
+      h.setAttribute("data-label", "CAPÍTULO " + pad);
+    }
   });
 }
 
