@@ -312,7 +312,13 @@ def export_essay(filepath, output_dir=None, source_dir=None):
         return False
     finally:
         if temp_path.exists():
-            temp_path.unlink()
+            for _ in range(5):
+                try:
+                    temp_path.unlink()
+                    break
+                except OSError:
+                    import time
+                    time.sleep(0.1)
 
 
 def list_essays():

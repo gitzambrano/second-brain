@@ -334,26 +334,6 @@ Lista plana de tudo já processado ou pendente, sem agrupamento — classificaç
 5. **Símbolos residuais**: remover diamantes (◆), replacement chars, zero-width spaces, `&nbsp;`, `&amp;`, etc.
 6. **Verificar fidelidade**: comparar o `.md` gerado contra o original.
 
-## Exportação para PDF (`export_essay_pdf.py`, Pandoc + LuaLaTeX)
-
-- **LuaLaTeX, não XeLaTeX** — dvipdfmx do MiKTeX não gera anotações de link.
-- `## Conexões` é removida do PDF. `## Sumário` e `## Referências` são preservadas.
-- Frontmatter YAML + byline viram título/subtítulo/autor em LaTeX.
-- Nunca `--number-sections` (essays já têm numeração manual).
-- Imagens com caminho relativo resolvidas para absoluto.
-- Hyperlinks via variáveis Pandoc (`colorlinks`, `urlcolor`, `linkcolor`), não `\usepackage{hyperref}` manual.
-- Caracteres LaTeX especiais no subtítulo (`&`, `#`, `%`, `_`) são escapados.
-- Wikilinks residuais `[[Target|Display]]` viram texto puro.
-- Handouts exportam pelo mesmo pipeline via `--handout`.
-- Corpo em Latin Modern Roman (mesma família da matemática), títulos pretos, legendas "Fig. N - ..." em corpo menor.
-- Blockquotes passam pelo mesmo preprocessador do HTML (`html_preprocess.transform_markdown`); o filtro `scripts/pdf_boxes.lua` converte os fenced divs em caixas LaTeX (wikibox/wikiquote/wikipull/wikicard), cinza-claras com filete à esquerda.
-- Página: sem cabeçalho; autor só na capa. Número de página no rodapé, canto inferior direito, `\footnotesize` cinza, sem filete (`\footskip` 65pt). Página 1 = capa + Sumário; `\newpage` antes da primeira seção (`insert_page_break_after_sumario`).
-- Filete de capítulo: desenhado dentro da própria linha do título `##` (strut + `\rlap` elevado, comando `\chaptersepinner`) — linha e título formam um bloco único, nunca separados por quebra de página. `###`/`####` não têm linha; `---` antes de heading é removido do corpo.
-- Hierarquia de títulos (tudo bold, sem itálico): capa `\Huge`; `##` → `\Large`; `###` → `\large`; `####` → `\normalsize` em bloco (nunca run-in).
-- Tabelas (`longtable`) em `\small`, com `\emergencystretch` 2em e `\tabcolsep` 4pt para o texto não estourar em colunas estreitas.
-- Figura solta (parágrafo contendo somente imagem) é centralizada pelo filtro Lua; imagem inline no meio de prosa não é tocada, e a legenda "Fig. N - ..." continua em prosa alinhada à esquerda.
-- Imagem `.svg` usa o `.png` irmão (mesmo nome) quando existe — o caminho LaTeX exige `rsvg-convert`, que não há em toda máquina Windows.
-
 ## Regra de contradição entre fontes
 
 Se informação nova (fonte ingerida, ou o que o Usuário disse) contradiz o que já está escrito: **não escolha um lado sozinho, não tire a média.** Pare, aponte a contradição citando as duas fontes com localização exata, e só edite depois que o Usuário disser qual prevalece.
@@ -380,3 +360,37 @@ Antes de criar uma tag nova (essay, concept, entity, insight, ou `Tags:` de sour
 Decisões de estilo já resolvidas — não reabra sem evidência nova (um caso real que a regra não cobre, não uma preferência estética isolada).
 
 - [Forma canônica de citação em `## Referências`] (2026-08-24) — autores completos até 3, `et al.` acima disso; subtítulo sempre; container completo com cidade; granularidade `Vol./No./pp.`. A nota contextual após o em-dash é livre por essay — dedupe pode listá-la como candidato informativo sem ação.
+
+## Decisões fechadas — exports HTML e PDF (2026-08-26)
+
+Design premium: "restrição, não adição" — reduzir frequência de sinais (cores, preenchimentos, pesos) para valorizar a tipografia.
+
+### HTML (`scripts/essay_template.html`)
+
+| Decisão | Regra |
+| --------- | ----- |
+| Medida de linha | `--max-width:75vw` no desktop (~75% da largura da tela) e `700px` no mobile/base; `.masthead-inner` acompanha `var(--max-width)` |
+| Fontes | Playfair Display vale para todos os temas (claro/escuro/desktop/mobile). O override `--font-display:Georgia` no desktop-claro foi removido — produzia dois produtos no mesmo arquivo |
+| Hifenização | `hyphens:auto` + `-webkit-hyphens:auto` em `.content > p` no desktop. `hyphenate-limit-chars:6 3 3` |
+| Paleta | Dessaturada: `--gold:#B08B4F` (escuro) / `#8A6B33` (claro), `--rust:#8E4636`. Links usam a cor do texto (`var(--text)`) com sublinhado dourado a 38% de opacidade; dourado sólido reservado a kicker, numeração e hover |
+| Pull-quote | Sem aspas gigantes (`::before` com `"` a 5rem removido); a pull-quote distingue-se por itálico, filete lateral e respiro |
+| Badge de caixa | Versalete espaçado na cor do tipo (`--boxc`), sem fundo preenchido e sem texto branco. A caixa usa filete lateral de 2 px em `--boxc` sobre superfície neutra. `.box.generico` usa filete cinza (`--border`) — 64% das caixas do corpus são genéricas por opção editorial |
+| Sumário | Filetes hairline (topo e base) sem caixa preenchida; rótulo ÍNDICE alinhado à esquerda em versalete mono |
+| Referências | Recuo pendente via CSS (`padding-left:2.4em; text-indent:-2.4em`). Links externos recebem seta ↗ via `::after` |
+| `@media print` | Apenas 1 regra: ocultar chrome fixo. PDF vem do LaTeX — o `@media print` serve só ao Ctrl+P do browser |
+| h3 | Família `'JetBrains Mono'` semibold — distingue de `##` por família, não só por tamanho |
+| box.generico | Aceito como caso padrão (não é heurística fraca): 87 de 136 caixas no corpus. Filete cinza discreto |
+
+### PDF (`scripts/export_essay_pdf.py` + `pdf_boxes.lua`)
+
+| Decisão | Regra |
+| --------- | ----- |
+| Tamanho de fonte | `12pt` base (`classoption: - 12pt`) para leitura confortável |
+| Margens | `top=22mm, bottom=22mm, left=26mm, right=26mm` — proporção equilibrada sem desperdício de mancha |
+| Capa | Página própria com título, autor, tipo e meta-row (cap. + tempo de leitura). Não é parte numerada |
+| Sumário | Na segunda página (logo após capa), encabeçado exclusivamente pelo kicker em ouro (`\sbkicker{Sumário}`), sem duplicação de título |
+| Hiperlinks | Sublinhado sutil e nítido via `\usepackage[normalem]{ulem}` + `\uline` na cor do link (`\color{sburl}`) |
+| Cabeçalho corrente | Removido (`pagestyle{fancy}`, `headrulewidth=0pt`, rodapé com número de página discreto) |
+| Tipografia e Contraste | Libertinus Serif + Libertinus Sans via `fontspec`. Títulos de caixas e badges com alto contraste (`sblink` `#171310` e `boxline` `#4B5563`) |
+| Caixas | `tcolorbox` com filete lateral colorido, fundo neutro. Badge em versalete na cor temática |
+| Babel | `portuguese` explícito para hifenização correta |

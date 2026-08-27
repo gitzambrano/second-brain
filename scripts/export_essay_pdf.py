@@ -33,6 +33,9 @@ import subprocess
 import tempfile
 import argparse
 from pathlib import Path
+from unidecode import unidecode
+
+from check_wiki import heading_anchor
 
 import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
 
@@ -215,21 +218,20 @@ def extract_title(body):
 
 
 def remove_h1_and_byline(body):
-    """Remove the H1 title and byline (> Ensaio ...) from body since Pandoc generates title."""
+    """Remove the H1 title and byline (> ...) from body since Pandoc generates title on cover."""
     lines = body.split('\n')
     result = []
-    skip_next_blank = False
     i = 0
     while i < len(lines):
         line = lines[i]
         # Skip H1 title
-        if re.match(r'^# ', line):
+        if re.match(r'^#\s+', line):
             i += 1
             # Skip blank lines after title
             while i < len(lines) and lines[i].strip() == '':
                 i += 1
-            # Skip byline (> Ensaio · ... or > White Paper ·...)
-            while i < len(lines) and lines[i].startswith('>') and ('Ensaio' in lines[i] or 'White Paper' in lines[i] or 'Gustavo' in lines[i]):
+            # Skip all byline lines (> ...) immediately following H1
+            while i < len(lines) and lines[i].startswith('>'):
                 i += 1
             # Skip blank lines after byline
             while i < len(lines) and lines[i].strip() == '':
@@ -271,7 +273,12 @@ def resolve_image_paths(text, essay_dir):
 
 HEADER_TEX = r"""\usepackage{fancyhdr}
 \usepackage{xcolor}
-\usepackage{titlesec}
+\usepackage{needspace}
+\usepackage[nobottomtitles*]{titlesec}
+\renewcommand{\bottomtitlespace}{3.5\baselineskip}
+\clubpenalty=10000
+\widowpenalty=10000
+\displaywidowpenalty=10000
 \usepackage{enumitem}
 \setlist{topsep=0.3em, parsep=0em, itemsep=0.2em}
 \setlength{\listparindent}{0pt}
@@ -286,7 +293,7 @@ HEADER_TEX = r"""\usepackage{fancyhdr}
 % Teto de altura para a imagem: os plots de anexo são quase tão altos quanto a
 % mancha e, em tamanho natural, ocupavam a página inteira, empurrando a legenda
 % escrita pelo autor ("Fig. 2 - ...") para a página seguinte, órfã do gráfico.
-\setkeys{Gin}{width=\linewidth,height=0.78\textheight,keepaspectratio}
+\setkeys{Gin}{width=\linewidth,height=0.55\textheight,keepaspectratio}
 \usepackage{setspace}
 \usepackage{fontspec}
 \usepackage{fvextra}
@@ -306,40 +313,58 @@ luaotfload.add_fallback
 % equações (unicode-math usa Latin Modern Math por padrão no LuaLaTeX),
 % dando unidade texto↔fórmula. Fallback cobre símbolos/emoji que a LM
 % não tem (⚠, ✦, setas etc.).
-\setmainfont{Latin Modern Roman}[RawFeature={fallback=mainfallback}]
+\IfFontExistsTF{LibertinusSerif}{%
+  \setmainfont{LibertinusSerif}[RawFeature={fallback=mainfallback}]%
+  \setsansfont{LibertinusSans}[RawFeature={fallback=mainfallback}]%
+  \setmathfont{LibertinusMath-Regular.otf}%
+}{}
 \setmonofont{Consolas}[RawFeature={fallback=mainfallback}]
 
-\definecolor{linkblue}{HTML}{2563EB}
-\definecolor{subtlegray}{HTML}{6B7280}
+\usepackage[normalem]{ulem}
+\renewcommand{\ULthickness}{0.6pt}
+\renewcommand{\ULdepth}{2.2pt}
+
+% Paleta premium — contrastada, nítida e elegante
+\definecolor{sblink}{HTML}{171310}
+\definecolor{sbink}{HTML}{8A6B33}
+\definecolor{sburl}{HTML}{8A6B33}
+\definecolor{sbgraphite}{HTML}{2B2824}
+\definecolor{subtlegray}{HTML}{4B5563}
 \definecolor{codebg}{HTML}{F8FAFC}
 \definecolor{codeframe}{HTML}{CBD5E1}
-
-% Paleta neutra das caixas semanticas (ver pdf_boxes.lua): cinza claro de
-% fundo, borda/filete grafite. Sem cores saturadas na mancha de texto.
-\definecolor{boxbg}{HTML}{F7F7F5}
-\definecolor{boxline}{HTML}{BFC4CB}
-\definecolor{quoteline}{HTML}{6B7280}
+\definecolor{boxbg}{HTML}{F9F9F7}
+\definecolor{boxline}{HTML}{4B5563}
+\definecolor{quoteline}{HTML}{8A6B33}
+\definecolor{boxexp}{HTML}{8E4636}
+\definecolor{boxev}{HTML}{35708A}
+\definecolor{boxmap}{HTML}{8A6B33}
+\definecolor{boxav}{HTML}{7A5A18}
+\definecolor{boxid}{HTML}{7A6135}
 
 \hypersetup{
   colorlinks=true,
-  linkcolor=linkblue,
-  urlcolor=linkblue,
-  citecolor=linkblue
+  linkcolor=sblink,
+  urlcolor=sburl,
+  citecolor=sburl
 }
 
 % Legendas de figura reais (ambiente figure) ficam menores que o corpo.
 \usepackage{caption}
 \captionsetup{font=small,labelfont=bf,width=.95\linewidth}
 
-% Tabelas (longtable do Pandoc): fonte um degrau abaixo do corpo e mais
-% folga para o texto acomodar em colunas estreitas — emergencystretch deixa
-% o paragrafo aceitar espacamento frouxo antes de estourar a celula, e
-% tabcolsep menor devolve largura util as colunas.
+% Tabelas (longtable do Pandoc): linhas horizontais suaves e espacamento equilibrado
+\usepackage{booktabs}
+\usepackage{colortbl}
+\definecolor{tableborder}{HTML}{E2E8F0}
+\arrayrulecolor{tableborder}
+\setlength{\heavyrulewidth}{0.8pt}
+\setlength{\lightrulewidth}{0.4pt}
 \usepackage{etoolbox}
 \AtBeginEnvironment{longtable}{%
   \small
   \setlength{\emergencystretch}{2em}%
-  \setlength{\tabcolsep}{4pt}%
+  \setlength{\tabcolsep}{5pt}%
+  \renewcommand{\arraystretch}{1.25}%
 }
 
 \fvset{
@@ -424,9 +449,11 @@ luaotfload.add_fallback
 % corpo, hierarquia por peso/tamanho, nada de troca de familia.
 % parbox=false mantem o espacamento de paragrafo natural dentro da caixa.
 % ---------------------------------------------------------------------
-\newtcolorbox{wikibox}{enhanced,breakable,
-  colback=boxbg,colframe=boxline,boxrule=0.5pt,arc=1.5pt,
-  left=10pt,right=10pt,top=8pt,bottom=8pt,parbox=false}
+\newtcolorbox{wikibox}[1]{enhanced,breakable,
+  colback=boxbg,colframe=boxbg,frame hidden,
+  borderline west={2.5pt}{0pt}{#1},
+  left=10pt,right=10pt,top=8pt,bottom=8pt,parbox=false,
+  before upper={\colorlet{wbtype}{#1}}}
 
 \newtcolorbox{wikiquote}{enhanced,breakable,
   frame hidden,arc=0pt,
@@ -448,11 +475,11 @@ luaotfload.add_fallback
   borderline west={3pt}{0pt}{boxline},
   left=12pt,right=10pt,top=8pt,bottom=8pt,parbox=false}
 
-\newcommand{\wbbadge}[1]{\par\noindent{\footnotesize\bfseries\MakeUppercase{#1}}\par\vspace{1pt}}
-\newcommand{\wbtitle}[1]{\par\noindent{\large\bfseries #1}\par\vspace{4pt}}
-\newcommand{\cardname}[1]{\par\noindent{\bfseries#1}\par\vspace{1pt}}
+\newcommand{\wbbadge}[1]{\par\noindent{\footnotesize\bfseries\color{wbtype}\addfontfeatures{LetterSpace=18}\MakeUppercase{#1}}\par\vspace{2pt}}
+\newcommand{\wbtitle}[1]{\par\noindent{\large\bfseries\color{sblink} #1}\par\vspace{4pt}}
+\newcommand{\cardname}[1]{\par\noindent{\bfseries\color{sblink}#1}\par\vspace{1pt}}
 \newcommand{\cardmeta}[1]{\par\noindent{\footnotesize\color{subtlegray}#1}\par\vspace{0.6em}}
-\newcommand{\parahead}[1]{\par\vspace{0.9em}\noindent{\footnotesize\bfseries#1}\par\vspace{0.35em}}
+\newcommand{\parahead}[1]{\par\vspace{0.9em}\noindent{\footnotesize\bfseries\color{sbink}#1}\par\vspace{0.35em}}
 \newcommand{\ornamentglyph}[1]{{\setlength{\fboxsep}{0pt}#1}}
 
 % Sem cabecalho e sem filete no rodape: autor vive so na capa (\maketitle).
@@ -472,31 +499,78 @@ luaotfload.add_fallback
   \renewcommand{\footrulewidth}{0pt}%
 }
 
-% Titulo da capa maior que o padrao do article (\LARGE).
-\usepackage{titling}
-\pretitle{\begin{center}\Huge\bfseries}
-\posttitle{\par\end{center}\vspace{0.6em}}
+% Capa propria (\sbcover) e supressao do \maketitle padrao
+\newcommand{\sbcover}[4]{%
+  \thispagestyle{empty}%
+  \noindent{\color{sbink}\rule{\linewidth}{0.8pt}}\par
+  \vspace{0.14\textheight}%
+  \begin{center}
+    {\Huge\bfseries\color{sblink}\hyphenpenalty=10000\exhyphenpenalty=10000 #1\par}
+    \vspace{1.6em}%
+    {\color{sbink}\rule{64pt}{1pt}}\par
+    \vspace{1.5em}%
+    {\normalsize\addfontfeatures{LetterSpace=20}\scshape\color{sblink} #2\par}
+    \vspace{1.1em}%
+    {\large\color{subtlegray} #3\par}
+  \end{center}
+  \vfill
+  \if\relax\detokenize{#4}\relax\else
+    \begin{center}
+      {\small\color{subtlegray}\addfontfeatures{LetterSpace=12}#4\par}
+    \end{center}
+  \fi
+  \vspace{1.5em}%
+  \clearpage
+}
+\renewcommand{\maketitle}{}
 
-% Separador de capitulo: filete desenhado na MESMA linha tipografica do
-% titulo — strut que eleva a altura da linha + regra elevada em \rlap.
-% Linha e titulo vivem num so bloco horizontal: nenhuma quebra de pagina
-% consegue separa-los (a quebra acontece antes do conjunto). Vale para
-% todo `##`, com ou sem `---` antes no markdown.
-\newcommand{\chaptersepinner}{\rule{0pt}{2.4em}\rlap{\rule[2.0em]{\linewidth}{0.8pt}}\nobreak}
+% Sumario tipografico — limpo, compacto e sem linhas intermediarias
+\newenvironment{sbtoc}{%
+  \par\vspace{0.6em}%
+  \begingroup
+  \setlength{\parindent}{0pt}%
+  \setlength{\parskip}{0.3em}%
+}{%
+  \endgroup\par\vspace{0.8em}%
+}
+\newcommand{\sbtocentry}[2]{%
+  \par\noindent
+  \makebox[1.8em][r]{\mbox{\footnotesize\color{sbink}\rmfamily #1}}%
+  \hspace{0.8em}#2\par
+}
+\newcommand{\sbtocentrylast}[2]{%
+  \par\noindent
+  \makebox[1.8em][r]{\mbox{\footnotesize\color{sbink}\rmfamily #1}}%
+  \hspace{0.8em}#2\par
+}
 
-% Hierarquia de titulos por peso/tamanho (referencia: leitura tipo Obsidian),
-% sem italico em nivel nenhum. Mapeamento Pandoc: `##`->\subsection,
-% `###`->\subsubsection, `####`->\paragraph. O \paragraph e run-in no
-% article (texto colado na linha do titulo); titleformat o torna bloco,
-% com o texto sempre comecando na linha seguinte.
-\titleformat{\section}{\LARGE\bfseries}{}{0em}{}
-\titleformat{\subsection}{\Large\bfseries}{}{0em}{\chaptersepinner}
-\titleformat{\subsubsection}{\large\bfseries}{}{0em}{}
-\titleformat{\paragraph}{\normalsize\bfseries}{}{0em}{}
+% Kicker de capitulo — inserido por Python antes de cada ##
+\newcommand{\sbkicker}[1]{%
+  \par\needspace{5.5\baselineskip}%
+  \vspace{2.2em}%
+  {\noindent\color{sbink}\rule{\linewidth}{0.7pt}}\par\nobreak
+  \vspace{0.55em}%
+  {\noindent\footnotesize\addfontfeatures{LetterSpace=20}\color{sbink}\MakeUppercase{#1}}\par\nobreak
+  \vspace{0.35em}%
+}
+
+% Referencias com recuo pendente
+\newenvironment{sbrefitem}{%
+  \par\begingroup\small\setlength{\parindent}{0pt}%
+  \hangindent=2.2em\hangafter=1\noindent
+}{%
+  \endgroup\par\vspace{0.45em}%
+}
+
+% Hierarquia de titulos (Titulo 1 = 18pt > Titulo 2 = 15.5pt > Titulo 3 = 13pt) — sem hifenizacao
+\titleformat{\section}{\huge\bfseries\color{sblink}\raggedright\hyphenpenalty=10000\exhyphenpenalty=10000}{}{0em}{}
+\titleformat{\subsection}{\fontsize{18pt}{22pt}\selectfont\addfontfeatures{LetterSpace=-1.5}\bfseries\color{sblink}\raggedright\hyphenpenalty=10000\exhyphenpenalty=10000}{}{0em}{}
+\titleformat{\subsubsection}{\fontsize{15.5pt}{19pt}\selectfont\addfontfeatures{LetterSpace=-1.0}\bfseries\color{sblink}\raggedright\hyphenpenalty=10000\exhyphenpenalty=10000}{}{0em}{}
+\titleformat{\paragraph}{\fontsize{13pt}{16pt}\selectfont\bfseries\color{sblink}\raggedright\hyphenpenalty=10000\exhyphenpenalty=10000}{}{0em}{}
 \titlespacing*{\section}{0pt}{2em}{0.8em}
-\titlespacing*{\subsection}{0pt}{2em}{0.5em}
-\titlespacing*{\subsubsection}{0pt}{1em}{0.3em}
-\titlespacing*{\paragraph}{0pt}{1em}{0.3em}
+\titlespacing*{\subsection}{0pt}{0pt}{0.45em}
+\titlespacing*{\subsubsection}{0pt}{1.2em}{0.35em}
+\titlespacing*{\paragraph}{0pt}{0.9em}{0.25em}
 \setlength{\parskip}{0.6em}
 \setlength{\parindent}{0pt}
 \onehalfspacing
@@ -526,6 +600,117 @@ def insert_page_break_after_sumario(body):
             lines[j] = '\\newpage\n' + lines[j]
             return '\n'.join(lines)
     return body
+
+
+# ---------------------------------------------------------------------------
+# Chapter kickers (semantic labels for ## headings in PDF)
+# ---------------------------------------------------------------------------
+# Palavras que nomeiam a seção inteira. Casadas ANCORADAS no início do título
+# (com número/rótulo opcional antes), como no template HTML: sem a âncora,
+# "Previsão de Conclusão com Modelos" viraria um capítulo rotulado CONCLUSÃO.
+SEMANTIC_RE = re.compile(
+    r'^\s*(?:(?:secao|capitulo|parte)\s*)?(?:\d+|[IVXLC]+)?\s*[.:\-]?\s*'
+    r'(introducao|conclusao|conclusion|referencias|references|bibliography|'
+    r'sumario|summary|abstract|resumo(?:\s+executivo)?|prefacio|prologo|'
+    r'epilogo|posfacio|agradecimentos|apendice|anexos?)\b'
+)
+
+SEMANTIC_LABELS = {
+    'introducao': 'Introdução', 'conclusao': 'Conclusão',
+    'conclusion': 'Conclusão', 'referencias': 'Referências',
+    'references': 'Referências', 'bibliography': 'Referências',
+    'sumario': 'Sumário', 'summary': 'Sumário',
+    'abstract': 'Resumo', 'resumo': 'Resumo',
+    'resumo executivo': 'Resumo Executivo',
+    'prefacio': 'Prefácio', 'prologo': 'Prólogo', 'epilogo': 'Epílogo',
+    'posfacio': 'Posfácio', 'agradecimentos': 'Agradecimentos',
+    'apendice': 'Apêndice', 'anexo': 'Anexo', 'anexos': 'Anexos',
+}
+
+SECTION_RE = re.compile(
+    r'^(#{1,4})\s+(?:(\d+(?:\.\d+)*)\.\s*)?(.+?)\s*$'
+)
+
+ROMAN_MAP = {'1':'I','2':'II','3':'III','4':'IV','5':'V',
+             '6':'VI','7':'VII','8':'VIII','9':'IX','10':'X',
+             '11':'XI','12':'XII','13':'XIII','14':'XIV','15':'XV',
+             '16':'XVI','17':'XVII','18':'XVIII','19':'XIX','20':'XX'}
+
+
+def _detect_self_numbered(heading_text):
+    m = SECTION_RE.match(heading_text)
+    if not m:
+        return None
+    prefix, num, _ = m.groups()
+    if len(prefix) != 2 or not num:
+        return None
+    return num
+
+
+def _semantic_label(heading_text):
+    """Palavra que nomeia a seção (Introdução, Conclusão...), ou None."""
+    m = SECTION_RE.match(heading_text)
+    if not m:
+        return None
+    _, _, title = m.groups()
+    slug = re.sub(r'\s+', ' ', unidecode(title).lower().strip())
+    sem = SEMANTIC_RE.match(slug)
+    if not sem:
+        return None
+    return SEMANTIC_LABELS.get(sem.group(1), sem.group(1).capitalize())
+
+
+def _roman(num):
+    parts = str(num).split('.')
+    label = ROMAN_MAP.get(parts[0], parts[0])
+    if len(parts) > 1:
+        label = f"{label}.{parts[1]}"
+    return label
+
+
+def inject_chapter_kickers(body):
+    """Insere `\\sbkicker{}` antes de cada `##`.
+
+    Todo `##` recebe kicker — é o comando que desenha o filete de capítulo e
+    o respiro acima do título (`\\titlespacing` do `\\subsection` é 0pt de
+    propósito). Um `##` sem kicker colaria no parágrafo anterior.
+
+    O rótulo é a palavra semântica quando o título a nomeia (Introdução,
+    Conclusão, Referências...); caso contrário é o numeral romano do
+    capítulo — vindo do próprio markdown (`## 3. Título`) ou de um contador
+    sequencial quando o essay não numera. Mesma lógica do template HTML,
+    que numera com `CAPÍTULO NN`.
+
+    Capítulo numerado tem o prefixo removido do título: o numeral já vive no
+    kicker e apareceria duas vezes.
+    """
+    lines = body.split('\n')
+    out = []
+    chapter_no = 0
+    for line in lines:
+        m = SECTION_RE.match(line)
+        if not (m and len(m.group(1)) == 2):
+            out.append(line)
+            continue
+
+        num = _detect_self_numbered(line)
+        label = _semantic_label(line)
+        heading = line
+        if label is None:
+            if num:
+                # Mantém o contador em sincronia com a numeração do autor.
+                chapter_no = int(str(num).split('.')[0])
+                label = _roman(num)
+                heading = re.sub(r'^##\s+\d+(?:\.\d+)*\.\s*', '## ', line)
+            else:
+                chapter_no += 1
+                label = _roman(chapter_no)
+
+        anchor = heading_anchor(line)
+        out.append(f'\\hypertarget{{{anchor}}}{{}}')
+        out.append(f'\\sbkicker{{{label}}}')
+        out.append(heading)
+    return '\n'.join(out)
 
 
 def prepare_for_pandoc(filepath):
@@ -592,8 +777,35 @@ def prepare_for_pandoc(filepath):
     # e virariam caixa.
     body = transform_markdown(body)
     
-    # Escape quotes in title for YAML
+    # Chapter kickers: semantic labels (Introdução, Conclusão, Referências)
+    # inserted as \sbkicker{} before each ## heading.
+    body = inject_chapter_kickers(body)
+    
+    # Escape quotes in title for YAML and format for raw LaTeX cover
     safe_title = title.replace('"', '\\"')
+    safe_title_latex = re.sub(r'[_*]([^\n_*]+)[_*]', r'\\textit{\1}', title)
+    safe_title_latex = (safe_title_latex.replace('&', '\\&').replace('%', '\\%').replace('#', '\\#'))
+    safe_title_latex = re.sub(r'(?<!\\)_', r'\\_', safe_title_latex)
+    
+    # Stats for cover meta-line
+    word_count = len(re.findall(r'\b\w+\b', body))
+    reading_time = max(1, round(word_count / 250))
+    chapter_count = len(re.findall(r'^##\s', body, flags=re.MULTILINE))
+    meta_parts = []
+    if chapter_count:
+        meta_parts.append(f"{chapter_count} cap.")
+    meta_parts.append(f"{reading_time} min de leitura")
+    meta_line = " · ".join(meta_parts)
+    
+    # Escape subtitle for LaTeX
+    safe_subtitle = ''
+    if subtitle:
+        safe_subtitle = (subtitle.replace('&', '\\&').replace('#', '\\#')
+                         .replace('%', '\\%').replace('_', '\\_'))
+    
+    # Include-before: cover page as raw LaTeX (directly in YAML block scalar)
+    include_before = f"\\sbcover{{{safe_title_latex}}}{{{author_date}}}{{{safe_subtitle}}}{{{meta_line}}}"
+    include_before_indented = "\n".join("    " + line for line in include_before.split("\n"))
     
     # Wrapped in a ```{=latex} fence so Pandoc's Markdown reader treats this
     # YAML block-scalar as raw LaTeX verbatim, instead of parsing it as
@@ -605,40 +817,30 @@ def prepare_for_pandoc(filepath):
     header_indented = "\n".join("    " + line for line in header_body.split("\n"))
 
     # Build new YAML frontmatter for Pandoc
-    # NOTE: subtitle is injected as body text below, not in YAML, to control spacing
     pandoc_meta = f"""---
 title: "{safe_title}"
 author: "{author_date}"
+lang: pt-BR
 documentclass: article
 classoption:
   - 12pt
   - a4paper
 geometry:
-  - top=30mm
-  - bottom=30mm
-  - left=25mm
-  - right=25mm
+  - top=22mm
+  - bottom=22mm
+  - left=20mm
+  - right=20mm
 header-includes:
   - |
 {header_indented}
+include-before:
+  - |
+{include_before_indented}
 ---
 
 """
     
-    # Inject subtitle as styled text right after the YAML block
-    subtitle_block = ""
-    if subtitle:
-        # Escape LaTeX special characters in subtitle
-        safe_subtitle = subtitle.replace('&', '\\&').replace('#', '\\#').replace('%', '\\%').replace('_', '\\_')
-        subtitle_block = f"""\\begin{{center}}
-\\textcolor{{subtlegray}}{{\\large {safe_subtitle}}}
-\\end{{center}}
-
-\\vspace{{0.5em}}
-
-"""
-    
-    return pandoc_meta + subtitle_block + body
+    return pandoc_meta + body
 
 
 def export_essay(filepath, output_dir=None, source_dir=None):
@@ -680,9 +882,9 @@ def export_essay(filepath, output_dir=None, source_dir=None):
         '--pdf-engine=lualatex',
         '--highlight-style=pygments',
         '-V', 'colorlinks=true',
-        '-V', 'urlcolor=blue',
-        '-V', 'linkcolor=blue',
-        '-V', 'citecolor=blue',
+        '-V', 'urlcolor=sburl',
+        '-V', 'linkcolor=sblink',
+        '-V', 'citecolor=sburl',
         f'--resource-path={filepath.parent}',
         # Fenced divs semanticos -> ambientes tcolorbox (wikibox/wikiquote/
         # wikipull/wikicard) + legendas "Fig. N" em corpo menor.
