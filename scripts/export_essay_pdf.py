@@ -43,7 +43,6 @@ import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
 # (caixas tipadas, cards, pull-quotes, rotulos) em fenced divs semanticos,
 # que o filtro scripts/pdf_boxes.lua mapeia para ambientes tcolorbox no LaTeX.
 from html_preprocess import transform_markdown
-from mermaid_preprocess import render_mermaid_blocks, has_mermaid
 
 ROOT_DIR = Path(__file__).resolve().parent.parent
 LUA_FILTER = Path(__file__).resolve().parent / "pdf_boxes.lua"
@@ -714,11 +713,8 @@ def inject_chapter_kickers(body):
     return '\n'.join(out)
 
 
-def prepare_for_pandoc(filepath, output_dir=None):
+def prepare_for_pandoc(filepath):
     """Prepare a markdown file for Pandoc PDF conversion."""
-    if output_dir is None:
-        output_dir = OUTPUT_DIR
-    output_dir = Path(output_dir)
     with open(filepath, 'r', encoding='utf-8') as f:
         content = f.read()
     
@@ -773,25 +769,14 @@ def prepare_for_pandoc(filepath, output_dir=None):
     
     # Resolve image paths to absolute
     body = resolve_image_paths(body, Path(filepath).parent)
-
-    # Blocos ```mermaid -> PNG via mmdc (Mermaid CLI), antes do Pandoc.
-    # Se mmdc nao estiver instalado, o bloco original fica intacto (Pandoc
-    # emite como codigo literal, nao como imagem).
-    if has_mermaid(body):
-        body, n_diagrams = render_mermaid_blocks(body, Path(output_dir), Path(filepath).stem)
-        if n_diagrams:
-            print(f"    Mermaid: {n_diagrams} diagrama(s) renderizado(s) como PNG")
-        else:
-            print("    WARNING: blocos Mermaid encontrados mas mmdc nao disponivel — "
-                  "instale com: npm install -g @mermaid-js/mermaid-cli")
-
+    
     # Caixas de realce -> fenced divs semanticos (mesmo preprocessador do
     # HTML; o filtro pdf_boxes.lua os converte em ambientes LaTeX). Roda
     # DEPOIS de remove_h1_and_byline — senao as bylines `> Ensaio` /
     # `> Gustavo Zambrano ...` seriam classificadas como rotulo+conteudo
     # e virariam caixa.
     body = transform_markdown(body)
-
+    
     # Chapter kickers: semantic labels (Introdução, Conclusão, Referências)
     # inserted as \sbkicker{} before each ## heading.
     body = inject_chapter_kickers(body)
@@ -879,7 +864,7 @@ def export_essay(filepath, output_dir=None, source_dir=None):
     output_dir.mkdir(parents=True, exist_ok=True)
     
     # Prepare content
-    prepared = prepare_for_pandoc(filepath, output_dir=output_dir)
+    prepared = prepare_for_pandoc(filepath)
     
     # Write to temp file
     temp_path = output_dir / f"_temp_{filepath.stem}.md"
