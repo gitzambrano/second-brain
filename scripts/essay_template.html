@@ -671,5 +671,43 @@ $body$
   }
 })();
 </script>
+<script>
+/* ── Mermaid: renderiza blocos ```mermaid como SVG inline ──────────────── */
+(function(){
+  /* Pandoc emite <pre><code class="language-mermaid">...</code></pre>        */
+  /* (com ou sem o prefixo "language-"). Procuramos os dois padrões.          */
+  var blocks = document.querySelectorAll(
+    'pre code.language-mermaid, pre code.mermaid'
+  );
+  if (!blocks.length) return;
+
+  var s = document.createElement('script');
+  s.type = 'module';
+  s.textContent = [
+    'import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";',
+    'mermaid.initialize({',
+    '  startOnLoad: false,',
+    '  theme: document.documentElement.getAttribute("data-theme") === "light" ? "default" : "dark",',
+    '  flowchart: { useMaxWidth: true, htmlLabels: true },',
+    '  fontFamily: "inherit"',
+    '});',
+    '(async () => {',
+    '  var nodes = document.querySelectorAll("pre code.language-mermaid, pre code.mermaid");',
+    '  for (var i = 0; i < nodes.length; i++) {',
+    '    var code = nodes[i];',
+    '    var src  = code.textContent;',
+    '    var wrap = document.createElement("div");',
+    '    wrap.className = "mermaid-diagram";',
+    '    wrap.style.cssText = "text-align:center;margin:1.6em auto;max-width:100%;overflow-x:auto;";',
+    '    var id = "mermaid-" + i;',
+    '    var result = await mermaid.render(id, src);',
+    '    wrap.innerHTML = result.svg;',
+    '    code.parentNode.replaceWith(wrap);',
+    '  }',
+    '})();'
+  ].join('\n');
+  document.body.appendChild(s);
+})();
+</script>
 </body>
 </html>

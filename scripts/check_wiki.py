@@ -539,6 +539,8 @@ def check_essay(filepath: Path) -> dict:
         # (até max(listed)+2): [64]/[255] num essay cuja bibliografia vai
         # a [15] é notação (casas do tabuleiro, índice de vetor), não citação.
         cite_body = strip_fences(body_before_ref)
+        cite_body = re.sub(r"\[\[#(?:refer[eê]ncias|references)\|([^\]]*)\]\]", r"\1", cite_body, flags=re.IGNORECASE)
+        cite_body = re.sub(r"\[(\d{1,3}(?:\s*,\s*\d{1,3})*)\]\(#(?:refer[eê]ncias|references)\)", r"[\1]", cite_body, flags=re.IGNORECASE)
         cite_body = re.sub(r"\[([^\]]*)\]\([^\)]*\)", "", cite_body)
         cite_body = re.sub(r"\[\[(?:[^\]]*)\]\]", "", cite_body)
         cited = set()
