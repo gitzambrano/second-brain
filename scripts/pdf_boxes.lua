@@ -458,23 +458,4 @@ function RawBlock(el)
   return nil
 end
 
--- ------------------------------------------------------------------
--- Table: insert hairline horizontal rules between table data rows
--- ------------------------------------------------------------------
 
-function Table(el)
-  for _, body in ipairs(el.bodies) do
-    for r_idx, row in ipairs(body.body) do
-      if r_idx < #body.body then
-        local cell = row.cells[#row.cells]
-        if cell and #cell.content > 0 then
-          local blk = cell.content[#cell.content]
-          if blk.content then
-            table.insert(blk.content, pandoc.RawInline('latex', [[ \tabularnewline \hline \noalign{\vspace{2pt}} %]]))
-          end
-        end
-      end
-    end
-  end
-  return el
-end

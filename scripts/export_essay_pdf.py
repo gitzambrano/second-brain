@@ -274,8 +274,7 @@ def resolve_image_paths(text, essay_dir):
 HEADER_TEX = r"""\usepackage{fancyhdr}
 \usepackage{xcolor}
 \usepackage{needspace}
-\usepackage[nobottomtitles*]{titlesec}
-\renewcommand{\bottomtitlespace}{3.5\baselineskip}
+\usepackage{titlesec}
 \clubpenalty=10000
 \widowpenalty=10000
 \displaywidowpenalty=10000
@@ -490,7 +489,7 @@ luaotfload.add_fallback
 \fancyfoot[R]{\footnotesize\textcolor{subtlegray}{\thepage}}
 \renewcommand{\headrulewidth}{0pt}
 \renewcommand{\footrulewidth}{0pt}
-\setlength{\footskip}{65pt}
+\setlength{\footskip}{30pt}
 % Paginas em estilo plain (capa, via \maketitle) seguem o mesmo padrao.
 \fancypagestyle{plain}{%
   \fancyhf{}%
@@ -547,7 +546,7 @@ luaotfload.add_fallback
 
 % Kicker de capitulo — inserido por Python antes de cada ##
 \newcommand{\sbkicker}[1]{%
-  \par\needspace{5.5\baselineskip}%
+  \par\needspace{7\baselineskip}%
   \vspace{2.2em}%
   {\noindent\color{sbink}\rule{\linewidth}{0.7pt}}\par\nobreak
   \vspace{0.55em}%
