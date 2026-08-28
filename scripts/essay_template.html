@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR"$if(status)$ data-status="$status$"$endif$>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -149,6 +149,15 @@ body{
   font-size:.62rem;letter-spacing:.18em;text-transform:uppercase;
   color:var(--text-dim);opacity:.85;margin-top:.95rem;
 }
+/* Rascunho ocupa o LUGAR do tempo de leitura (ver o JS no fim do arquivo):
+   num draft a duração ainda não significa nada, e o estado significa. Fica
+   no mesmo versalete, só com um filete ao redor para não passar batido. */
+.cover-meta.cover-draft{
+  color:var(--gold);opacity:1;
+  border:1px solid color-mix(in srgb,var(--gold) 45%,transparent);
+  border-radius:2px;padding:.3rem .7rem;
+  display:inline-block;
+}
 
 /* ------------------------------------------------------------------ */
 /* Conteudo                                                            */
@@ -175,12 +184,25 @@ h1,h2,h3,h4,h5,h6{font-family:var(--font-display);color:var(--text-bright);line-
   background:color-mix(in srgb,var(--border) 82%,transparent);
 }
 .content h2#sumário{display:none;}
-/* h3: família sans para distinguir de ## por família, não só por tamanho */
+/* h3: distingue-se de h2 por PESO, CORPO e cor — não por família.
+   O monoespaçado que estava aqui punha um subtítulo com cara de rótulo de
+   código no meio de prosa serifada; num ensaio, `### Como mede` lia como
+   comentário de programa. A serifa de display em corpo menor e cor mais
+   fraca separa o nível sem trocar de universo tipográfico. O mono continua
+   sendo a voz dos rótulos (.sb-kicker, .box-badge, .label-solo, th), que é
+   justamente o que h3 NÃO é. */
 h3{
-  font-family:'JetBrains Mono',Consolas,monospace;
-  font-size:1rem;font-weight:600;letter-spacing:.04em;
-  margin:2rem 0 .8rem;
-  color:color-mix(in srgb,var(--text-bright) 80%,var(--text));
+  font-family:var(--font-display);
+  font-size:1.24rem;font-weight:700;letter-spacing:-.005em;
+  line-height:1.3;
+  margin:2.3rem 0 .7rem;
+  color:color-mix(in srgb,var(--text-bright) 72%,var(--text-dim));
+}
+h4{
+  font-family:var(--font-display);
+  font-size:1.05rem;font-weight:700;
+  margin:1.8rem 0 .55rem;
+  color:color-mix(in srgb,var(--text-bright) 62%,var(--text-dim));
 }
 
 p{
@@ -498,10 +520,14 @@ h2#referencias ~ p {
   line-height:1.62;
   margin-bottom:.75rem;
 }
-/* ↗ nos links externos dentro das referências */
-h2#referências ~ p a[href^="http"]::after,
-h2#referencias ~ p a[href^="http"]::after {
-  content:" ↗";
+/* ↗ só no ÚLTIMO link da referência — o "Link" final, que é o ponteiro
+   para a fonte. Antes a seta caía em todo link externo da citação (o
+   título da obra, um termo do comentário) e a entrada terminava com duas
+   ou três setas: "... 1689.↗ Wikipedia. Link ↗". A palavra "Link"
+   permanece; a seta apenas a acompanha. */
+h2#referências ~ p a[href^="http"]:last-of-type::after,
+h2#referencias ~ p a[href^="http"]:last-of-type::after {
+  content:"\00A0↗";
   font-size:.75em;
   vertical-align:.1em;
   color:var(--gold);
@@ -657,15 +683,24 @@ $body$
     refs.textContent="";
     refs.appendChild(k);
   }
-  /* Meta-row da capa: tempo de leitura (~200 palavras/min) e capitulos. */
+  /* Meta-row da capa: tempo de leitura (~200 palavras/min) e capitulos \u2014
+     ou a marca de rascunho, que ocupa o LUGAR dela. `status` chega como
+     variavel do pandoc (-V status=... em export_essay_html.py); so `draft`
+     e marcado, `finalizado` nao recebe nada. */
   if(content&&h2s.length){
-    var words=(content.innerText||"").trim().split(/\s+/).length;
-    var mins=Math.max(1,Math.round(words/200));
     var by=document.querySelector(".byline");
     if(by){
       var meta=document.createElement("p");
       meta.className="cover-meta";
-      meta.textContent="~"+mins+" min de leitura \u00b7 "+h2s.length+" cap\u00edtulos";
+      var isDraft=document.documentElement.getAttribute("data-status")==="draft";
+      if(isDraft){
+        meta.className+=" cover-draft";
+        meta.textContent="Rascunho";
+      }else{
+        var words=(content.innerText||"").trim().split(/\s+/).length;
+        var mins=Math.max(1,Math.round(words/200));
+        meta.textContent="~"+mins+" min de leitura \u00b7 "+h2s.length+" cap\u00edtulos";
+      }
       by.parentNode.insertBefore(meta,by.nextSibling);
     }
   }

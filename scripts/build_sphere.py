@@ -585,6 +585,13 @@ SPHERE_HTML_TEMPLATE = """<!DOCTYPE html>
   .idx-read { width: 30px; height: 30px; margin-left: auto; padding: 0; border-radius: 50%;
     border: 1px solid var(--panel-border); background: #1b1e21; color: var(--ink-dim);
     cursor: pointer; font-size: 14px; line-height: 1; flex: none; vertical-align: middle; }
+  a.idx-read { display: inline-flex; align-items: center; justify-content: center;
+    text-decoration: none; }
+  a.idx-read:hover { text-decoration: none; }
+  .idx-draft { margin-left: 8px; font-size: 9px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--ink-dim); opacity: .75;
+    border: 1px solid var(--panel-border); border-radius: 3px;
+    padding: 1px 5px; vertical-align: middle; white-space: nowrap; }
   .idx-read:hover { color: var(--instrument-blue); border-color: var(--instrument-blue);
     background: rgba(79,168,255,.12); }
   #reader-overlay { display: none; position: fixed; inset: 0; z-index: 60; background: var(--bg); }
@@ -1506,15 +1513,17 @@ function selectNode(d) {
   const target = d.type === "reference" ? d.url : (d.file ? "../../" + d.file : null);
   const slug = essaySlugOf(d);
   const hasReader = slug && readerEssays()[slug];
+  const readHref = !hasReader && d.type === "essay" ? d.htmlFile : null;
   detailEl.hidden = false;
   const actions =
     (hasReader ? `<button type="button" class="read-btn" data-read="${escapeHtml(slug)}">📖 Ler</button>` : "") +
+    (readHref ? `<a class="read-btn" href="${escapeHtml(readHref)}" target="_blank">📖 Ler</a>` : "") +
     (target ? `<a class="detail-open" href="${escapeHtml(target)}" target="_blank">${d.type === "essay" ? ".MD" : "Abrir"}</a>` : "");
   detailEl.innerHTML =
     `<div class="detail-title">${escapeHtml(d.title)}</div>` +
     `<div class="detail-tags">${(d.tags || []).map(x => `<span>${escapeHtml(x)}</span>`).join("")}</div>` +
     (actions ? `<div class="detail-actions">${actions}</div>` : "");
-  const readBtn = detailEl.querySelector(".read-btn");
+  const readBtn = detailEl.querySelector("button.read-btn");
   if (readBtn) readBtn.addEventListener("click", (ev) => {
     ev.stopPropagation();
     openReader(readBtn.getAttribute("data-read"));
@@ -1530,6 +1539,8 @@ function openNode(d) {
   if (d.type === "essay") {
     const slug = essaySlugOf(d);
     if (slug && readerEssays()[slug]) { openReader(slug); return; }
+    // Build leve: sem leitor embutido, abre o HTML ja exportado.
+    if (d.htmlFile) { window.open(d.htmlFile, "_blank"); return; }
   }
   if (d.file) {
     window.open("../../" + d.file, "_blank");
@@ -1960,11 +1971,16 @@ function renderTypeIndex() {
       const rSlug = essaySlugOf(n);
       const readBtn = (rSlug && readerEssays()[rSlug])
         ? `<button type="button" class="idx-read" data-read="${escapeHtml(rSlug)}" aria-label="Ler ${escapeHtml(n.title)}" title="Ler">📖</button>`
+        : (n.htmlFile
+          ? `<a class="idx-read" href="${escapeHtml(n.htmlFile)}" target="_blank" aria-label="Ler ${escapeHtml(n.title)}" title="Ler">📖</a>`
+          : "");
+      const draft = n.status === "draft"
+        ? `<span class="idx-draft" title="Rascunho">draft</span>`
         : "";
       const row = `<tr data-id="${escapeHtml(n.id)}">
       <td data-label="Título"><span style="display:flex;align-items:center;gap:8px;">${hasSummary
         ? `<button type="button" class="idx-expand" aria-label="Mostrar resumo" aria-expanded="false">▸</button> `
-        : ""}<span style="flex:1;min-width:0;">${highlightMatch(n.title, state.query)}</span>${readBtn}</span></td>
+        : ""}<span style="flex:1;min-width:0;">${highlightMatch(n.title, state.query)}${draft}</span>${readBtn}</span></td>
       <td class="idx-tagcell" data-label="Tags">${(n.tags || []).map(t => `<span>${escapeHtml(t)}</span>`).join("")}</td>
       <td data-label="Conexões">${n.degree}</td>
       <td data-label="Tamanho">${sizeOf(n) ? sizeOf(n) + " linhas" : "—"}</td></tr>`;
@@ -1992,11 +2008,16 @@ function renderTypeIndex() {
     });
 
     // 📖 na linha abre o leitor sem fechar o índice nem navegar o grafo.
-    tbody.querySelectorAll(".idx-read").forEach(b => {
+    // `button.idx-read` e nao `.idx-read`: no build leve o mesmo lugar tem um
+    // <a> que navega sozinho — um seletor solto chamaria openReader(null).
+    tbody.querySelectorAll("button.idx-read").forEach(b => {
       b.addEventListener("click", (e) => {
         e.stopPropagation();
         openReader(b.getAttribute("data-read"));
       });
+    });
+    tbody.querySelectorAll("a.idx-read").forEach(a => {
+      a.addEventListener("click", (e) => e.stopPropagation());
     });
 
     tbody.querySelectorAll("tr").forEach(tr => {

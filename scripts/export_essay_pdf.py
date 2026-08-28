@@ -533,16 +533,17 @@ luaotfload.add_fallback
 }{%
   \endgroup\par\vspace{0.8em}%
 }
-\newcommand{\sbtocentry}[2]{%
+% #1 = numeral da goteira, #2 = titulo (inlines do Pandoc, com matematica e
+% enfase preservadas — o filtro nao achata mais em texto). O recuo pendente
+% mantem a segunda linha de um titulo longo alinhada ao texto, nunca sob o
+% numeral.
+\newcommand{\sbtocopen}[2]{%
   \par\noindent
   \makebox[1.8em][r]{\mbox{\footnotesize\color{sbink}\rmfamily #1}}%
-  \hspace{0.8em}#2\par
+  \hspace{0.8em}%
+  \begin{minipage}[t]{\dimexpr\linewidth-2.6em\relax}#2\end{minipage}\par
 }
-\newcommand{\sbtocentrylast}[2]{%
-  \par\noindent
-  \makebox[1.8em][r]{\mbox{\footnotesize\color{sbink}\rmfamily #1}}%
-  \hspace{0.8em}#2\par
-}
+\newcommand{\sbtocopenlast}[2]{\sbtocopen{#1}{#2}}
 
 % Kicker de capitulo — inserido por Python antes de cada ##
 \newcommand{\sbkicker}[1]{%
@@ -550,22 +551,37 @@ luaotfload.add_fallback
   \vspace{2.2em}%
   {\noindent\color{sbink}\rule{\linewidth}{0.7pt}}\par\nobreak
   \vspace{0.55em}%
-  {\noindent\footnotesize\addfontfeatures{LetterSpace=20}\color{sbink}\MakeUppercase{#1}}\par\nobreak
-  \vspace{0.35em}%
+  % Corpo \small (nao \footnotesize): um numeral solto — "I", "V" — em
+  % footnotesize sumia ao lado de um titulo de 18pt e lia como sujeira de
+  % pagina em vez de rotulo. Espacejamento maior pelo mesmo motivo.
+  {\noindent\small\addfontfeatures{LetterSpace=28}\color{sbink}\MakeUppercase{#1}}\par\nobreak
+  \vspace{0.4em}%
 }
 
 % Referencias com recuo pendente
+% Referencias com recuo pendente.
+% `\hangindent` vale para UM paragrafo e e zerado no `\par` seguinte — como
+% o Pandoc emite o texto da referencia como bloco proprio, o recuo se perdia
+% e todas as linhas saiam rentes a margem. `\leftskip` + `\parindent`
+% negativo sao parametros de forma de paragrafo: valem para todo `\par`
+% dentro do grupo, entao o recuo sobrevive a quantos blocos o Pandoc gerar.
 \newenvironment{sbrefitem}{%
-  \par\begingroup\small\setlength{\parindent}{0pt}%
-  \hangindent=2.2em\hangafter=1\noindent
+  \par\begingroup\small
+  \setlength{\leftskip}{2.2em}%
+  \setlength{\parindent}{-2.2em}%
+  \setlength{\parskip}{0pt}%
 }{%
-  \endgroup\par\vspace{0.45em}%
+  \par\endgroup\vspace{0.45em}%
 }
 
 % Hierarquia de titulos (Titulo 1 = 18pt > Titulo 2 = 15.5pt > Titulo 3 = 13pt) — sem hifenizacao
 \titleformat{\section}{\huge\bfseries\color{sblink}\raggedright\hyphenpenalty=10000\exhyphenpenalty=10000}{}{0em}{}
 \titleformat{\subsection}{\fontsize{18pt}{22pt}\selectfont\addfontfeatures{LetterSpace=-1.5}\bfseries\color{sblink}\raggedright\hyphenpenalty=10000\exhyphenpenalty=10000}{}{0em}{}
-\titleformat{\subsubsection}{\fontsize{15.5pt}{19pt}\selectfont\addfontfeatures{LetterSpace=-1.0}\bfseries\color{sblink}\raggedright\hyphenpenalty=10000\exhyphenpenalty=10000}{}{0em}{}
+% `###` distingue-se de `##` por FAMILIA e COR, nao so por corpo: 15,5pt
+% bold serif preto contra 18pt bold serif preto eram praticamente o mesmo
+% titulo, e um `###` no pe da pagina lia como abertura de capitulo.
+% Libertinus Sans em grafite resolve sem introduzir cor nova.
+\titleformat{\subsubsection}{\needspace{4\baselineskip}\fontsize{13pt}{16pt}\selectfont\sffamily\bfseries\color{sbgraphite}\raggedright\hyphenpenalty=10000\exhyphenpenalty=10000}{}{0em}{}
 \titleformat{\paragraph}{\fontsize{13pt}{16pt}\selectfont\bfseries\color{sblink}\raggedright\hyphenpenalty=10000\exhyphenpenalty=10000}{}{0em}{}
 \titlespacing*{\section}{0pt}{2em}{0.8em}
 \titlespacing*{\subsection}{0pt}{0pt}{0.45em}
@@ -615,6 +631,19 @@ SEMANTIC_RE = re.compile(
     r'epilogo|posfacio|agradecimentos|apendice|anexos?)\b'
 )
 
+# Seções que são aparato do documento, não capítulos — excluídas da
+# contagem de capítulos da capa.
+#
+# Casa o título INTEIRO, não o prefixo: com `\b` no fim, o capítulo
+# "Índice de Experimentos Mentais e Evidências Empíricas" (um capítulo de
+# verdade, em quem-e-voce) era lido como sumário e sumia da contagem.
+# O sufixo opcional cobre as variantes reais ("Referências Bibliográficas")
+# sem abrir a porta para qualquer continuação.
+SEMANTIC_APARATO_RE = re.compile(
+    r'^(?:sumario|summary|indice|referencias|references|bibliography)'
+    r'(?:\s+(?:bibliograficas?|citadas?|consultadas?))?$'
+)
+
 SEMANTIC_LABELS = {
     'introducao': 'Introdução', 'conclusao': 'Conclusão',
     'conclusion': 'Conclusão', 'referencias': 'Referências',
@@ -637,14 +666,22 @@ ROMAN_MAP = {'1':'I','2':'II','3':'III','4':'IV','5':'V',
              '16':'XVI','17':'XVII','18':'XVIII','19':'XIX','20':'XX'}
 
 
+# Prefixo de numeração do próprio título, árabe OU romano:
+# "## 3. Título", "## 3.1 Título", "## VI. Título", "## IV - Título".
+# `SECTION_RE` só enxerga o árabe; sem esta segunda passada o romano
+# sobrevivia no título e o PDF imprimia "VI" no kicker e "VI. Teoria..."
+# logo abaixo — a numeração duas vezes na mesma abertura de capítulo.
+HEADING_NUM_RE = re.compile(
+    r'^(#{2})\s+(?:(\d+(?:\.\d+)*)|([IVXLC]+))\s*[.\-–:]\s*(.+?)\s*$'
+)
+
+
 def _detect_self_numbered(heading_text):
-    m = SECTION_RE.match(heading_text)
+    """Numeral escrito pelo autor no título, na grafia original, ou None."""
+    m = HEADING_NUM_RE.match(heading_text)
     if not m:
         return None
-    prefix, num, _ = m.groups()
-    if len(prefix) != 2 or not num:
-        return None
-    return num
+    return m.group(2) or m.group(3)
 
 
 def _semantic_label(heading_text):
@@ -676,10 +713,13 @@ def inject_chapter_kickers(body):
     propósito). Um `##` sem kicker colaria no parágrafo anterior.
 
     O rótulo é a palavra semântica quando o título a nomeia (Introdução,
-    Conclusão, Referências...); caso contrário é o numeral romano do
-    capítulo — vindo do próprio markdown (`## 3. Título`) ou de um contador
-    sequencial quando o essay não numera. Mesma lógica do template HTML,
-    que numera com `CAPÍTULO NN`.
+    Conclusão, Referências...); caso contrário é o numeral do capítulo.
+
+    O numeral respeita a grafia do autor: `## 3. Título` vira kicker "3",
+    `## VI. Título` vira "VI". Quando o essay não numera, o contador
+    sequencial usa ARÁBICO — as subseções (`### 3.1`) são sempre arábicas, e
+    um kicker "III" acima de um "3.1" punha dois sistemas de numeração na
+    mesma página.
 
     Capítulo numerado tem o prefixo removido do título: o numeral já vive no
     kicker e apareceria duas vezes.
@@ -696,15 +736,20 @@ def inject_chapter_kickers(body):
         num = _detect_self_numbered(line)
         label = _semantic_label(line)
         heading = line
-        if label is None:
-            if num:
-                # Mantém o contador em sincronia com a numeração do autor.
-                chapter_no = int(str(num).split('.')[0])
-                label = _roman(num)
-                heading = re.sub(r'^##\s+\d+(?:\.\d+)*\.\s*', '## ', line)
-            else:
-                chapter_no += 1
-                label = _roman(chapter_no)
+
+        if num:
+            # O prefixo sai do título SEMPRE que existe — inclusive em
+            # "## 9. Conclusão", onde o rótulo é a palavra e o "9." ficaria
+            # sobrando ao lado dela.
+            nm = HEADING_NUM_RE.match(line)
+            heading = f'## {nm.group(4)}'
+            if nm.group(2):
+                chapter_no = int(nm.group(2).split('.')[0])
+            if label is None:
+                label = num
+        elif label is None:
+            chapter_no += 1
+            label = str(chapter_no)
 
         anchor = heading_anchor(line)
         out.append(f'\\hypertarget{{{anchor}}}{{}}')
@@ -790,12 +835,24 @@ def prepare_for_pandoc(filepath):
     # Stats for cover meta-line
     word_count = len(re.findall(r'\b\w+\b', body))
     reading_time = max(1, round(word_count / 250))
-    chapter_count = len(re.findall(r'^##\s', body, flags=re.MULTILINE))
-    meta_parts = []
-    if chapter_count:
-        meta_parts.append(f"{chapter_count} cap.")
-    meta_parts.append(f"{reading_time} min de leitura")
-    meta_line = " · ".join(meta_parts)
+    # Só capítulos de conteúdo: `## Sumário` e `## Referências` são aparato,
+    # não capítulos. Contá-los dava "13 cap." num essay de 11 — e o HTML,
+    # que já os exclui, mostrava um número diferente para o mesmo essay.
+    chapter_count = sum(
+        1 for h in re.findall(r'^##\s+(.+)$', body, flags=re.MULTILINE)
+        if not SEMANTIC_APARATO_RE.match(unidecode(h).lower().strip())
+    )
+    # Rascunho ocupa o LUGAR do tempo de leitura (mesma regra do export HTML
+    # e do leitor do grafo): num draft a duração ainda não significa nada, e
+    # o estado significa. Só `draft` é marcado; `finalizado` não recebe nada.
+    if str(meta.get('status') or '').strip().lower() == 'draft':
+        meta_line = "Rascunho"
+    else:
+        meta_parts = []
+        if chapter_count:
+            meta_parts.append(f"{chapter_count} cap.")
+        meta_parts.append(f"{reading_time} min de leitura")
+        meta_line = " · ".join(meta_parts)
     
     # Escape subtitle for LaTeX
     safe_subtitle = ''
@@ -903,7 +960,13 @@ def export_essay(filepath, output_dir=None, source_dir=None):
         # duras agora são aplicadas apenas DENTRO das caixas pelo
         # pré-processador; globalmente, transformavam todo parágrafo corrido
         # em uma pilha de quebras de linha.
-        '-f', 'markdown+smart+tex_math_dollars+pipe_tables+strikeout+superscript+subscript-implicit_figures+gfm_auto_identifiers',
+                # +lists_without_preceding_blankline: 28 listas em 10 essays do corpus
+        # são escritas coladas no parágrafo que as introduz ("...pode:" seguido
+        # direto de "- Ler ..."). Sem a extensão o Pandoc não deixa a lista
+        # interromper o parágrafo e ela sai como prosa corrida com hífens
+        # literais no meio da frase, nos DOIS exports. Ligar aqui corrige o
+        # corpus inteiro sem editar um `.md` sequer.
+        '-f', 'markdown+smart+tex_math_dollars+pipe_tables+strikeout+superscript+subscript-implicit_figures+gfm_auto_identifiers+lists_without_preceding_blankline',
     ]
     
     print(f"  Exporting: {filepath.name} -> {pdf_path.name}")

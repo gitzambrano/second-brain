@@ -305,7 +305,25 @@ def build_graph():
                 # SUMMARY_MAX_CHARS lá). Usado no modal de Índice para um
                 # resumo expansível por essay, sem precisar reabrir o arquivo.
                 "summary": str(fm.get("summary") or "").strip(),
-                "file": str(file.relative_to(ROOT_DIR)),
+                # POSIX sempre: `file` vira href no HTML (`../../` + file) e no
+                # Windows `relative_to` devolve `wiki\essays\x.md`, montando
+                # `../../wiki\essays\x.md`. Funciona no file:// do Windows e
+                # em mais nenhum lugar.
+                "file": file.relative_to(ROOT_DIR).as_posix(),
+                # HTML exportado do essay, quando existe. Resolvido no BUILD e
+                # não no navegador: sem isso o modo leve teria de adivinhar se
+                # `/html` já rodou, e quem nunca rodou ganharia link quebrado.
+                # Caminho relativo a output/graph/, onde o arquivo é gravado.
+                "htmlFile": (
+                    f"../html/{file.stem}.html"
+                    if node_type == "essay"
+                    and (OUTPUT_DIR.parent / "html" / f"{file.stem}.html").exists()
+                    else None
+                ),
+                # Rascunho vs. finalizado: o `status:` do frontmatter só era
+                # lido pelo build_index e morria ali. O grafo usa para marcar
+                # draft no painel Índice e na capa do leitor.
+                "status": str(fm.get("status") or "").strip().lower() or None,
                 "url": None,
                 "degree": 0,
             }
@@ -771,7 +789,7 @@ def render_reader_fragments(essay_nodes):
     for i, node in enumerate(essay_nodes, 1):
         path = ROOT_DIR / node["file"]
         try:
-            body, title, subtitle, author_date, summary = prepare_for_pandoc(path)
+            body, title, subtitle, author_date, summary, _status = prepare_for_pandoc(path)
         except Exception as e:  # noqa: BLE001 - essay problemático não derruba o build
             print(f"  aviso: falha ao preparar leitor de {path.name}: {e}")
             continue
@@ -822,6 +840,9 @@ def render_reader_fragments(essay_nodes):
         payload[node["id"].removeprefix("essay:")] = {
             "t": node["title"],
             "tags": node.get("tags") or [],
+            # Só `draft` viaja: o leitor usa para trocar a meta-row da capa
+            # pela marca de rascunho. `finalizado` não precisa de campo.
+            "status": node.get("status") if node.get("status") == "draft" else None,
             "html": frag,
         }
         if i % 10 == 0 or i == total:
@@ -1222,6 +1243,17 @@ HTML_TEMPLATE = """<!DOCTYPE html>
     cursor: pointer; font-size: 14px; line-height: 1; flex: none; vertical-align: middle; }
   .idx-read:hover { color: var(--instrument-blue); border-color: var(--instrument-blue);
     background: rgba(79,168,255,.12); }
+  /* No build leve o 📖 é um <a>: precisa do mesmo desenho do <button>, que
+     não herda (âncora não é flex item centrado nem perde o sublinhado). */
+  a.idx-read { display: inline-flex; align-items: center; justify-content: center;
+    text-decoration: none; }
+  a.idx-read:hover { text-decoration: none; }
+  /* Marca de rascunho ao lado do título no Índice. Versalete pequeno, sem
+     fundo: mesmo peso das tags, para sinalizar sem competir com o título. */
+  .idx-draft { margin-left: 8px; font-size: 9px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--ink-dim); opacity: .75;
+    border: 1px solid var(--panel-border); border-radius: 3px;
+    padding: 1px 5px; vertical-align: middle; white-space: nowrap; }
   #reader-overlay { display: none; position: fixed; inset: 0; z-index: 60; background: var(--bg); }
   #reader-overlay.open { display: block; }
   #reader-overlay .sb-progress { position: absolute; top: 0; left: 0; right: 0; height: 3px; z-index: 5; }
@@ -1293,6 +1325,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <script>__PAKO__</script>
 <script type="application/json" id="sb-graph-data">__GRAPH_B64__</script>
 <script type="application/json" id="sb-reader-data">__READER_B64__</script>
+<script type="application/json" id="sb-mathjax-data">__MATHJAX_B64__</script>
 <script>
 // Payloads chegam comprimidos (deflate-raw + base64) em tags JSON: o parser
 // de JS não vê os MB de dados na inicialização — cada payload é inflado
@@ -1870,11 +1903,20 @@ function nodeDimmed(n) {
   return false;
 }
 function edgeDimmed(e) {
-  if (styleConfig.edgeVisibility === "sempre") return false; // nunca esmaece
-  if (searchMatchIds) return true; // busca sempre esmaece todas as arestas
+  const a = typeof e.source === "object" ? e.source.id : e.source;
+  const b = typeof e.target === "object" ? e.target.id : e.target;
+  // A busca vence a politica de visibilidade das arestas, e vem ANTES do
+  // atalho "sempre". Com "sempre" (o default) a busca escurecia os nos e
+  // deixava as ~2900 arestas em opacidade cheia: a tela virava uma teia
+  // branca MAIS forte que antes da busca, e o resultado sumia embaixo dela.
+  // "Sempre visivel" continua significando que aresta nunca some — mas numa
+  // busca explicita o usuario pediu para isolar algo.
+  //
+  // Sobrevivem as arestas que TOCAM um resultado: elas sao a informacao util
+  // (com quem o no encontrado se conecta), nao ruido.
+  if (searchMatchIds) return !(searchMatchIds.has(a) || searchMatchIds.has(b));
+  if (styleConfig.edgeVisibility === "sempre") return false;
   if (selectedNodeId) {
-    const a = typeof e.source === "object" ? e.source.id : e.source;
-    const b = typeof e.target === "object" ? e.target.id : e.target;
     return a !== selectedNodeId && b !== selectedNodeId;
   }
   return false;
@@ -2508,6 +2550,9 @@ function selectNode(d) {
   const target = d.type === "reference" ? d.url : (d.file ? "../../" + d.file : null);
   const slug = essaySlugOf(d);
   const hasReader = slug && readerEssays()[slug];
+  // No build leve não há leitor embutido, mas há o HTML exportado — o botão
+  // "Ler" continua existindo, só que abre numa aba em vez do overlay.
+  const readHref = !hasReader && d.type === "essay" ? d.htmlFile : null;
   // O cartão de detalhe mora dentro do painel, mas o painel só deve abrir
   // por ação explícita no botão ☰ — nunca sozinho por causa de um toque no
   // grafo. Num celular com o painel recolhido, o destaque no próprio grafo
@@ -2516,12 +2561,16 @@ function selectNode(d) {
   detailEl.hidden = false;
   const actions =
     (hasReader ? `<button type="button" class="read-btn" data-read="${escapeHtml(slug)}">📖 Ler</button>` : "") +
+    (readHref ? `<a class="read-btn" href="${escapeHtml(readHref)}" target="_blank">📖 Ler</a>` : "") +
     (target ? `<a class="detail-open" href="${escapeHtml(target)}" target="_blank">${d.type === "essay" ? ".MD" : "Abrir"}</a>` : "");
   detailEl.innerHTML =
     `<div class="detail-title">${escapeHtml(d.title)}</div>` +
     `<div class="detail-tags">${(d.tags || []).map(x => `<span>${escapeHtml(x)}</span>`).join("")}</div>` +
     (actions ? `<div class="detail-actions">${actions}</div>` : "");
-  const readBtn = detailEl.querySelector(".read-btn");
+  // `button.read-btn` e não `.read-btn`: no build leve o botão de ler é um
+  // <a> com a MESMA classe (mesmo desenho, destino diferente). Um seletor
+  // solto pegaria a âncora, que não tem data-read, e chamaria openReader(null).
+  const readBtn = detailEl.querySelector("button.read-btn");
   if (readBtn) readBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     openReader(readBtn.getAttribute("data-read"));
@@ -2534,12 +2583,16 @@ function openNode(d) {
     if (d.url) window.open(d.url, "_blank");
     return;
   }
-  // Essay com leitor embutido abre a leitura direto; fallback (default sem
-  // --no-reader ou payload ausente) mantém o comportamento histórico do .md cru.
+  // Ordem de preferência para abrir um essay:
+  //   1. leitor embutido  (build com --reader: o overlay abre sem sair da página)
+  //   2. HTML exportado   (build leve: output/html/<slug>.html, já com todo o
+  //                        design do essay e cacheado pelo navegador)
+  //   3. markdown cru     (nem um nem outro disponível — nunca deixa sem ação)
   // Checagem sincrona no mapa: openReader é async e sempre devolve Promise.
   if (d.type === "essay") {
     const slug = essaySlugOf(d);
     if (slug && readerEssays()[slug]) { openReader(slug); return; }
+    if (d.htmlFile) { window.open(d.htmlFile, "_blank"); return; }
   }
   if (d.file) {
     window.open("../../" + d.file, "_blank");
@@ -2691,12 +2744,23 @@ function essaySlugOf(node) {
   return node && node.type === "essay" ? node.id.slice("essay:".length) : null;
 }
 
+// Inflado da PROPRIA tag, so na primeira vez que um essay com matematica
+// abre. Um ensaio de filosofia nunca descomprime os 2,3 MB do bundle.
 function ensureMathJaxInjected() {
-  if (mathJaxInjected || !READER_DATA.mathjax) return;
+  if (mathJaxInjected) return;
+  const src = READER_DATA.mathjax || inflateJsonFromTag("sb-mathjax-data");
+  if (!src) return;
   mathJaxInjected = true;
   const s = document.createElement("script");
-  s.textContent = READER_DATA.mathjax;
+  s.textContent = src;
   document.head.appendChild(s); // executa inline, sincrono ao inserir
+}
+
+// Pandoc emite matematica como \(..\) / \[..\] envolvidos em
+// <span class="math">. Sem nenhum, nao ha o que tipografar e o MathJax nem
+// precisa entrar na pagina.
+function fragmentHasMath(html) {
+  return typeof html === "string" && html.indexOf('class="math') !== -1;
 }
 
 // O startup do MathJax v3 é async; resolve assim que typesetPromise existir.
@@ -2818,15 +2882,27 @@ function enhanceReaderDom() {
   });
   const refs = content.querySelector("h2#referências");
   if (refs) refs.insertBefore(makeKicker("Referências"), refs.firstChild);
-  // Meta-row da capa: tempo de leitura (~200 palavras/min) e capítulos.
+  // Meta-row da capa: tempo de leitura (~200 palavras/min) e capítulos —
+  // ou a marca de rascunho, que ocupa o LUGAR dela. Num draft a duração
+  // ainda não significa nada, e o que o leitor precisa saber é o estado.
   if (h2s.length) {
-    const words = (content.innerText || "").trim().split(/\s+/).length;
-    const mins = Math.max(1, Math.round(words / 200));
-    const by = readerArticle.querySelector(".byline");
+    // `readerRoot` e nao `readerArticle`: o conteudo do leitor vive DENTRO
+    // do shadow root, e querySelector no host nao atravessa a fronteira —
+    // `by` vinha null e a meta-row nunca era inserida. O leitor ficou sem
+    // tempo de leitura desde que o shadow foi introduzido.
+    const by = readerRoot.querySelector(".byline");
     if (by) {
+      const entry = readerEssays()[readerCurrentSlug] || {};
       const meta = document.createElement("p");
       meta.className = "cover-meta";
-      meta.textContent = "~" + mins + " min de leitura · " + h2s.length + " capítulos";
+      if (entry.status === "draft") {
+        meta.classList.add("cover-draft");
+        meta.textContent = "Rascunho";
+      } else {
+        const words = (content.innerText || "").trim().split(/\s+/).length;
+        const mins = Math.max(1, Math.round(words / 200));
+        meta.textContent = "~" + mins + " min de leitura · " + h2s.length + " capítulos";
+      }
       by.parentNode.insertBefore(meta, by.nextSibling);
     }
   }
@@ -2861,8 +2937,10 @@ async function openReader(slug) {
   staging.style.display = "none";
   staging.innerHTML = entry.html;
   document.body.appendChild(staging);
-  ensureMathJaxInjected();
-  await typesetElement(staging);
+  if (fragmentHasMath(entry.html)) {
+    ensureMathJaxInjected();
+    await typesetElement(staging);
+  }
   applyReaderTheme();
   readerRoot.innerHTML = "";
   while (staging.firstChild) readerRoot.appendChild(staging.firstChild);
@@ -3058,13 +3136,22 @@ function renderTypeIndex() {
     tbody.innerHTML = rows.map(n => {
       const hasSummary = showSummary && n.summary;
       const rSlug = essaySlugOf(n);
+      // Com leitor embutido, <button> abre o overlay; no build leve, <a> abre
+      // o HTML exportado numa aba. Mesma classe, mesmo desenho.
       const readBtn = (rSlug && readerEssays()[rSlug])
         ? `<button type="button" class="idx-read" data-read="${escapeHtml(rSlug)}" aria-label="Ler ${escapeHtml(n.title)}" title="Ler">📖</button>`
+        : (n.htmlFile
+          ? `<a class="idx-read" href="${escapeHtml(n.htmlFile)}" target="_blank" aria-label="Ler ${escapeHtml(n.title)}" title="Ler">📖</a>`
+          : "");
+      // Só rascunho é marcado. `finalizado` não recebe nada: a marca serve
+      // para dizer "ainda em obra", e 45 selos repetidos não diriam nada.
+      const draft = n.status === "draft"
+        ? `<span class="idx-draft" title="Rascunho">draft</span>`
         : "";
       const row = `<tr data-id="${escapeHtml(n.id)}">
       <td data-label="Título"><span style="display:flex;align-items:center;gap:8px;">${hasSummary
         ? `<button type="button" class="idx-expand" aria-label="Mostrar resumo" aria-expanded="false">▸</button> `
-        : ""}<span style="flex:1;min-width:0;">${highlightMatch(n.title, state.query)}</span>${readBtn}</span></td>
+        : ""}<span style="flex:1;min-width:0;">${highlightMatch(n.title, state.query)}${draft}</span>${readBtn}</span></td>
       <td class="idx-tagcell" data-label="Tags">${(n.tags || []).map(t => `<span>${escapeHtml(t)}</span>`).join("")}</td>
       <td data-label="Conexões">${n.degree}</td>
       <td data-label="Tamanho">${sizeOf(n) ? sizeOf(n) + " linhas" : "—"}</td></tr>`;
@@ -3095,11 +3182,19 @@ function renderTypeIndex() {
     });
 
     // 📖 na linha abre o leitor sem fechar o índice nem navegar o grafo.
-    tbody.querySelectorAll(".idx-read").forEach(b => {
+    // `button.idx-read` e não `.idx-read`: no build leve o mesmo lugar tem um
+    // <a> que já navega sozinho — se ele caísse aqui, chamaria
+    // openReader(null) antes de abrir a aba.
+    tbody.querySelectorAll("button.idx-read").forEach(b => {
       b.addEventListener("click", (e) => {
         e.stopPropagation();
         openReader(b.getAttribute("data-read"));
       });
+    });
+    // A âncora navega por conta própria; só precisa não disparar o clique da
+    // linha (que fecharia o índice e navegaria o grafo por baixo).
+    tbody.querySelectorAll("a.idx-read").forEach(a => {
+      a.addEventListener("click", (e) => e.stopPropagation());
     });
 
     tbody.querySelectorAll("tr").forEach(tr => {
@@ -3867,9 +3962,18 @@ def render_html(nodes, edges, tag_gaps, reader_payload):
             "defaultStyleMobileOverrides": GRAPH_STYLE_MOBILE_OVERRIDES,
         }
     ))
+    # MathJax vai em tag PROPRIA, nao dentro do payload do leitor: sao 2,3 MB
+    # (22% do payload) que so 23 dos 45 essays usam. Separado, o inflate do
+    # leitor nao paga por ele, e quem abre um essay sem matematica nunca o
+    # descomprime. Nao muda o tamanho do arquivo — muda memoria e parse.
     reader_b64 = ""
+    mathjax_b64 = ""
     if reader_payload.get("essays"):
-        reader_b64 = _deflate_b64(_json_for_script_tag(reader_payload))
+        payload = dict(reader_payload)
+        mathjax = payload.pop("mathjax", "") or ""
+        reader_b64 = _deflate_b64(_json_for_script_tag(payload))
+        if mathjax:
+            mathjax_b64 = _deflate_b64(_json_for_script_tag(mathjax))
 
     d3_src = D3_VENDORED.read_text(encoding="utf-8")
     pako_src = PAKO_VENDORED.read_text(encoding="utf-8")
@@ -3882,6 +3986,7 @@ def render_html(nodes, edges, tag_gaps, reader_payload):
     html = HTML_TEMPLATE
     html = html.replace("__GRAPH_B64__", graph_b64)
     html = html.replace("__READER_B64__", reader_b64)
+    html = html.replace("__MATHJAX_B64__", mathjax_b64)
     html = html.replace("__D3__", d3_src)
     html = html.replace("__PAKO__", pako_src)
     return html
@@ -3909,7 +4014,14 @@ def main():
 
     if not args.reader:
         reader_payload = {"essays": {}, "mathjax": "", "css": ""}
-        print("Arquivo leve (--no-reader): grafo + link .md, sem essays embutidos.")
+        essay_nodes = [n for n in nodes if n["type"] == "essay"]
+        com_html = sum(1 for n in essay_nodes if n.get("htmlFile"))
+        print(f"Arquivo leve (--no-reader): o ícone de leitura abre "
+              f"output/html/ ({com_html}/{len(essay_nodes)} essays exportados).")
+        if com_html < len(essay_nodes):
+            faltam = len(essay_nodes) - com_html
+            print(f"  {faltam} essay(s) sem HTML exportado caem no .md — "
+                  f"rode `python scripts/export_essay_html.py --all` para cobrir todos.")
     else:
         frag_start = time.perf_counter()
         essay_nodes = [n for n in nodes if n["type"] == "essay"]

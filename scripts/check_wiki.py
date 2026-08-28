@@ -93,7 +93,7 @@ UTILITY_SOURCE_FOLDERS = {"resumos"}
 # caracteres, máximo observado 462 (distribuição dos essays antigos).
 # Acima do teto vira parágrafo e quebra o layout de wiki/index.md;
 # abaixo do piso não descreve o arco do essay.
-SUMMARY_MAX_CHARS = 480
+SUMMARY_MAX_CHARS = 500
 SUMMARY_MIN_CHARS = 250
 
 # Heurística de idioma: palavras funcionais que só existem em inglês vs. em

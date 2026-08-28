@@ -187,14 +187,18 @@ def prepare_body(filepath):
 def prepare_for_pandoc(filepath):
     """Prepare a markdown file for Pandoc HTML conversion.
 
-    Returns (markdown_text, title, subtitle, author_date, summary)."""
+    Returns (markdown_text, title, subtitle, author_date, summary, status)."""
     body, meta, title, subtitle, author_date = prepare_body(filepath)
 
     # Caixas de realce -> fenced divs semanticos (ver html_preprocess.py).
     body = transform_markdown(body)
 
     summary = str(meta.get('summary', '') or '')
-    return body, title, subtitle, author_date, summary
+    # `status:` do frontmatter (draft | maduro | finalizado). Vai para o
+    # template como `data-status` no <html>; so `draft` muda alguma coisa
+    # (troca a meta-row da capa pela marca de rascunho).
+    status = str(meta.get('status', '') or '').strip().lower()
+    return body, title, subtitle, author_date, summary, status
 
 
 MATH_PATTERN = re.compile(r'(?<!\\)\$[^\s$][^$]*\$|\\\[.*?\\\]|\\\(.*?\\\)', re.DOTALL)
@@ -222,7 +226,7 @@ def export_essay(filepath, output_dir=None, source_dir=None):
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    body, title, subtitle, author_date, summary = prepare_for_pandoc(filepath)
+    body, title, subtitle, author_date, summary, status = prepare_for_pandoc(filepath)
 
     temp_path = output_dir / f"_temp_{filepath.stem}.md"
     with open(temp_path, 'w', encoding='utf-8') as f:
@@ -245,6 +249,7 @@ def export_essay(filepath, output_dir=None, source_dir=None):
         '-V', f'subtitle={safe_subtitle}',
         '-V', f'author={safe_author}',
         '-V', f'summary={safe_summary}',
+        *(['-V', f'status={status}'] if status else []),
         f'--resource-path={filepath.parent}',
         # +gfm_auto_identifiers: o Sumário dos essays é escrito na convenção do
         # GitHub/Obsidian, que preserva o número do capítulo no anchor
@@ -256,7 +261,13 @@ def export_essay(filepath, output_dir=None, source_dir=None):
         # duras agora são aplicadas apenas DENTRO das citações pelo
         # pré-processador (html_preprocess.py); globalmente, elas transformavam
         # todo parágrafo corrido em uma pilha de <br>.
-        '-f', 'markdown+smart+tex_math_dollars+pipe_tables+strikeout+superscript+subscript+implicit_figures+gfm_auto_identifiers',
+                # +lists_without_preceding_blankline: 28 listas em 10 essays do corpus
+        # são escritas coladas no parágrafo que as introduz ("...pode:" seguido
+        # direto de "- Ler ..."). Sem a extensão o Pandoc não deixa a lista
+        # interromper o parágrafo e ela sai como prosa corrida com hífens
+        # literais no meio da frase, nos DOIS exports. Ligar aqui corrige o
+        # corpus inteiro sem editar um `.md` sequer.
+        '-f', 'markdown+smart+tex_math_dollars+pipe_tables+strikeout+superscript+subscript+implicit_figures+gfm_auto_identifiers+lists_without_preceding_blankline',
 
     ]
 

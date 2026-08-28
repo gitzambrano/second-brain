@@ -426,7 +426,7 @@ def main():
 
     existing_pages = collect_existing_pages()
 
-        print_part1(analyze_gap_candidates(sources, existing_pages,
+    print_part1(analyze_gap_candidates(sources, existing_pages,
         collect_entity_surnames(existing_pages), collect_page_prefixes(existing_pages)))
     unlinked = analyze_unlinked_existing_pages(sources, existing_pages)
     print_part2(unlinked[:TOP_N], omitted=max(0, len(unlinked) - TOP_N))

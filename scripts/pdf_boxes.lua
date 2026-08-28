@@ -30,7 +30,21 @@ end
 -- Box color detection from badge content
 -- ------------------------------------------------------------------
 
+-- Ordem importa: a primeira regra que casar vence. As mais especificas
+-- ("experimento mental", "evidencia empirica") vem antes das genericas,
+-- senao "evidência empírica" cairia em nenhuma e "experimento" perderia
+-- para um substring solto.
+--
+-- O vocabulario real do corpus e: IDEIA NN, EXPERIMENTO MENTAL N,
+-- EVIDENCIA EMPIRICA N, MAPA CONCEITUAL. Os dois do meio nao casavam com
+-- regra nenhuma e saiam no cinza padrao — justamente os dois tipos mais
+-- expressivos. Antes de tirar um termo daqui, confira o que o corpus usa:
+--   grep -oh 'class="box-badge">' -A2 output/html/*.html
 local BADGE_COLOR_RULES = {
+  {'experimento mental', 'boxexp'}, {'experimento', 'boxexp'},
+  {'evidência empírica', 'boxev'}, {'evidencia empirica', 'boxev'},
+  {'evidência', 'boxev'}, {'evidencia', 'boxev'}, {'dado', 'boxev'},
+  {'mapa conceitual', 'boxmap'}, {'mapa', 'boxmap'},
   {'título', 'boxmap'}, {'titulo', 'boxmap'}, {'resumo', 'boxmap'},
   {'definição', 'boxmap'}, {'definicao', 'boxmap'}, {'conceito', 'boxmap'},
   {'framework', 'boxmap'}, {'teoria', 'boxmap'},
@@ -38,16 +52,21 @@ local BADGE_COLOR_RULES = {
   {'aplicação', 'boxexp'}, {'aplicacao', 'boxexp'},
   {'aviso', 'boxav'}, {'atenção', 'boxav'}, {'atencao', 'boxav'},
   {'cuidado', 'boxav'}, {'problema', 'boxav'}, {'risco', 'boxav'},
+  {'ataque', 'boxav'}, {'objeção', 'boxav'}, {'objecao', 'boxav'},
   {'evolução', 'boxev'}, {'evolucao', 'boxev'}, {'história', 'boxev'},
   {'linha do tempo', 'boxev'}, {'cronologia', 'boxev'},
-  {'insight', 'boxid'}, {'ideia', 'boxid'}, {'tese', 'boxid'},
-  {'argumento', 'boxid'}, {'princípio', 'boxid'}, {'principio', 'boxid'},
+  {'insight', 'boxid'}, {'ideia', 'boxid'}, {'idéia', 'boxid'},
+  {'tese', 'boxid'}, {'argumento', 'boxid'},
+  {'princípio', 'boxid'}, {'principio', 'boxid'},
 }
 
 local function get_box_color(el)
   for _, b in ipairs(el.content) do
     if b.t == 'Div' and has_class(b, 'box-badge') then
-      local badge = stringify(b):lower()
+      -- `string.lower` do Lua so mapeia ASCII: "EVIDÊNCIA" viraria
+      -- "evidÊncia" (o Ê fica com os bytes da maiuscula) e nunca casaria
+      -- com a regra acentuada. `pandoc.text.lower` e ciente de UTF-8.
+      local badge = pandoc.text.lower(stringify(b))
       for _, rule in ipairs(BADGE_COLOR_RULES) do
         if badge:find(rule[1], 1, true) then
           return rule[2]
@@ -79,20 +98,77 @@ local function romanize_toc(num)
   return num
 end
 
+-- Devolve (numeral, tamanho-do-prefixo-em-bytes) do inicio do texto, ou nil.
+--
+-- ATENCAO: padroes do Lua NAO tem grupo nao-capturante. A versao anterior
+-- usava `%d+(?:%.%d+)*`, sintaxe de PCRE, que em Lua nunca casa — o ramo
+-- arabe morria silenciosamente e todo Sumario numerado com "1." saia com a
+-- numeracao DUPLICADA (goteira romana do contador + "1." no proprio titulo).
+--
+-- O numeral tambem e preservado no sistema em que o autor escreveu: romano
+-- continua romano, arabe continua arabe. Romanizar "3." virava "III" no
+-- kicker enquanto as subsecoes seguiam "3.1" — dois sistemas para o mesmo
+-- capitulo na mesma pagina.
 local function extract_toc_number(text)
-  -- 1) Numerais Romanos: "I.", "II.", "III.", "IV -", "XIV:"
-  local r = text:match('^%s*([IVXLCDM]+)%s*[%.%-%–%:]%s*')
+  -- 1) Romanos: "I.", "II -", "XIV:"
+  local r, rest_r = text:match('^%s*([IVXLCDM]+)%s*[%.%-%–:]%s*(.*)$')
   if r and is_roman(r) then
-    local rest = text:gsub('^%s*[IVXLCDM]+%s*[%.%-%–%:]%s*', '')
-    return r, rest
+    return r, #text - #rest_r
   end
-  -- 2) Numerais Arábicos: "1.", "2.", "1.1", "3 -", "4:"
-  local a = text:match('^%s*(%d+(?:%.%d+)*)%s*[%.%-%–%:]%s*')
+  -- 2) Arabes, com ou sem subnivel: "1.", "2 -", "1.1", "4:"
+  local a, rest_a = text:match('^%s*(%d+[%d%.]*)%s*[%.%-%–:]%s*(.*)$')
   if a then
-    local rest = text:gsub('^%s*%d+(?:%.%d+)*%s*[%.%-%–%:]%s*', '')
-    return romanize_toc(a), rest
+    a = a:gsub('%.$', '')
+    return a, #text - #rest_a
   end
-  return nil, text
+  -- 3) "1 Titulo" / "III Titulo" (sem pontuacao separadora)
+  local b, rest_b = text:match('^%s*(%d+)%s+(%a.*)$')
+  if b then
+    return b, #text - #rest_b
+  end
+  return nil, 0
+end
+
+-- Remove `n` bytes do inicio dos inlines, descendo em elementos aninhados
+-- (o item do Sumario e quase sempre um Link envolvendo o texto). Preserva
+-- Math/Emph/Code intactos: o `stringify` + `lescape` da versao anterior
+-- achatava tudo em texto e cuspia `\dot{\beta}` e `C_{n_\beta}` crus na
+-- pagina.
+local function drop_prefix(inlines, n)
+  if n <= 0 then return inlines end
+  local left = n
+  local function walk(list)
+    local out = {}
+    for _, el in ipairs(list) do
+      if left <= 0 then
+        table.insert(out, el)
+      elseif el.t == 'Str' then
+        if #el.text <= left then
+          left = left - #el.text
+        else
+          table.insert(out, pandoc.Str(el.text:sub(left + 1)))
+          left = 0
+        end
+      elseif el.t == 'Space' or el.t == 'SoftBreak' then
+        left = left - 1
+      elseif el.content then
+        el.content = walk(el.content)
+        table.insert(out, el)
+      else
+        table.insert(out, el)
+      end
+    end
+    return out
+  end
+  return walk(inlines)
+end
+
+-- Inlines de um item de lista (primeiro bloco Para/Plain).
+local function item_inlines(item)
+  for _, b in ipairs(item) do
+    if b.t == 'Para' or b.t == 'Plain' then return b.content end
+  end
+  return {}
 end
 
 -- ------------------------------------------------------------------
@@ -159,7 +235,8 @@ end
 function BulletList(el)
   if after_sumario then
     after_sumario = false
-    -- Detecta se algum item do Sumário já possui numeração própria (árabe ou romana)
+    -- O essay numera os proprios capitulos? Se sim, a goteira usa o numeral
+    -- do autor; se nao, um romano sequencial (mesma convencao do kicker).
     local any_numbered = false
     for _, item in ipairs(el.content) do
       if extract_toc_number(stringify(item)) then
@@ -167,23 +244,31 @@ function BulletList(el)
       end
     end
 
-    local out = {'\\begin{sbtoc}'}
+    local blocks = { pandoc.RawBlock('latex', '\\begin{sbtoc}') }
     for i, item in ipairs(el.content) do
-      local text = stringify(item)
-      local num, rest = extract_toc_number(text)
+      local inlines = item_inlines(item)
+      local num, plen = extract_toc_number(stringify(item))
       local gutter
       if num then
         gutter = num
+        inlines = drop_prefix(inlines, plen)
       elseif not any_numbered then
-        gutter = romanize_toc(tostring(i))
+        -- Arabico, igual ao contador sequencial do kicker (ver
+        -- inject_chapter_kickers): as subsecoes sao "3.1" e um "III" na
+        -- goteira poria dois sistemas de numeracao no mesmo documento.
+        gutter = tostring(i)
       else
         gutter = ''
       end
-      local cmd = (i == #el.content) and '\\sbtocentrylast' or '\\sbtocentry'
-      table.insert(out, cmd .. '{' .. gutter .. '}{' .. lescape(rest) .. '}')
+      local cmd = (i == #el.content) and '\\sbtocopenlast' or '\\sbtocopen'
+      -- Abre o comando, despeja os inlines ORIGINAIS (math/enfase intactos)
+      -- e fecha. Nada de stringify aqui.
+      table.insert(blocks, pandoc.RawBlock('latex', cmd .. '{' .. lescape(gutter) .. '}{%'))
+      table.insert(blocks, pandoc.Plain(inlines))
+      table.insert(blocks, pandoc.RawBlock('latex', '}%'))
     end
-    table.insert(out, '\\end{sbtoc}')
-    return { pandoc.RawBlock('latex', table.concat(out, '\n')) }
+    table.insert(blocks, pandoc.RawBlock('latex', '\\end{sbtoc}'))
+    return blocks
   end
   return nil
 end
@@ -302,21 +387,24 @@ function Para(el)
 
   -- 2) References handling
   if in_references then
-    -- O "Link" no fim de cada referencia e um pandoc.Link (t == 'Link'), nao
-    -- um Str: testar `inl.t == 'Str'` nunca casava e a palavra continuava
-    -- inteira no PDF. Aqui o rotulo vira a seta, preservando a ancora.
+    -- O "Link" no fim de cada referencia e um pandoc.Link (t == 'Link'),
+    -- nao um Str. A palavra fica (decisao do autor) e ganha UMA seta
+    -- discreta ao lado. Os demais links da citacao (o titulo da obra, um
+    -- termo no comentario) nao recebem seta nenhuma — antes cada um
+    -- ganhava a sua e a referencia terminava com duas ou tres.
     local new_content = {}
     for _, inl in ipairs(el.content) do
       if inl.t == 'Link' and stringify(inl) == 'Link' then
-        inl.content = { pandoc.RawInline('latex', '\\textup{\\footnotesize↗}') }
-        table.insert(new_content, inl)
-      else
-        table.insert(new_content, inl)
+        inl.content = {
+          pandoc.Str('Link'),
+          pandoc.RawInline('latex', '\\,\\textup{\\scriptsize↗}'),
+        }
       end
+      table.insert(new_content, inl)
     end
     return {
       pandoc.RawBlock('latex', '\\begin{sbrefitem}%'),
-      pandoc.Para(new_content),
+      pandoc.Plain(new_content),
       pandoc.RawBlock('latex', '\\end{sbrefitem}%'),
     }
   end

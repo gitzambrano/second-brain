@@ -376,10 +376,11 @@ Design premium: "restrição, não adição" — reduzir frequência de sinais (
 | Pull-quote | Sem aspas gigantes (`::before` com `"` a 5rem removido); a pull-quote distingue-se por itálico, filete lateral e respiro |
 | Badge de caixa | Versalete espaçado na cor do tipo (`--boxc`), sem fundo preenchido e sem texto branco. A caixa usa filete lateral de 2 px em `--boxc` sobre superfície neutra. `.box.generico` usa filete cinza (`--border`) — 64% das caixas do corpus são genéricas por opção editorial |
 | Sumário | Filetes hairline (topo e base) sem caixa preenchida; rótulo ÍNDICE alinhado à esquerda em versalete mono |
-| Referências | Recuo pendente via CSS (`padding-left:2.4em; text-indent:-2.4em`). Links externos recebem seta ↗ via `::after` |
+| Referências | Recuo pendente via CSS (`padding-left:2.4em; text-indent:-2.4em`). A seta ↗ vai só no **último** link da entrada (`a[href^="http"]:last-of-type::after`) — o "Link" final. A palavra "Link" permanece. Aplicar a todo link externo dava duas ou três setas por referência |
 | `@media print` | Apenas 1 regra: ocultar chrome fixo. PDF vem do LaTeX — o `@media print` serve só ao Ctrl+P do browser |
-| h3 | Família `'JetBrains Mono'` semibold — distingue de `##` por família, não só por tamanho |
+| h3 | Playfair Display (`var(--font-display)`) a 1.24rem, cor mais fraca que o `##`. Distingue por **peso, corpo e cor**, não por família: o mono anterior punha um subtítulo com cara de rótulo de código no meio de prosa serifada. O mono continua sendo a voz dos rótulos (`.sb-kicker`, `.box-badge`, `.label-solo`, `th`) — que é o que h3 não é |
 | box.generico | Aceito como caso padrão (não é heurística fraca): 87 de 136 caixas no corpus. Filete cinza discreto |
+| Listas | Ambos os exports usam `+lists_without_preceding_blankline`. 28 listas em 10 essays são escritas coladas ao parágrafo que as introduz; sem a extensão saíam como prosa corrida com hífens literais |
 
 ### PDF (`scripts/export_essay_pdf.py` + `pdf_boxes.lua`)
 
@@ -388,9 +389,35 @@ Design premium: "restrição, não adição" — reduzir frequência de sinais (
 | Tamanho de fonte | `12pt` base (`classoption: - 12pt`) para leitura confortável |
 | Margens | `top=22mm, bottom=22mm, left=26mm, right=26mm` — proporção equilibrada sem desperdício de mancha |
 | Capa | Página própria com título, autor, tipo e meta-row (cap. + tempo de leitura). Não é parte numerada |
-| Sumário | Na segunda página (logo após capa), encabeçado exclusivamente pelo kicker em ouro (`\sbkicker{Sumário}`), sem duplicação de título |
+| Sumário | Na segunda página, encabeçado só pelo kicker (`\sbkicker{Sumário}`). Os títulos passam ao LaTeX como **inlines do Pandoc**, nunca via `stringify` — achatar em texto cuspia `\dot{eta}` e `C_{n_eta}` crus na página. Goteira com o numeral; o prefixo é removido do título |
 | Hiperlinks | Sublinhado sutil e nítido via `\usepackage[normalem]{ulem}` + `\uline` na cor do link (`\color{sburl}`) |
 | Cabeçalho corrente | Removido (`pagestyle{fancy}`, `headrulewidth=0pt`, rodapé com número de página discreto) |
 | Tipografia e Contraste | Libertinus Serif + Libertinus Sans via `fontspec`. Títulos de caixas e badges com alto contraste (`sblink` `#171310` e `boxline` `#4B5563`) |
 | Caixas | `tcolorbox` com filete lateral colorido, fundo neutro. Badge em versalete na cor temática |
 | Babel | `portuguese` explícito para hifenização correta |
+| Numeração de capítulo | O kicker respeita a grafia do autor: `## 3. Título` → "3", `## VI. Título` → "VI". Sem numeração no fonte, contador sequencial **arábico** — as subseções são sempre `3.1`, e um kicker "III" acima de um "3.1" punha dois sistemas na mesma página. O prefixo sai do título sempre que existe (árabe **e** romano) |
+| `###` | Libertinus Sans 13pt grafite (`sbgraphite`), com `
+eedspace`. Distingue de `##` por família e cor: 15,5pt bold serif preto contra 18pt bold serif preto era o mesmo título |
+| Referências | `sbrefitem` com `\leftskip` + `\parindent` negativo, não `\hangindent` — este último vale para um parágrafo e o Pandoc emite a referência como bloco próprio, perdendo o recuo. "Link" mantido, com uma seta ↗ ao lado |
+| Contagem de capítulos da capa | Exclui só `Sumário`/`Referências` **casando o título inteiro**. Com casamento por prefixo, o capítulo "Índice de Experimentos Mentais…" era lido como sumário e sumia da conta |
+| Cor das caixas | `BADGE_COLOR_RULES` casa o vocabulário real do corpus (`IDEIA`, `EXPERIMENTO MENTAL`, `EVIDÊNCIA EMPÍRICA`, `MAPA CONCEITUAL`), com as regras específicas antes das genéricas. Comparação via `pandoc.text.lower` — `string.lower` do Lua só mapeia ASCII e "EVIDÊNCIA" nunca casava |
+
+### Grafo (`scripts/build_graph.py`)
+
+| Decisão | Regra |
+| --------- | ----- |
+| Esmaecimento na busca | A busca vence a política `edgeVisibility`. Com o default `"sempre"`, buscar escurecia os nós e deixava as ~2900 arestas em opacidade cheia: a tela virava uma teia branca mais forte que antes da busca. Sobrevivem as arestas que **tocam** um resultado — mostram com quem o nó encontrado se conecta |
+
+### Grafo — modos de build e marca de rascunho (2026-08-27)
+
+| Decisão | Regra |
+| --------- | ----- |
+| `--reader` | Arquivo **standalone** (~6,9 MB): fontes, MathJax e imagens embutidos. Para compartilhar solto. As imagens já passam por `_compress_image` (1200 px, JPEG q80) — não são as originais de `wiki/assets/` e não devem ser reduzidas mais: a coluna do leitor tem ~1080 px CSS, então 1200 px já está abaixo de retina |
+| sem `--reader` (default) | Arquivo **leve** (~0,63 MB). O ícone 📖 abre `output/html/<slug>.html`. A existência do HTML é resolvida no BUILD (campo `htmlFile` do nó), não no navegador — quem nunca rodou `/html` cai no `.md` em vez de ganhar link quebrado |
+| Ordem de abertura de um essay | leitor embutido → `htmlFile` → `.md`. Vale para `openNode`, cartão de detalhe e painel Índice |
+| Botão 📖 | `<button>` quando há leitor embutido (abre o overlay), `<a>` quando é o HTML exportado (abre aba). Mesma classe e mesmo desenho. Os handlers usam `button.idx-read` / `button.read-btn`: um seletor solto pegaria a âncora e chamaria `openReader(null)` |
+| MathJax | Tag comprimida própria (`sb-mathjax-data`), inflada só ao abrir um essay que tenha `class="math"` no fragmento. Não muda o tamanho do arquivo — 22 dos 45 essays nunca descomprimem os 2,3 MB do bundle |
+| Marca de rascunho | Só `status: draft` é marcado; `finalizado` não recebe nada — a marca serve para dizer "ainda em obra", e 45 selos repetidos não diriam nada. Aparece como `draft` ao lado do título no painel Índice, e como **`Rascunho` no lugar da meta-row** da capa (tempo de leitura + capítulos) no HTML, no leitor do grafo e no PDF: num rascunho a duração ainda não significa nada |
+| `status` no template HTML | Chega via `-V status=` (export_essay_html.py) e vira `data-status` no `<html>`. O leitor do grafo lê do próprio payload (`status` por essay) |
+| `file` no `graph.json` | Sempre POSIX (`as_posix()`). No Windows o `relative_to` devolvia caminho com barra invertida e o link montava `../../wiki\essays\x.md` |
+| `build_sphere.py` | Tem cópia própria do mesmo JS. Toda mudança de navegação/índice precisa ser espelhada nos dois |
