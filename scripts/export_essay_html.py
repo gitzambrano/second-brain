@@ -24,6 +24,26 @@ Flags:
     --list       lista essays disponíveis e sai
     --handout    lê de wiki/handouts/ e grava em output/handouts/
     --output/-o  caminho de saída alternativo
+
+Invariantes do pipeline (leia antes de editar):
+
+1.  Compartilha com `export_essay_pdf.py` o `html_preprocess` e as funcoes de
+    frontmatter: mudanca la afeta os dois exports. O filtro `pdf_boxes.lua` NAO
+    roda aqui — o que ele faz no PDF, o CSS do template faz no HTML.
+
+2.  Arquivo unico offline: CSS, fontes e imagens embutidas. Nao introduza
+    dependencia externa de rede fora do MathJax, que ja e a unica excecao.
+
+3.  Tabela e `pre` rolam DENTRO de si mesmos (`overflow-x:auto`), em qualquer
+    largura de tela. Tirar isso faz uma tabela larga empurrar a pagina inteira e
+    o texto corrido sair da tela junto.
+
+4.  Codigo em linha usa `overflow-wrap:anywhere`, e `pre code` desfaz a regra:
+    dentro do bloco a rolagem horizontal e o comportamento desejado.
+
+5.  Depois de mexer aqui, rode `python scripts/check_html_export.py`. Para
+    layout renderizado (vazamento lateral, ancora quebrada, imagem faltando),
+    abra os arquivos e meca no navegador — o script so le o HTML.
 """
 
 import re

@@ -23,6 +23,50 @@ Flags:
     --list       lista essays disponíveis e sai
     --handout    lê de wiki/handouts/ e grava em output/handouts/
     --output/-o  caminho de saída alternativo
+
+Invariantes do pipeline (leia antes de editar):
+
+1.  Cadeia fixa: `wiki/essays/*.md` -> `html_preprocess.transform_markdown`
+    (blockquote do corpus vira fenced div) -> `inject_chapter_kickers`
+    (LaTeX cru antes de cada `##`) -> Pandoc + `pdf_boxes.lua` -> LuaLaTeX.
+    Mexer na ordem quebra o casamento entre div e ambiente tcolorbox.
+
+2.  RESERVA DE ESPACO E MEDIDA, NUNCA ESTIMADA. `\sbchapterneed` e
+    `\sbsubneed` compoem o bloco real num `\vbox` descartado e tomam a
+    diferenca contra um box so com a linha fantasma. Se voce mudar o corpo do
+    `\sbkicker`, os `\titlespacing` ou os tamanhos de fonte de titulo,
+    ESPELHE a mudanca dentro dessas macros — senao a reserva deixa de
+    corresponder ao que a pagina cobra e volta o titulo orfao.
+
+3.  `\sbkicker` TEM de terminar em `\sbnobreak`. E ele que liga
+    `\@nobreak` e impede o titlesec de plantar `\addpenalty` entre o
+    filete dourado e o titulo. Sem isso a pagina termina com o filete sozinho.
+
+4.  Em `\sbneedspace`, o `\penalty\z@` de medicao fica DENTRO do ramo
+    `\if@nobreak\else`. Fora dele, ele mesmo vira o ponto de quebra que
+    separa titulo de subtitulo.
+
+5.  `\clubpenalty` vale 300, nao `\@M`: e a sobrescrita de
+    `\@afterheading` que torna possivel o criterio de titulo mais UMA linha.
+    Devolver para `\@M` exige voltar a reserva para duas linhas.
+
+6.  Macro que use `@` no nome vive dentro de `\makeatletter`. `\sbkicker`
+    e definido fora, por isso chama o apelido `\sbnobreak`.
+
+7.  `HEADER_TEX` e uma raw string injetada como bloco LaTeX cru dentro do YAML:
+    barra invertida e literal, uma so. Chave de fecho isolada no inicio de
+    linha vira referencia de link do markdown e sai corrompida.
+
+8.  Fonte mono e Consolas. Caracteres de caixa (U+2500) funcionam; colchete CJK
+    (U+3010) sai como glifo ausente. Linha de codigo passa de ~90 colunas
+    quebra com marcador de continuacao.
+
+9.  Figura usa colocacao `[H]` e teto de `0.55\textheight`, de proposito:
+    sem isso o plot de anexo flutuava para dentro de `## Referencias`.
+
+10. Depois de mexer aqui, rode `python scripts/check_pdf_layout.py`. Ele mede
+    titulo orfao, pagina desperdicada e vazamento de margem nos PDFs gerados —
+    defeitos que so aparecem depois de diagramado.
 """
 
 import re

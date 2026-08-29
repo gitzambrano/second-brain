@@ -834,6 +834,100 @@ def check_essay(filepath: Path) -> dict:
             f"e a rela\u00e7\u00e3o entre p\u00e1ginas vive em ## Conex\u00f5es: {xrefs[:3]}")
 
     # -----------------------------------------------------------------------
+    # 13.6 Estilo de prosa mecanizavel (## Estilo de prosa em conventions)
+    # -----------------------------------------------------------------------
+    # Base limpa: sem frontmatter, sem codigo, sem matematica, sem tabela e sem
+    # URL. Sem isso a barra de uma URL e o hifen dentro de `$...$` viram falso
+    # positivo.
+    est = re.sub(r"^---.*?---\n", "", content, count=1, flags=re.DOTALL)
+    est = strip_fences(est)
+    est = re.split(r"(?m)^## (?:Refer[eê]ncias|Conex[oõ]es)\s*$", est)[0]
+    est = re.sub(r"`[^`\n]*`", "", est)
+    est = re.sub(r"\$\$.*?\$\$", "", est, flags=re.DOTALL)
+    est = re.sub(r"\$[^$\n]*\$", "", est)
+    est = re.sub(r"\[([^\]]*)\]\([^\)]*\)", r"\1", est)
+    est = re.sub(r"(?m)^\|.*$", "", est)
+
+    # "Sem ponto e virgula": divida em frases autonomas.
+    n_pv = est.count(";")
+    if n_pv:
+        add("INFO", "SEMICOLON",
+            f"{n_pv} ponto(s) e vírgula na prosa — a convenção pede frases "
+            "autônomas; trabalho de /polish")
+
+    # "Por exemplo" e "ou seja" por extenso, sem abreviacao latina solta.
+    lat = re.findall(r"(?i)\b(?:e\.g\.|i\.e\.)", est)
+    if lat:
+        add("WARNING", "LATIN_ABBREV",
+            f"{len(lat)} abreviação(ões) latina(s) {sorted(set(lat))} — escreva "
+            "“por exemplo”, “ou seja”")
+
+    # "Remissoes completas": Capitulo 3, nao Cap. 3. `Fig. 1` no inicio de linha
+    # fica de fora: e o formato de legenda que pdf_boxes.lua estiliza.
+    cross = [m.group(0) for m in re.finditer(
+        r"(?im)(?<![\n*])\b(?:cap|sec|seç|tab|eq)\.\s*\d+", est)]
+    if cross:
+        add("WARNING", "ABBREV_CROSSREF",
+            f"{len(cross)} remissão(ões) abreviada(s) {cross[:3]} — escreva "
+            "“Capítulo 3”, “Seção 2” por extenso")
+
+    # "Intervalos numericos por extenso": 5 a 30, nao 5-30.
+    faixa = re.findall(r"(?<![\d\-–])\d{1,4}\s?[-–]\s?\d{1,4}(?![\d\-–])", est)
+    if faixa:
+        add("INFO", "NUMERIC_RANGE_HYPHEN",
+            f"{len(faixa)} intervalo(s) numérico(s) com hífen {faixa[:3]} — a "
+            "convenção pede “5 a 30”")
+
+    # "Sem barras obliquas": escreva "e" ou "ou" por extenso.
+    barras = re.findall(r"(?<=[a-zà-ú])\s?/\s?(?=[a-zà-ú])", est)
+    if barras:
+        add("INFO", "SLASH_IN_PROSE",
+            f"{len(barras)} barra(s) oblíqua(s) entre palavras — escreva “e” ou "
+            "“ou” por extenso")
+
+    # "Sem simbolos de atalho": ~ vira "aproximadamente".
+    til = re.findall(r"~\s?\d", est)
+    if til:
+        add("WARNING", "TILDE_APPROX",
+            f"{len(til)} uso(s) de ~ como “aproximadamente” — escreva por extenso")
+
+    # -----------------------------------------------------------------------
+    # 13.7 Imagens (## Tratamento de imagens em conventions)
+    # -----------------------------------------------------------------------
+    # ERROR porque quebram o export em silêncio: o Pandoc não acha o arquivo e o
+    # PDF sai sem a figura, sem aviso alto.
+    for alvo in re.findall(r"!\[[^\]]*\]\(([^\)]+)\)", content):
+        alvo_limpo = alvo.split()[0].strip("<>")
+        if alvo_limpo.startswith("data:"):
+            add("ERROR", "IMAGE_BASE64",
+                "imagem embutida em base64 — extraia para wiki/assets/")
+        elif re.match(r"^([A-Za-z]:[\\/]|/)", alvo_limpo):
+            add("ERROR", "IMAGE_ABSOLUTE_PATH",
+                f"imagem em caminho absoluto ({alvo_limpo[:50]}) — use relativo")
+        elif not alvo_limpo.startswith("http"):
+            if not (filepath.parent / alvo_limpo).exists():
+                add("ERROR", "IMAGE_MISSING",
+                    f"imagem inexistente: {alvo_limpo[:60]}")
+
+    # -----------------------------------------------------------------------
+    # 13.8 Wikilink sem título visível (## Compatibilidade com Obsidian)
+    # -----------------------------------------------------------------------
+    conex_txt = content.split("## Conexões")[-1] if "## Conexões" in content else ""
+    sem_pipe = [w for w in re.findall(r"\[\[([^\]]+)\]\]", conex_txt)
+                if "|" not in w and not w.startswith("#")]
+    if sem_pipe:
+        add("WARNING", "WIKILINK_NO_PIPE",
+            f"{len(sem_pipe)} wikilink(s) sem título visível {sem_pipe[:3]} — o "
+            "formato é [[nome-do-arquivo|Título Da Página]]")
+
+    # -----------------------------------------------------------------------
+    # 13.9 Nome de arquivo (## Nomenclatura de páginas)
+    # -----------------------------------------------------------------------
+    if not re.match(r"^[a-z0-9]+(-[a-z0-9]+)*$", filepath.stem):
+        add("WARNING", "FILENAME_NOT_KEBAB",
+            f"nome de arquivo fora do kebab-case: {filepath.stem}")
+
+    # -----------------------------------------------------------------------
     # 14. HTML residual
     # -----------------------------------------------------------------------
     html_tags = HTML_TAG_RE.findall(strip_fences(content))

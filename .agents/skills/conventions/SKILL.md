@@ -233,6 +233,8 @@ Vale para todo trecho escrito/reescrito pela wiki — não retroage sobre texto 
    - **Intervalos numéricos por extenso**: *"5 a 30 iterações"*, *"de 10 a 20 mm"* (não *"5-30"*).
    - **Remissões completas**: *"Capítulo 3"*, *"Seção 2"* (não *"Cap. 3"*, *"Sec. 2"*).
 
+As regras 3, 6, 7 e 9 têm checagem mecânica em `check_wiki.py`: `BULLETS_IN_BODY`, `TOO_MANY_EM_DASHES`, `SEMICOLON`, `SLASH_IN_PROSE`, `TILDE_APPROX`, `NUMERIC_RANGE_HYPHEN`, `ABBREV_CROSSREF` e `LATIN_ABBREV`. As demais dependem de leitura e são trabalho de `/polish` e `/proofread`.
+
 ### Regras adicionais para essays técnicos
 
 0. **Português claro, conciso e formal.** Tom técnico e assertivo, nunca coloquial.
@@ -320,11 +322,13 @@ Lista plana de tudo já processado ou pendente, sem agrupamento — classificaç
 3. Link por caminho relativo: `../assets/nome-da-imagem.png` (de `wiki/essays/`) ou `../../assets/nome-da-imagem.png` (de `wiki/sources/resumos/`) — nunca caminho absoluto.
 4. Imagem com informação importante (diagrama, gráfico): descreva o conteúdo em texto também.
 
+As regras 1 e 3 são checadas por `check_wiki.py` como `IMAGE_BASE64`, `IMAGE_ABSOLUTE_PATH` e `IMAGE_MISSING`, em severidade ERROR: caminho quebrado não derruba o export, faz o PDF sair sem a figura e sem aviso.
+
 ## Compatibilidade com Obsidian
 
 - `[[wikilinks]]` só em `## Conexões` e páginas de concept/entity/source, nunca inline.
 - Imagens em caminho relativo.
-- Wikilinks em `## Conexões` usam `[[nome-do-arquivo|Título da Página]]` — alvo é o nome do arquivo sem extensão, texto depois da barra é o que o leitor vê. Alvo pelo H1 ou `aliases:` não resolve.
+- Wikilinks em `## Conexões` usam `[[nome-do-arquivo|Título da Página]]` — alvo é o nome do arquivo sem extensão, texto depois da barra é o que o leitor vê. Alvo pelo H1 ou `aliases:` não resolve. `check_wiki.py` sinaliza a forma sem barra como `WIKILINK_NO_PIPE`, e nome de arquivo fora do kebab-case como `FILENAME_NOT_KEBAB`.
 
 ## Conversão de fontes (HTML/PDF/DOCX → Markdown)
 
