@@ -608,15 +608,36 @@ _MIME_BY_EXT = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg"
 
 # Compressão de imagens embutidas: o arquivo único circula por e-mail/WhatsApp
 # e é re-parseado pelo navegador a cada abertura — plots originais de 300-600 KB
-# viram JPEG de 20-60 KB sem perda relevante em tela (qualidade/limiar
-# rebaixados a pedido do Usuário: carregar leve > fidelidade de zoom).
-_READER_IMG_MAX_WIDTH = 1200
-_READER_JPEG_QUALITY = 80
+# viram dezenas de KB sem perda relevante em tela (qualidade/limiar rebaixados
+# a pedido do Usuário: carregar leve > fidelidade de zoom).
+_READER_IMG_MAX_WIDTH = 820
+_READER_JPEG_QUALITY = 64
+
+# Conjuntos de figuras que pesam desproporcionalmente no arquivo único levam
+# tratamento mais agressivo. O essay de dinâmica de voo sozinho traz 60 plots,
+# quase metade do payload do leitor; em tela eles continuam legíveis a 560 px,
+# e quem precisa de zoom abre o PDF.
+_READER_IMG_HEAVY_PREFIXES = ("dinlon-",)
+_READER_IMG_HEAVY_MAX_WIDTH = 560
+_READER_IMG_HEAVY_QUALITY = 52
+
+
+def _reader_img_budget(nome):
+    """Largura máxima e qualidade JPEG para a imagem, por nome de arquivo."""
+    if nome.startswith(_READER_IMG_HEAVY_PREFIXES):
+        return _READER_IMG_HEAVY_MAX_WIDTH, _READER_IMG_HEAVY_QUALITY
+    return _READER_IMG_MAX_WIDTH, _READER_JPEG_QUALITY
 
 
 def _compress_image(p):
-    """Retorna (bytes, mime) comprimidos quando Pillow está disponível e a
-    imagem é raster grande; caso contrário devolve o arquivo original."""
+    """Retorna (bytes, mime) na menor codificação disponível.
+
+    Plot fotográfico e superfície contínua comprimem melhor em JPEG. Diagrama
+    de traço, esquema e mapa de área chapada comprimem melhor em PNG de paleta,
+    e forçar JPEG neles chega a *inflar* o arquivo: um mapa de 59 KB virava 187
+    KB. Codificar nos dois formatos e ficar com o menor elimina esse caso sem
+    precisar classificar a imagem por heurística.
+    """
     if p.suffix.lower() == ".svg":
         return p.read_bytes(), _MIME_BY_EXT[".svg"]
     try:
@@ -627,24 +648,29 @@ def _compress_image(p):
         if img.mode in ("RGBA", "LA", "PA") or (
                 img.mode == "P" and "transparency" in img.info):
             rgba = img.convert("RGBA")
-            alpha = rgba.getchannel("A")
-            lo, hi = alpha.getextrema()
+            lo, _hi = rgba.getchannel("A").getextrema()
             # Alfa totalmente opaco é artefato de export (matplotlib): não
-            # precisa de PNG — JPEG sobre fundo branco é idêntico na tela.
+            # precisa de PNG — fundo branco é idêntico na tela.
             needs_alpha = lo < 255
             img = rgba
-        if img.width > _READER_IMG_MAX_WIDTH:
-            ratio = _READER_IMG_MAX_WIDTH / img.width
-            img = img.resize((_READER_IMG_MAX_WIDTH, max(1, round(img.height * ratio))),
+        max_w, jpeg_q = _reader_img_budget(p.name)
+        if img.width > max_w:
+            ratio = max_w / img.width
+            img = img.resize((max_w, max(1, round(img.height * ratio))),
                              Image.LANCZOS)
-        buf = BytesIO()
         if needs_alpha:
+            buf = BytesIO()
             img.save(buf, format="PNG", optimize=True)
             return buf.getvalue(), "image/png"
-        if img.mode != "RGB":
-            img = img.convert("RGB")
-        img.save(buf, format="JPEG", quality=_READER_JPEG_QUALITY, optimize=True)
-        return buf.getvalue(), "image/jpeg"
+        rgb = img if img.mode == "RGB" else img.convert("RGB")
+        jpg = BytesIO()
+        rgb.save(jpg, format="JPEG", quality=jpeg_q, optimize=True)
+        png = BytesIO()
+        rgb.convert("P", palette=Image.ADAPTIVE, colors=256).save(
+            png, format="PNG", optimize=True)
+        if len(png.getvalue()) < len(jpg.getvalue()):
+            return png.getvalue(), "image/png"
+        return jpg.getvalue(), "image/jpeg"
     except Exception:  # noqa: BLE001 - sem Pillow/imagem exótica: manda cru
         return p.read_bytes(), _MIME_BY_EXT.get(p.suffix.lower(), "application/octet-stream")
 

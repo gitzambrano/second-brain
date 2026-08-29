@@ -283,6 +283,9 @@ HTML_TAG_RE = re.compile(
 # a relação entre páginas vive em `## Conexões`, não na prosa.
 CROSS_ESSAY_RE = re.compile(
     r"(?i)\b(?:essays?|ensaios?|white\s?papers?)\s+\*([^*\n]{4,120})\*"
+    r"|\bno\s+ensaio\s+(?:sobre|irmão)\b"
+    r"|\boutro\s+ensaio\b"
+    r"|\bno\s+ensaio\s+[“\"]"
 )
 
 
