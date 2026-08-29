@@ -446,7 +446,7 @@ HEADER_TEX = r"""\usepackage{fancyhdr}
 % Teto de altura para a imagem: os plots de anexo são quase tão altos quanto a
 % mancha e, em tamanho natural, ocupavam a página inteira, empurrando a legenda
 % escrita pelo autor ("Fig. 2 - ...") para a página seguinte, órfã do gráfico.
-\setkeys{Gin}{width=\linewidth,height=0.55\textheight,keepaspectratio}
+\setkeys{Gin}{width=0.78\linewidth,height=0.42\textheight,keepaspectratio}
 \usepackage{setspace}
 \usepackage{fontspec}
 \usepackage{fvextra}

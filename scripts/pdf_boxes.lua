@@ -443,9 +443,19 @@ function Para(el)
         table.insert(rest, inl)
       end
     end
+    -- Sem glue entre as imagens o LaTeX nao tem onde quebrar a linha, e um
+    -- grupo de figuras lado a lado estoura a margem direita em vez de passar
+    -- para a linha seguinte. Um Space entre elas da o ponto de quebra.
+    local espacadas = {}
+    for idx, im in ipairs(images) do
+      if idx > 1 then
+        table.insert(espacadas, pandoc.Space())
+      end
+      table.insert(espacadas, im)
+    end
     local blocks = {
       pandoc.RawBlock('latex', '\\begin{center}%'),
-      pandoc.Para(images),
+      pandoc.Para(espacadas),
     }
     if #rest > 0 then
       local rest_text = stringify(pandoc.Para(rest)):gsub('^%s+', ''):gsub('%s+$', '')

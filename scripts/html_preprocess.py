@@ -497,8 +497,26 @@ def _transform_group(grp, next_grp, raw_chain=None):
     return emit_quote(st), 0
 
 
+# Largura de imagem: o essay usa a sintaxe do Obsidian (`![alt|420](path)`),
+# que o Obsidian renderiza e o Pandoc ignora. Aqui ela vira o atributo de
+# largura que o Pandoc entende, em porcentagem da coluna de texto. Escrever
+# `{width=42%}` direto no .md não serve: o Obsidian imprime isso como texto.
+_IMG_LARGURA_RE = re.compile(r"!\[([^\]|]*)\|(\d+)\]\(([^)]+)\)")
+_COLUNA_NOMINAL_PX = 700
+
+
+def converter_larguras_de_imagem(body):
+    """`![alt|420](x.png)` -> `![alt](x.png){width=60%}` para o Pandoc."""
+    def _sub(m):
+        alt, px, path = m.group(1), int(m.group(2)), m.group(3)
+        pct = max(10, min(100, round(100 * px / _COLUNA_NOMINAL_PX)))
+        return f"![{alt}]({path}){{width={pct}%}}"
+    return _IMG_LARGURA_RE.sub(_sub, body)
+
+
 def transform_markdown(body):
     """Ponto de entrada: corpo markdown -> corpo com fenced divs semanticos."""
+    body = converter_larguras_de_imagem(body)
     lines = body.split('\n')
     blocks = parse_blocks(lines)
     out = []

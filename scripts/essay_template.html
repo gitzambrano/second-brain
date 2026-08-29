@@ -492,6 +492,15 @@ figure img{max-width:100%;height:auto;border-radius:6px;border:1px solid var(--b
 figcaption{margin-top:.7rem;font-size:.84em;color:var(--text-dim);font-style:italic;}
 img{max-width:100%;height:auto;}
 
+/* Figuras: o parágrafo que só contém imagens é a figura. Centraliza, espaça e
+   deixa as imagens do mesmo grupo fluírem lado a lado com respiro entre elas. */
+p:has(> img){text-align:center;margin:2.2rem 0 .6rem;line-height:0;}
+p:has(> img) > img{display:inline-block;vertical-align:middle;margin:.35rem .5%;
+  border-radius:6px;border:1px solid var(--border);}
+/* Legenda: parágrafo em itálico logo após uma figura. */
+p:has(> img) + p > em{display:block;text-align:center;font-size:.84em;
+  color:var(--text-dim);line-height:1.5;margin-bottom:2rem;}
+
 /* Notas de rodape */
 .footnotes hr{display:none;}
 .footnotes{border-top:1px solid var(--border);margin-top:3.5rem;padding-top:1.6rem;}
