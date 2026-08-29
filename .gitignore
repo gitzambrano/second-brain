@@ -1,5 +1,19 @@
 __pycache__/
-.obsidian/
+# Obsidian: versiona só a configuração que vale em qualquer máquina.
+# Ficam de fora o estado de sessão (workspace.json guarda painéis abertos e
+# muda a cada uso) e o código dos plugins (19 MB reinstaláveis pela loja;
+# community-plugins.json já diz quais instalar). Os data.json dos plugins
+# entram porque carregam a configuração, não o código.
+.obsidian/*
+!.obsidian/app.json
+!.obsidian/appearance.json
+!.obsidian/core-plugins.json
+!.obsidian/community-plugins.json
+!.obsidian/graph.json
+!.obsidian/snippets/
+!.obsidian/plugins/
+.obsidian/plugins/*/*
+!.obsidian/plugins/*/data.json
 *.code-workspace
 # Apenas .claude/settings.json é versionado, porque carrega o hook que gera o espelho.
 .claude/*
