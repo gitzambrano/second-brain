@@ -274,10 +274,120 @@ def resolve_image_paths(text, essay_dir):
 HEADER_TEX = r"""\usepackage{fancyhdr}
 \usepackage{xcolor}
 \usepackage{needspace}
+% `\needspace` NAO serve aqui: ele planta um `\penalty -100` cujo custo
+% cai para ~900 sempre que o espaco restante fica dentro de duas ou tres
+% vezes do pedido — barato o bastante para o TeX preferir essa quebra a
+% qualquer outra, e o capitulo pulava de pagina com um terco de folha em
+% branco. Aqui a conta e explicita: compara o que sobra na pagina com o que
+% o bloco precisa e so entao emite \newpage, sem oferecer ponto de quebra
+% nenhum. O `\if@nobreak` (verdadeiro so logo apos um titulo, desligado
+% pelo `\everypar` no primeiro paragrafo) evita que um `### X.1` colado num
+% `## X` reserve espaco de novo e deixe o titulo de capitulo sozinho.
+\makeatletter
+\newif\ifsb@needbreak
+\newif\ifsb@skipnext
+% Ligada pelo Python imediatamente antes de um `###` colado num `##` (ou de
+% um `####` colado num `###`). O `\if@nobreak` do LaTeX deveria bastar, mas o
+% titlesec nao o mantem de forma confiavel, e um unico ponto de quebra entre
+% os dois titulos ja deixa o de cima sozinho no pe da pagina.
+\newcommand{\sbskipnextneed}{\global\sb@skipnexttrue\sbnobreak}
+% Apelido publico de `\@nobreaktrue`: o `\sbkicker` e definido fora de um
+% bloco `\makeatletter` e nao pode citar a versao com arroba.
+\newcommand{\sbnobreak}{\@nobreaktrue}
+\newlength{\sb@needlen}
+% Altura exata do bloco de abertura de capitulo, para decidir se ele cabe no
+% que resta da pagina. #1 = rotulo do kicker, #2 = titulo do capitulo,
+% #3 = subtitulo colado logo abaixo (vazio quando nao ha nenhum).
+%
+% O bloco e composto de verdade num \vbox descartado logo em seguida: e a
+% unica forma de saber quantas linhas o titulo ocupa sem estimar largura media
+% de caractere. Medir so o titulo e somar constantes para filete, rotulo e
+% subtitulo, como antes, errava para os dois lados — ora pulava pagina a toa,
+% ora deixava o titulo sozinho no pe.
+%
+% A linha de corpo entra por fora: o criterio combinado e titulo mais uma
+% linha, e e o \clubpenalty relaxado logo abaixo que torna isso possivel.
+\newcommand{\sbchapterneed}[3]{%
+  \begingroup
+    % Linha fantasma sozinha: serve de referencia para descontar.
+    \setbox\tw@=\vbox{\hsize=\linewidth
+      \noindent\strut\par}%
+    % A mesma linha fantasma seguida do bloco inteiro e de uma linha de corpo.
+    \setbox\z@=\vbox{\hsize=\linewidth
+      \noindent\strut\par
+      \vspace{2.2em}%
+      {\noindent\rule{\linewidth}{0.7pt}}\par
+      \vspace{0.55em}%
+      {\noindent\small\addfontfeatures{LetterSpace=28}\MakeUppercase{#1}}\par
+      \vspace{0.4em}%
+      {\fontsize{18pt}{22pt}\selectfont\addfontfeatures{LetterSpace=-1.5}\bfseries\raggedright
+       \hyphenpenalty=10000\exhyphenpenalty=10000
+       \noindent #2\par}%
+      \if\relax\detokenize{#3}\relax\else
+        \vspace{1.2em}%
+        {\fontsize{13pt}{16pt}\selectfont\sffamily\bfseries\raggedright
+         \hyphenpenalty=10000\exhyphenpenalty=10000
+         \noindent #3\par}%
+        \vspace{0.35em}%
+      \fi
+      \vspace{0.45em}%
+      \noindent\strut\par}%
+    \global\sb@needlen=\ht\z@
+    \global\advance\sb@needlen by \dp\z@
+    \global\advance\sb@needlen by -\ht\tw@
+    \global\advance\sb@needlen by -\dp\tw@
+  \endgroup
+  \sbneedspace{\sb@needlen}%
+}
+\newcommand{\sbneedspace}[1]{%
+  \par
+  \sb@needbreakfalse
+  \ifsb@skipnext\global\sb@skipnextfalse\@nobreaktrue\fi
+  % `\if@nobreak` e verdadeiro so no ponto imediatamente posterior a um
+  % titulo, e o `\everypar` do LaTeX o desliga no primeiro paragrafo. Tudo
+  % o que segue precisa ficar DENTRO deste ramo: quando um `## X` e seguido
+  % direto de um `### X.1`, ate o `\penalty\z@` de medicao seria um ponto
+  % de quebra legal logo apos o titulo de capitulo — e era assim que o titulo
+  % acabava sozinho no pe da pagina.
+  \if@nobreak\else
+    % `\pagetotal` so vale depois que o construtor de pagina rodou, e ele so
+    % roda ate um ponto de quebra LEGAL: com `\penalty\@M` o construtor
+    % segurava material alem do pe da pagina e `\pagetotal` chegava a passar
+    % de `\pagegoal`. Disparar `\newpage` nesse estado quebrava duas vezes e
+    % deixava uma pagina com duas linhas. `\penalty\z@` e ponto de quebra
+    % legal de custo neutro: fecha a pagina pendente antes da medicao sem
+    % privilegiar a quebra em relacao as vizinhas.
+    \penalty\z@
+    \dimen@=#1\relax
+    \ifdim\pagegoal<\maxdimen
+      \dimen@ii=\pagegoal
+      \advance\dimen@ii-\pagetotal
+      \ifdim\dimen@ii<\dimen@ \sb@needbreaktrue\fi
+    \fi
+  \fi
+  \ifsb@needbreak\newpage\fi
+}
+\makeatother
 \usepackage{titlesec}
 \clubpenalty=10000
 \widowpenalty=10000
 \displaywidowpenalty=10000
+% O LaTeX proibe quebrar pagina logo antes de uma equacao em display
+% (predisplaypenalty = 10000). Num essay tecnico isso solda titulo de
+% capitulo, primeiro paragrafo e primeira equacao num bloco unico de quase
+% 300pt: se ele nao cabe no que resta da pagina, o capitulo inteiro pula
+% para a proxima e sobra um terco de pagina em branco. 100 mantem a quebra
+% desencorajada, sem torna-la impossivel.
+\predisplaypenalty=100
+% Repetido em \AtBeginDocument porque amsmath e setspace ajustam
+% penalidades de display no inicio do documento e sobrescreveriam o valor
+% definido aqui no preambulo.
+\AtBeginDocument{\predisplaypenalty=100\relax}
+% Ultimo recurso do quebrador de linha antes de deixar a caixa vazar para
+% fora da margem: sem isto, um link longo e nao hifenizavel (`\uline` bloqueia
+% hifenizacao) obrigava o TeX a escolher entre um espacamento horrendo e uma
+% linha overfull, e ele escolhia a overfull.
+\setlength{\emergencystretch}{3em}
 \usepackage{enumitem}
 \setlist{topsep=0.3em, parsep=0em, itemsep=0.2em}
 \setlength{\listparindent}{0pt}
@@ -359,9 +469,17 @@ luaotfload.add_fallback
 \setlength{\heavyrulewidth}{0.8pt}
 \setlength{\lightrulewidth}{0.4pt}
 \usepackage{etoolbox}
+% A longtable que comeca no pe da pagina imprime o cabecalho, descobre que
+% nenhuma linha do corpo cabe, quebra a pagina e reimprime o cabecalho — o
+% primeiro fica para tras, orfao. Reservar cabecalho mais duas linhas resolve
+% isso; mais que isso arrastava tabela grande inteira para a pagina seguinte
+% e deixava meia folha em branco. O `\endhead` do Pandoc repete o cabecalho
+% em cada continuacao, entao partir a tabela nao custa legibilidade.
+\BeforeBeginEnvironment{longtable}{\sbneedspace{4\baselineskip}}
 \AtBeginEnvironment{longtable}{%
   \small
-  \setlength{\emergencystretch}{2em}%
+  \setlength{\emergencystretch}{3em}%
+  \hyphenpenalty=50\exhyphenpenalty=50%
   \setlength{\tabcolsep}{5pt}%
   \renewcommand{\arraystretch}{1.25}%
 }
@@ -416,10 +534,22 @@ luaotfload.add_fallback
   }
 \fi
 
+% Bloco cercado SEM linguagem vira `verbatim`, nao `Shaded` (que o Pandoc so
+% emite quando ha realce de sintaxe). Sem isto, diagramas ASCII e pseudocodigo
+% saiam soltos na pagina, sem moldura nenhuma, enquanto um bloco ```python ao
+% lado aparecia encaixotado. Mesma moldura para os dois.
+\newtcolorbox{sbcodebox}{enhanced,breakable,
+  colback=codebg,colframe=codeframe,boxrule=0.6pt,
+  arc=4pt,outer arc=4pt,
+  top=6pt,bottom=6pt,left=8pt,right=8pt}
+\BeforeBeginEnvironment{verbatim}{\begin{sbcodebox}}
+\AfterEndEnvironment{verbatim}{\end{sbcodebox}}
+% \footnotesize (nao \small): diagramas e listagens do corpus chegam a 100
+% colunas, e cada ponto a menos e uma linha a menos quebrada pelo `breaklines`.
 \RecustomVerbatimEnvironment{verbatim}{Verbatim}{%
   breaklines=true,%
   breakanywhere=true,%
-  fontsize=\small%
+  fontsize=\footnotesize%
 }
 
 \renewenvironment{quote}{%
@@ -474,11 +604,11 @@ luaotfload.add_fallback
   borderline west={3pt}{0pt}{boxline},
   left=12pt,right=10pt,top=8pt,bottom=8pt,parbox=false}
 
-\newcommand{\wbbadge}[1]{\par\noindent{\footnotesize\bfseries\color{wbtype}\addfontfeatures{LetterSpace=18}\MakeUppercase{#1}}\par\vspace{2pt}}
-\newcommand{\wbtitle}[1]{\par\noindent{\large\bfseries\color{sblink} #1}\par\vspace{4pt}}
-\newcommand{\cardname}[1]{\par\noindent{\bfseries\color{sblink}#1}\par\vspace{1pt}}
+\newcommand{\wbbadge}[1]{\par\noindent{\footnotesize\bfseries\color{wbtype}\addfontfeatures{LetterSpace=18}\MakeUppercase{#1}}\par\nobreak\vspace{2pt}\nobreak}
+\newcommand{\wbtitle}[1]{\par\noindent{\large\bfseries\color{sblink} #1}\par\nobreak\vspace{4pt}\nobreak}
+\newcommand{\cardname}[1]{\par\noindent{\bfseries\color{sblink}#1}\par\nobreak\vspace{1pt}\nobreak}
 \newcommand{\cardmeta}[1]{\par\noindent{\footnotesize\color{subtlegray}#1}\par\vspace{0.6em}}
-\newcommand{\parahead}[1]{\par\vspace{0.9em}\noindent{\footnotesize\bfseries\color{sbink}#1}\par\vspace{0.35em}}
+\newcommand{\parahead}[1]{\par\vspace{0.9em}\noindent{\footnotesize\bfseries\color{sbink}#1}\par\nobreak\vspace{0.35em}\nobreak}
 \newcommand{\ornamentglyph}[1]{{\setlength{\fboxsep}{0pt}#1}}
 
 % Sem cabecalho e sem filete no rodape: autor vive so na capa (\maketitle).
@@ -545,8 +675,61 @@ luaotfload.add_fallback
 \newcommand{\sbtocopenlast}[2]{\sbtocopen{#1}{#2}}
 
 % Kicker de capitulo — inserido por Python antes de cada ##
+% 12 linhas, nao 7: o kicker so ocupa uma linha, mas o que vem colado nele e
+% um `\subsection` de 18pt que pode gastar duas linhas sozinho. Com 7 o titulo
+% de capitulo cabia no pe da pagina e o corpo comecava na pagina seguinte,
+% deixando o titulo sozinho.
+\makeatletter
+% Altura exata do bloco de um subtitulo: #1 = nivel (3 para `###`, 4 para
+% `####`), #2 = o texto do titulo. Mesma ideia do \sbchapterneed — compor de
+% verdade e medir, em vez de arbitrar um numero de entrelinhas que ora sobra
+% ora falta.
+\newcommand{\sbsubneed}[2]{%
+  \begingroup
+    \setbox\tw@=\vbox{\hsize=\linewidth
+      \noindent\strut\par}%
+    \setbox\z@=\vbox{\hsize=\linewidth
+      \noindent\strut\par
+      \ifnum#1=3
+        \vspace{1.2em}%
+        \fontsize{13pt}{16pt}\selectfont\sffamily\bfseries
+      \else
+        \vspace{0.9em}%
+        \fontsize{13pt}{16pt}\selectfont\bfseries
+      \fi
+      \raggedright\hyphenpenalty=10000\exhyphenpenalty=10000
+      \noindent #2\par
+      \ifnum#1=3\vspace{0.35em}\else\vspace{0.25em}\fi
+      \normalfont\normalsize\noindent\strut\par}%
+    \global\sb@needlen=\ht\z@
+    \global\advance\sb@needlen by \dp\z@
+    \global\advance\sb@needlen by -\ht\tw@
+    \global\advance\sb@needlen by -\dp\tw@
+  \endgroup
+  \sbneedspace{\sb@needlen}%
+}
+
+% O \@afterheading do LaTeX crava \clubpenalty em 10000 depois de todo titulo,
+% o que proibe deixar UMA linha de corpo sob o titulo no pe da pagina — a menor
+% unidade indivisivel vira titulo mais duas linhas. Como o criterio combinado e
+% titulo mais uma linha, a penalidade precisa ser alta mas finita: continua
+% desencorajada, deixa de ser impossivel. O \widowpenalty segue infinito, entao
+% um paragrafo de duas linhas ainda nao se parte.
+\renewcommand{\@afterheading}{%
+  \@nobreaktrue
+  \everypar{%
+    \if@nobreak
+      \@nobreakfalse
+      \clubpenalty 300\relax
+      \if@afterindent\else
+        {\setbox\z@\lastbox}%
+      \fi
+    \else
+      \clubpenalty\@clubpenalty
+      \everypar{}%
+    \fi}}
+\makeatother
 \newcommand{\sbkicker}[1]{%
-  \par\needspace{7\baselineskip}%
   \vspace{2.2em}%
   {\noindent\color{sbink}\rule{\linewidth}{0.7pt}}\par\nobreak
   \vspace{0.55em}%
@@ -555,6 +738,12 @@ luaotfload.add_fallback
   % pagina em vez de rotulo. Espacejamento maior pelo mesmo motivo.
   {\noindent\small\addfontfeatures{LetterSpace=28}\color{sbink}\MakeUppercase{#1}}\par\nobreak
   \vspace{0.4em}%
+  % O titlesec emite `\addpenalty{\@secpenalty}` antes do titulo, e no TeX
+  % todo no de penalidade e ponto de quebra legal: era por ali que a pagina
+  % terminava com o filete dourado e o titulo abria a pagina seguinte. O
+  % `\addpenalty` do LaTeX se abstem quando `\@nobreak` esta ligado, e o
+  % `\everypar` o desliga sozinho no primeiro paragrafo do capitulo.
+  \sbnobreak
 }
 
 % Referencias com recuo pendente
@@ -580,7 +769,7 @@ luaotfload.add_fallback
 % bold serif preto contra 18pt bold serif preto eram praticamente o mesmo
 % titulo, e um `###` no pe da pagina lia como abertura de capitulo.
 % Libertinus Sans em grafite resolve sem introduzir cor nova.
-\titleformat{\subsubsection}{\needspace{4\baselineskip}\fontsize{13pt}{16pt}\selectfont\sffamily\bfseries\color{sbgraphite}\raggedright\hyphenpenalty=10000\exhyphenpenalty=10000}{}{0em}{}
+\titleformat{\subsubsection}{\fontsize{13pt}{16pt}\selectfont\sffamily\bfseries\color{sbgraphite}\raggedright\hyphenpenalty=10000\exhyphenpenalty=10000}{}{0em}{}
 \titleformat{\paragraph}{\fontsize{13pt}{16pt}\selectfont\bfseries\color{sblink}\raggedright\hyphenpenalty=10000\exhyphenpenalty=10000}{}{0em}{}
 \titlespacing*{\section}{0pt}{2em}{0.8em}
 \titlespacing*{\subsection}{0pt}{0pt}{0.45em}
@@ -704,6 +893,83 @@ def _roman(num):
     return label
 
 
+_LATEX_ESCAPE = {
+    '\\': r'{\textbackslash}', '{': r'\{', '}': r'\}', '$': r'\$',
+    '&': r'\&', '#': r'\#', '%': r'\%', '_': r'\_',
+    '~': r'{\textasciitilde}', '^': r'{\textasciicircum}',
+}
+
+
+def _titulo_para_medicao(titulo):
+    """Titulo em texto plano, seguro para ir num argumento de macro.
+
+    Serve so para medir altura, entao enfase, links e matematica podem virar o
+    proprio texto: o que muda a contagem de linhas e a quantidade de caracteres,
+    nao a marcacao.
+    """
+    texto = re.sub(r'\[\[(?:[^\]|]*\|)?([^\]]*)\]\]', r'\1', titulo)
+    texto = re.sub(r'\[([^\]]*)\]\([^)]*\)', r'\1', texto)
+    texto = re.sub(r'[*`]+', '', texto)
+    return ''.join(_LATEX_ESCAPE.get(c, c) for c in texto)
+
+
+def _subtitulo_colado(lines, idx):
+    """Texto do `###` colado logo abaixo do `##`, ou string vazia.
+
+    Colado quer dizer sem corpo entre os dois. Nesse caso os dois titulos e
+    as primeiras linhas de texto formam um bloco unico, e a reserva precisa
+    cobrir tambem o subtitulo.
+    """
+    j = idx + 1
+    while j < len(lines) and not lines[j].strip():
+        j += 1
+    if j >= len(lines):
+        return ''
+    m = re.match(r'^###\s+(.*)$', lines[j])
+    return m.group(1).strip() if m else ''
+
+
+def _sob_titulo_pai(lines, idx):
+    """O titulo em `idx` vem colado logo abaixo de um titulo um nivel acima?
+
+    Nesse caso ele ja esta dentro do bloco medido pelo titulo de cima, e
+    reservar espaco de novo por conta propria plantaria um ponto de quebra
+    exatamente onde nao pode haver um.
+    """
+    m = re.match(r'^(#{3,4})\s', lines[idx])
+    if not m:
+        return False
+    j = idx - 1
+    while j >= 0 and not lines[j].strip():
+        j -= 1
+    if j < 0:
+        return False
+    pai = re.match(r'^(#{2,3})\s', lines[j])
+    return bool(pai) and len(pai.group(1)) == len(m.group(1)) - 1
+
+
+def _titulo_colado(lines, idx):
+    """A linha `idx` e um titulo seguido, sem corpo entre eles, por um titulo
+    um nivel mais fundo?
+
+    Nesse caso os dois formam um bloco unico, e o `\\sbneedspace` do titulo de
+    baixo precisa ser suprimido: a penalidade que ele planta para medir a pagina
+    seria o unico ponto de quebra entre os dois, e era por ela que o titulo de
+    cima acabava sozinho no pe da pagina.
+    """
+    m = re.match(r'^(#{2,3})\s', lines[idx])
+    if not m:
+        return False
+    nivel = len(m.group(1))
+    j = idx + 1
+    while j < len(lines) and not lines[j].strip():
+        j += 1
+    if j >= len(lines):
+        return False
+    n = re.match(r'^(#{3,4})\s', lines[j])
+    return bool(n) and len(n.group(1)) == nivel + 1
+
+
 def inject_chapter_kickers(body):
     """Insere `\\sbkicker{}` antes de cada `##`.
 
@@ -726,10 +992,17 @@ def inject_chapter_kickers(body):
     lines = body.split('\n')
     out = []
     chapter_no = 0
-    for line in lines:
+    for idx, line in enumerate(lines):
         m = SECTION_RE.match(line)
         if not (m and len(m.group(1)) == 2):
+            sub = re.match(r'^(#{3,4})\s+(.*)$', line)
+            if sub and not _sob_titulo_pai(lines, idx):
+                out.append(
+                    f'\\sbsubneed{{{len(sub.group(1))}}}'
+                    f'{{{_titulo_para_medicao(sub.group(2).strip())}}}')
             out.append(line)
+            if _titulo_colado(lines, idx):
+                out.append('\\sbskipnextneed')
             continue
 
         num = _detect_self_numbered(line)
@@ -752,8 +1025,14 @@ def inject_chapter_kickers(body):
 
         anchor = heading_anchor(line)
         out.append(f'\\hypertarget{{{anchor}}}{{}}')
+        out.append(
+            f'\\sbchapterneed{{{label}}}'
+            f'{{{_titulo_para_medicao(heading[3:].strip())}}}'
+            f'{{{_titulo_para_medicao(_subtitulo_colado(lines, idx))}}}')
         out.append(f'\\sbkicker{{{label}}}')
         out.append(heading)
+        if _titulo_colado(lines, idx):
+            out.append('\\sbskipnextneed')
     return '\n'.join(out)
 
 
@@ -882,10 +1161,10 @@ classoption:
   - 12pt
   - a4paper
 geometry:
-  - top=22mm
-  - bottom=22mm
-  - left=20mm
-  - right=20mm
+  - top=17mm
+  - bottom=19mm
+  - left=19mm
+  - right=19mm
 header-includes:
   - |
 {header_indented}

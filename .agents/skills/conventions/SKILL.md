@@ -145,6 +145,7 @@ Exportadores convertem `[[#Heading]]` em `[Display](#slug)` (`convert_heading_wi
 - **`## Conexões`**: só `[[slug|Título]]` — metadata interna, não exportada.
 - **`## Referências`**: links bibliográficos externos, formato AIAA.
 - Motivo: essay é documento autocontido, compartilhável como PDF sem perda de informação.
+- **Nunca remeta a outro essay no corpo.** Nada de "como argumentei no ensaio *X*" ou "o essay *Y* detalha isso": quem lê o PDF não tem o *Y* em mãos, e a frase vira uma promessa que o documento não cumpre. Atribua a ideia ao seu próprio assunto ("a epistemologia alcança a mesma lição pelo lado empírico") ou corte a frase, se ela existia só para apontar. A relação entre páginas vive em `## Conexões`, e é lá que ela sobrevive à exportação. `check_wiki.py` sinaliza o caso como `CROSS_ESSAY_REFERENCE`.
 - **Trabalho de bibliografia não toca no corpo.** Passada sobre `## Referências` mexe só nessa seção. Se um check acusar obra citada no corpo e ausente da bibliografia, corrija **acrescentando a entrada em `## Referências`** — nunca mexendo no link do corpo. Alterar link inline é `/linkify` (modo Adicionar links), só sob pedido explícito.
 - Mínimo prático: ~10 links externos no corpo.
 

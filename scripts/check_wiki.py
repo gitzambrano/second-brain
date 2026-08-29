@@ -278,6 +278,13 @@ HTML_TAG_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Remissão a outro essay no corpo: "no ensaio *Título*", "o essay *Título*".
+# Essay é documento autocontido (ver `## Regra de links` em conventions/SKILL.md):
+# a relação entre páginas vive em `## Conexões`, não na prosa.
+CROSS_ESSAY_RE = re.compile(
+    r"(?i)\b(?:essays?|ensaios?|white\s?papers?)\s+\*([^*\n]{4,120})\*"
+)
+
 
 # ---------------------------------------------------------------------------
 # Checagem por essay
@@ -812,6 +819,19 @@ def check_essay(filepath: Path) -> dict:
             f"{len(bullet_lines)} linha(s) com bullet fora de Sumário/Referências — "
             f"use prosa argumentativa: linhas {[b[0] for b in bullet_lines[:5]]}"
             + ("..." if len(bullet_lines) > 5 else ""))
+
+    # -----------------------------------------------------------------------
+    # 13.5 Remissão a outro essay no corpo
+    # -----------------------------------------------------------------------
+    xref_body = re.sub(r"^---.*?---\n", "", content, count=1, flags=re.DOTALL)
+    xref_body = strip_fences(xref_body)
+    xref_body = re.split(
+        r"(?m)^## (?:Refer[e\u00ea]ncias|Conex[o\u00f5]es)\s*$", xref_body)[0]
+    xrefs = [m.group(0).strip() for m in CROSS_ESSAY_RE.finditer(xref_body)]
+    if xrefs:
+        add("WARNING", "CROSS_ESSAY_REFERENCE",
+            f"{len(xrefs)} remiss\u00e3o(\u00f5es) a outro essay no corpo \u2014 o essay \u00e9 autocontido "
+            f"e a rela\u00e7\u00e3o entre p\u00e1ginas vive em ## Conex\u00f5es: {xrefs[:3]}")
 
     # -----------------------------------------------------------------------
     # 14. HTML residual

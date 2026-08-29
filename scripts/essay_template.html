@@ -436,7 +436,17 @@ li::marker{color:color-mix(in srgb,var(--gold-dim) 70%,var(--text-dim));}
 /* ------------------------------------------------------------------ */
 /* Tabelas / codigo / figuras                                          */
 /* ------------------------------------------------------------------ */
-table{width:100%;border-collapse:collapse;margin:2rem 0;font-size:.95rem;}
+/* Tabela larga rola DENTRO de si mesma, em qualquer largura de tela. Sem
+   isto, uma tabela de muitas colunas empurrava a pagina inteira e o
+   documento inteiro ganhava barra de rolagem horizontal — o texto corrido
+   saia da tela junto com ela. `width:max-content` deixa a tabela pedir o
+   espaco de que precisa; `min-width:100%` garante que a tabela estreita
+   ainda ocupe a coluna toda. */
+table{
+  display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;
+  width:max-content;min-width:100%;max-width:100%;
+  border-collapse:collapse;margin:2rem 0;font-size:.95rem;
+}
 th{
   background:var(--surface2);color:var(--gold);text-align:left;
   font-family:'JetBrains Mono',Consolas,monospace;font-weight:500;
@@ -452,7 +462,12 @@ tr:last-child td{border-bottom:none;}
 code{
   font-family:'JetBrains Mono',Consolas,monospace;
   background:var(--surface2);padding:.15em .4em;border-radius:4px;font-size:.82em;
+  /* Um identificador longo em codigo nao tem espaco onde quebrar e vazava
+     para fora da coluna de texto. Dentro de `pre` a regra nao vale: la a
+     rolagem horizontal do proprio bloco e o comportamento desejado. */
+  overflow-wrap:anywhere;
 }
+pre code{overflow-wrap:normal;}
 pre{
   background:var(--surface2);border:1px solid var(--border);
   padding:1em 1.2em;border-radius:6px;overflow-x:auto;
@@ -499,8 +514,6 @@ html{scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
   .content{padding:2rem 1.05rem 4rem;}
   .content h2{margin-top:2.7rem;}
   pre{font-size:.72em;}
-  /* Tabela larga rola dentro de si mesma em vez de estourar o viewport. */
-  table{display:block;width:max-content;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}
   .quote,.card{padding:.95rem 1.05rem;}
   .box > p{margin-left:1.05rem;margin-right:1.05rem;}
   .box-title{padding:1rem 1.05rem .3rem;}

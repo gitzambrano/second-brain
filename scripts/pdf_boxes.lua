@@ -208,6 +208,21 @@ function Header(el)
       return {}
     end
   end
+  -- Numeral do subtitulo em dourado. `\texorpdfstring` mantem o marcador do
+  -- PDF em texto puro: cor nao existe em bookmark, e sem ele o hyperref
+  -- reclamaria do comando de cor dentro do titulo.
+  if el.level == 3 or el.level == 4 then
+    local primeiro = el.content[1]
+    if primeiro and primeiro.t == 'Str' then
+      local num = primeiro.text:match('^(%d[%d%.]*%d)$')
+                or primeiro.text:match('^(%d)$')
+      if num then
+        el.content[1] = pandoc.RawInline('latex',
+          '\\texorpdfstring{\\textcolor{sbink}{' .. num .. '}}{' .. num .. '}')
+        return el
+      end
+    end
+  end
   return nil
 end
 
@@ -215,16 +230,75 @@ end
 -- Link: underline inline hyperlinks in PDF body
 -- ------------------------------------------------------------------
 
+-- Envolve os inlines num \uline, descendo por dentro de enfase/forte/span.
+--
+-- O ulem so quebra linha em espaco que NAO esteja dentro de chaves. Deixar a
+-- enfase por fora do sublinhado e o que permite quebrar: `\emph{\uline{a b}}`
+-- quebra no espaco, `\uline{\emph{a b}}` nao. Um link misto ("Catalyst, *The
+-- Bottom Line...*") precisa do tratamento em cada trecho, nao so quando o link
+-- inteiro e italico — era esse o caso que ainda vazava a margem direita.
+local ENVOLTORIOS = { Emph = true, Strong = true, SmallCaps = true,
+                      Span = true, Underline = true }
+
+local function uline_wrap(inlines)
+  local out = {}
+  local corrida = {}
+
+  local function despeja()
+    if #corrida == 0 then return end
+    table.insert(out, pandoc.RawInline('latex', '\\uline{'))
+    for _, c in ipairs(corrida) do table.insert(out, c) end
+    table.insert(out, pandoc.RawInline('latex', '}'))
+    corrida = {}
+  end
+
+  for _, el in ipairs(inlines) do
+    if ENVOLTORIOS[el.t] and el.content and #el.content > 0 then
+      despeja()
+      el.content = uline_wrap(el.content)
+      table.insert(out, el)
+    else
+      table.insert(corrida, el)
+    end
+  end
+  despeja()
+  return out
+end
+
+-- ------------------------------------------------------------------
+-- Code: pontos de quebra dentro de codigo em linha
+-- ------------------------------------------------------------------
+
+-- `\texttt` nao hifeniza. Um identificador longo ("erro_padrao=0.00001") nao
+-- tinha onde quebrar e vazava a margem direita. Partir o Code em pedacos nos
+-- separadores e inserir `\allowbreak` entre eles nao muda uma virgula do que e
+-- impresso — so devolve ao TeX pontos de corte legais.
+local SEPARADOR = '[_=%.,/:%-%+%(%)%[%]]'
+
+function Code(el)
+  if #el.text < 14 or not el.text:find(SEPARADOR) then
+    return nil
+  end
+  local out, buf = {}, ''
+  for ch in el.text:gmatch('.') do
+    buf = buf .. ch
+    if ch:match(SEPARADOR) then
+      table.insert(out, pandoc.Code(buf))
+      table.insert(out, pandoc.RawInline('latex', '\\allowbreak{}'))
+      buf = ''
+    end
+  end
+  if #buf > 0 then
+    table.insert(out, pandoc.Code(buf))
+  end
+  return out
+end
+
 function Link(el)
   if el.target:match('^#') or in_references then
     return el
   end
-  local new_content = { pandoc.RawInline('latex', '\\uline{') }
-  for _, c in ipairs(el.content) do
-    table.insert(new_content, c)
-  end
-  table.insert(new_content, pandoc.RawInline('latex', '}'))
-  el.content = new_content
+  el.content = uline_wrap(el.content)
   return el
 end
 
@@ -458,4 +532,117 @@ function RawBlock(el)
   return nil
 end
 
+-- ------------------------------------------------------------------
+-- Table: larguras de coluna proporcionais, com piso na palavra mais longa
+-- ------------------------------------------------------------------
 
+-- Largura VISUAL aproximada, em unidades de "caractere medio".
+--
+-- Contar bytes (`#s`) dava 2 para cada letra acentuada e inflava toda coluna em
+-- portugues. Contar caracteres corrige isso, mas ainda trata "Ordem" e "iiiii"
+-- como iguais — e foi por isso que a coluna "Ordem" saia estreita demais e
+-- quebrava em "Or-/dem". Aqui maiuscula e letra larga pesam mais que a media, e
+-- letra estreita pesa menos.
+local WIDE = { M = 1.7, W = 1.8, m = 1.6, w = 1.4 }
+local NARROW = { i = 0.45, l = 0.45, j = 0.5, t = 0.6, f = 0.6, r = 0.6,
+                 I = 0.6, ['.'] = 0.5, [','] = 0.5, [' '] = 0.5,
+                 ['('] = 0.6, [')'] = 0.6, ['-'] = 0.6 }
+
+local function ulen(s)
+  local n = 0
+  for ch in s:gmatch('[%z\1-\127\194-\244][\128-\191]*') do
+    if WIDE[ch] then n = n + WIDE[ch]
+    elseif NARROW[ch] then n = n + NARROW[ch]
+    elseif ch:match('%u') then n = n + 1.35
+    else n = n + 1.0 end
+  end
+  return n
+end
+
+-- Maior palavra da celula. E o piso duro da coluna: um nome proprio longo
+-- ("Kolmogorov-Smirnov") dentro de um link nao tem onde quebrar, e numa coluna
+-- estreita demais ele simplesmente transborda por cima da coluna vizinha.
+local function longest_word(s)
+  local m = 0
+  for w in s:gmatch('%S+') do
+    local l = ulen(w)
+    if l > m then m = l end
+  end
+  return m
+end
+
+function Table(el)
+  local num_cols = #el.colspecs
+  if num_cols == 0 then return el end
+
+  local pref = {}   -- largura desejada (maior celula)
+  local floor_ = {} -- largura minima (maior palavra)
+  for i = 1, num_cols do pref[i] = 0; floor_[i] = 0 end
+
+  local function scan(row)
+    for c, cell in ipairs(row.cells) do
+      if c <= num_cols then
+        local s = pandoc.utils.stringify(cell)
+        local l, w = ulen(s), longest_word(s)
+        if l > pref[c] then pref[c] = l end
+        if w > floor_[c] then floor_[c] = w end
+      end
+    end
+  end
+
+  if el.head and el.head.rows then
+    for _, row in ipairs(el.head.rows) do scan(row) end
+  end
+  for _, body in ipairs(el.bodies) do
+    for _, row in ipairs(body.body) do scan(row) end
+  end
+
+  -- Capacidade da linha em \small: a mancha tem 172 mm, o Pandoc ja desconta
+  -- 2*	abcolsep por coluna, e sobram cerca de 90 caracteres. E a escala comum
+  -- entre piso e preferencia — subestimar aqui aperta as colunas e faz o piso
+  -- perder a disputa, que era exatamente o defeito da versao anterior.
+  local CAP = 90
+
+  -- Uma celula muito longa nao deve engolir a tabela: acima de 55 caracteres o
+  -- texto ja vai quebrar em varias linhas de qualquer forma.
+  local total_pref = 0
+  for i = 1, num_cols do
+    pref[i] = math.max(math.min(pref[i], 55), 4)
+    -- Pequena folga sobre o piso: `vislen` e estimativa, nao medicao.
+    floor_[i] = math.max(floor_[i] * 1.15, 3)
+    total_pref = total_pref + pref[i]
+  end
+
+  -- Reparticao: distribui CAP proporcionalmente a `pref`, eleva ao piso quem
+  -- ficou abaixo dele, e redistribui o que sobra entre as colunas ainda
+  -- livres. Repete ate estabilizar (no maximo uma vez por coluna).
+  local w, fixed = {}, {}
+  for i = 1, num_cols do w[i] = CAP * pref[i] / total_pref; fixed[i] = false end
+
+  for _ = 1, num_cols do
+    local restante, soma_livre, mudou = CAP, 0, false
+    for i = 1, num_cols do
+      if not fixed[i] and w[i] < floor_[i] then
+        w[i] = floor_[i]; fixed[i] = true; mudou = true
+      end
+    end
+    if not mudou then break end
+    for i = 1, num_cols do
+      if fixed[i] then restante = restante - w[i] else soma_livre = soma_livre + pref[i] end
+    end
+    if restante <= 0 or soma_livre <= 0 then break end
+    for i = 1, num_cols do
+      if not fixed[i] then w[i] = restante * pref[i] / soma_livre end
+    end
+  end
+
+  local total = 0
+  for i = 1, num_cols do total = total + w[i] end
+
+  local new_colspecs = {}
+  for i = 1, num_cols do
+    new_colspecs[i] = { el.colspecs[i][1], w[i] / total }
+  end
+  el.colspecs = new_colspecs
+  return el
+end
