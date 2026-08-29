@@ -315,6 +315,32 @@ def check_essay(filepath: Path) -> dict:
     # -----------------------------------------------------------------------
     # 1. Frontmatter
     # -----------------------------------------------------------------------
+    # -----------------------------------------------------------------------
+    # 0. Caracteres de controle
+    # -----------------------------------------------------------------------
+    # Erro de escape em script de edição (`\f`, `\a`, `\b` em string Python não
+    # crua) injeta bytes de controle invisíveis no meio da prosa ou da
+    # matemática. Não aparecem em nenhuma leitura casual, passam pelo Obsidian
+    # e só se manifestam quando o LuaLaTeX aborta o PDF com "Text line contains
+    # an invalid character". Aqui viram CRITICAL, porque quebram exportação.
+    # A varredura é sobre `content` cru, e não sobre `lines`: str.splitlines()
+    # do Python trata \x0b, \x0c, \x1c-\x1e e   como quebra de linha e os
+    # consome, de modo que um form feed injetado no meio do texto simplesmente
+    # desaparece antes de qualquer checagem por linha.
+    controle = [
+        (content.count("\n", 0, pos) + 1, ord(ch))
+        for pos, ch in enumerate(content)
+        if ord(ch) < 32 and ch not in "\n\t"
+    ]
+    if controle:
+        onde = ", ".join(
+            f"linha {ln} (0x{cp:02X})" for ln, cp in controle[:6]
+        )
+        resto = f" e mais {len(controle) - 6}" if len(controle) > 6 else ""
+        add("CRITICAL", "CONTROL_CHAR",
+            f"{len(controle)} caractere(s) de controle invisível(is) na prosa: "
+            f"{onde}{resto} — quebram a exportação para PDF")
+
     if not fm_text:
         add("CRITICAL", "NO_FRONTMATTER", "Sem YAML frontmatter")
         return {"name": name, "issues": issues}
