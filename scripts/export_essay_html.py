@@ -287,7 +287,12 @@ def export_essay(filepath, output_dir=None, source_dir=None):
         # interromper o parágrafo e ela sai como prosa corrida com hífens
         # literais no meio da frase, nos DOIS exports. Ligar aqui corrige o
         # corpus inteiro sem editar um `.md` sequer.
-        '-f', 'markdown+smart+tex_math_dollars+pipe_tables+strikeout+superscript+subscript+implicit_figures+gfm_auto_identifiers+lists_without_preceding_blankline',
+        #
+        # -implicit_figures: mesma razão do export_essay_pdf.py — o autor já
+        # escreve a legenda em prosa ("Figura 4. Variação..."). Com a extensão
+        # ligada, o Pandoc também envolve a imagem num <figure> com <figcaption>
+        # tirada do alt text, duplicando a legenda acima da que o autor escreveu.
+        '-f', 'markdown+smart+tex_math_dollars+pipe_tables+strikeout+superscript+subscript-implicit_figures+gfm_auto_identifiers+lists_without_preceding_blankline',
 
     ]
 
