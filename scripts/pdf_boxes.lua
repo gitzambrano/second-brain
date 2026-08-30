@@ -295,7 +295,27 @@ function Code(el)
 end
 
 function Link(el)
-  if el.target:match('^#') or in_references then
+  -- Link interno (Sumário -> capítulo): o Pandoc, deixado sozinho, escreve
+  -- `\hyperref[id]{...}` usando o PRÓPRIO id auto-gerado do heading — que
+  -- não é o mesmo id do `\hypertarget{}` que export_essay_pdf.py insere
+  -- antes de cada capítulo (heading_anchor(), preservando o número e sem
+  -- manglar acentos para ASCII). Os dois nomes nunca batiam, e o link do
+  -- Sumário nunca navegava para lugar nenhum. `\hyperlink{}` aponta direto
+  -- para o MESMO nome do `\hypertarget{}`, sem depender do id do Pandoc.
+  if el.target:match('^#') then
+    -- \sbtoclink (definido em export_essay_pdf.py) e' \hyperlink + um
+    -- sublinhado bem sutil — sem ele o link interno fica na mesma cor do
+    -- texto normal (linkcolor=sblink e' quase preto) e não da nenhuma pista
+    -- de que aquilo e' clicavel.
+    local anchor = el.target:sub(2)
+    local out = { pandoc.RawInline('latex', '\\sbtoclink{' .. anchor .. '}{') }
+    for _, inl in ipairs(el.content) do
+      table.insert(out, inl)
+    end
+    table.insert(out, pandoc.RawInline('latex', '}'))
+    return out
+  end
+  if in_references then
     return el
   end
   el.content = uline_wrap(el.content)

@@ -501,6 +501,18 @@ luaotfload.add_fallback
   citecolor=sburl
 }
 
+% Link interno (Sumario -> capitulo, ou qualquer `[texto](#anchor)` no corpo):
+% `linkcolor=sblink` acima e quase identico a cor do texto normal, entao sem
+% pista nenhuma o leitor nao sabe que aquilo e clicavel. Um sublinhado bem
+% sutil (cinza claro, 0.3pt) resolve sem competir com o `\uline` mais forte
+% dos links externos no corpo (uline_wrap em pdf_boxes.lua) — o texto em si
+% mantem a cor normal do hyperref, so o tracinho embaixo e diferente.
+\newcommand{\sbtoclink}[2]{%
+  \hyperlink{#1}{\bgroup
+    \markoverwith{\textcolor{subtlegray!45}{\rule[-0.6pt]{1pt}{0.3pt}}}%
+    \uline{#2}\egroup}%
+}
+
 % Legendas de figura reais (ambiente figure) ficam menores que o corpo.
 \usepackage{caption}
 \captionsetup{font=small,labelfont=bf,width=.95\linewidth}

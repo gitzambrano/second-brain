@@ -30,3 +30,4 @@ output/**
 wiki/**
 !wiki/**/
 !wiki/**/.gitkeep
+*log*
