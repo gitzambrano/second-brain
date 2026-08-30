@@ -134,9 +134,10 @@ GRAPH_STYLE = {
     # durante o destaque de um nó selecionado — nada nunca esmaece) | "auto"
     # (comportamento clássico: opacidade normal em repouso, mas esmaece as
     # arestas irrelevantes ao selecionar um nó ou buscar) | "off" (arestas
-    # completamente ocultas). "sempre" é o padrão — some só quando o usuário
-    # pede.
-    "edgeVisibility": "sempre",
+    # completamente ocultas). "auto" é o padrão — ao selecionar um nó, só as
+    # arestas que tocam ele continuam visíveis; o resto esmaece para não virar
+    # ruído visual num grafo com milhares de conexões.
+    "edgeVisibility": "auto",
     "radiusBase": 5,
     "radiusScale": 3,
     "labelSize": 10,
@@ -1414,7 +1415,7 @@ const STYLE_KEY = "sb-graph-style-v1";
 const FACTORY_STYLE = data.defaultStyle || {
   colors: { essay: "#4fa8ff", concept: "#5fd3c4", entity: "#e8b657", insights: "#b48ce8",
     reference: "#8a8f96", edge: "#9aa0a8", background: "#1b1e21" },
-  edgeOpacity: 0.55, edgeVisibility: "sempre", radiusBase: 5, radiusScale: 3, labelSize: 10,
+  edgeOpacity: 0.55, edgeVisibility: "auto", radiusBase: 5, radiusScale: 3, labelSize: 10,
   glow: "leve", labels: "sempre", starfield: true, gradient: true, sizeMode: "degree",
   spacing: 1.8, performance: "alta", collision: true,
   linkStrength: 3.5, chargeStrength: 2.5, friction: 0.65, homeStrength: 0.25,
