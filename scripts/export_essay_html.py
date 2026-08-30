@@ -310,7 +310,13 @@ def export_essay(filepath, output_dir=None, source_dir=None):
     # carga dinamica relativa que quebra com --embed-resources.
     needs_math = body_has_math(body)
     if needs_math:
-        cmd.insert(6, '--mathjax=https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js')
+        # Prefer the copy already downloaded by build_graph.py.  This keeps
+        # standalone exports reproducible when Pandoc cannot validate the
+        # Windows certificate store (or when the machine is offline).
+        local_mathjax = OUTPUT_DIR.parent / 'graph' / '_mathjax_cache.js'
+        mathjax_source = str(local_mathjax) if local_mathjax.exists() else \
+            'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js'
+        cmd.insert(6, f'--mathjax={mathjax_source}')
 
     print(f"  Exporting: {filepath.name} -> {html_path.name}")
 
