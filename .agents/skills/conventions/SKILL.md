@@ -12,7 +12,7 @@ description: >
   este arquivo para saber o formato exato a produzir e em que pasta
   salvar. Consulte também quando o Usuário perguntar "qual é a regra
   de X" ou "onde isso deveria ficar" sobre a wiki.
-allowed-tools: Read
+allowed-tools: Read WebFetch WebSearch
 ---
 # Conventions
 

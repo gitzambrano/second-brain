@@ -39,7 +39,7 @@ print(matrix[0])
 
 ### 2.2 Figura
 
-![Figura sintética](../assets/test-image.svg)
+![Figura sintética](../assets/test-image.png)
 
 A figura acima é deliberadamente simples para permitir um teste de presença no HTML e no PDF.
 

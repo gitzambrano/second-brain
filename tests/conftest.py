@@ -85,9 +85,13 @@ def installed_mini_brain():
                 pass
         for d in OUTPUT_DIRS:
             if d.exists():
-                for p in d.iterdir():
-                    if p.name != ".gitkeep" and p.is_file():
+                for p in sorted(d.rglob("*"), key=lambda item: len(item.parts), reverse=True):
+                    if p.name == ".gitkeep":
+                        continue
+                    if p.is_file() or p.is_symlink():
                         p.unlink()
+                    elif p.is_dir() and not any(p.iterdir()):
+                        p.rmdir()
         # remove generated corpus artifacts that integration commands may create
         for p in (ROOT / "wiki" / "index.md", ROOT / "wiki" / "index.json",
                   ROOT / "wiki" / "references.md", ROOT / "wiki" / "references.json"):
