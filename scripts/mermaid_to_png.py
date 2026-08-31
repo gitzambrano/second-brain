@@ -1,114 +1,120 @@
 #!/usr/bin/env python3
+"""Convert Mermaid .mmd files to PNG via Mermaid CLI (mmdc).
+
+No-argument default discovers every ``*.mmd`` under wiki/assets and plan and
+converts all of them. If none exist, the complete batch is an empty success.
 """
-mermaid_to_png.py — Converte um arquivo .mmd (diagrama Mermaid) em PNG.
-
-Requer mmdc (Mermaid CLI):
-    npm install -g @mermaid-js/mermaid-cli
-
-Uso:
-    python scripts/mermaid_to_png.py <arquivo.mmd> [saída.png]
-    python scripts/mermaid_to_png.py <arquivo.mmd> --assets  # salva em wiki/assets/
-
-Exemplos:
-    python scripts/mermaid_to_png.py diagrama.mmd
-    python scripts/mermaid_to_png.py diagrama.mmd wiki/assets/meu-diagrama.png
-    python scripts/mermaid_to_png.py diagrama.mmd --assets
-
-Sem argumento de saída: salva como <arquivo>.png no mesmo diretório.
-Com --assets: salva em wiki/assets/<arquivo>.png.
-"""
-
-import os
-import sys
-import subprocess
 import argparse
+import os
+import subprocess
+import sys
 from pathlib import Path
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
-ASSETS_DIR = ROOT_DIR / "wiki" / "assets"
+from repo_paths import ASSETS_DIR, PLAN_DIR
 
 
-def find_mmdc() -> str | None:
-    """Localiza o executável mmdc adequado para a plataforma."""
+def find_mmdc():
     if sys.platform == "win32":
         npm_dir = os.environ.get("APPDATA", "")
-        candidates = (
-            [
+        candidates = ["mmdc.cmd", "mmdc"]
+        if npm_dir:
+            candidates = [
                 os.path.join(npm_dir, "npm", "mmdc.cmd"),
                 os.path.join(npm_dir, "npm", "mmdc"),
-                "mmdc.cmd",
-                "mmdc",
+                *candidates,
             ]
-            if npm_dir
-            else ["mmdc.cmd", "mmdc"]
-        )
     else:
         candidates = ["mmdc"]
-
-    for cmd in candidates:
+    for command in candidates:
         try:
-            r = subprocess.run([cmd, "--version"], capture_output=True, timeout=10)
-            if r.returncode == 0:
-                return cmd
+            result = subprocess.run(
+                [command, "--version"],
+                capture_output=True,
+                timeout=10,
+            )
+            if result.returncode == 0:
+                return command
         except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
-            continue
+            pass
     return None
 
 
-def convert(src: Path, dst: Path, width: int = 1400, scale: int = 2, bg: str = "white") -> bool:
-    """Converte src (.mmd) em dst (.png). Retorna True se OK."""
-    cmd = find_mmdc()
-    if not cmd:
-        print("ERRO: mmdc não encontrado.")
-        print("Instale com: npm install -g @mermaid-js/mermaid-cli")
+def convert(src, dst, width=1400, scale=2, bg="white"):
+    command = find_mmdc()
+    if not command:
+        print("ERRO: mmdc não encontrado. Instale @mermaid-js/mermaid-cli.")
         return False
-
     dst.parent.mkdir(parents=True, exist_ok=True)
     result = subprocess.run(
-        [cmd, "-i", str(src), "-o", str(dst),
-         "--backgroundColor", bg, "--width", str(width), "--scale", str(scale)],
+        [
+            command,
+            "-i",
+            str(src),
+            "-o",
+            str(dst),
+            "--backgroundColor",
+            bg,
+            "--width",
+            str(width),
+            "--scale",
+            str(scale),
+        ],
         capture_output=True,
         timeout=120,
     )
     if result.returncode == 0 and dst.exists():
-        size_kb = dst.stat().st_size // 1024
-        print(f"OK: {dst} ({size_kb} KB)")
+        print(f"OK: {dst} ({dst.stat().st_size // 1024} KB)")
         return True
-
     stderr = (result.stderr or b"").decode("utf-8", errors="replace")
-    print(f"ERRO: mmdc falhou.\n{stderr[:400]}")
+    print("ERRO: mmdc falhou.\n" + stderr[:400])
     return False
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Converte arquivo .mmd (Mermaid) em PNG via mmdc."
-    )
-    parser.add_argument("src", help="Arquivo .mmd de entrada")
-    parser.add_argument("dst", nargs="?", help="Arquivo .png de saída (opcional)")
+def discover():
+    files = []
+    for root in (ASSETS_DIR, PLAN_DIR):
+        if root.exists():
+            files.extend(sorted(root.rglob("*.mmd")))
+    return files
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--assets", action="store_true",
-        help="Salva em wiki/assets/<nome>.png"
+        "src",
+        nargs="?",
+        help="input .mmd; omit to convert all discovered diagrams",
     )
-    parser.add_argument("--width", type=int, default=1400, help="Largura em px (default: 1400)")
-    parser.add_argument("--scale", type=int, default=2, help="Fator de escala (default: 2)")
-    parser.add_argument("--bg", default="white", help="Cor de fundo (default: white)")
+    parser.add_argument("dst", nargs="?", help="output .png")
+    parser.add_argument("--assets", action="store_true")
+    parser.add_argument("--width", type=int, default=1400)
+    parser.add_argument("--scale", type=int, default=2)
+    parser.add_argument("--bg", default="white")
     args = parser.parse_args()
+
+    if not args.src:
+        sources = discover()
+        if not sources:
+            print("Nenhum .mmd encontrado em wiki/assets/ ou plan/ — batch completo vazio.")
+            return 0
+        failures = 0
+        for src in sources:
+            dst = ASSETS_DIR / src.with_suffix(".png").name
+            failures += 0 if convert(src, dst, args.width, args.scale, args.bg) else 1
+        print(f"Batch Mermaid: {len(sources) - failures} OK, {failures} falha(s).")
+        return 1 if failures else 0
 
     src = Path(args.src)
     if not src.exists():
         print(f"ERRO: arquivo não encontrado: {src}")
         return 1
-
     if args.dst:
         dst = Path(args.dst)
     elif args.assets:
         dst = ASSETS_DIR / src.with_suffix(".png").name
     else:
         dst = src.with_suffix(".png")
-
-    ok = convert(src, dst, width=args.width, scale=args.scale, bg=args.bg)
-    return 0 if ok else 1
+    return 0 if convert(src, dst, args.width, args.scale, args.bg) else 1
 
 
 if __name__ == "__main__":

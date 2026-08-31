@@ -14,7 +14,7 @@ description: >
   se tá tudo certo", "confere a formatação desse essay", "o que está
   faltando", "confere a estrutura", ou quiser manutenção de metadados
   em vez de corrigir a prosa/argumento de um essay (isso é /sweep).
-allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion
+allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion WebFetch WebSearch
 ---
 # Organize
 

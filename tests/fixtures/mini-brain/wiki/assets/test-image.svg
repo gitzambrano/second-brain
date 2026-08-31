@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="180" viewBox="0 0 320 180">
+  <rect width="320" height="180" fill="white"/>
+  <circle cx="160" cy="90" r="55" fill="none" stroke="black" stroke-width="3"/>
+  <line x1="60" y1="90" x2="260" y2="90" stroke="black" stroke-width="2"/>
+  <text x="160" y="165" text-anchor="middle" font-family="sans-serif" font-size="14">Figura sintética</text>
+</svg>

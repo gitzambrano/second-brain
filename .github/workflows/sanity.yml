@@ -1,0 +1,60 @@
+name: Repository sanity
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  core:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-dev.txt
+      - name: Ruff new quality layer
+        run: >-
+          ruff check
+          scripts/repo_paths.py scripts/sanity_common.py scripts/check_script_defaults.py
+          scripts/check_skills.py scripts/check_env.py scripts/check_repo.py
+          scripts/check_html_render.py scripts/check_pdf_content.py scripts/check_export_parity.py
+          tests
+      - run: python scripts/check_repo.py --quick
+      - run: python -m pytest -q -m "not html and not pdf and not slow"
+
+  corpus-fixture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m pytest -q tests/test_wiki_checks.py
+
+  html-export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: sudo apt-get update && sudo apt-get install -y pandoc
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m playwright install --with-deps chromium
+      - run: python -m pytest -q -m html
+
+  pdf-export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: sudo apt-get update && sudo apt-get install -y pandoc texlive-luatex texlive-latex-extra texlive-fonts-recommended lmodern
+      - run: python -m pip install -r requirements-dev.txt
+      - run: python -m pytest -q -m pdf

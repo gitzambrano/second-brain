@@ -31,3 +31,11 @@ wiki/**
 !wiki/**/
 !wiki/**/.gitkeep
 *log*
+
+# Python/test tooling
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+playwright-report/
+test-results/

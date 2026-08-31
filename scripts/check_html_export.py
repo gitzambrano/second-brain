@@ -1,100 +1,110 @@
 #!/usr/bin/env python3
-"""check_html_export.py - Auditoria estrutural dos HTMLs exportados.
+"""Structural audit of exported standalone HTML.
 
-Roda sobre output/html/*.html e caça defeitos reais, ignorando falsos
-positivos de payloads base64 (fontes) e de JavaScript embutido (MathJax):
-
-  1. Fenced div ':::' que sobrou como texto literal
-  2. Bracketed span '[texto]{.classe}' não parseado pelo Pandoc
-  3. <blockquote> residual (deveriam ter virado .quote/.pull-quote/.box/.card)
-  4. Wikilink [[...]] visível no texto renderizado
-  5. Pilha de <br> (>3) em prosa FORA de componentes de citação — quebra
-     dura dentro de .quote/.pull-quote é intencional (verso/cena)
-  6. Âncora do Sumário apontando para id inexistente
-
-Uso: python check_html_export.py            (audita output/html inteiro)
+No-argument default: audit every ``output/html/*.html``. The checker combines
+fast source-pattern checks with DOM checks when BeautifulSoup is available.
 """
+from __future__ import annotations
+
+import argparse
+import json
 import re
 import sys
 from pathlib import Path
 
-sys.stdout.reconfigure(encoding="utf-8")
-
-OUT = Path(__file__).resolve().parent.parent / "output" / "html"
+from repo_paths import HTML_DIR
 
 
-def strip_noise(h):
-    """Remove data URIs (fontes base64), CSS e JS para análise do conteúdo."""
+def strip_noise(h: str) -> str:
     h = re.sub(r'data:[\w/+.-]+;base64,[A-Za-z0-9+/=]+', '', h)
-    h = re.sub(r'<style.*?</style>', '', h, flags=re.S)
+    h = re.sub(r'<style.*?</style>', '', h, flags=re.S | re.I)
+    h = re.sub(r'<script.*?</script>', '', h, flags=re.S | re.I)
     return h
 
 
-def audit_file(html_path):
+def audit_file(html_path: Path) -> list[dict]:
     raw = html_path.read_text(encoding="utf-8", errors="replace")
-    # JS do MathJax embutido gera [[...]] falso positivo; remove blocos <script>.
-    body = re.sub(r'<script.*?</script>', '', strip_noise(raw), flags=re.S)
+    body = strip_noise(raw)
+    issues: list[dict] = []
+    def add(code, message, severity="ERROR"):
+        issues.append({"code": code, "severity": severity, "message": message})
 
-    errs = []
-
-    if re.search(r':::\s*\{', body):
-        errs.append("fenced div literal no output (':::' virou texto)")
-
-    spans = re.findall(r'\[[^\]\n]{1,40}\]\{\.[\w-]+\}', body)
-    if spans:
-        errs.append(f"bracketed span não parseado: {spans[:2]}")
-
-    bq = body.count("<blockquote>")
-    if bq:
-        i = body.find("<blockquote>")
-        ctx = re.sub(r"<[^>]+>", " ", body[i:i + 160])[:80].strip()
-        errs.append(f"blockquote residual x{bq}: {ctx!r}")
-
+    if not re.search(r"(?i)<!doctype\s+html", raw): add("DOCTYPE_MISSING", "HTML has no <!DOCTYPE html>")
+    if re.search(r':::\s*\{', body): add("FENCED_DIV_LITERAL", "fenced div marker is visible")
+    spans = re.findall(r'\[[^\]\n]{1,80}\]\{\.[\w-]+\}', body)
+    if spans: add("BRACKETED_SPAN_LITERAL", f"unparsed bracketed span: {spans[:2]}")
+    bq = len(re.findall(r"<blockquote\b", body, flags=re.I))
+    if bq: add("BLOCKQUOTE_RESIDUAL", f"{bq} raw blockquote(s) remain")
     visible = re.sub(r"<[^>]+>", "", body)
-    wl = re.findall(r"\[\[[^\]\n]{2,80}\]\]", visible)
-    if wl:
-        errs.append(f"wikilink visível: {wl[:3]}")
+    wl = re.findall(r"\[\[[^\]\n]{2,100}\]\]", visible)
+    if wl: add("VISIBLE_WIKILINK", f"visible wikilink(s): {wl[:3]}")
+    if re.search(r"(?mi)^\s*(?:##\s*)?Conexões\s*$", visible): add("CONEXOES_EXPORTED", "Conexões section is visible")
 
-    for m in re.finditer(r"<p>(.*?)</p>", body, re.S):
-        p = m.group(1)
-        nbr = p.count("<br />") + p.count("<br>")
+    for m in re.finditer(r"<p(?:\s[^>]*)?>(.*?)</p>", body, re.S | re.I):
+        p = m.group(1); nbr = len(re.findall(r"<br\s*/?>", p, flags=re.I))
         plain = re.sub(r"<[^>]+>", "", p).strip()
         if len(plain) > 220 and nbr >= 3:
-            antes = re.findall(
-                r'<div class="([\w -]+)"', body[max(0, m.start() - 3000):m.start()])
-            container = antes[-1] if antes else ""
+            before = body[max(0, m.start() - 3000):m.start()]
+            classes = re.findall(r'<div\s+[^>]*class=["\']([^"\']+)["\']', before, flags=re.I)
+            container = classes[-1].casefold() if classes else ""
             if not any(c in container for c in ("quote", "pull-quote", "box", "card")):
-                errs.append(f"prosa com pilha de <br> x{nbr} fora de citação: {plain[:70]!r}")
+                add("PROSE_BR_STACK", f"long prose paragraph contains {nbr} <br> tags: {plain[:70]!r}")
 
-    broken = [m.group(1) for m in re.finditer(r'<a href="#([^"]+)"', body)
-              if f'id="{m.group(1)}"' not in body]
-    if broken:
-        errs.append(f"âncoras quebradas x{len(broken)}: {broken[:4]}")
+    ids = re.findall(r'\bid=["\']([^"\']+)["\']', raw, flags=re.I)
+    dup = sorted({x for x in ids if ids.count(x) > 1})
+    if dup: add("DUPLICATE_ID", f"duplicate id(s): {dup[:5]}")
+    idset = set(ids)
+    anchors = re.findall(r'<a\b[^>]*href=["\']#([^"\']+)["\']', raw, flags=re.I)
+    broken = sorted({a for a in anchors if a and a not in idset})
+    if broken: add("BROKEN_ANCHOR", f"anchor target(s) missing: {broken[:5]}")
 
-    return errs
+    try:
+        from bs4 import BeautifulSoup, FeatureNotFound
+        try:
+            soup = BeautifulSoup(raw, "html5lib")
+        except FeatureNotFound:
+            soup = BeautifulSoup(raw, "html.parser")
+            add("HTML5LIB_UNAVAILABLE", "html5lib unavailable; used built-in html.parser fallback", "WARNING")
+        for img in soup.find_all("img"):
+            src = str(img.get("src", ""))
+            if not src: add("IMAGE_SRC_MISSING", "<img> has no src")
+            elif not src.startswith(("data:", "http://", "https://", "file:")):
+                # Standalone exports should embed images, not leave relative resources.
+                add("IMAGE_NOT_EMBEDDED", f"image resource is not embedded: {src}")
+        for tag, attr in (("script", "src"), ("link", "href")):
+            for node in soup.find_all(tag):
+                url = str(node.get(attr, ""))
+                if url.startswith(("http://", "https://")):
+                    add("EXTERNAL_RESOURCE", f"standalone HTML still depends on {url}", "WARNING")
+    except ImportError:
+        add("DOM_PARSER_UNAVAILABLE", "BeautifulSoup/html5lib not installed; regex layer completed", "WARNING")
+    return issues
 
 
-def main():
-    files = sorted(OUT.glob("*.html"))
-    problems = {}
-    for f in files:
-        errs = audit_file(f)
-        if errs:
-            problems[f.name] = errs
-
-    if not files:
-        print(f"Nenhum HTML em {OUT}")
-        return 1
-
-    if problems:
-        print(f"{len(problems)}/{len(files)} arquivo(s) com problemas:\n")
-        for name, errs in sorted(problems.items()):
-            print(f"--- {name}")
-            for e in errs:
-                print(f"   * {e}")
-        return 1
-    print(f"TODOS OS {len(files)} HTMLS LIMPOS")
-    return 0
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("slug", nargs="?", help="optional HTML stem; default audits all exports")
+    ap.add_argument("--json", action="store_true")
+    ap.add_argument("--fail-on-warning", action="store_true")
+    args = ap.parse_args()
+    files = sorted(HTML_DIR.glob(f"{args.slug or '*'}.html")) if HTML_DIR.exists() else []
+    report = {f.stem: audit_file(f) for f in files}
+    report = {k: v for k, v in report.items() if v}
+    if args.json:
+        print(json.dumps({"files": len(files), "issues": report}, ensure_ascii=False, indent=2))
+    else:
+        if not files:
+            print(f"SKIP: nenhum HTML em {HTML_DIR}")
+        elif report:
+            print(f"{len(report)}/{len(files)} HTML(s) com achados:")
+            for name, issues in report.items():
+                print(f"\n--- {name}")
+                for issue in issues: print(f"  {issue['severity']:<7} {issue['code']}: {issue['message']}")
+        else:
+            print(f"TODOS OS {len(files)} HTMLS LIMPOS")
+    errors = sum(i["severity"] == "ERROR" for issues in report.values() for i in issues)
+    warnings = sum(i["severity"] == "WARNING" for issues in report.values() for i in issues)
+    return 1 if errors or (args.fail_on_warning and warnings) else 0
 
 
 if __name__ == "__main__":

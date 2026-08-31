@@ -1,0 +1,17 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+markers = [
+  "slow: slower integration tests",
+  "html: HTML export/browser tests",
+  "pdf: PDF export/layout tests",
+  "export: export pipeline tests",
+]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+exclude = ["scripts/vendor", "output", ".claude", ".codex"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]

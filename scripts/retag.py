@@ -1,70 +1,82 @@
 #!/usr/bin/env python3
+"""Rename/consolidate a tag across the wiki.
+
+No-argument default is read-only and prints a complete tag inventory. A rename
+still requires both ``old_tag`` and ``new_tag``; partial invocations are errors.
 """
-retag.py - Renomeia/consolida uma tag em toda a wiki: troca no `tags:` do
-frontmatter (essays/concepts/entities/insights) e no `Tags:` de
-wiki/sources/manifest.md. Não decide nada - executa a consolidação já
-decidida (ex.: /organize, tags quase-duplicadas).
-
-Lê:
-    wiki/{essays,concepts,entities,insights}/*.md
-    wiki/sources/manifest.md
-
-Gera:
-    mesmos arquivos, in place (tag substituída; se a página já tem a tag
-    nova, a velha é só removida). Depois, regenere o índice: build_index.py.
-
-Uso:
-    python scripts/retag.py "tag-velha" "tag-nova"
-    python scripts/retag.py "tag-velha" "tag-nova" --dry-run
-
-Flags:
-    old_tag     tag atual (posicional)
-    new_tag     tag destino (posicional)
-    --dry-run   lista o que mudaria, não escreve
-"""
-
 import argparse
 import re
 import sys
-from pathlib import Path
+from collections import Counter
 
 import yaml
 
-import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
+import console_encoding  # noqa: F401
+from repo_paths import WIKI_ROOT, relative_display
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
-WIKI_ROOT = ROOT_DIR / "wiki"
 PAGE_DIRS = [WIKI_ROOT / d for d in ("essays", "concepts", "entities", "insights")]
 MANIFEST_PATH = WIKI_ROOT / "sources" / "manifest.md"
-
 FRONTMATTER_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
 
 
 def load(path):
-    with open(path, "r", encoding="utf-8-sig") as f:
-        return f.read()
+    with open(path, "r", encoding="utf-8-sig") as file_obj:
+        return file_obj.read()
+
+
+def inventory():
+    counts = Counter()
+    pages = 0
+    for directory in PAGE_DIRS:
+        if not directory.exists():
+            continue
+        for path in sorted(directory.glob("*.md")):
+            if path.name == ".gitkeep":
+                continue
+            pages += 1
+            match = FRONTMATTER_RE.match(load(path))
+            if not match:
+                continue
+            frontmatter = yaml.safe_load(match.group(1)) or {}
+            counts.update(str(tag) for tag in (frontmatter.get("tags") or []))
+    if MANIFEST_PATH.exists():
+        for raw in re.findall(r"(?m)^Tags:\s*(.+?)\.?$", load(MANIFEST_PATH)):
+            inner = raw.strip().strip("[]")
+            counts.update(
+                tag.strip().strip('"').strip("'")
+                for tag in inner.split(",")
+                if tag.strip()
+            )
+    print(f"Tag inventory: {len(counts)} tag(s), {pages} page(s).")
+    for tag, count in sorted(counts.items(), key=lambda item: (-item[1], item[0].casefold())):
+        print(f"  {tag}: {count}")
+    if not counts:
+        print("  (no tags found — valid skeleton/empty corpus)")
+    return 0
 
 
 def retag_page(path, old_tag, new_tag, dry_run):
     content = load(path)
-    m = FRONTMATTER_RE.match(content)
-    if not m:
+    match = FRONTMATTER_RE.match(content)
+    if not match:
         return False
-    fm = yaml.safe_load(m.group(1)) or {}
-    tags = fm.get("tags") or []
+    frontmatter = yaml.safe_load(match.group(1)) or {}
+    tags = frontmatter.get("tags") or []
     if old_tag not in tags:
         return False
 
-    new_tags = [t for t in tags if t != old_tag]
+    new_tags = [tag for tag in tags if tag != old_tag]
     if new_tag not in new_tags:
         new_tags.append(new_tag)
-    fm["tags"] = new_tags
-
-    new_frontmatter = "---\n" + yaml.safe_dump(
-        fm, allow_unicode=True, sort_keys=False, default_flow_style=None
-    ) + "---\n"
+    frontmatter["tags"] = new_tags
+    dumped = yaml.safe_dump(
+        frontmatter,
+        allow_unicode=True,
+        sort_keys=False,
+        default_flow_style=None,
+    )
+    new_frontmatter = "---\n" + dumped + "---\n"
     new_content = FRONTMATTER_RE.sub(lambda _: new_frontmatter, content, count=1)
-
     if not dry_run:
         path.write_text(new_content, encoding="utf-8")
     return True
@@ -81,10 +93,14 @@ def retag_manifest(old_tag, new_tag, dry_run):
         raw = match.group(1).strip()
         bracketed = raw.startswith("[") and raw.endswith("]")
         inner = raw[1:-1] if bracketed else raw
-        tags = [t.strip().strip('"').strip("'") for t in inner.split(",") if t.strip()]
+        tags = [
+            tag.strip().strip('"').strip("'")
+            for tag in inner.split(",")
+            if tag.strip()
+        ]
         if old_tag not in tags:
             return match.group(0)
-        tags = [t for t in tags if t != old_tag]
+        tags = [tag for tag in tags if tag != old_tag]
         if new_tag not in tags:
             tags.append(new_tag)
         count += 1
@@ -98,37 +114,52 @@ def retag_manifest(old_tag, new_tag, dry_run):
 
 
 def main():
-    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("old_tag", help="Tag a ser substituída")
-    p.add_argument("new_tag", help="Tag que substitui a antiga")
-    p.add_argument("--dry-run", action="store_true", help="Só lista o que mudaria, sem escrever")
-    args = p.parse_args()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "old_tag",
+        nargs="?",
+        help="tag to replace; omit both positionals for inventory",
+    )
+    parser.add_argument("new_tag", nargs="?", help="replacement tag")
+    parser.add_argument("--dry-run", action="store_true", help="list changes without writing")
+    args = parser.parse_args()
 
+    if args.old_tag is None and args.new_tag is None:
+        return inventory()
+    if not args.old_tag or not args.new_tag:
+        print(
+            "ERRO: forneça old_tag e new_tag juntos; sem argumentos o script mostra o inventário.",
+            file=sys.stderr,
+        )
+        return 1
     if args.old_tag == args.new_tag:
         print("ERRO: tag antiga e nova são iguais.", file=sys.stderr)
-        sys.exit(1)
+        return 1
 
     changed_pages = []
-    for d in PAGE_DIRS:
-        if not d.exists():
+    for directory in PAGE_DIRS:
+        if not directory.exists():
             continue
-        for f in sorted(d.glob("*.md")):
-            if retag_page(f, args.old_tag, args.new_tag, args.dry_run):
-                changed_pages.append(f)
-
+        for path in sorted(directory.glob("*.md")):
+            if retag_page(path, args.old_tag, args.new_tag, args.dry_run):
+                changed_pages.append(path)
     manifest_count = retag_manifest(args.old_tag, args.new_tag, args.dry_run)
 
     verb = "seriam alteradas" if args.dry_run else "alteradas"
-    for f in changed_pages:
-        print(f"{'Would retag' if args.dry_run else 'Retagged'}: {f.relative_to(ROOT_DIR)}")
-    print(f"\n{len(changed_pages)} página(s) {verb}; "
-          f"{manifest_count} entrada(s) de manifest.md {verb}.")
+    action = "Would retag" if args.dry_run else "Retagged"
+    for path in changed_pages:
+        print(f"{action}: {relative_display(path)}")
+    print(
+        f"\n{len(changed_pages)} página(s) {verb}; "
+        f"{manifest_count} entrada(s) de manifest.md {verb}."
+    )
     if changed_pages or manifest_count:
         if args.dry_run:
             print("Dry-run — nada foi escrito.")
         else:
             print("Rode `python scripts/build_index.py` para regenerar tags_in_use.")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

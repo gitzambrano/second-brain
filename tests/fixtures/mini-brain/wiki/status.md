@@ -1,0 +1,3 @@
+# Status
+
+Fixture de teste.

@@ -1,40 +1,14 @@
 #!/usr/bin/env python3
+"""Search the wiki with merged line context, without external grep.
+
+No-argument default prints a complete searchable-corpus inventory instead of
+failing for a missing query.
 """
-find_text.py - Busca com trecho (não o arquivo inteiro) na wiki: grep -n
-com contexto mesclado, sem dependência externa.
-
-Lê:
-    wiki/{essays,concepts,entities,insights}/*.md   (default)
-    + handouts/ e sources/ quando incluídos via --scope
-
-Gera:
-    stdout: caminho:linha + trechos mesclados; --list-only lista só caminhos
-
-Uso:
-    python scripts/find_text.py "termo"
-    python scripts/find_text.py "termo" --scope essays concepts
-    python scripts/find_text.py "auto.?poiese" --regex
-    python scripts/find_text.py "termo" --context 4 --ignore-case
-    python scripts/find_text.py "termo" --list-only
-
-Flags:
-    query           termo buscado (posicional)
-    --scope ...     pastas alvo (default: essays concepts entities insights)
-    --regex         trata a query como expressão regular
-    --context N     linhas de contexto por match (default: 2)
-    --ignore-case   ignora diferença de caixa
-    --list-only     imprime só os caminhos com match
-"""
-
 import argparse
 import re
 import sys
-from pathlib import Path
-
-import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
-
-ROOT_DIR = Path(__file__).resolve().parent.parent
-WIKI_ROOT = ROOT_DIR / "wiki"
+import console_encoding  # noqa: F401
+from repo_paths import WIKI_ROOT, relative_display
 
 SCOPE_DIRS = {
     "essays": WIKI_ROOT / "essays",
@@ -49,10 +23,9 @@ DEFAULT_SCOPE = ["essays", "concepts", "entities", "insights"]
 
 def load(path):
     try:
-        with open(path, "r", encoding="utf-8-sig") as f:
-            return f.read()
+        return path.read_text(encoding="utf-8-sig")
     except (UnicodeDecodeError, OSError):
-        return None  # binário ou ilegível — pulado silenciosamente (relevante p/ sources)
+        return None
 
 
 def collect_files(scopes):
@@ -61,16 +34,28 @@ def collect_files(scopes):
         d = SCOPE_DIRS.get(scope)
         if not d or not d.exists():
             continue
-        if scope == "sources":
-            # recursivo: inclui subpastas de tipo, resumos/, manifest.md, map.md
-            for f in sorted(d.rglob("*")):
-                if f.is_file() and f.name != ".gitkeep":
-                    files.append(f)
-        else:
-            for f in sorted(d.glob("*.md")):
-                if f.name != ".gitkeep":
-                    files.append(f)
+        iterator = d.rglob("*") if scope == "sources" else d.glob("*.md")
+        files.extend(f for f in sorted(iterator) if f.is_file() and f.name != ".gitkeep")
     return files
+
+
+def inventory(scopes):
+    print("Searchable corpus inventory:")
+    total_files = total_lines = 0
+    for scope in scopes:
+        files = collect_files([scope])
+        lines = 0
+        readable = 0
+        for f in files:
+            text = load(f)
+            if text is not None:
+                readable += 1
+                lines += len(text.splitlines())
+        total_files += readable
+        total_lines += lines
+        print(f"  {scope:<10} {readable:>4} file(s), {lines:>7} line(s)")
+    print(f"Total: {total_files} readable file(s), {total_lines} line(s).")
+    return 0
 
 
 def build_pattern(query, use_regex, ignore_case):
@@ -80,19 +65,18 @@ def build_pattern(query, use_regex, ignore_case):
         return re.compile(pattern, flags)
     except re.error as e:
         print(f"Regex inválida: {e}", file=sys.stderr)
-        sys.exit(1)
+        raise SystemExit(1)
 
 
 def merge_ranges(ranges):
-    """[(start,end), ...] ordenados/sobrepostos -> blocos mesclados."""
     if not ranges:
         return []
     ranges = sorted(ranges)
     merged = [ranges[0]]
     for start, end in ranges[1:]:
-        last_start, last_end = merged[-1]
-        if start <= last_end + 1:
-            merged[-1] = (last_start, max(last_end, end))
+        ls, le = merged[-1]
+        if start <= le + 1:
+            merged[-1] = (ls, max(le, end))
         else:
             merged.append((start, end))
     return merged
@@ -106,49 +90,50 @@ def search_file(path, pattern, context):
     match_lines = [i for i, line in enumerate(lines) if pattern.search(line)]
     if not match_lines:
         return [], 0
-    ranges = [(max(0, i - context), min(len(lines) - 1, i + context)) for i in match_lines]
+    ranges = [
+        (max(0, index - context), min(len(lines) - 1, index + context))
+        for index in match_lines
+    ]
     blocks = []
     for start, end in merge_ranges(ranges):
-        block_lines = lines[start:end + 1]
-        blocks.append((start + 1, end + 1, block_lines, {m + 1 for m in match_lines if start <= m <= end}))
+        blocks.append(
+            (
+                start + 1,
+                end + 1,
+                lines[start : end + 1],
+                {index + 1 for index in match_lines if start <= index <= end},
+            )
+        )
     return blocks, len(match_lines)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Busca com trecho na wiki (grep -n com contexto)")
-    parser.add_argument("query", help="Termo ou padrão a buscar")
-    parser.add_argument(
-        "--scope", nargs="+", choices=list(SCOPE_DIRS.keys()), default=DEFAULT_SCOPE,
-        help=f"Pastas a buscar (default: {' '.join(DEFAULT_SCOPE)})",
-    )
-    parser.add_argument("--regex", action="store_true", help="Trata query como regex (default: literal)")
-    parser.add_argument("--context", type=int, default=2, help="Linhas de contexto antes/depois (default: 2)")
-    parser.add_argument("--ignore-case", action="store_true", help="Busca case-insensitive")
-    parser.add_argument("--list-only", action="store_true", help="Só lista arquivo + contagem de ocorrências")
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("query", nargs="?", help="term/pattern; omit for corpus inventory")
+    parser.add_argument("--scope", nargs="+", choices=list(SCOPE_DIRS), default=DEFAULT_SCOPE)
+    parser.add_argument("--regex", action="store_true")
+    parser.add_argument("--context", type=int, default=2)
+    parser.add_argument("--ignore-case", action="store_true")
+    parser.add_argument("--list-only", action="store_true")
     args = parser.parse_args()
-
+    if not args.query:
+        return inventory(args.scope)
     pattern = build_pattern(args.query, args.regex, args.ignore_case)
     files = collect_files(args.scope)
-
     if not files:
         print(f"Nenhum arquivo encontrado no escopo: {', '.join(args.scope)}")
         return 1
-
-    total_matches = 0
-    files_with_hits = 0
-
+    total_matches = files_with_hits = 0
     for path in files:
         blocks, n_matches = search_file(path, pattern, args.context)
         if blocks is None or n_matches == 0:
             continue
         files_with_hits += 1
         total_matches += n_matches
-        rel = path.relative_to(ROOT_DIR)
-
+        rel = relative_display(path)
         if args.list_only:
             print(f"{rel}: {n_matches} ocorrência(s)")
             continue
-
         print(f"\n=== {rel} ({n_matches} ocorrência(s)) ===")
         for start, end, block_lines, match_line_nums in blocks:
             for offset, line in enumerate(block_lines):
@@ -157,9 +142,10 @@ def main():
                 print(f"{marker} {lineno:>5} | {line}")
             if len(blocks) > 1:
                 print("  ...")
-
-    print(f"\n{total_matches} ocorrência(s) em {files_with_hits} arquivo(s) "
-          f"(escopo: {', '.join(args.scope)}).")
+    print(
+        f"\n{total_matches} ocorrência(s) em {files_with_hits} arquivo(s) "
+        f"(escopo: {', '.join(args.scope)})."
+    )
     return 0
 
 

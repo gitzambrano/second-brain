@@ -1,87 +1,59 @@
 #!/usr/bin/env python3
+"""Exact/fuzzy title check before creating pages.
+
+No-argument default audits the whole corpus for exact-normalized and fuzzy title
+collisions. Supplying a title preserves the original candidate lookup mode.
 """
-check_title.py - Checagem exata/fuzzy de título antes de criar página nova
-(essay/concept/entity/insight): impede quase-duplicatas nascerem.
-
-Lê:
-    wiki/index.json  (cache de títulos; com --force-scan, os *.md direto)
-
-Gera:
-    stdout (matches) + exit code programático:
-    0 = título livre | 1 = match exato | 2 = quase-duplicata fuzzy
-
-Uso:
-    python scripts/check_title.py "Autopoiese e Sistemas Vivos"
-    python scripts/check_title.py "Auto-poiese" --threshold 0.8
-    python scripts/check_title.py "Novo Título" --force-scan
-
-Flags:
-    title           título candidato (posicional)
-    --threshold N   similaridade mínima fuzzy (default: 0.82)
-    --force-scan    ignora o cache e varre os arquivos
-"""
-
 import argparse
 import difflib
 import json
 import re
 import sys
 import unicodedata
-from pathlib import Path
+from itertools import combinations
 
-import yaml
-
-import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
-
-ROOT_DIR = Path(__file__).resolve().parent.parent
-WIKI_ROOT = ROOT_DIR / "wiki"
-ESSAYS_DIR = WIKI_ROOT / "essays"
-CONCEPTS_DIR = WIKI_ROOT / "concepts"
-ENTITIES_DIR = WIKI_ROOT / "entities"
-INSIGHTS_DIR = WIKI_ROOT / "insights"
-INDEX_CACHE = WIKI_ROOT / "index.json"
+import console_encoding  # noqa: F401
+from repo_paths import WIKI_ROOT, relative_display
 
 DIRS_BY_TYPE = {
-    "essay": ESSAYS_DIR,
-    "concept": CONCEPTS_DIR,
-    "entity": ENTITIES_DIR,
-    "insight": INSIGHTS_DIR,
+    key: WIKI_ROOT / folder
+    for key, folder in (
+        ("essay", "essays"),
+        ("concept", "concepts"),
+        ("entity", "entities"),
+        ("insight", "insights"),
+    )
 }
-
+INDEX_CACHE = WIKI_ROOT / "index.json"
 DEFAULT_THRESHOLD = 0.82
 
 
 def load(path):
-    with open(path, "r", encoding="utf-8-sig") as f:
-        return f.read()
+    return path.read_text(encoding="utf-8-sig")
 
 
 def get_h1(content):
-    m = re.search(r"(?m)^# (.+)", content)
-    return m.group(1).strip() if m else None
+    match = re.search(r"(?m)^# (.+)", content)
+    return match.group(1).strip() if match else None
 
 
 def normalize(title):
-    """Normaliza acento, hífen, case e espaçamento pra comparação robusta."""
-    t = unicodedata.normalize("NFKD", title)
-    t = "".join(c for c in t if not unicodedata.combining(c))
-    t = t.lower().replace("-", " ")
-    t = re.sub(r"\s+", " ", t).strip()
-    return t
+    text = unicodedata.normalize("NFKD", title)
+    text = "".join(char for char in text if not unicodedata.combining(char))
+    return re.sub(r"\s+", " ", text.lower().replace("-", " ")).strip()
 
 
 def scan_live():
-    """Título -> (tipo, path), lendo os 4 diretórios de página direto do disco."""
     pages = {}
-    for node_type, d in DIRS_BY_TYPE.items():
-        if not d.exists():
+    for node_type, directory in DIRS_BY_TYPE.items():
+        if not directory.exists():
             continue
-        for f in sorted(d.glob("*.md")):
-            if f.name == ".gitkeep":
+        for path in sorted(directory.glob("*.md")):
+            if path.name == ".gitkeep":
                 continue
-            title = get_h1(load(f))
+            title = get_h1(load(path))
             if title:
-                pages[title] = (node_type, str(f.relative_to(ROOT_DIR)))
+                pages[title] = (node_type, str(relative_display(path)))
     return pages
 
 
@@ -109,55 +81,86 @@ def collect_pages(force_scan):
 
 
 def resolve(candidate, pages, threshold):
-    norm_candidate = normalize(candidate)
-
-    # Exato: match direto de título, ou match só depois de normalizar
+    normalized_candidate = normalize(candidate)
     for title, (node_type, path) in pages.items():
-        if title == candidate:
+        if title == candidate or normalize(title) == normalized_candidate:
             return "exact", [(title, node_type, path, 1.0)]
-    normalized_map = {normalize(t): (t, nt, p) for t, (nt, p) in pages.items()}
-    if norm_candidate in normalized_map:
-        title, node_type, path = normalized_map[norm_candidate]
-        return "exact", [(title, node_type, path, 1.0)]
-
-    # Fuzzy: difflib sobre título normalizado
-    fuzzy_matches = []
+    fuzzy = []
     for title, (node_type, path) in pages.items():
-        ratio = difflib.SequenceMatcher(None, norm_candidate, normalize(title)).ratio()
+        ratio = difflib.SequenceMatcher(
+            None,
+            normalized_candidate,
+            normalize(title),
+        ).ratio()
         if ratio >= threshold:
-            fuzzy_matches.append((title, node_type, path, round(ratio, 3)))
-    if fuzzy_matches:
-        fuzzy_matches.sort(key=lambda x: x[3], reverse=True)
-        return "fuzzy", fuzzy_matches
-
+            fuzzy.append((title, node_type, path, round(ratio, 3)))
+    if fuzzy:
+        return "fuzzy", sorted(fuzzy, key=lambda item: item[3], reverse=True)
     return "none", []
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Checa duplicata exata/fuzzy de título antes de criar página")
-    parser.add_argument("title", help="Título candidato para a página nova")
-    parser.add_argument("--threshold", type=float, default=DEFAULT_THRESHOLD,
-                         help=f"Similaridade mínima 0-1 para considerar fuzzy match (default: {DEFAULT_THRESHOLD})")
-    parser.add_argument("--force-scan", action="store_true",
-                         help="Ignora wiki/index.json e lê os arquivos direto do disco")
-    args = parser.parse_args()
+def audit_all(pages, threshold):
+    issues = []
+    for (title_a, (_, path_a)), (title_b, (_, path_b)) in combinations(pages.items(), 2):
+        ratio = difflib.SequenceMatcher(
+            None,
+            normalize(title_a),
+            normalize(title_b),
+        ).ratio()
+        if normalize(title_a) == normalize(title_b):
+            issues.append(("EXACT", title_a, title_b, 1.0, path_a, path_b))
+        elif ratio >= threshold:
+            issues.append(("FUZZY", title_a, title_b, round(ratio, 3), path_a, path_b))
+    if not pages:
+        print("Title audit: no pages found — valid empty/skeleton corpus.")
+        return 0
+    if not issues:
+        print(f"Title audit: {len(pages)} page(s), no collisions at threshold {threshold}.")
+        return 0
+    print(f"Title audit: {len(issues)} collision candidate(s):")
+    for kind, title_a, title_b, ratio, path_a, path_b in sorted(
+        issues,
+        key=lambda item: -item[3],
+    ):
+        print(
+            f"  {kind} {ratio:.3f}: {title_a!r} ({path_a}) "
+            f"<-> {title_b!r} ({path_b})"
+        )
+    return 2
 
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "title",
+        nargs="?",
+        help="candidate title; omit for full collision audit",
+    )
+    parser.add_argument("--threshold", type=float, default=DEFAULT_THRESHOLD)
+    parser.add_argument("--force-scan", action="store_true")
+    args = parser.parse_args()
     pages, used_cache = collect_pages(args.force_scan)
 
+    if not args.title:
+        return audit_all(pages, args.threshold)
     if not pages:
-        print(f'"{args.title}" — nenhuma página existente encontrada (wiki vazia ou diretórios ausentes).')
+        print(
+            f'"{args.title}" — nenhuma página existente encontrada '
+            '(wiki vazia ou diretórios ausentes).'
+        )
         return 0
 
     kind, matches = resolve(args.title, pages, args.threshold)
     source = "cache (wiki/index.json)" if used_cache else "leitura direta do disco"
-
     if kind == "none":
         print(f'"{args.title}" — livre, nenhum match (fonte: {source}).')
         return 0
-
     if kind == "exact":
-        title, node_type, path, _ = matches[0]
-        print(f'MATCH EXATO: "{args.title}" já existe como {node_type} em {path} (fonte: {source}).')
+        _, node_type, path, _ = matches[0]
+        print(
+            f'MATCH EXATO: "{args.title}" já existe como {node_type} em {path} '
+            f'(fonte: {source}).'
+        )
         return 1
 
     print(f'POSSÍVEL QUASE-DUPLICATA para "{args.title}" (fonte: {source}):')

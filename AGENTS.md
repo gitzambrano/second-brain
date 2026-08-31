@@ -32,7 +32,7 @@ Siga este arquivo e as skills em `.agents/skills/` à risca — nunca improvise 
 | Fonte única (edite aqui) | Espelho gerado (nunca edite) | Sincronização |
 | ------------------------- | ---------------------------- | ------------------------------------------------------------------- |
 | `AGENTS.md` | `CLAUDE.md` | `CLAUDE.md` só contém `@AGENTS.md`; resolvido automaticamente |
-| `.agents/skills/`, `.agents/agents/` | `.claude/skills/`, `.claude/agents/` | `scripts/sync_skills.py`, disparado pelo hook `SessionStart` e pelo subagent `update` |
+| `.agents/skills/`, `.agents/agents/` | `.claude/skills/`, `.claude/agents/`, `.codex/skills/` | `scripts/sync_skills.py`, disparado pelo hook `SessionStart` e pelo subagent `update` |
 
 Editar o espelho é trabalho perdido — a próxima sessão sobrescreve. Para checar divergência sem escrever nada: `python scripts/sync_skills.py --check`.
 
@@ -194,3 +194,14 @@ Vale para todo arquivo em `.agents/skills/` e `.agents/agents/`.
 - **qmd** — busca híbrida (BM25 + embeddings + reranking) sobre a wiki inteira. Primeira opção de busca conceitual quando disponível ("o que já escrevi sobre X", ecos entre essays de vocabulário diferente). Collection `secondbrain`, indexando `wiki/**/*.md`; índice vive em `~/.cache/qmd` (fora do repo, nunca versionado — cada máquina reindexa a própria cópia). Confirme disponibilidade com `qmd status`; se ausente ou sem a collection `secondbrain`, caia para `scripts/find_text.py` sem perguntar. Ofereça o comando após sessão com edição pesada, especialmente antes de `/status update`.
 - **scripts/find_text.py** — grep com contexto, escopado à wiki, sem dependência externa. Fallback de `qmd` e primeira opção para achar termo/wikilink exato. Outros scripts auxiliares em `README.md` (seção Estrutura de pastas → `scripts/`).
 - **agent-browser** — automação de navegador, para quando `web_search`/`web_fetch` falharem.
+
+## Repository Quality Gates
+
+O repositório versionado é um **skeleton**: conteúdo pessoal em `wiki/`, `plan/`, `raw/` e outputs não é requisito de CI. Testes de regressão usam somente `tests/fixtures/mini-brain/`, um corpus sintético.
+
+- `python scripts/check_repo.py` — diagnóstico completo por default; `--quick`, `--wiki` e `--exports` restringem o escopo.
+- `python scripts/check_script_defaults.py` — garante que todo script executável possui um default útil sem argumentos.
+- `python -m pytest -q` — regressão dos checkers e pipelines. Ver `TESTING.md`.
+- `/doctor` — diagnóstico read-only do sistema; nunca corrige nem commita.
+
+Ausência de essays, HTML ou PDF num clone skeleton produz `SKIP`, não falha. Toda correção mecânica determinística deve ganhar teste de regressão quando viável.

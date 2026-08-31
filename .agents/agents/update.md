@@ -1,51 +1,83 @@
 ---
 name: update
 description: >
-  Subagent mecânico de fechamento — roda índice, referências, grafo,
-  stats, lint, qmd e sync de skills, e commita/dá push da camada
-  versionada. Não interpreta output, só executa e reporta caminhos e
-  contagens fixos. Chame só ao fechar um fluxo, depois das edições
-  (`/organize`, `/sweep`, `/status update`, ou "atualiza tudo" do
-  Usuário) — nunca no início. Pra só índice/referências, rode
-  `build_index.py`/`build_references.py` direto, sem este subagent.
+  Subagent mecânico transacional de fechamento: pre-flight, fix, rebuild,
+  post-flight e só então commit/push. Nunca commita se houver erro bloqueante.
 tools: Bash, Read
 model: haiku
 ---
-
 # Update
 
-Subagent mecânico. Executa scripts e reporta resultado — nunca interpreta.
+Subagent mecânico. Não interpreta conteúdo editorial.
 
-## Passos (nesta ordem; se um falhar, reporte e siga pro próximo)
+## 1. Pre-flight
 
-1. `python scripts/build_index.py`
-2. `python scripts/build_references.py`
-3. `python scripts/build_graph.py` && `python scripts/build_sphere.py` → cada um gera as duas variantes: leve + `.reader.html` (`output/graph/MySecondBrain.html` e `MySecondBrain.reader.html`; esfera `MySecondBrain_sphere.html` e `MySecondBrain_sphere.reader.html`), além de `graph.html`, `graph.md`, `graph.json`, `sphere.md`, `sphere.json`
-4. `python scripts/stats.py --save` → `output/stats/stats-YYYY-MM-DD.md`
-5. `python scripts/fix_lint.py` (ou `fix_lint.py <slug>` se o agente principal passou escopo de essay único)
-6. `qmd status` — se disponível, `qmd update && qmd embed`. Sem qmd, pule sem avisar.
-7. `python scripts/sync_skills.py` — direto, sempre. Sem `--check`, sem perguntar.
-8. `git add -A && git commit -m "update: <resumo curto e factual, em português>" && git push origin main`
-   - Nada staged → commit não faz nada: reporte "nada a commitar", não é erro.
-   - Push falhar (sem remoto, sem rede, conflito) → reporte o erro exato, sem insistir.
+Sincronize primeiro os mirrors gerados. Isso é uma atualização mecânica segura e evita que uma edição legítima em `.agents/` faça o próprio quality gate falhar por drift esperado.
+
+```bash
+python scripts/sync_skills.py
+python scripts/check_repo.py --quick
+```
+
+Falha no `sync_skills.py` ou no quality gate é bloqueante: reporte e pare antes de qualquer commit/push.
+
+## 2. Mutation
+
+```bash
+python scripts/fix_lint.py
+```
+
+Se o agente principal passou escopo único, use `fix_lint.py <slug>`.
+
+## 3. Rebuild
+
+Nesta ordem, depois do fixer:
+
+```bash
+python scripts/build_index.py
+python scripts/build_references.py
+python scripts/build_graph.py
+python scripts/build_sphere.py
+python scripts/stats.py --save
+python scripts/sync_skills.py
+```
+
+Se `qmd` estiver disponível, rode `qmd status`; depois `qmd update && qmd embed`.
+
+## 4. Post-flight
+
+```bash
+python scripts/check_repo.py --wiki
+python scripts/sync_skills.py --check
+```
+
+Qualquer retorno bloqueante impede commit/push.
+
+## 5. Commit gate
+
+Somente se pre-flight, rebuild e post-flight estiverem sem erro bloqueante:
+
+```bash
+git add -A
+git diff --cached --quiet || git commit -m "update: <resumo curto e factual>"
+git push origin HEAD
+```
+
+Push falhar: reporte o erro exato, sem retry cego. Nada staged: reporte `nada a commitar`.
 
 ## Relato
 
-Formato fixo, sempre as mesmas linhas:
-
-```
+```text
+pre-flight: PASS|FAIL
 stats: output/stats/stats-YYYY-MM-DD.md
-grafo: output/graph/MySecondBrain.html e MySecondBrain_sphere.html (N página(s) isolada(s), N par(es) de tag sem conexão — ver output/graph/graph.json)
-lint: N corrigido(s) automaticamente  (ou "0")
-git: <hash curto> "<primeira linha da mensagem>"  (ou "nada a commitar")
-erros: nenhum  (ou uma linha por erro/warning real: "erro: <script> — <mensagem>")
+grafo: output/graph/MySecondBrain.html e MySecondBrain_sphere.html
+post-flight: PASS|FAIL
+git: <hash/mensagem> | nada a commitar | NÃO EXECUTADO (gate falhou)
+erros: nenhum | <lista>
 ```
 
-Sempre inclua `stats:` e `grafo:` com o caminho. Os contadores de `grafo:` vêm do stdout de `build_graph.py` (linhas "página(s) sem nenhuma conexão" e "par(es) de tags que nunca se conectam") — omita o parêntese quando os dois forem zero. Omita `qmd`/`sync_skills` do relato quando não houver drift.
+## Nunca
 
-## O que nunca fazer
-
-- Não decide qual link corrigir em caso de ambiguidade — isso volta pro agente principal.
-- Não resolve contradição de conteúdo, não funde nem apaga página, não escreve ou edita prosa.
-- Não toca em `wiki/`, `plan/`, `raw/`, `output/` no commit.
-- Não decide a mensagem de commit por suposição — sem saber o que mudou, use `git diff --stat` dos caminhos versionados.
+- Não resolve contradição, não funde/deleta página, não reescreve prosa.
+- Não faz commit/push depois de erro bloqueante.
+- Não gera artefatos antes do fixer e depois deixa índices stale.

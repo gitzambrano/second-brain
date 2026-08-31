@@ -86,7 +86,7 @@ Cada agente procura a configuração num lugar diferente, então há dois pares 
 | Fonte única (edite aqui) | Espelho gerado (nunca edite) | Mecanismo |
 | ---------------------------------------- | ---------------------------------------- | ------------------------------------------------------------------ |
 | `AGENTS.md` | `CLAUDE.md` | `CLAUDE.md` contém só `@AGENTS.md`; o import resolve sozinho |
-| `.agents/skills/`, `.agents/agents/` | `.claude/skills/`, `.claude/agents/` | `scripts/sync_skills.py`, via hook `SessionStart` |
+| `.agents/skills/`, `.agents/agents/` | `.claude/skills/`, `.claude/agents/`, `.codex/skills/` | `scripts/sync_skills.py`, via hook `SessionStart` |
 
 O espelho de skills é regenerado no início de cada sessão do Claude Code, então qualquer edição feita direto em `.claude/skills/` é perdida. Para ver se os dois lados divergiram, sem escrever nada:
 
@@ -96,7 +96,7 @@ python scripts/sync_skills.py --check
 
 ### Ritual de fechamento
 
-Artefatos derivados que não se regeneram sozinhos — índice, bibliografia, grafo, stats, lint, índice do `qmd`, e o espelho `.claude/skills/`/`.claude/agents/` — são de responsabilidade do subagent **`update`** (`.agents/agents/update.md`).
+Artefatos derivados que não se regeneram sozinhos — índice, bibliografia, grafo, stats, lint, índice do `qmd`, e o espelhos `.claude/skills/`/`.claude/agents/` e `.codex/skills/` — são de responsabilidade do subagent **`update`** (`.agents/agents/update.md`).
 
 Chamado pelas skills de fechamento (`/organize`, `/sweep`, `/status update`) só depois das edições, nunca antes:
 
@@ -213,3 +213,15 @@ Toda fonte processada também gera uma entrada em `wiki/sources/manifest.md` (pr
 
 - **Tudo o que é pessoal fica fora do controle de versão, por design.** `raw/`, `plan/` e a `wiki/` inteira (essays, concepts, entities, insights, handouts, assets, sources, `manifest.md`, `map.md`, `index.md`, `references.md`, `log.md`, `status.md`) estão no `.gitignore` — só a estrutura de pastas é versionada (via `.gitkeep`), nunca o conteúdo. `output/` também fica fora, é sempre derivado. O que de fato é versionado no Git é a camada operacional: `AGENTS.md`, `CLAUDE.md`, `README.md`, `.agents/skills/**`, `.agents/agents/**`, `scripts/**` e `.claude/settings.json`. Os espelhos `.claude/skills/**` e `.claude/agents/**` ficam de fora, por serem derivados. É exatamente essa fronteira que o subagent `update` (ver `## Ritual de fechamento`) respeita ao decidir o que entra num commit.
 - Todo o conteúdo é em Português do Brasil.
+
+## Qualidade e testes
+
+O Git versiona a infraestrutura da Second Brain, não os essays pessoais. A suíte usa `tests/fixtures/mini-brain/`, um corpus totalmente sintético.
+
+```bash
+python scripts/check_repo.py          # full por default
+python scripts/check_repo.py --quick
+python -m pytest -q
+```
+
+Todo script executável deve ter um comportamento útil sem argumentos. O contrato é verificado por `scripts/check_script_defaults.py`. Para detalhes de fixtures, HTML/PDF, Playwright, CI e como registrar regressões, veja [`TESTING.md`](./TESTING.md).

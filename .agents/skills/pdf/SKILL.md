@@ -1,76 +1,26 @@
 ---
 name: pdf
 description: >
-  Exporta um ou todos os essays de wiki/essays/ para PDF via
-  scripts/export_essay_pdf.py (Pandoc + LuaLaTeX). Use quando o
-  Usuário disser "exporta esse essay para PDF", "gera o PDF de X",
-  "exporta tudo para PDF", ou quiser uma versão compartilhável/
-  imprimível de um essay.
+  Exporta um ou todos os essays para PDF via Pandoc + LuaLaTeX e valida
+  conteúdo e layout antes de declarar o artefato pronto.
 allowed-tools: Bash Read Glob
 ---
-
 # PDF
 
-Gera PDF a partir de um ou mais essays em `wiki/essays/`, via `scripts/export_essay_pdf.py` (Pandoc + LuaLaTeX). Este skill só invoca o script existente e interpreta o resultado — a lógica de conversão vive no script, não aqui.
+Gera PDF a partir de `wiki/essays/` ou handouts. Sem argumento, o exporter gera **todos** os essays, que é o default global dos scripts do repo.
 
-## Quando usar
-
-- "exporta [essay] para PDF"
-- "gera os PDFs de todos os essays"
-- "manda esse ensaio para alguém em PDF"
-
-Para HTML, use `/html` em vez deste skill — não duplique lógica de exportação aqui.
-
-## Pré-requisitos
-
-O script depende de **Pandoc** com o engine **LuaLaTeX** (não XeLaTeX — ver `## Exportação para PDF` em `conventions/SKILL.md` para o motivo). Se o comando falhar com "Pandoc not found" ou erro de LaTeX, avise o Usuário e não tente contornar reimplementando a conversão manualmente.
-
-## Uso
+## Fluxo obrigatório
 
 ```bash
-# Listar essays disponíveis
-python scripts/export_essay_pdf.py --list
-
-# Exportar um essay específico (nome do arquivo, com ou sem .md)
-python scripts/export_essay_pdf.py nome-do-essay
-
-# Exportar todos os essays
-python scripts/export_essay_pdf.py --all
-
-# Diretório de saída customizado (padrão: output/pdf/)
-python scripts/export_essay_pdf.py nome-do-essay --output caminho/custom
+python scripts/export_essay_pdf.py <slug-ou---all>
+python scripts/check_pdf_content.py <slug-opcional>
+python scripts/check_pdf_layout.py <slug-opcional>
 ```
 
-## O que o script já garante (não precisa reimplementar)
+Para batch, omita o slug nos checkers: ambos auditam tudo por default.
 
-1. Remove a seção `## Conexões` (metadata interna, não vai para o PDF).
-2. Preserva `## Sumário` e `## Referências`.
-3. Converte frontmatter YAML + byline em bloco de título/subtítulo/autor no LaTeX.
-4. Resolve caminhos relativos de imagem (`../assets/...`) para absolutos.
-5. Remove `[[wikilinks]]` residuais, convertendo para texto puro.
-6. Ativa hyperlinks clicáveis (`colorlinks`), matemática (`tex_math_dollars`), tabelas, código.
-7. Converte blockquotes padrão do corpus em caixas semânticas (mesmo preprocessador do export HTML) via filtro Lua `scripts/pdf_boxes.lua` — wikibox, wikiquote, wikipull, wikicard.
-8. Corpo em Latin Modern Roman (harmoniza com a matemática), títulos pretos, legendas "Fig. N - ..." em corpo menor que o texto.
+`check_pdf_content.py` valida abertura, A4, páginas vazias, título/autor, Sumário/Referências, links, imagens, encoding e ausência de `Conexões`. `check_pdf_layout.py` valida margem, título órfão e paginação vazada; `FIGURA_EMPURRADA` é informativo.
 
-## Exportar um handout em vez de um essay
+Se qualquer checker retornar erro bloqueante, não declare o PDF validado. Falta de Pandoc/LuaLaTeX é falha de ambiente e deve ser reportada, não contornada por outro exporter.
 
-O mesmo script exporta handouts de `wiki/handouts/` com a flag `--handout`:
-
-```bash
-python scripts/export_essay_pdf.py <slug-do-essay> --handout --output output/handouts
-```
-
-Use quando o Usuário quiser mandar o handout como PDF em vez de só o `.md` cru — ver skill `/handout` e `## Arquitetura` (bloco `output/`) no AGENTS.md.
-
-O handout não tem `## Conexões`/`## Referências`/`## Sumário`, então esses passos rodam como no-op; o resultado sai com a mesma tipografia dos essays, só mais curto.
-
-## Depois de exportar
-
-1. Confira o output do comando: cada essay reporta `OK: <arquivo>.pdf (<tamanho> KB)` ou `ERROR`. Se algum falhar, leia o `STDERR` reportado e diagnostique antes de tentar de novo (erro de LaTeX, imagem faltando, essay sem H1, etc.) — não ignore falhas silenciosamente num export em lote.
-2. Avise o Usuário do caminho final do(s) PDF(s).
-3. Não é necessário atualizar `wiki/log.md` para exports — não é uma operação de ingestão/criação/edição de conteúdo da wiki, é uma exportação de leitura.
-
-## Skills relacionadas
-
-- `/html` — mesma essência, saída HTML
-- `/organize`, `/sweep`
+Não atualize `wiki/log.md`: export é operação de leitura.
