@@ -15,7 +15,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python -m pip install -r requirements-dev.txt
+      - name: Install Python test dependencies
+        run: python -m pip install pytest ruff PyYAML PyMuPDF beautifulsoup4 html5lib playwright
       - name: Ruff new quality layer
         run: >-
           ruff check
@@ -33,7 +34,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python -m pip install -r requirements-dev.txt
+      - name: Install Python test dependencies
+        run: python -m pip install pytest ruff PyYAML PyMuPDF beautifulsoup4 html5lib playwright
       - run: python -m pytest -q tests/test_wiki_checks.py
 
   html-export:
@@ -44,7 +46,8 @@ jobs:
         with:
           python-version: '3.12'
       - run: sudo apt-get update && sudo apt-get install -y pandoc
-      - run: python -m pip install -r requirements-dev.txt
+      - name: Install Python test dependencies
+        run: python -m pip install pytest ruff PyYAML PyMuPDF beautifulsoup4 html5lib playwright
       - run: python -m playwright install --with-deps chromium
       - run: python -m pytest -q -m html
 
@@ -56,5 +59,6 @@ jobs:
         with:
           python-version: '3.12'
       - run: sudo apt-get update && sudo apt-get install -y pandoc texlive-luatex texlive-latex-extra texlive-fonts-recommended lmodern
-      - run: python -m pip install -r requirements-dev.txt
+      - name: Install Python test dependencies
+        run: python -m pip install pytest ruff PyYAML PyMuPDF beautifulsoup4 html5lib playwright
       - run: python -m pytest -q -m pdf
