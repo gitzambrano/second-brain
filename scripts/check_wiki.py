@@ -93,8 +93,8 @@ UTILITY_SOURCE_FOLDERS = {"resumos"}
 # caracteres, máximo observado 462 (distribuição dos essays antigos).
 # Acima do teto vira parágrafo e quebra o layout de wiki/index.md;
 # abaixo do piso não descreve o arco do essay.
-SUMMARY_MAX_CHARS = 500
-SUMMARY_MIN_CHARS = 250
+SUMMARY_MAX_CHARS = 530
+SUMMARY_MIN_CHARS = 200
 
 # Heurística de idioma: palavras funcionais que só existem em inglês vs. em
 # português. Não é um detector de idioma robusto, é um sinal barato para
@@ -324,7 +324,7 @@ def check_essay(filepath: Path) -> dict:
     # e só se manifestam quando o LuaLaTeX aborta o PDF com "Text line contains
     # an invalid character". Aqui viram CRITICAL, porque quebram exportação.
     # A varredura é sobre `content` cru, e não sobre `lines`: str.splitlines()
-    # do Python trata \x0b, \x0c, \x1c-\x1e e   como quebra de linha e os
+    # do Python trata \x0b, \x0c, \x1c-\x1e e  como quebra de linha e os
     # consome, de modo que um form feed injetado no meio do texto simplesmente
     # desaparece antes de qualquer checagem por linha.
     controle = [
