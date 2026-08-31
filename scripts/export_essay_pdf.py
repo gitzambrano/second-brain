@@ -493,6 +493,11 @@ luaotfload.add_fallback
 \definecolor{boxmap}{HTML}{8A6B33}
 \definecolor{boxav}{HTML}{7A5A18}
 \definecolor{boxid}{HTML}{7A6135}
+% Dourado bem claro (mistura resolvida de uma vez com \colorlet — a mistura
+% "sbink!35!white" inline dentro de \textcolor, direto no \markoverwith do
+% \sbtoclink abaixo, nao pegava: a linha saia com a cor do link (sblink),
+% nao com o dourado claro. Prê-resolver a cor evita o problema.
+\colorlet{sbtocline}{sbink!50!white}
 
 \hypersetup{
   colorlinks=true,
@@ -507,11 +512,30 @@ luaotfload.add_fallback
 % sutil (cinza claro, 0.3pt) resolve sem competir com o `\uline` mais forte
 % dos links externos no corpo (uline_wrap em pdf_boxes.lua) — o texto em si
 % mantem a cor normal do hyperref, so o tracinho embaixo e diferente.
+% \uline{} sempre reconstroi a propria regua via \ULset — que redefine
+% \UL@leadtype incondicionalmente — entao pre-ajustar \markoverwith antes de
+% chamar \uline nao tem efeito nenhum (a regua sai na cor do texto do link,
+% sblink, nunca no dourado). \sbULset e' uma copia do \ULset do ulem.sty SEM
+% a linha que redefine \UL@leadtype: o \markoverwith chamado logo antes (que
+% ja' embala o \rule dourado num box auto-contido, sem vazar cor pro texto
+% ao redor) e' quem define \UL@leadtype dessa vez, e sobrevive.
+\makeatletter
+\def\sbULset{\UL@setULdepth
+  \ifmmode \ULdepth-4\p@ \fi
+  \UL@height-\ULdepth \advance\UL@height\ULthickness \ULon}
+% \rule[-0.6pt]{} colava a régua quase em cima da linha de base — encostava
+% em descendentes ("página", "aberta") e ficava esquisito, além de discreto
+% demais para notar. \UL@setULdepth calcula, a partir da fonte corrente, a
+% MESMA distância que o \ULdepth usa nos sublinhados normais do ulem (mede a
+% profundidade de um "(j}" de referência) — usar essa distância aqui garante
+% a régua abaixo dos descendentes, na posição visual de um sublinhado normal.
 \newcommand{\sbtoclink}[2]{%
   \hyperlink{#1}{\bgroup
-    \markoverwith{\textcolor{subtlegray!45}{\rule[-0.6pt]{1pt}{0.3pt}}}%
-    \uline{#2}\egroup}%
+    \UL@setULdepth
+    \markoverwith{\textcolor{sbtocline}{\rule[-\ULdepth]{1pt}{0.5pt}}}%
+    \sbULset{#2}}%
 }
+\makeatother
 
 % Legendas de figura reais (ambiente figure) ficam menores que o corpo.
 \usepackage{caption}
