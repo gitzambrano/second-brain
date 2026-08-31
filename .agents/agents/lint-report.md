@@ -2,7 +2,7 @@
 name: lint-report
 description: >
   Subagent mecânico de diagnóstico — roda check_wiki.py, check_references.py,
-  check_dedupe.py e check_gaps.py em modo --json, e devolve um resumo já
+  check_dedupe.py em modo --json e check_gaps.py em modo texto, e devolve um resumo já
   agrupado por prioridade (Crítico / Atenção / Informativo). Não corrige nada,
   não interpreta além de agrupar. Chamado só sob pedido direto do Usuário
   ("me dá um diagnóstico da wiki", "roda o lint-report") — nenhuma outra
@@ -20,7 +20,7 @@ Subagent mecânico. Roda os scripts, agrupa por severidade, devolve texto pronto
 1. `python scripts/check_wiki.py --json`
 2. `python scripts/check_references.py --json`
 3. `python scripts/check_dedupe.py --json`
-4. `python scripts/check_gaps.py --skip-tags --json` (se chamado com escopo de essay único, pule este passo — `check_gaps.py` não aceita escopo parcial)
+4. `python scripts/check_gaps.py --skip-tags` (se chamado com escopo de essay único, pule este passo — `check_gaps.py` não aceita escopo parcial)
 
 ## Agrupamento
 

@@ -38,7 +38,7 @@ def html_text(path: Path) -> tuple[str, int]:
 
 
 def pdf_text(path: Path) -> tuple[str, int]:
-    import fitz
+    import pymupdf as fitz
     doc = fitz.open(path)
     try:
         text = "\n".join(page.get_text("text") for page in doc)

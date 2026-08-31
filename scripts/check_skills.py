@@ -16,14 +16,13 @@ from collections import Counter
 from pathlib import Path
 
 import yaml
-
 from repo_paths import CODE_ROOT, SCRIPTS_DIR, SKILLS_DIR, SUBAGENTS_DIR
 from sanity_common import CheckResult
 
 TOP_LEVEL_PATH_WORDS = {"wiki", "raw", "plan", "scripts", "output", "agents", "claude", "codex", "mnt", "tmp"}
 WEB_TOOLS = {"WebFetch", "WebSearch"}
 SCRIPT_REF_RE = re.compile(r"scripts/([A-Za-z0-9_.-]+\.(?:py|sh|bat|lua|html))")
-SLASH_REF_RE = re.compile(r"(?<![\w.])/(?:[a-z][a-z0-9-]*)")
+SLASH_REF_RE = re.compile(r"(?<![/\w.])/(?:[a-z][a-z0-9-]*)")
 PY_COMMAND_RE = re.compile(r"python(?:3)?\s+scripts/([A-Za-z0-9_.-]+\.py)([^\n`]*)")
 FLAG_RE = re.compile(r"(?<!\w)(--[a-zA-Z0-9][a-zA-Z0-9-]*)")
 
@@ -155,12 +154,11 @@ def audit() -> CheckResult:
 
         for match in SLASH_REF_RE.finditer(body):
             ref = match.group(0)[1:]
-            if ref in TOP_LEVEL_PATH_WORDS or ref in skill_names:
+            if ref in TOP_LEVEL_PATH_WORDS or ref in skill_names or ref in agents:
                 continue
-            # Slash-command-like references are warnings because prose can also
-            # contain filesystem-like fragments.
-            if ref and ref not in agents:
-                result.warning("REFERENCED_SKILL_NOT_FOUND", f"possible slash command '/{ref}' has no skill", rel)
+            # Unknown /fragments are too ambiguous to diagnose reliably:
+            # paths, examples and prose commonly contain them. Known skills
+            # are validated elsewhere by name/path and documentation coverage.
 
         for cmd in PY_COMMAND_RE.finditer(body):
             script, tail = cmd.group(1), cmd.group(2)

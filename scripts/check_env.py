@@ -21,7 +21,7 @@ def audit(core_only: bool = False, strict: bool = False) -> CheckResult:
     result.info("PYTHON", sys.version.split()[0])
     modules = {"yaml": "PyYAML"} if core_only else {
         "yaml": "PyYAML",
-        "fitz": "PyMuPDF",
+        "pymupdf": "PyMuPDF",
         "bs4": "BeautifulSoup4",
         "html5lib": "html5lib",
     }

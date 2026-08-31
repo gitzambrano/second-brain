@@ -78,15 +78,15 @@ def wiki(result: CheckResult) -> None:
     if not corpus_has_essays():
         result.skip("SKELETON_NO_ESSAYS", "no essays present; corpus validation skipped")
         return
-    for script, extra in (
-        ("check_wiki.py", ["--json"]),
-        ("check_references.py", ["--json"]),
-        ("check_dedupe.py", ["--json"]),
-        ("check_gaps.py", ["--skip-tags", "--json"]),
+    for script, extra, parse_json in (
+        ("check_wiki.py", ["--json"], True),
+        ("check_references.py", ["--json"], True),
+        ("check_dedupe.py", ["--json"], True),
+        ("check_gaps.py", ["--skip-tags"], False),
     ):
         path = SCRIPTS_DIR / script
         if path.exists():
-            run_command(script, [sys.executable, str(path), *extra], result, parse_json_severity=True)
+            run_command(script, [sys.executable, str(path), *extra], result, parse_json_severity=parse_json)
 
 
 def exports(result: CheckResult) -> None:

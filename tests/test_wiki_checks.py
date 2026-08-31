@@ -9,6 +9,8 @@ pytestmark = pytest.mark.slow
 def test_synthetic_essay_has_no_blocking_wiki_issues(installed_mini_brain):
     if not legacy_script_available("check_wiki.py"):
         pytest.skip("legacy checker absent in overlay-only tree")
+    build = run_script("build_index.py")
+    assert build.returncode == 0, build.stdout + build.stderr
     proc = run_script("check_wiki.py", "kitchen-sink", "--json")
     assert proc.returncode == 0, proc.stdout + proc.stderr
     payload = json.loads(proc.stdout)

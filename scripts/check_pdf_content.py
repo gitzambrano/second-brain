@@ -24,7 +24,7 @@ def _source_for(pdf: Path) -> Path | None:
 
 def audit_file(path: Path, result: CheckResult) -> None:
     try:
-        import fitz
+        import pymupdf as fitz
     except ImportError:
         result.error("PYMUPDF_MISSING", "PyMuPDF is required for PDF checks", path.name)
         return

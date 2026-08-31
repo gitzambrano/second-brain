@@ -11,7 +11,7 @@ import argparse
 import json
 import sys
 
-import fitz
+import pymupdf as fitz
 
 import console_encoding  # noqa: F401
 from repo_paths import PDF_DIR
