@@ -11,17 +11,20 @@ Lê:
     wiki/essays|concepts|entities|insights/*.md + wiki/references.json
 
 Gera (em output/graph/, sem tocar nos artefatos canônicos do plano):
-    MySecondBrain_sphere.html   globo interativo + leitor embutido
-    sphere.json                 grafo completo + ux/uy/uz por nó
-    sphere.md                   fallback Mermaid
+    MySecondBrain_sphere.html            globo interativo — versão LEVE (grafo + link .md), arquivo canônico
+    MySecondBrain_sphere.reader.html     versão COMPLETA com os essays embutidos
+    sphere.json                          grafo completo + ux/uy/uz por nó
+    sphere.md                            fallback Mermaid
 
 Uso:
-    python scripts/build_sphere.py               # default = DEFAULT_EMBED_READER
-    python scripts/build_sphere.py --reader      # embute os essays no HTML
-    python scripts/build_sphere.py --no-reader   # arquivo leve + link .md
+    python scripts/build_sphere.py               # default: gera AS DUAS variantes (leve + reader)
+    python scripts/build_sphere.py --reader      # gera só a completa (essays embutidos)
+    python scripts/build_sphere.py --no-reader   # gera só a leve (globo + link .md)
 
 Flags:
-    --reader | --no-reader   embute ou não o conteúdo dos essays no HTML
+    --reader | --no-reader   gerar apenas uma das variantes. Sem flag, o
+                             script gera as duas, cada uma com nome próprio:
+                             leve → MySecondBrain_sphere.html; completa → MySecondBrain_sphere.reader.html
 """
 
 import argparse
@@ -38,7 +41,6 @@ import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
 # mesmo leitor embutido, mesma compressão de payload. Qualquer correção ali
 # vale automaticamente aqui.
 from build_graph import (
-    DEFAULT_EMBED_READER,
     OUTPUT_DIR,
     PAKO_VENDORED,
     _deflate_b64,
@@ -54,6 +56,9 @@ from build_graph import (
 )
 
 OUTPUT_HTML_NAME = "MySecondBrain_sphere.html"
+# Versão completa com os essays renderizados embutidos. Sem flags o script
+# gera esta E a leve.
+READER_HTML_NAME = "MySecondBrain_sphere.reader.html"
 
 # Aparência padrão do globo. Mesma filosofia do GRAPH_STYLE do plano: é o
 # default "de fábrica"; o usuário ajusta ao vivo no painel de Estilo (salvo
@@ -2639,16 +2644,18 @@ def render_sphere_html(nodes, edges, tag_gaps, reader_payload):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Gera o grafo ESFÉRICO da wiki (MySecondBrain_sphere.html): "
-                    "mesmos nós/arestas/gaps do build_graph.py, com todos os nós "
-                    "na superfície de uma esfera girável. O default do leitor "
-                    f"embutido é DEFAULT_EMBED_READER = {DEFAULT_EMBED_READER}; "
-                    "os flags sobrepõem sem editar o código.")
-    parser.add_argument("--reader", action=argparse.BooleanOptionalAction,
-                        default=DEFAULT_EMBED_READER,
-                        help="embute os essays no arquivo (default: %(default)s); "
-                             "--no-reader gera a versão leve (globo + link .md)")
+        description="Gera o grafo ESFÉRICO da wiki. Por padrão gera as DUAS "
+                    "variantes (MySecondBrain_sphere.html leve + "
+                    "MySecondBrain_sphere.reader.html com essays embutidos); "
+                    "--reader gera só a completa e --no-reader só a leve.")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--reader", dest="reader", action="store_true", default=None,
+                       help="gera só a versão completa (essays embutidos em "
+                            f"{READER_HTML_NAME})")
+    group.add_argument("--no-reader", dest="reader", action="store_false",
+                       help=f"gera só a versão leve (globo + link .md em {OUTPUT_HTML_NAME})")
     args = parser.parse_args()
+    embed = args.reader  # True (só completa) | False (só leve) | None (default → ambas)
 
     nodes, edges, isolated = build_graph()
     tag_gaps = compute_tag_gaps(nodes, edges)
@@ -2659,10 +2666,13 @@ def main():
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    if not args.reader:
-        reader_payload = {"essays": {}, "mathjax": "", "css": ""}
-        print("Arquivo leve (--no-reader): globo + link .md, sem essays embutidos.")
-    else:
+    # Variantes a gerar: por padrão (None) as duas; os flags restringem a uma.
+    want_light = (embed is not True)
+    want_reader = (embed is not False)
+
+    # Payload do leitor é caro (renderiza todos os essays) — calcula só se for usar.
+    reader_payload = None
+    if want_reader:
         frag_start = time.perf_counter()
         essay_nodes = [n for n in nodes if n["type"] == "essay"]
         print(f"Leitor embutido: renderizando {len(essay_nodes)} essays…")
@@ -2686,15 +2696,24 @@ def main():
         + render_mermaid(nodes, edges) + "\n",
         encoding="utf-8",
     )
-    out_path = OUTPUT_DIR / OUTPUT_HTML_NAME
-    out_path.write_text(render_sphere_html(nodes, edges, tag_gaps, reader_payload),
-                        encoding="utf-8")
 
-    size_mb = out_path.stat().st_size / (1024 * 1024)
+    def _escreve(filename, payload):
+        p = OUTPUT_DIR / filename
+        p.write_text(render_sphere_html(nodes, edges, tag_gaps, payload), encoding="utf-8")
+        return p.stat().st_size / (1024 * 1024)
+
+    vazio = {"essays": {}, "mathjax": "", "css": ""}
+    gerados = []
+    if want_light:
+        gerados.append(("leve", OUTPUT_HTML_NAME, _escreve(OUTPUT_HTML_NAME, vazio)))
+    if want_reader:
+        gerados.append(("completa", READER_HTML_NAME, _escreve(READER_HTML_NAME, reader_payload)))
+
     print(f"Globo gerado: {len(nodes)} nós, {len(edges)} conexões.")
     sep_txt = f"{min_sep_deg:.2f}°" if min_sep_deg is not None else "n/a"
     print(f"  layout esférico em {layout_ms:.0f}ms (separação mínima entre nós: {sep_txt})")
-    print(f"  {out_path} (interativo, {size_mb:.1f} MB)")
+    for nome, fname, mb in gerados:
+        print(f"  {fname} ({nome}, {mb:.1f} MB)")
     print(f"  {OUTPUT_DIR / 'sphere.md'} (mermaid)")
     print(f"  {OUTPUT_DIR / 'sphere.json'} (dados)")
     if isolated:

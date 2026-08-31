@@ -20,7 +20,7 @@ Subagent mecânico. Executa scripts e reporta resultado — nunca interpreta.
 
 1. `python scripts/build_index.py`
 2. `python scripts/build_references.py`
-3. `python scripts/build_graph.py` → `output/graph/graph.html`, `graph.md`, `graph.json`
+3. `python scripts/build_graph.py` && `python scripts/build_sphere.py` → cada um gera as duas variantes: leve + `.reader.html` (`output/graph/MySecondBrain.html` e `MySecondBrain.reader.html`; esfera `MySecondBrain_sphere.html` e `MySecondBrain_sphere.reader.html`), além de `graph.html`, `graph.md`, `graph.json`, `sphere.md`, `sphere.json`
 4. `python scripts/stats.py --save` → `output/stats/stats-YYYY-MM-DD.md`
 5. `python scripts/fix_lint.py` (ou `fix_lint.py <slug>` se o agente principal passou escopo de essay único)
 6. `qmd status` — se disponível, `qmd update && qmd embed`. Sem qmd, pule sem avisar.
@@ -35,7 +35,7 @@ Formato fixo, sempre as mesmas linhas:
 
 ```
 stats: output/stats/stats-YYYY-MM-DD.md
-grafo: output/graph/graph.html (N página(s) isolada(s), N par(es) de tag sem conexão — ver output/graph/graph.json)
+grafo: output/graph/MySecondBrain.html e MySecondBrain_sphere.html (N página(s) isolada(s), N par(es) de tag sem conexão — ver output/graph/graph.json)
 lint: N corrigido(s) automaticamente  (ou "0")
 git: <hash curto> "<primeira linha da mensagem>"  (ou "nada a commitar")
 erros: nenhum  (ou uma linha por erro/warning real: "erro: <script> — <mensagem>")

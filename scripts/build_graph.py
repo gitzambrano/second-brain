@@ -8,20 +8,22 @@ Lê:
     wiki/essays|concepts|entities|insights/*.md   títulos, wikilinks, frontmatter
     wiki/references.json                          referências citadas por essay
 
-Gera:
-    output/graph/MySecondBrain.html   grafo interativo (arquivo único compartilhável)
-    output/graph/graph.md             fallback Mermaid
-    output/graph/graph.json           nós/arestas/tag_gaps/isolated (lido por /organize)
-    output/graph/graph.html           redirect para MySecondBrain.html
+Gera (em output/graph/):
+    MySecondBrain.html            grafo interativo — versão LEVE (grafo + link .md), arquivo canônico
+    MySecondBrain.reader.html     versão COMPLETA com os essays embutidos (leitura premium offline, ~6 MB)
+    graph.md                      fallback Mermaid
+    graph.json                    nós/arestas/tag_gaps/isolated (lido por /organize)
+    graph.html                    redirect para MySecondBrain.html
 
 Uso:
-    python scripts/build_graph.py               # default = DEFAULT_EMBED_READER
-    python scripts/build_graph.py --reader      # embute os essays no HTML (~6 MB)
-    python scripts/build_graph.py --no-reader   # arquivo leve + link .md
+    python scripts/build_graph.py               # default: gera AS DUAS variantes (leve + reader)
+    python scripts/build_graph.py --reader      # gera só a completa (essays embutidos)
+    python scripts/build_graph.py --no-reader   # gera só a leve (grafo + link .md)
 
 Flags:
-    --reader | --no-reader   embute ou não o conteúdo dos essays no HTML
-                             (default definido em DEFAULT_EMBED_READER, topo do arquivo)
+    --reader | --no-reader   gerar apenas uma das variantes. Sem flag, o
+                             script gera as duas, cada uma com nome próprio:
+                             leve → MySecondBrain.html; completa → MySecondBrain.reader.html
 
 Variante esférica: scripts/build_sphere.py (importa deste arquivo).
 """
@@ -54,24 +56,27 @@ REFERENCES_JSON_PATH = WIKI_ROOT / "references.json"
 OUTPUT_DIR = ROOT_DIR / "output" / "graph"
 
 # Arquivo único compartilhável: grafo + leitor de essays com o MESMO
-# template do export HTML (default). --no-reader gera o arquivo leve
-# (grafo + link .md). graph.json/graph.md mantêm os nomes canônicos —
-# outras ferramentas (/organize, gaps) leem o JSON e não sabem deste nome
-# aqui.
+# template do export HTML. Sem flags, o script gera AS DUAS variantes, cada
+# uma com nome próprio:
+#   leve (grafo + link .md)  → OUTPUT_HTML_NAME   (arquivo canônico)
+#   completa (essays embutidos) → READER_HTML_NAME
+# graph.json/graph.md mantêm os nomes canônicos — outras ferramentas
+# (/organize, gaps) leem o JSON e não sabem deste nome aqui.
 OUTPUT_HTML_NAME = "MySecondBrain.html"
+# Versão completa com os essays renderizados embutidos (leitura premium
+# offline, ~5,5 MB). Sem flags o script gera esta E a leve.
+READER_HTML_NAME = "MySecondBrain.reader.html"
 
-# >>> DEFAULT DO LEITOR EMBUTIDO <<<
-# False = arquivo LEVE (grafo + botão de leitura apontando para o .md local).
-# True  = essays renderizados dentro do arquivo com o template do export
-#         HTML (arquivo ~5,5 MB, leitura premium offline).
-# É o default usado quando NENHUM flag de linha de comando é passado.
-# Flags --reader / --no-reader sobrescrevem esta variável.
-READER_DEFAULT = False
+# >>> DEFAULT DO BUILD <<<
+# Sem flag de linha de comando, o script gera AS DUAS variantes:
+#   leve (grafo + botão apontando para o .md local)         → MySecondBrain.html
+#   completa (essays renderizados embutidos, ~5,5 MB)       → MySecondBrain.reader.html
+# --reader gera só a completa; --no-reader gera só a leve.
+DEFAULT_MODE = "both"  # "both" | "reader" | "no-reader"
 
-# DEFAULT do build quando nenhum flag é passado na linha de comando:
-#   False = arquivo leve (grafo + link para o .md, ~0,6 MB)
-#   True  = essays embutidos no template do export (~5,5 MB)
-# Os flags --reader / --no-reader sobrepõem este default ponto a ponto.
+# Legado: valor do antigo default quando só existia uma variante. Mantida
+# por compatibilidade do import em build_sphere.py e de mensagens que a
+# referenciam — já não é usada como default do argparse.
 DEFAULT_EMBED_READER = False
 
 # Preenchimento 360° do grafo PLANO (centra a nuvem no centróide e estica a
@@ -4021,14 +4026,18 @@ def render_html(nodes, edges, tag_gaps, reader_payload):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Gera o grafo da wiki (MySecondBrain.html). O default é "
-                    f"controlado por DEFAULT_EMBED_READER = {DEFAULT_EMBED_READER} "
-                    "(topo do arquivo); os flags sobrepõem sem editar o código.")
-    parser.add_argument("--reader", action=argparse.BooleanOptionalAction,
-                        default=DEFAULT_EMBED_READER,
-                        help="embute os essays no arquivo (default: %(default)s); "
-                             "--no-reader gera a versão leve (grafo + link .md)")
+        description="Gera o grafo da wiki. Por padrão gera as DUAS variantes "
+                    "(MySecondBrain.html leve + MySecondBrain.reader.html com "
+                    "essays embutidos); --reader gera só a completa e "
+                    "--no-reader gera só a leve.")
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--reader", dest="reader", action="store_true", default=None,
+                       help="gera só a versão completa (essays embutidos em "
+                            f"{READER_HTML_NAME})")
+    group.add_argument("--no-reader", dest="reader", action="store_false",
+                       help=f"gera só a versão leve (grafo + link .md em {OUTPUT_HTML_NAME})")
     args = parser.parse_args()
+    embed = args.reader  # True (só completa) | False (só leve) | None (default → ambas)
 
     nodes, edges, isolated = build_graph()
     tag_gaps = compute_tag_gaps(nodes, edges)
@@ -4039,17 +4048,13 @@ def main():
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    if not args.reader:
-        reader_payload = {"essays": {}, "mathjax": "", "css": ""}
-        essay_nodes = [n for n in nodes if n["type"] == "essay"]
-        com_html = sum(1 for n in essay_nodes if n.get("htmlFile"))
-        print(f"Arquivo leve (--no-reader): o ícone de leitura abre "
-              f"output/html/ ({com_html}/{len(essay_nodes)} essays exportados).")
-        if com_html < len(essay_nodes):
-            faltam = len(essay_nodes) - com_html
-            print(f"  {faltam} essay(s) sem HTML exportado caem no .md — "
-                  f"rode `python scripts/export_essay_html.py --all` para cobrir todos.")
-    else:
+    # Variantes a gerar: por padrão (None) as duas; os flags restringem a uma.
+    want_light = (embed is not True)
+    want_reader = (embed is not False)
+
+    # Payload do leitor é caro (renderiza todos os essays) — calcula só se for usar.
+    reader_payload = None
+    if want_reader:
         frag_start = time.perf_counter()
         essay_nodes = [n for n in nodes if n["type"] == "essay"]
         print(f"Leitor embutido: renderizando {len(essay_nodes)} essays…")
@@ -4063,6 +4068,16 @@ def main():
               f"({len(essays)} fragmentos, mathjax={'sim' if mathjax else 'não'}, "
               f"css={len(reader_css)//1024} KB)")
 
+    if want_light:
+        essay_nodes = [n for n in nodes if n["type"] == "essay"]
+        com_html = sum(1 for n in essay_nodes if n.get("htmlFile"))
+        print(f"Versão leve ({OUTPUT_HTML_NAME}): o ícone de leitura abre "
+              f"output/html/ ({com_html}/{len(essay_nodes)} essays exportados).")
+        if com_html < len(essay_nodes):
+            faltam = len(essay_nodes) - com_html
+            print(f"  {faltam} essay(s) sem HTML exportado caem no .md — "
+                  f"rode `python scripts/export_essay_html.py --all` para cobrir todos.")
+
     (OUTPUT_DIR / "graph.json").write_text(
         json.dumps({"nodes": nodes, "edges": edges, "tag_gaps": tag_gaps, "isolated": isolated},
                    ensure_ascii=False, indent=2),
@@ -4072,9 +4087,22 @@ def main():
         f"# Grafo da Wiki\n\n{len(nodes)} páginas, {len(edges)} conexões.\n\n" + render_mermaid(nodes, edges) + "\n",
         encoding="utf-8",
     )
-    out_path = OUTPUT_DIR / OUTPUT_HTML_NAME
-    out_path.write_text(render_html(nodes, edges, tag_gaps, reader_payload), encoding="utf-8")
+
+    def _escreve(filename, payload):
+        p = OUTPUT_DIR / filename
+        p.write_text(render_html(nodes, edges, tag_gaps, payload), encoding="utf-8")
+        return p.stat().st_size / (1024 * 1024)
+
+    vazio = {"essays": {}, "mathjax": "", "css": ""}
+    gerados = []
+    if want_light:
+        gerados.append(("leve", OUTPUT_HTML_NAME, _escreve(OUTPUT_HTML_NAME, vazio)))
+    if want_reader:
+        gerados.append(("completa", READER_HTML_NAME, _escreve(READER_HTML_NAME, reader_payload)))
+
     # Legado: quem tinha atalho pro graph.html continua funcionando.
+    # O redirect aponta para a variante leve — o arquivo canônico quando as
+    # duas são geradas juntas.
     legacy = OUTPUT_DIR / "graph.html"
     stub = ('<!DOCTYPE html><meta charset="utf-8">'
             f'<meta http-equiv="refresh" content="0; url={OUTPUT_HTML_NAME}">'
@@ -4082,10 +4110,10 @@ def main():
     if not legacy.exists() or legacy.read_text(encoding="utf-8", errors="replace") != stub:
         legacy.write_text(stub, encoding="utf-8")
 
-    size_mb = out_path.stat().st_size / (1024 * 1024)
     print(f"Grafo gerado: {len(nodes)} nós, {len(edges)} conexões.")
     print(f"  layout pré-calculado em {layout_ms:.0f}ms")
-    print(f"  {out_path} (interativo, {size_mb:.1f} MB)")
+    for nome, fname, mb in gerados:
+        print(f"  {fname} ({nome}, {mb:.1f} MB)")
     print(f"  {OUTPUT_DIR / 'graph.md'} (mermaid)")
     print(f"  {OUTPUT_DIR / 'graph.json'} (dados)")
     if isolated:
