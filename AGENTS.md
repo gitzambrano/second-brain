@@ -32,7 +32,7 @@ Detalhes de tipos de source, frontmatter, tags, links, referências, prosa, imag
 ### Fonte única para múltiplos agentes
 
 | Fonte editável | Espelho/consumidor | Sincronização |
-| --- | --- | --- |
+| ---------------------------------------- | ------------------------------------------------------------ | ------------------------------------ |
 | `AGENTS.md` | `CLAUDE.md` | `CLAUDE.md` importa `@AGENTS.md` |
 | `.agents/skills/`, `.agents/agents/` | `.claude/skills/`, `.claude/agents/`, `.codex/skills/` | `scripts/sync_skills.py` |
 
@@ -45,6 +45,7 @@ python scripts/sync_skills.py --check
 ## Skills Disponíveis
 
 Tag de modo:
+
 - **[script]** — execução mecânica;
 - **[leitura]** — julgamento editorial/conceitual;
 - **[ambos]** — combina os dois.
@@ -52,56 +53,56 @@ Tag de modo:
 ### Ideação e criação
 
 | Skill | Comando | Modo | Quando usar |
-| --- | --- | --- | --- |
+| ------- | ------------ | ------- | ------------------------------------------------------------------- |
 | Insight | `/insight` | leitura | Capturar, desenvolver, listar ou promover ideia ainda sem essay-pai |
 | Outline | `/outline` | leitura | Estruturar tese, capítulos e bullets antes da prosa |
 | Essay | `/essay` | leitura | Escrever essay novo a partir de outline aprovado |
 
 ### Iteração em essay existente
 
-| Skill | Comando | Modo | Quando usar |
-| --- | --- | --- | --- |
-| Expand | `/expand` | leitura | Adicionar ou corrigir conteúdo substantivo |
-| Chapter | `/chapter` | leitura | Adicionar, mover, fundir ou dividir seção/capítulo |
-| Continuity | `/continuity` | leitura | Auditar progressão lógica, tese e fechamento |
-| Proofread | `/proofread` | leitura | Corrigir português |
-| Polish | `/polish` | leitura | Melhorar estilo sem mudar conteúdo |
-| Linkify | `/linkify` | ambos | Adicionar/validar links externos e referências |
-| Review | `/review` | leitura | Peer review de argumento, rigor, profundidade e evidência |
+| Skill      | Comando         | Modo    | Quando usar                                                |
+| ---------- | --------------- | ------- | ---------------------------------------------------------- |
+| Expand     | `/expand`     | leitura | Adicionar ou corrigir conteúdo substantivo                |
+| Chapter    | `/chapter`    | leitura | Adicionar, mover, fundir ou dividir seção/capítulo      |
+| Continuity | `/continuity` | leitura | Auditar progressão lógica, tese e fechamento             |
+| Proofread  | `/proofread`  | leitura | Corrigir português                                        |
+| Polish     | `/polish`     | leitura | Melhorar estilo sem mudar conteúdo                        |
+| Linkify    | `/linkify`    | ambos   | Adicionar/validar links externos e referências            |
+| Review     | `/review`     | leitura | Peer review de argumento, rigor, profundidade e evidência |
 
 ### Fontes e estudo
 
-| Skill | Comando | Modo | Quando usar |
-| --- | --- | --- | --- |
-| Import | `/import` | ambos | Essay completo do Usuário; preservar texto na ingestão |
-| Digest | `/digest` | ambos | Fonte de terceiros; resumir e arquivar, nunca gerar essay |
-| Absorb | `/absorb` | ambos | Incorporar fonte já processada a páginas existentes |
-| Study | `/study` | leitura | Estudar um tema lendo fontes e desenvolvendo posição |
-| Scout | `/scout` | leitura | Curar fontes candidatas sem ingerir |
-| Plan | `/plan` | script | Gerenciar pendências de longo prazo e encaminhá-las |
+| Skill  | Comando     | Modo    | Quando usar                                               |
+| ------ | ----------- | ------- | --------------------------------------------------------- |
+| Import | `/import` | ambos   | Essay completo do Usuário; preservar texto na ingestão  |
+| Digest | `/digest` | ambos   | Fonte de terceiros; resumir e arquivar, nunca gerar essay |
+| Absorb | `/absorb` | ambos   | Incorporar fonte já processada a páginas existentes     |
+| Study  | `/study`  | leitura | Estudar um tema lendo fontes e desenvolvendo posição    |
+| Scout  | `/scout`  | leitura | Curar fontes candidatas sem ingerir                       |
+| Plan   | `/plan`   | script  | Gerenciar pendências de longo prazo e encaminhá-las     |
 
 ### Manutenção
 
-| Skill | Comando | Modo | Quando usar |
-| --- | --- | --- | --- |
-| Organize | `/organize` | ambos | Metadados, estrutura e formatação mecânica |
-| Sweep | `/sweep` | ambos | `/organize` → `/continuity` → `/proofread` → `/polish` → `/linkify` |
-| Gaps | `/gaps` | ambos | Identificar lacunas mecânicas, léxicas e semânticas; read-only |
-| Connect | `/connect` | ambos | Agir sobre candidatos de `/gaps` |
-| Stats | `/stats` | script | Dashboard read-only da wiki |
-| Status | `/status` | script | Mostrar ou atualizar `wiki/status.md` |
-| Merge | `/merge` | ambos | Fundir duas páginas do mesmo tipo |
-| Delete | `/delete` | ambos | Remover página com confirmação e reparar consequências |
-| Doctor | `/doctor` | script | Diagnóstico read-only do repositório |
+| Skill    | Comando       | Modo   | Quando usar                                                                       |
+| -------- | ------------- | ------ | --------------------------------------------------------------------------------- |
+| Organize | `/organize` | ambos  | Metadados, estrutura e formatação mecânica                                     |
+| Sweep    | `/sweep`    | ambos  | `/organize` → `/continuity` → `/proofread` → `/polish` → `/linkify` |
+| Gaps     | `/gaps`     | ambos  | Identificar lacunas mecânicas, léxicas e semânticas; read-only                 |
+| Connect  | `/connect`  | ambos  | Agir sobre candidatos de`/gaps`                                                 |
+| Stats    | `/stats`    | script | Dashboard read-only da wiki                                                       |
+| Status   | `/status`   | script | Mostrar ou atualizar`wiki/status.md`                                            |
+| Merge    | `/merge`    | ambos  | Fundir duas páginas do mesmo tipo                                                |
+| Delete   | `/delete`   | ambos  | Remover página com confirmação e reparar consequências                        |
+| Doctor   | `/doctor`   | script | Diagnóstico read-only do repositório                                            |
 
 ### Saída e consulta
 
-| Skill | Comando | Modo | Quando usar |
-| --- | --- | --- | --- |
-| Handout | `/handout` | leitura | Resumo de uma página |
-| PDF | `/pdf` | script | Exportar e validar PDF |
-| HTML | `/html` | script | Exportar e validar HTML standalone |
-| Query | `/query` | leitura | Consultar o conhecimento já registrado |
+| Skill   | Comando      | Modo    | Quando usar                             |
+| ------- | ------------ | ------- | --------------------------------------- |
+| Handout | `/handout` | leitura | Resumo de uma página                   |
+| PDF     | `/pdf`     | script  | Exportar e validar PDF                  |
+| HTML    | `/html`    | script  | Exportar e validar HTML standalone      |
+| Query   | `/query`   | leitura | Consultar o conhecimento já registrado |
 
 `conventions` não tem comando; é referência normativa.
 
@@ -200,8 +201,6 @@ Vale para `.agents/skills/` e `.agents/agents/`.
 - **scripts/find_text.py** — busca textual com contexto na wiki; também serve para termos/wikilinks exatos.
 - **summarize** — resume links, arquivos e mídia quando disponível.
 - **agent-browser** — fallback de navegador quando busca/fetch não resolverem.
-
-Índices locais do qmd ficam fora do repo; cada máquina mantém a própria cópia.
 
 ## Repository Quality Gates
 
