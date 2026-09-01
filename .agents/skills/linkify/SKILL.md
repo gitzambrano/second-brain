@@ -1,99 +1,84 @@
 ---
 name: linkify
 description: >
-  Adiciona links externos a conceitos e termos técnicos ao longo do
-  corpo de um essay, e checa os links existentes quanto a validade/
-  relevância. Use quando o Usuário disser "adiciona mais links", "essa
-  seção não tem nenhum link", "checa se os links ainda funcionam", ou
-  depois de escrever/editar uma seção que introduz conceitos,
-  pensadores ou termos técnicos novos sem hyperlink na primeira
-  menção.
+  Adiciona e valida links externos no corpo de um essay e corrige
+  referências bibliográficas que exigem pesquisa. Não reescreve prosa
+  nem altera wikilinks internos.
 allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch
 ---
-
 # Linkify
 
-Garante que todo conceito, termo técnico, pensador, ou obra citada no corpo de um essay tem um link externo na primeira ocorrência, e que os links existentes ainda apontam para algo relevante e correto.
+Trata links externos do corpo e qualidade bibliográfica de `## Referências`. Formatos canônicos vivem em `conventions/SKILL.md`.
 
-## Regra de escopo
+## Escopo
 
-Só o **corpo do essay** (texto corrido) recebe links externos `[texto](url)`. `[[wikilinks]]` ficam exclusivamente em `## Conexões` — nunca misture os dois formatos fora dessa seção (ver `## Regra de links — exportabilidade para PDF` em `conventions/SKILL.md`).
+- Corpo do essay: links externos `[texto](url)` na primeira ocorrência relevante.
+- `## Conexões`: não tocar; wikilinks internos pertencem a `/connect`.
+- `## Referências`: validar e corrigir segundo o padrão canônico.
 
-## Adicionar links
+## 1. Adicionar links externos
 
-1. Leia o essay inteiro e liste os conceitos, termos técnicos, pensadores, correntes filosóficas, obras, normas técnicas, ou entidades mencionados sem link.
-2. Para cada um, busque a referência mais apropriada: Wikipedia para conceitos gerais, Stanford Encyclopedia of Philosophy (SEP) para filosofia, paper original ou norma técnica para conceitos de engenharia, site oficial para ferramentas/produtos.
-3. Adicione o link na **primeira ocorrência** do termo no essay (não em toda repetição — isso poluiria o texto).
-4. Mínimo de 10 links externos por essay (ver `## Regra de links — exportabilidade para PDF` em `conventions/SKILL.md`) — se o essay estiver abaixo disso, esse é o sinal de que faltam links, não que o mínimo é opcional.
+1. Leia o essay inteiro.
+2. Identifique termos, pensadores, obras, normas e conceitos relevantes sem link.
+3. Escolha fonte adequada:
+   - conceito geral → fonte enciclopédica confiável;
+   - filosofia → SEP quando aplicável;
+   - engenharia → paper, norma ou fonte institucional;
+   - ferramenta/produto → site oficial.
+4. Linke a primeira ocorrência útil, não todas as repetições.
 
-## Checar links existentes
+O alvo prático de cerca de 10 links externos é orientação de cobertura, não motivo para inserir link irrelevante.
 
-1. Para cada link externo já presente, avalie se a URL parece plausível e se o texto-âncora corresponde ao que o link deveria mostrar.
-2. Se houver dúvida sobre um link estar quebrado ou desatualizado, use `WebFetch` para confirmar.
-3. Links para páginas que claramente mudaram de conteúdo ou saíram do ar devem ser substituídos por uma fonte equivalente, nunca deixados apontando para o lugar errado.
+## 2. Validar links existentes
 
-## Checar e reformatar `## Referências`
+Use `WebFetch` quando houver dúvida sobre destino, disponibilidade ou relevância.
 
-Além dos links inline do corpo, `/linkify` é a skill dona do formato das entradas de `## Referências` — o padrão AIAA de `## Formato de "## Referências" — padrão AIAA` em `conventions/SKILL.md`. Quem valida é `scripts/check_references.py`:
+Substitua link quebrado/desatualizado por fonte equivalente quando a intenção estiver clara. Não altere o texto do argumento para acomodar o link.
+
+## 3. Validar referências
+
+Execute:
 
 ```bash
 python scripts/check_references.py --file <slug>
 ```
 
-Os códigos que ele emite:
-
-| Código                        | Severidade | Significado                                                       |
-| ----------------------------- | ---------- | ----------------------------------------------------------------- |
-| `REFERENCIA_FORMATO_INVALIDO` | ERROR      | entrada fora de `[N] ...`, sem título em itálico, ou fora de ordem |
-| `DUPLICATE_REFERENCIA`        | ERROR      | duas entradas com a mesma URL normalizada no mesmo essay          |
-| `LINK_NOT_IN_REFERENCIAS`     | ERROR      | URL de obra citável usada no corpo, sem entrada na bibliografia   |
-| `REFERENCIA_SEM_LINK`         | WARNING    | entrada sem link                                                   |
-| `REFERENCIA_NAO_USADA`        | WARNING    | entrada `[N]` nunca citada no corpo                                |
-
-`NO_REFERENCIAS` (a seção não existe) é de `check_wiki.py`, não deste script.
-
-**Escopo desta seção: só a seção `## Referências`, no fim do arquivo.** Numa passada de bibliografia, os links inline do corpo não se tocam — nem para reescrever, nem para reposicionar, nem para remover. Isso vale inclusive quando um check aponta para o corpo: `LINK_NOT_IN_REFERENCIAS` significa que **falta uma entrada na bibliografia**, nunca que o link do corpo esteja sobrando. Adicionar links novos ao corpo é a seção `## Adicionar links` acima, e só acontece quando o Usuário pede isso explicitamente.
-
-A parte mecânica da migração do formato antigo (bullet `- Autor. *Título.* ...`) sai sozinha — é o único fixer mecânico da wiki, `fix_lint.py`, aplicando tudo que for inequívoco sem perguntar:
+Depois aplique o fixer mecânico:
 
 ```bash
-python scripts/fix_lint.py --file <slug>
+python scripts/fix_lint.py <slug>
 ```
 
-Ele renumera para `[N]`, normaliza o itálico do título, repõe a vírgula separadora e **move qualquer link da citação para a palavra `Link` no fim da entrada** — venha ele do título, do periódico ou de um envelope em volta da citação inteira. **Ele não escolhe URL de fonte**: no formato antigo os links de uma entrada costumam ser de glossário, dentro da nota, e não o endereço da própria obra — promovê-los inventaria bibliografia. O que sobrar sai como `REFERENCIA_SEM_LINK`, e aí sim é trabalho seu:
+O fixer resolve apenas transformações inequívocas. Para achados que exigem conhecer a fonte real:
 
-1. Para cada `REFERENCIA_SEM_LINK`, primeiro confira `wiki/references.md` — a mesma obra pode já estar catalogada com link em outro essay, e nesse caso reuse a citação existente em vez de buscar de novo. Só se não estiver, busque o endereço da obra seguindo a ordem de preferência de `conventions/SKILL.md`: DOI ou link permanente do editor, depois site institucional primário (NASA/NTRS, AIAA, ARC/NACA, universidade, GitHub do projeto), depois SEP para verbete filosófico, e Wikipedia só para conceito geral.
-2. O link entra como a palavra `Link`, clicável, **depois do ponto final**, como última coisa da entrada. Nunca no título nem no periódico.
-3. Se a fonte for genuinamente sem edição digital confiável (livro impresso antigo), deixe sem link: o WARNING é aceitável, não um erro a maquiar.
-4. Para `LINK_NOT_IN_REFERENCIAS`, a obra citada no corpo precisa virar entrada na bibliografia — não remova o link do corpo para calar o check.
+1. procure primeiro em `wiki/references.md`;
+2. se não houver citação canônica, pesquise a obra;
+3. confirme título, autores, container e URL;
+4. escreva a entrada conforme a seção `Formato de ## Referências — padrão AIAA` de `conventions/SKILL.md`.
 
-Ao final, rode `python scripts/build_references.py` para regenerar `wiki/references.json`/`.md`.
+Regras de decisão:
+- referência sem link pode permanecer assim se não houver versão digital confiável;
+- obra citável no corpo sem bibliografia → adicione a referência; não remova o link do corpo;
+- não promova URL de glossário para URL da obra sem verificar;
+- não invente metadados bibliográficos.
 
-## O que não fazer
+## 4. Fechar
 
-Não adicione um link só para atingir o mínimo de 10 — o link deve ser genuinamente relevante ao termo.
+Se algo mudou:
+- atualize `updated:`;
+- rode o `## Fechamento padrão de essay único` de `conventions/SKILL.md`;
+- se `## Referências` mudou, rode `python scripts/build_references.py`.
 
-Não linke a mesma entidade duas vezes no mesmo parágrafo.
+Para passada grande, registre:
 
-Não transforme isso numa desculpa para reescrever a prosa (isso é `/polish`) — a única mudança de texto aqui é a inserção do markdown do link.
-
-## Depois
-
-Feche com o `## Fechamento padrão de essay único` de `conventions/SKILL.md`.
-
-Atualize `updated:` no frontmatter se algum link foi adicionado/corrigido. Log só se for uma passada grande (essay com poucos links recebendo vários):
+```markdown
+## [YYYY-MM-DD] linkify | Título
+N links adicionados, M corrigidos.
 ```
-## [YYYY-MM-DD] linkify | Título do Essay
-N links adicionados, M links corrigidos.
-```
 
-Se `## Referências` também foi tocada nesta passada, rode `python scripts/build_references.py` para regenerar `wiki/references.json`/`.md`.
+## Limites
 
-## Convenções
-
-Segue a regra de status (batch vs específico) de `## Status de essay` em `conventions/SKILL.md`.
-
-## Skills relacionadas
-
-- `/expand` — se revelar necessidade de explicação melhor no corpo
-- `/sweep`
+- Não reescreva prosa; isso é `/polish`.
+- Não modifique wikilinks internos.
+- Não adicione link apenas para atingir contagem.
+- Respeite a regra de status de `conventions/SKILL.md`.

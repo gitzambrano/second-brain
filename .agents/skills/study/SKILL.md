@@ -1,69 +1,73 @@
 ---
 name: study
 description: >
-  Conduz uma sessão de estudo de verdade sobre um tema: busca fontes,
-  lê e sintetiza, faz perguntas socráticas pro Usuário desenvolver o
-  próprio raciocínio, e gera conexões com o que já existe na wiki.
-  Não gerencia pendências de longo prazo (isso é /plan) — é o trabalho
-  de estudar em si, na sessão atual. Use quando o Usuário disser
-  "quero estudar X agora", "me explica Y", "vamos explorar esse
-  assunto", "não entendo bem Z, me ajuda a entender", ou quando /plan
-  estiver retomando um item da seção Estudos.
+  Conduz uma sessão de estudo: lê fontes, compara argumentos, faz
+  perguntas socráticas e conecta o tema ao que já existe na wiki.
+  Pode encaminhar o resultado para /insight, /digest, /absorb, /essay
+  ou /plan.
 allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch AskUserQuestion
 ---
-
 # Study
 
-Estudar não é ler passivamente — é o ciclo de buscar material, confrontar com o que o Usuário já pensa, e deixar a compreensão ficar mais precisa a cada volta. Essa skill conduz esse ciclo dentro da sessão atual.
+Sessão de exploração ativa. O objetivo é melhorar entendimento e posição do Usuário, não apenas listar fontes.
 
-Ela não decide sozinha quando um assunto "acabou de ser estudado" e virou conteúdo de wiki — isso é decisão do Usuário, geralmente via `/insight` (se virou uma ideia atômica) ou `/essay` (se já virou uma tese completa).
+## Fluxo
 
-## O ciclo
+### 1. Ancorar o ponto de partida
 
-1. **Ancore o ponto de partida.** O que o Usuário já sabe ou já pensa sobre isso? Pergunte antes de despejar informação — estudar em cima do que já existe na cabeça da pessoa rende mais do que uma exposição do zero. Se o tema já toca algo na wiki, `qmd query "tema"` (busca semântica, ver `## Ferramentas` no AGENTS.md) ou, sem qmd disponível/indexado, `python scripts/find_text.py "tema" --ignore-case` acham os trechos relevantes sem precisar ler `wiki/index.md`/`wiki/concepts/`/`wiki/entities/` inteiros para checar; mencione o que aparecer e pergunte se aquilo é o ponto de partida.
+Descubra o que o Usuário já sabe ou quer decidir.
 
-2. **Busque material e resuma com link — nunca devolva só uma lista de fontes.** Uma lista de títulos e links (o que `/scout` já produz sozinho) não é o produto de uma sessão de estudo — o valor de `/study` está em já ter lido. Para cada fonte que entrar na conversa:
-   - `WebFetch` o conteúdo de verdade, não só o snippet de busca.
-   - Escreva um resumo real nas próprias palavras (3-6 frases: claim principal, um dado ou argumento que sustenta, e onde a fonte é fraca ou controversa) — mesma disciplina de paráfrase de `/digest`, nunca reproduza parágrafos.
-   - Sempre com o link da fonte junto do resumo, não separado numa lista à parte.
-   - Comece pequeno (2-3 fontes lidas e resumidas) e escale se o tema pedir mais. Se o objetivo virar "preciso de uma lista mais ampla para escolher o que ler", aí sim rode `/scout` — ele é mais raso de propósito (título + por que é relevante, sem ler o conteúdo inteiro), pensado para triagem antes de decidir o que aprofundar aqui.
-   - Se, ao longo da sessão, uma fonte se mostrar central o bastante para merecer arquivamento permanente (não só o resumo efêmero desta conversa), ofereça formalizar via `/digest` — isso grava o resumo em `wiki/sources/resumos/` e registra em `manifest.md`/`map.md`, o que o resumo em conversa não faz sozinho.
+Busque material relacionado na wiki com `qmd query`; use `scripts/find_text.py` como fallback.
 
-3. **Leia com ceticismo produtivo.** Não pare no resumo por fonte do passo 2 — cruze os resumos: aponte onde as fontes discordam entre si, onde um argumento é mais fraco que o outro, onde falta evidência. Isso é o que diferencia "estudar" de só empilhar resumos.
+Não repita pergunta cuja resposta já esteja clara na conversa ou na wiki.
 
-4. **Faça perguntas socráticas.** Em vez de só entregar a resposta, devolva perguntas que levem o Usuário a articular a própria posição: "isso bate com o que você pensava sobre X?", "e se Y estiver errado, o que muda no seu argumento?", "como isso se conecta com [[Essay Já Existente]]?". O objetivo é o Usuário sair da sessão com uma posição mais clara, não só mais informação.
+### 2. Ler fontes
 
-5. **Gere conexões ativamente.** Ao longo da sessão, aponte explicitamente onde o que está sendo estudado ecoa (ou contradiz) algo já na wiki — um essay, um concept, uma entity, ou até uma nota atômica em `wiki/insights/`. Não espere o fim da sessão para fazer isso; conexões encontradas no meio do processo costumam ser as mais interessantes.
+Comece com poucas fontes relevantes.
 
-6. **Feche com uma decisão sobre o que fazer com o que foi estudado.** No fim (ou quando o Usuário quiser parar), pergunte o que fazer com o material:
-   - Virou uma ideia solta, ainda sem tese? → `/insight add`.
-   - Virou uma fonte específica que vale preservar? → `/digest` ou `/absorb`, dependendo do uso.
-   - Já virou uma tese completa? → `/essay`.
-   - Ainda não deu para concluir nada, mas vale continuar depois? → deixe (ou crie, via `/plan add`) o item na seção Estudos do plano, com uma `Nota:` atualizada sobre até onde chegou.
+Para cada fonte:
+- leia o conteúdo, não apenas snippet;
+- resuma em palavras próprias;
+- identifique claim principal, evidência e limitações;
+- mantenha o link junto da síntese.
 
-## Exemplo
+Se o objetivo virar apenas curadoria ampla, use `/scout`.
 
-> **Usuário:** quero estudar mais sobre dynamic stall models para decidir qual usar no zBEMT.
->
-> **Claude:** Você já tem o modelo de Øye implementado — a dúvida é se vale trocar, ou se é sobre entender melhor as alternativas antes de decidir? [pergunta socrática de ancoragem]
->
-> **Usuário:** É mais sobre entender as alternativas, tipo Leishman-Beddoes.
->
-> **Claude:** [busca "Leishman-Beddoes dynamic stall model", "Øye vs Leishman-Beddoes comparison"] Encontrei três fontes relevantes — uma delas (Leishman & Beddoes 1989, o paper original) é bem mais complexa que Øye: modela histerese com múltiplos estados internos em vez de uma única constante de tempo. Isso pode valer a fidelidade extra pro seu caso de uso, ou pode ser complexidade desnecessária — dado que seu GUI já roda em near-real-time via QThread, um modelo mais pesado computacionalmente muda esse trade-off? [pergunta que conecta ao que já existe no projeto]
->
-> **Usuário:** boa pergunta, não tinha pensado nisso.
->
-> **Claude:** [ao final] Isso virou uma posição clara o suficiente para virar uma nota atômica — "Leishman-Beddoes tem fidelidade maior mas o custo computacional pode não valer a pena dado o uso em near-real-time do zBEMT GUI" é uma ideia com tese própria. Quer que eu capture isso via `/insight add`?
+Fonte que merece preservação permanente pode ser encaminhada para `/digest`.
 
-## O que não fazer
+### 3. Comparar criticamente
 
-Não decida sozinho quando "encerrar" o estudo de um tema — isso é sempre negociado com o Usuário no fechamento do ciclo.
+Cruze as fontes:
+- convergências;
+- divergências;
+- pressupostos;
+- evidência fraca;
+- questões ainda abertas.
 
-Não pule direto para `/essay` só porque o tema é rico — a maioria das sessões de estudo não produz um essay inteiro, e forçar isso é pior do que deixar a ideia decantar como nota atômica ou item de plano.
+Não trate consenso aparente como prova automática.
 
-Não confunda `/study` com `/query` — `/query` responde uma pergunta pontual usando o que **já está** na wiki; `/study` é uma sessão de exploração que pode trazer material **novo**, de fora da wiki.
+### 4. Fazer perguntas socráticas
 
-## Skills relacionadas
+Use perguntas que ajudem o Usuário a testar a própria posição, especialmente onde a evidência muda uma hipótese anterior.
 
-- `/query` — responde pergunta pontual com o que já está na wiki, sem buscar material novo
-- `/plan`, `/scout`, `/insight`, `/essay`, `/digest`, `/absorb`
+Não transforme a sessão numa sequência obrigatória de perguntas; intercale explicação, síntese e questionamento conforme o ritmo da conversa.
+
+### 5. Conectar com a wiki
+
+Aponte relações úteis com essays, concepts, entities e insights existentes. Não force conexão temática fraca.
+
+### 6. Encerrar com destino
+
+Quando o Usuário quiser fechar:
+- ideia atômica nova → `/insight add`;
+- fonte a preservar → `/digest`;
+- fonte já processada que deve enriquecer páginas → `/absorb`;
+- tese pronta → `/outline` → `/essay`;
+- estudo ainda aberto → `/plan add` ou atualize o item existente.
+
+## Limites
+
+- `/study` não é `/query`: pode trazer material novo de fora da wiki.
+- `/study` não é `/scout`: lê e confronta fontes, não apenas seleciona.
+- Não force transformação em essay.
+- Não declare um estudo “concluído” sem o Usuário encerrar ou mudar de objetivo.
