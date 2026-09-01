@@ -12,39 +12,46 @@ allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch AskUserQuestion
 ---
 # Digest
 
-Lê uma fonte que não é um ensaio completo do próprio Usuário, escreve um resumo para ele e arquiva a fonte organizadamente. **Nunca gera essay.** Se o material for denso o bastante para merecer um essay próprio, avise o Usuário e sugira `/essay` ou `/import` em vez de fazer isso aqui.
+Lê uma fonte que não é um essay completo do próprio Usuário, escreve um resumo e arquiva a fonte. **Nunca gera essay.**
 
-## Quando usar (e quando não)
+Se o material for denso o bastante para sustentar um essay original, sugira `/outline` → `/essay`. `/import` é reservado a texto completo do próprio Usuário.
 
-Use para: papers acadêmicos, capítulos de livro, web clippings, documentação técnica, transcrições — qualquer coisa que Usuário não escreveu e não quer necessariamente virar um essay agora.
+## Quando usar
 
-Não use para: um ensaio/white paper do próprio Usuário (isso é `/import`) ou quando o Usuário já quer o conteúdo incorporado a um essay/conceito existente agora mesmo (isso é `/absorb`, rodado depois do digest ou direto se a fonte já estiver em `wiki/sources/`).
+Use para papers, capítulos de livro, web clippings, documentação técnica, transcrições e outras fontes de terceiros.
+
+Não use para:
+- essay/white paper completo do próprio Usuário → `/import`;
+- fonte já processada que o Usuário quer incorporar à wiki → `/absorb`.
 
 ## Passo a passo
 
 1. Leia a fonte inteira em `raw/`.
-2. Classifique o `Tipo:` (vocabulário controlado: Web Clipping, Artigo Acadêmico, Livro, Documentação Técnica, Transcrição, Ideias, Outro — ver AGENTS.md).
-3. Se a fonte tiver figura embutida (PDF, DOCX, HTML), extraia para `wiki/assets/` e linke no resumo — ver `## Tratamento de imagens` em `conventions/SKILL.md`.
-4. Escreva um resumo de uma página em `wiki/sources/resumos/<slug>.md`: claim(s) principal(is), metodologia se aplicável, limitações, 2-3 citações-chave (parafraseadas, nunca copiadas verbatim além de trechos curtíssimos). Frontmatter simples: `fonte:` (nome do arquivo original), `tipo:`, `created:`.
-5. **Entregue o resumo ao Usuário na própria conversa** — não é suficiente só salvar o arquivo, ele quer ler agora.
+2. Classifique o `Tipo:` conforme `## Tipos de Source — Vocabulário Controlado` em `conventions/SKILL.md`.
+3. Se houver figura relevante, extraia para `wiki/assets/` e referencie no resumo conforme `## Tratamento de imagens`.
+4. Escreva um resumo de uma página em `wiki/sources/resumos/<slug>.md`: claims principais, metodologia quando aplicável, limitações e síntese parafraseada. Frontmatter: `fonte:`, `tipo:`, `created:`.
+5. Entregue também o resumo ao Usuário na conversa.
 6. Arquive o original em `wiki/sources/<subpasta-do-tipo>/`, preservando o nome.
-7. Registre em `wiki/sources/manifest.md` e em `wiki/sources/map.md`, vide `conventions/SKILL.md`. Inclua `Tags:`, 2 a 5 tags do vocabulário controlado (`## Reuso de vocabulário controlado` em `conventions/SKILL.md`). Campo status: "Resumido — ver resumo", com link pro arquivo em `resumos/`.
-8. Se este digest tiver sido encadeado com um `/absorb` que editou `## Referências` de algum essay, rode `python scripts/build_references.py` para regenerar `wiki/references.json`/`.md` (o resumo em si não tem `## Referências` formal — ver `## Convenções`).
-9. Log: `## [YYYY-MM-DD] digest | Título da Fonte`
+7. Registre em `wiki/sources/manifest.md` e `wiki/sources/map.md`, com `Tags:` usando o vocabulário controlado de `conventions/SKILL.md`.
+8. Se um `/absorb` encadeado alterou `## Referências` de algum essay, rode `python scripts/build_references.py`.
+9. Log: `## [YYYY-MM-DD] digest | Título da Fonte`.
 
 ## Depois
 
-Pergunte se o Usuário quer usar essa fonte para enriquecer algum essay/conceito existente agora — se sim, é `/absorb`. Se ele quiser que ela vire um essay novo, é `/essay` (com a fonte como referência) ou, se ele reescrever o conteúdo como próprio, eventualmente `/import`. Também ofereça a opção de escrever um `/insight` a partir dessa fonte.
+Pergunte se o Usuário quer:
+- incorporar a fonte a páginas existentes → `/absorb`;
+- desenvolver uma tese própria a partir dela → `/outline` → `/essay`;
+- guardar uma síntese curta → `/insight add`.
 
 ## Convenções
 
-Resumo é sempre parafraseado nas próprias palavras — nunca reproduza parágrafos inteiros da fonte, mesmo internamente em `wiki/sources/resumos/`.
+O resumo é parafraseado. Não reproduza parágrafos inteiros da fonte.
 
-Isso não é um essay: sem `## Sumário`, `## Referências` formal, ou `## Conexões` — é um resumo de uma página, direto ao ponto.
+Resumo de source não é essay: não recebe `## Sumário`, `## Referências` formal nem `## Conexões`.
 
 Prosa segue `## Estilo de prosa` em `conventions/SKILL.md`.
 
 ## Skills relacionadas
 
-- `/import` — quando a fonte é um essay completo do próprio autor
+- `/import` — texto completo do próprio autor
 - `/absorb`, `/essay`, `/insight`

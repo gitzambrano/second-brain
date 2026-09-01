@@ -11,7 +11,6 @@ description: >
   essay do autor.
 allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch AskUserQuestion
 ---
-
 # Import
 
 Processa uma fonte que **já é** um ensaio, white paper, ou artigo completo escrito pelo próprio Usuário. O texto vira essay preservando-se intacto — Claude aqui é arquivista, não coautor. Para qualquer fonte que não seja do próprio autor (paper de terceiro, livro, web clipping, transcrição), use `/digest`, não este skill.
@@ -27,24 +26,25 @@ Se não estiver claro que o texto é do próprio Usuário e já está pronto (n�
 1. Leia a fonte inteira em `raw/`.
 2. Discuta com o Usuário os pontos-chave, se fizer sentido — mas o texto em si não muda.
 3. Se necessário, traduza para Português do Brasil.
-4. Classifique o `Tipo:` do source (normalmente `Ensaio Completo Importado`, ver `## Tipos de Source — Vocabulário Controlado` no AGENTS.md) — isso determina a subpasta de destino em `wiki/sources/`.
-5. Copie o conteúdo **integralmente** para `wiki/essays/` como arquivo `.md`. **O texto original não é alterado** — apenas adicione: frontmatter YAML (incluindo `summary:`, resumo de uma linha até 120 caracteres), links externos inline, `## Sumário`, `## Referências`, `## Conexões`. Sem resumo condensado dentro do essay (use a skill `/handout` depois, se o Usuário quiser um). `status: finalizado` por padrão (texto chegou pronto); `status: draft` se ficar claro que é rascunho do próprio autor — ver `## Status de essay` em `conventions/SKILL.md`.
-6. Identifique todos os conceitos e entidades mencionados. Para cada um: se já existe página, atualize com informação nova desta fonte; se não existe, crie na subpasta apropriada.
-7. Verifique se todos os conceitos/entidades criados/atualizados são referenciados por pelo menos um essay. Se não, crie um novo essay que os abrace ou atualize um existente.
-8. Adicione wikilinks entre todas as páginas relacionadas, na seção `## Conexões`, no formato de `## Regra de links` em `conventions/SKILL.md`.
-9. Preencha `summary:` no frontmatter e rode `python scripts/build_index.py` para regenerar `wiki/index.json`/`wiki/index.md` (apenas essays entram no índice) — nunca insira a entrada à mão.
-10. Como o passo 5 acrescentou `## Referências`, escreva cada entrada no padrão de `## Formato de "## Referências" — padrão AIAA` em `conventions/SKILL.md` (`[N] Autor, *Título* [link](url), Container, Ano.`), confira com `python scripts/check_references.py --file <slug>`, e rode `python scripts/build_references.py` para regenerar `wiki/references.json`/`.md`. A fonte original quase nunca chega nesse formato: converter a bibliografia dela é parte do trabalho de ingestão, e não altera o texto do essay, que continua intacto.
-11. Mova o arquivo original de `raw/` para `wiki/sources/<subpasta-do-tipo>/`, preservando o nome original. Registre em `wiki/sources/manifest.md` (`Tipo:`, `Tags:`, `Pasta:`, `Virou:`) e em `wiki/sources/map.md` (status: "Importado como [[slug-do-essay|Essay]]"). `Tags:` reusa o mesmo vocabulário controlado dos essays (`## Tags — Vocabulário Controlado` em `conventions/SKILL.md`) — em geral as mesmas tags do essay que a fonte virou, já que é o mesmo conteúdo.
+4. Classifique o `Tipo:` do source, normalmente `Ensaio Completo Importado`, conforme `## Tipos de Source — Vocabulário Controlado` em `conventions/SKILL.md`; isso determina a subpasta de destino em `wiki/sources/`.
+5. Copie o conteúdo **integralmente** para `wiki/essays/` como arquivo `.md`. **O texto original não é alterado** — apenas adicione frontmatter YAML, links externos inline, `## Sumário`, `## Referências` e `## Conexões`. Sem resumo condensado dentro do essay. `status: finalizado` por padrão; use `draft` se ficar claro que é rascunho do próprio autor, conforme `## Status de essay` em `conventions/SKILL.md`.
+6. Identifique conceitos e entidades mencionados. Para cada um: se já existe página, atualize com informação nova desta fonte; se não existe e a página tiver valor próprio, crie na subpasta apropriada.
+7. Verifique se os concepts/entities criados ou atualizados têm relação com pelo menos um essay. Registre as relações em `## Conexões`; não crie um novo essay apenas para evitar órfão.
+8. Adicione wikilinks entre páginas relacionadas na seção `## Conexões`, conforme `## Regra de links — Obsidian é o leitor primário` em `conventions/SKILL.md`.
+9. Preencha `summary:` e rode `python scripts/build_index.py` para regenerar `wiki/index.json`/`wiki/index.md`; nunca edite o índice à mão.
+10. Converta a bibliografia original para `## Referências` segundo `## Formato de ## Referências — padrão AIAA` em `conventions/SKILL.md`: título em itálico, container completo e `[Link](url)` no final da entrada. Valide com `python scripts/check_references.py --file <slug>` e rode `python scripts/build_references.py`.
+11. Mova o arquivo original de `raw/` para `wiki/sources/<subpasta-do-tipo>/`, preservando o nome original. Registre em `wiki/sources/manifest.md` e `wiki/sources/map.md`. `Tags:` reutiliza o mesmo vocabulário controlado das páginas.
 12. Feche com o `## Fechamento padrão de essay único` de `conventions/SKILL.md`.
-13. Log: `## [YYYY-MM-DD] import | Título do Essay`
+13. Log: `## [YYYY-MM-DD] import | Título do Essay`.
 
-Uma única fonte pode tocar 10-15 páginas da wiki. Isso é normal.
+Uma única fonte pode tocar muitas páginas. Isso é normal.
 
 ## Convenções
 
-- **O texto original não é alterado no momento da importação** — só depois, se pedido explicitamente via `/expand`, `/proofread`, etc.
+- **O texto original não é alterado no momento da importação** — só depois, sob pedido explícito via `/expand`, `/proofread` etc.
+- Não invente dados bibliográficos. Confirme fonte, autores, título e container antes de criar referência.
 
 ## Skills relacionadas
 
-- `/digest` — quando a fonte NÃO é um essay completo do autor
+- `/digest` — fonte de terceiro
 - `/absorb`, `/expand`, `/proofread`, `/polish`

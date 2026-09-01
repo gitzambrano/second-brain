@@ -8,53 +8,49 @@ description: >
   conteúdo ou argumento.
 allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion
 ---
-
 # Proofread
 
-Passada geral de português: gramática, ortografia, concordância, pontuação. Não toca em conteúdo ou argumento — só na língua.
+Revisão de português: gramática, ortografia, concordância, pontuação e consistência terminológica. Não altera conteúdo ou argumento.
 
 ## Regra de abertura
 
-Prosa segue `## Estilo de prosa` em `conventions/SKILL.md`.
-
-Leia o essay inteiro nessa passada, não seção por seção isoladamente. É comum um termo técnico aparecer traduzido de duas formas diferentes em capítulos escritos em momentos distintos, e só a leitura completa pega isso.
+Leia o essay inteiro. Prosa segue `## Estilo de prosa` em `conventions/SKILL.md`.
 
 ## O que corrigir
 
-- Concordância verbal e nominal
-- Ortografia e acentuação
-- Pontuação: vírgulas ausentes ou sobrando, ponto e vírgula em excesso onde uma frase mais curta comunica melhor
-- Parágrafos longos demais, quando dividir ajuda a leitura
-- Grafia inconsistente de um mesmo termo técnico entre seções diferentes — escolha uma grafia e uniformize em todo o essay
+- concordância verbal e nominal;
+- ortografia e acentuação;
+- pontuação;
+- ponto e vírgula: substituir por estrutura compatível com `conventions/SKILL.md`;
+- parágrafos excessivamente longos quando a divisão melhora leitura sem mudar conteúdo;
+- grafia inconsistente do mesmo termo técnico.
 
 ## O que não fazer
 
-- Não altere conteúdo, argumento, ou a ordem das ideias
-- Não mude o tom ou registro (isso é `/polish`)
-- Não corrija um termo técnico que está certo só porque parece estranho — se tiver dúvida sobre se é erro de português ou termo técnico legítimo da área (aerodinâmica, xadrez computacional, filosofia da mente), pergunte antes de mudar
+- não alterar argumento ou ordem das ideias;
+- não mudar tom/registro — isso é `/polish`;
+- não “corrigir” termo técnico legítimo por parecer incomum; em dúvida, preserve ou pergunte.
 
 ## Relatório
 
-Ao reportar, resuma o que foi corrigido em vez de listar cada troca individual — por exemplo: "concordância verbal em dois pontos, vírgulas ausentes em três frases longas, e 'inflow' vs 'influxo' padronizado para 'influxo' em todo o texto".
+Resuma os tipos de correção. Não liste cada substituição salvo se o Usuário pedir.
 
 ## Depois
 
 Feche com o `## Fechamento padrão de essay único` de `conventions/SKILL.md`.
 
-Correções pequenas e locais não precisam de entrada no log. Se a passada foi extensa (essay inteiro, muitos pontos corrigidos), log:
+Atualize `updated:`. Correção pequena não precisa de log; passada extensa pode registrar:
 
-```
+```markdown
 ## [YYYY-MM-DD] proofread | Título do Essay
 Resumo do que foi corrigido.
 ```
 
-Atualize `updated:` no frontmatter.
-
 ## Convenções
 
-Segue a regra de status (batch vs específico) de `## Status de essay` em `conventions/SKILL.md`.
+Segue a regra de status de `conventions/SKILL.md`.
 
 ## Skills relacionadas
 
-- `/polish` — tom e ritmo de prosa, não gramática
-- `/sweep` — roda `/proofread` em todos os essays de uma vez
+- `/polish`
+- `/sweep`

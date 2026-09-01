@@ -10,34 +10,35 @@ description: >
   "o que falta fazer", ou "atualiza o status".
 allowed-tools: Bash Read Write Edit Glob AskUserQuestion
 ---
-
 # Status
 
-`wiki/status.md` é um snapshot vivo, não um log cronológico — cada seção é sobrescrita no lugar, ao contrário de `wiki/log.md` (append-only). Ele existe para responder, em segundos, "onde eu parei" no início de uma sessão nova.
+`wiki/status.md` é um snapshot vivo, não um log cronológico. Cada seção é sobrescrita no lugar; `wiki/log.md` continua append-only.
 
 ## Comandos
 
-### `/status` (sem argumento)
+### `/status`
 
-Leia `wiki/status.md` e mostre o conteúdo ao Usuário, tal como está. Read-only, não modifica nada. Se o arquivo não existir ainda, crie-o vazio com o template abaixo e avise que é a primeira vez.
+Leia `wiki/status.md` e mostre o estado atual. Read-only.
+
+Se o arquivo não existir, crie-o com o template abaixo e avise que é a primeira inicialização.
 
 ### `/status update`
 
-1. Releia `wiki/status.md` atual.
-2. Recalcule as **Pendências** automaticamente, sem perguntar:
-   - Quantos itens há em `raw/` aguardando triagem.
-   - Quantos itens pendentes (`Status: Pendente`) há em `plan/plano.md`, por seção (Tarefas / Fontes para Ingerir / Revisões / Estudos / Essays Futuros).
-   - Quantas entradas em `wiki/sources/manifest.md` estão com `Verificação: não verificado`.
-   - Qualquer contradição entre fontes ainda não resolvida (ver regra de contradição em `conventions/SKILL.md`) que tenha ficado em aberto na sessão.
-3. Pergunte ao Usuário (ou infira da conversa corrente) o que mudou em:
-   - **Foco atual**: no que ele está trabalhando agora, por projeto/essay/tema.
-   - **Perguntas em aberto**: dúvidas ainda não resolvidas que vão precisar de decisão futura.
-   - **Decisões recentes**: qualquer decisão de conteúdo ou estilo fechada nesta sessão (se for uma decisão de estilo/formatação, ofereça também registrá-la em `## Decisões fechadas` de `conventions/SKILL.md`).
-4. Reescreva `wiki/status.md` inteiro (sobrescreva, não faça append) com `Atualizado:` na data de hoje.
-5. Se a sessão criou/editou muitas páginas, ou editou algum `.agents/skills/*/SKILL.md` ou `.agents/agents/*.md`, **ofereça** o subagent `update` (`.agents/agents/update.md`) — ele cuida de índice, referências, grafo, stats, qmd e sync de skills/agents numa sessão própria, mais barata.
+1. Releia `wiki/status.md`.
+2. Recalcule as **Pendências**:
+   - itens em `raw/`;
+   - itens `Status: Pendente` em cada seção de `plan/plano.md`;
+   - entradas de `wiki/sources/manifest.md` com `Verificação: não verificado`;
+   - contradições ainda não resolvidas registradas na sessão.
+3. Atualize, a partir da conversa ou perguntando apenas quando necessário:
+   - **Foco atual**;
+   - **Perguntas em aberto**;
+   - **Decisões recentes**.
+4. Reescreva `wiki/status.md` inteiro com `Atualizado:` na data atual.
+5. Se a sessão editou muitas páginas ou alterou `.agents/skills/`/`.agents/agents/`, ofereça o subagent `update`.
+6. Não registre `/status update` em `wiki/log.md`.
 
-   Não chame sozinho sem avisar; é sugestão, como o resto de `/status update`.
-6. Não é necessário logar a atualização em `wiki/log.md` — `/status` é meta-operação sobre o estado da wiki, não uma operação de conteúdo.
+Decisões recentes pertencem ao status enquanto forem úteis entre sessões. Regras permanentes de estrutura/estilo só entram em `conventions/SKILL.md` quando representam o comportamento normativo atual; não mantenha histórico de decisões lá.
 
 ## Template
 
@@ -52,7 +53,7 @@ Atualizado: YYYY-MM-DD
 ## Perguntas em aberto
 - [pergunta] (desde YYYY-MM-DD)
 
-## Decisões recentes (fechadas — não reabrir sem evidência nova)
+## Decisões recentes
 - [decisão] (YYYY-MM-DD) — [justificativa breve]
 
 ## Pendências
@@ -61,15 +62,16 @@ Atualizado: YYYY-MM-DD
 - sources com Verificação: não verificado: N
 ```
 
-Seções sem conteúdo real ficam com um traço único `- (nenhuma)` em vez de bullet vazio ou template residual.
+Seção sem conteúdo real recebe `- (nenhuma)`.
 
 ## Quando outras skills devem tocar `/status`
 
-- Ao final de `/essay`, `/import`, `/digest`, `/absorb`, `/organize`, `/study`, `/plan work` — se o trabalho foi substancial (não uma correção pontual), ofereça rodar `/status update` antes de encerrar a sessão.
-- Nunca rode `/status update` automaticamente sem avisar — é rápido, mas quem decide o que é "foco atual" é o Usuário, não uma inferência silenciosa.
+Após trabalho substancial em `/essay`, `/import`, `/digest`, `/absorb`, `/organize`, `/sweep`, `/study` ou `/plan work`, ofereça `/status update`.
+
+Não rode automaticamente sem avisar.
 
 ## Skills relacionadas
 
-- `/plan` — pendências de `plan/plano.md` alimentam a seção Pendências.
-- `/organize` — pendências de sources sem manifest/verificação alimentam a seção Pendências.
-- `conventions` — decisões de estilo fechadas na sessão podem migrar para a lista de decisões fechadas lá.
+- `/plan` — pendências de longo prazo
+- `/organize` — saúde estrutural e de sources
+- `conventions` — somente regras normativas atuais
