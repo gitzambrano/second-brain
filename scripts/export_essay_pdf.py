@@ -471,7 +471,11 @@ luaotfload.add_fallback
   \setsansfont{LibertinusSans}[RawFeature={fallback=mainfallback}]%
   \setmathfont{LibertinusMath-Regular.otf}%
 }{}
-\setmonofont{Consolas}[RawFeature={fallback=mainfallback}]
+\IfFontExistsTF{Consolas}{%
+  \setmonofont{Consolas}[RawFeature={fallback=mainfallback}]%
+}{%
+  \setmonofont{Latin Modern Mono}%
+}
 
 \usepackage[normalem]{ulem}
 \renewcommand{\ULthickness}{0.6pt}
