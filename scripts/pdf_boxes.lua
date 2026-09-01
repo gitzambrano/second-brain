@@ -612,7 +612,7 @@ function Table(el)
   local function scan(row)
     for c, cell in ipairs(row.cells) do
       if c <= num_cols then
-        local s = pandoc.utils.stringify(cell)
+        local s = pandoc.utils.stringify(cell.contents)
         local l, w = ulen(s), longest_word(s)
         if l > pref[c] then pref[c] = l end
         if w > floor_[c] then floor_[c] = w end

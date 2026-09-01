@@ -48,7 +48,12 @@ def audit_file(path: Path, result: CheckResult) -> None:
                   badImages: [...document.images].filter(i => !i.complete || i.naturalWidth === 0).map(i => i.src),
                   brokenAnchors: [...document.querySelectorAll('a[href^="#"]')]
                     .map(a => a.getAttribute('href').slice(1)).filter(id => id && !document.getElementById(id)),
-                  rawWikilinks: document.body.innerText.includes('[[') && document.body.innerText.includes(']]'),
+                  rawWikilinks: (() => {
+                  const clean = document.body.cloneNode(true);
+                  clean.querySelectorAll('pre, code, script, style').forEach(el => el.remove());
+                  const text = clean.textContent || '';
+                  return text.includes('[[') && text.includes(']]');
+                  })(),
                   rawFencedDiv: document.body.innerText.includes(':::{') || document.body.innerText.includes('::: {')
                 })""")
                 if data["docWidth"] > data["innerWidth"] + 2:
