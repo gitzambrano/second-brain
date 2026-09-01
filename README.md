@@ -49,7 +49,7 @@ Os tipos de source, tags, frontmatter, byline, links, referências, prosa, image
 ## Fonte única e espelhos
 
 | Fonte editável | Derivado | Como sincroniza |
-| --- | --- | --- |
+| ---------------------------------------- | ------------------------------------------------------------ | ------------------------------------ |
 | `AGENTS.md` | `CLAUDE.md` | `CLAUDE.md` importa `@AGENTS.md` |
 | `.agents/skills/`, `.agents/agents/` | `.claude/skills/`, `.claude/agents/`, `.codex/skills/` | `python scripts/sync_skills.py` |
 
@@ -66,27 +66,27 @@ O subagent `update` cuida do fechamento mecânico quando uma skill o aciona: reb
 ### Ideação e criação
 
 | Comando | Uso |
-| --- | --- |
+| ------------ | ----------------------------------------------------------------------- |
 | `/insight` | Capturar, desenvolver, listar ou promover uma ideia ainda sem essay-pai |
 | `/outline` | Estruturar tese, capítulos e bullets antes de escrever um essay |
 | `/essay` | Escrever um essay novo a partir de outline aprovado |
 
 ### Iteração em essay
 
-| Comando | Uso |
-| --- | --- |
-| `/expand` | Adicionar ou corrigir conteúdo substantivo |
-| `/chapter` | Adicionar, mover, fundir ou dividir seções |
-| `/continuity` | Auditar progressão lógica e narrativa |
-| `/proofread` | Corrigir português |
-| `/polish` | Melhorar estilo sem alterar conteúdo |
-| `/linkify` | Adicionar/validar links externos e referências |
-| `/review` | Peer review crítico de tese, rigor, profundidade e evidência |
+| Comando         | Uso                                                            |
+| --------------- | -------------------------------------------------------------- |
+| `/expand`     | Adicionar ou corrigir conteúdo substantivo                    |
+| `/chapter`    | Adicionar, mover, fundir ou dividir seções                   |
+| `/continuity` | Auditar progressão lógica e narrativa                        |
+| `/proofread`  | Corrigir português                                            |
+| `/polish`     | Melhorar estilo sem alterar conteúdo                          |
+| `/linkify`    | Adicionar/validar links externos e referências                |
+| `/review`     | Peer review crítico de tese, rigor, profundidade e evidência |
 
 ### Fontes e estudo
 
 | Comando | Uso |
-| --- | --- |
+| ----------- | --------------------------------------------------------------------- |
 | `/import` | Ingerir essay completo do próprio autor preservando o texto |
 | `/digest` | Resumir e arquivar fonte de terceiros; nunca gera essay |
 | `/absorb` | Incorporar fonte já processada a páginas existentes |
@@ -96,36 +96,38 @@ O subagent `update` cuida do fechamento mecânico quando uma skill o aciona: reb
 
 ### Manutenção
 
-| Comando | Uso |
-| --- | --- |
-| `/organize` | Metadados, estrutura e formatação mecânica |
-| `/sweep` | `/organize` + continuidade + português + estilo + links |
-| `/gaps` | Identificar lacunas e conexões ausentes; read-only |
-| `/connect` | Agir sobre candidatos de `/gaps` |
-| `/stats` | Dashboard read-only |
-| `/status` | Mostrar ou atualizar o estado entre sessões |
-| `/merge` | Fundir duas páginas do mesmo tipo |
-| `/delete` | Remover página com confirmação e reparo de links |
-| `/doctor` | Diagnóstico read-only do repositório |
+| Comando       | Uso                                                        |
+| ------------- | ---------------------------------------------------------- |
+| `/organize` | Metadados, estrutura e formatação mecânica              |
+| `/sweep`    | `/organize` + continuidade + português + estilo + links |
+| `/gaps`     | Identificar lacunas e conexões ausentes; read-only        |
+| `/connect`  | Agir sobre candidatos de`/gaps`                          |
+| `/stats`    | Dashboard read-only                                        |
+| `/status`   | Mostrar ou atualizar o estado entre sessões               |
+| `/merge`    | Fundir duas páginas do mesmo tipo                         |
+| `/delete`   | Remover página com confirmação e reparo de links        |
+| `/doctor`   | Diagnóstico read-only do repositório                     |
 
 ### Saída e consulta
 
-| Comando | Uso |
-| --- | --- |
-| `/handout` | Gerar resumo de uma página |
-| `/pdf` | Exportar e validar PDF |
-| `/html` | Exportar e validar HTML standalone |
-| `/query` | Consultar a wiki como base de conhecimento |
+| Comando      | Uso                                        |
+| ------------ | ------------------------------------------ |
+| `/handout` | Gerar resumo de uma página                |
+| `/pdf`     | Exportar e validar PDF                     |
+| `/html`    | Exportar e validar HTML standalone         |
+| `/query`   | Consultar a wiki como base de conhecimento |
 
 O arquivo de cada skill é a especificação completa. `conventions` não possui comando próprio.
 
 ## Requisitos
 
 Base:
+
 - Python 3
 - PyYAML
 
 Exports e checks completos:
+
 - Pandoc
 - LuaLaTeX
 - PyMuPDF
@@ -148,7 +150,3 @@ python scripts/check_repo.py --quick
 python scripts/check_skills.py
 python -m pytest -q
 ```
-
-Todo script executável deve ter comportamento útil sem argumentos. `scripts/check_script_defaults.py` verifica esse contrato.
-
-A suíte usa somente `tests/fixtures/mini-brain/`; ausência de corpus ou exports reais em um clone skeleton produz `SKIP`, não falha. Detalhes em [`TESTING.md`](./TESTING.md).
