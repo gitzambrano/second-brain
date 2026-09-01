@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import html as html_lib
 import re
+import unicodedata
 from pathlib import Path
 
 from repo_paths import ESSAYS_DIR, HTML_DIR, PDF_DIR
@@ -19,7 +20,24 @@ from sanity_common import CheckResult
 
 
 def norm(text: str) -> str:
-    return re.sub(r"\s+", " ", text).strip().casefold()
+    """Normalize text across HTML/PDF extraction backends."""
+    decomposed = unicodedata.normalize("NFKD", text)
+    without_marks = "".join(ch for ch in decomposed if not unicodedata.combining(ch))
+    return re.sub(r"\s+", " ", without_marks).strip().casefold()
+
+
+def export_heading(text: str) -> str:
+    """Return the heading text visibly emitted by the PDF exporter.
+
+    The PDF exporter moves a leading author-supplied chapter number into the
+    chapter kicker, so ``1. Introdução`` is rendered as ``Introdução``.
+    """
+    return re.sub(
+        r"^\s*(?:(?:\d+(?:\.\d+)*)|[IVXLC]+)\s*[.\-–:]\s*",
+        "",
+        text,
+        flags=re.IGNORECASE,
+    ).strip()
 
 
 def html_text(path: Path) -> tuple[str, int]:
@@ -52,7 +70,8 @@ def source_fingerprint(path: Path) -> dict:
     md = path.read_text(encoding="utf-8-sig")
     title = (re.search(r"(?m)^#\s+(.+)$", md) or [None, ""])[1].strip()
     h2 = [h.strip() for h in re.findall(r"(?m)^##\s+(.+)$", md)]
-    export_h2 = [h for h in h2 if h != "Conexões"]
+    visible_h2 = [export_heading(h) for h in h2]
+    export_h2 = [h for h in visible_h2 if norm(h) != norm("Conexões")]
     refs = re.findall(r"(?m)^\[\d+\]\s+(.+)$", md)
     ref_titles = []
     for ref in refs:
@@ -62,7 +81,7 @@ def source_fingerprint(path: Path) -> dict:
     return {
         "title": title,
         "h2": export_h2,
-        "connections": "Conexões" in h2,
+        "connections": any(norm(h) == norm("Conexões") for h in visible_h2),
         "reference_titles": ref_titles,
         "images": len(re.findall(r"!\[[^\]]*\]\([^\)]+\)", md)),
     }
@@ -103,9 +122,9 @@ def audit(slug: str | None = None) -> CheckResult:
             if norm(title) not in npdf:
                 result.error("PDF_REFERENCE_MISSING", title, source.name)
         if fp["connections"]:
-            if "conexões" in nh:
+            if norm("Conexões") in nh:
                 result.error("HTML_CONNECTIONS_EXPORTED", "Conexões should not be exported", source.name)
-            if "conexões" in npdf:
+            if norm("Conexões") in npdf:
                 result.error("PDF_CONNECTIONS_EXPORTED", "Conexões should not be exported", source.name)
         if himages < fp["images"]:
             result.error("HTML_IMAGE_COUNT", f"source {fp['images']}, HTML {himages}", source.name)

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 import re
+import unicodedata
 from pathlib import Path
 
 from repo_paths import ESSAYS_DIR, PDF_DIR
@@ -15,6 +16,13 @@ from sanity_common import CheckResult
 
 A4 = (595.28, 841.89)
 SIZE_TOLERANCE_PT = 4.0
+
+
+def norm(text: str) -> str:
+    """Normalize text extracted from PDFs for semantic comparisons."""
+    decomposed = unicodedata.normalize("NFKD", text)
+    without_marks = "".join(ch for ch in decomposed if not unicodedata.combining(ch))
+    return re.sub(r"\s+", " ", without_marks).strip().casefold()
 
 
 def _source_for(pdf: Path) -> Path | None:
@@ -65,21 +73,24 @@ def audit_file(path: Path, result: CheckResult) -> None:
                     if not isinstance(target, int) or target < 0 or target >= doc.page_count:
                         result.error("BROKEN_INTERNAL_LINK", f"page {index + 1}: invalid target {target}", path.name)
             all_text.append(text)
+
         joined = "\n".join(all_text)
-        if re.search(r"(?mi)^\s*(?:##\s*)?Conexões\s*$", joined):
+        joined_norm = norm(joined)
+        normalized_lines = [norm(line) for line in joined.splitlines()]
+        if any(re.fullmatch(r"(?:##\s*)?conexoes", line) for line in normalized_lines):
             result.error("CONEXOES_EXPORTED", "internal Conexões section is visible in PDF", path.name)
 
         source = _source_for(path)
         if source:
             md = source.read_text(encoding="utf-8-sig")
             h1 = re.search(r"(?m)^#\s+(.+)$", md)
-            if h1 and h1.group(1).strip() not in joined:
+            if h1 and norm(h1.group(1).strip()) not in joined_norm:
                 result.error("TITLE_MISSING", f"source title not found in PDF: {h1.group(1).strip()}", path.name)
-            if "Gustavo Zambrano" in md and "Gustavo Zambrano" not in joined:
+            if "Gustavo Zambrano" in md and norm("Gustavo Zambrano") not in joined_norm:
                 result.error("AUTHOR_MISSING", "author missing from rendered PDF", path.name)
-            if "## Sumário" in md and "Sumário" not in joined:
+            if "## Sumário" in md and norm("Sumário") not in joined_norm:
                 result.error("SUMARIO_MISSING", "source has Sumário but PDF text does not", path.name)
-            if "## Referências" in md and "Referências" not in joined:
+            if "## Referências" in md and norm("Referências") not in joined_norm:
                 result.error("REFERENCES_MISSING", "source has Referências but PDF text does not", path.name)
             source_images = len(re.findall(r"!\[[^\]]*\]\([^\)]+\)", md))
             if source_images and image_total < source_images:
