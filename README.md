@@ -71,8 +71,14 @@ O subagent `update` cuida do fechamento mecânico quando uma skill o aciona: reb
 
 ## Publicação
 
-Um essay só vai para o site público se o frontmatter tiver o booleano YAML `publish: true`.
-Campo ausente ou `false` é privado, e nenhuma skill altera esse campo automaticamente.
+O site tem duas camadas. O **catálogo e o mapa** cobrem a base inteira — título,
+resumo, tags, datas, status e conexões de todo essay, concept, entity, insight e
+referência. O **texto** só é legível se o frontmatter do essay tiver o booleano
+YAML `publish: true`; sem isso a página aparece marcada como privado e não abre.
+Nenhuma skill altera esse campo automaticamente.
+
+O mapa público usa os mesmos renderizadores da wiki (`build_graph.py` e
+`build_sphere.py`), alimentados com os nós já sanitizados.
 
 ```bash
 python scripts/publication.py                       # allowlist atual
@@ -82,6 +88,9 @@ python scripts/build_site.py --check
 python scripts/check_site_privacy.py
 python scripts/serve_site.py                        # inspeção local
 ```
+
+O `scripts/bootstrap_repositories.py` cria os esqueletos de `data/` e `site/` —
+só é necessário num clone novo, e sem argumentos ele apenas mostra o que faria.
 
 ## Skills
 
