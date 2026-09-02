@@ -311,12 +311,13 @@
     var note = document.getElementById('inspectorNote');
     if (node.published && node.url) {
       link.href = node.url;
+      link.firstChild.textContent = 'Abrir essay ';
       link.hidden = false;
       note.hidden = true;
     } else if (node.type === 'reference' && node.url) {
       link.href = node.url;
-      link.hidden = false;
       link.firstChild.textContent = 'Abrir referência ';
+      link.hidden = false;
       note.hidden = true;
     } else {
       link.hidden = true;
