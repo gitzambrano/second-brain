@@ -21,20 +21,25 @@ import sys
 from datetime import date
 from pathlib import Path
 
-from build_public_graph import payload as graph_payload
+import build_public_map
 from repo_paths import CODE_ROOT, SITE_ROOT, SITE_SRC_DIR
-from site_common import collect_public, plain_text, public_body_for_index
+from site_common import (
+    collect_all,
+    collect_public,
+    plain_text,
+    public_body_for_index,
+)
 
 GENERATED_ROOT_FILES = {
-    "index.html", "graph.html", "404.html",
+    "index.html", "graph.html", "sphere.html", "404.html",
     "graph.json", "search-index.json", "site-manifest.json",
 }
 GENERATED_DIRS = {"essays", "assets"}
-FRONTEND_ASSETS = ("site.css", "theme.js", "site.js", "essay.js", "graph.js")
+FRONTEND_ASSETS = ("site.css", "theme.js", "site.js", "essay.js")
 
-# Fields that would turn a graph node from an identity into readable content or
-# into a pointer at the private repository.
-GRAPH_PRIVATE_FIELDS = ("file", "htmlFile", "body", "text")
+# Fields that would turn a map node into readable body content or into a pointer
+# at the private repository. `htmlFile` is the read link and is checked on its own.
+GRAPH_PRIVATE_FIELDS = ("file", "body", "text", "path")
 
 
 def require_site_root(root: Path) -> None:
@@ -73,22 +78,36 @@ def reading_minutes(text: str) -> int:
     return max(1, round(words / WORDS_PER_MINUTE))
 
 
-def write_data(root: Path, essays) -> None:
-    """Write the machine files. They carry public identities only."""
-    allowed = {e.slug for e in essays}
-    body_text = {e.slug: plain_text(public_body_for_index(e, allowed)) for e in essays}
+def write_data(root: Path, catalogue) -> dict[str, int]:
+    """Write the machine files.
 
-    search = [{
-        "slug": e.slug,
-        "title": e.title,
-        "summary": e.summary,
-        "tags": list(e.tags),
-        "updated": e.updated,
-        "created": e.created,
-        "minutes": reading_minutes(body_text[e.slug]),
-        "url": f"essays/{e.slug}.html",
-        "text": body_text[e.slug],
-    } for e in essays]
+    The catalogue lists every essay, because the index does. Only an authorized
+    essay contributes its body: `text` powers full-text search and exists solely
+    for pages a reader can actually open.
+    """
+    allowed = {e.slug for e in catalogue if e.published}
+    body_text = {
+        e.slug: plain_text(public_body_for_index(e, allowed))
+        for e in catalogue if e.published
+    }
+
+    search = []
+    for essay in catalogue:
+        entry = {
+            "slug": essay.slug,
+            "title": essay.title,
+            "summary": essay.summary,
+            "tags": list(essay.tags),
+            "updated": essay.updated,
+            "created": essay.created,
+            "status": essay.status,
+            "published": essay.published,
+        }
+        if essay.published:
+            entry["minutes"] = reading_minutes(body_text[essay.slug])
+            entry["url"] = f"essays/{essay.slug}.html"
+            entry["text"] = body_text[essay.slug]
+        search.append(entry)
 
     def dump(name: str, data) -> None:
         (root / name).write_text(
@@ -96,28 +115,23 @@ def write_data(root: Path, essays) -> None:
         )
 
     dump("search-index.json", search)
-
-    # The graph shows the whole base — identity and connections only — while the
-    # reading index above stays restricted to authorized essays.
-    (root / "graph.json").write_text(
-        json.dumps(graph_payload(), ensure_ascii=False, separators=(",", ":")),
-        encoding="utf-8",
-    )
-
     dump("site-manifest.json", {
         "generated": date.today().isoformat(),
-        "published": [e.slug for e in essays],
-        "count": len(essays),
+        "published": sorted(allowed),
+        "count": len(allowed),
+        "catalogue": len(catalogue),
     })
-    return {e.slug: reading_minutes(body_text[e.slug]) for e in essays}
+    return {slug: reading_minutes(text) for slug, text in body_text.items()}
 
 
-def render_index(root: Path, essays, minutes: dict[str, int] | None = None) -> None:
+def render_index(root: Path, catalogue, minutes: dict[str, int] | None = None) -> None:
+    """Render the catalogue: every essay, with only the authorized ones linked."""
     minutes = minutes or {}
     template = (SITE_SRC_DIR / "index.html").read_text(encoding="utf-8")
-    tags = sorted({t for e in essays for t in e.tags}, key=str.casefold)
-    tag_counts = {t: sum(1 for e in essays if t in e.tags) for t in tags}
-    latest = sorted(essays, key=lambda e: e.updated or e.created, reverse=True)
+    tags = sorted({t for e in catalogue for t in e.tags}, key=str.casefold)
+    tag_counts = {t: sum(1 for e in catalogue if t in e.tags) for t in tags}
+    latest = sorted(catalogue, key=lambda e: e.updated or e.created, reverse=True)
+    published = [e for e in catalogue if e.published]
 
     cards = []
     for essay in latest:
@@ -128,25 +142,45 @@ def render_index(root: Path, essays, minutes: dict[str, int] | None = None) -> N
         searchable = html.escape(
             " ".join([essay.title, essay.summary, *essay.tags]).casefold(), quote=True
         )
+
+        meta = [f'<span>{html.escape(essay.updated)}</span>']
         reading = minutes.get(essay.slug, 0)
-        reading_html = (
-            f'<span class="dot" aria-hidden="true">·</span><span>{reading} min de leitura</span>'
-            if reading else ""
+        if reading:
+            meta.append('<span class="dot" aria-hidden="true">·</span>'
+                        f'<span>{reading} min de leitura</span>')
+
+        badges = []
+        if not essay.published:
+            badges.append('<span class="badge badge-private">Privado</span>')
+        if essay.status == "draft":
+            badges.append('<span class="badge badge-draft">Rascunho</span>')
+        badge_html = f'<div class="badges">{"".join(badges)}</div>' if badges else ""
+
+        inner = (
+            f'<div class="card-meta">{"".join(meta)}</div>'
+            f'{badge_html}'
+            f'<h3>{html.escape(essay.title)}</h3>'
+            f'<p>{html.escape(essay.summary)}</p>'
+            f'<div class="tags">{tag_html}</div>'
         )
+        if essay.published:
+            inner += ('<span class="read-link">Ler essay '
+                      '<span aria-hidden="true">&rarr;</span></span>')
+            body = f'<a href="essays/{html.escape(essay.slug)}.html">{inner}</a>'
+        else:
+            # No link: the text is not published, and the card must not pretend.
+            inner += '<span class="read-link muted">Não publicado</span>'
+            body = f'<div class="card-body">{inner}</div>'
+
         cards.append(
-            '<article class="essay-card"'
+            f'<article class="essay-card{"" if essay.published else " is-private"}"'
             f' data-search="{searchable}"'
             f' data-tags="{html.escape("|".join(essay.tags), quote=True)}"'
             f' data-updated="{html.escape(essay.updated, quote=True)}"'
             f' data-minutes="{reading}"'
+            f' data-published="{"1" if essay.published else "0"}"'
             f' data-title="{html.escape(essay.title, quote=True)}">'
-            f'<a href="essays/{html.escape(essay.slug)}.html">'
-            f'<div class="card-meta"><span>{html.escape(essay.updated)}</span>{reading_html}</div>'
-            f'<h3>{html.escape(essay.title)}</h3>'
-            f'<p>{html.escape(essay.summary)}</p>'
-            f'<div class="tags">{tag_html}</div>'
-            '<span class="read-link">Ler essay <span aria-hidden="true">&rarr;</span></span>'
-            '</a></article>'
+            f'{body}</article>'
         )
 
     chips = "".join(
@@ -154,10 +188,11 @@ def render_index(root: Path, essays, minutes: dict[str, int] | None = None) -> N
         f'{html.escape(t)} <span class="count">{tag_counts[t]}</span></button>'
         for t in tags
     )
-    updated = max((e.updated for e in essays if e.updated), default="—")
+    updated = max((e.updated for e in catalogue if e.updated), default="—")
 
     page = (template
-            .replace("{{COUNT}}", str(len(essays)))
+            .replace("{{COUNT}}", str(len(catalogue)))
+            .replace("{{PUBLISHED}}", str(len(published)))
             .replace("{{TAG_COUNT}}", str(len(tags)))
             .replace("{{UPDATED}}", html.escape(updated))
             .replace("{{CARDS}}", "\n".join(cards))
@@ -183,15 +218,20 @@ def render_essays(root: Path, essays, no_render: bool = False) -> None:
 
 
 def build(root: Path, no_render: bool = False):
-    essays = collect_public()
+    catalogue = collect_all()
+    essays = [e for e in catalogue if e.published]
     clean(root)
     copy_frontend(root)
-    minutes = write_data(root, essays)
-    render_index(root, essays, minutes)
-    for name in ("graph.html", "404.html"):
-        source = SITE_SRC_DIR / name
-        if source.exists():
-            shutil.copy2(source, root / name)
+    minutes = write_data(root, catalogue)
+    render_index(root, catalogue, minutes)
+
+    # The map is produced by the wiki's own renderers, on sanitized nodes.
+    nodes, edges, tag_gaps, isolated = build_public_map.build()
+    build_public_map.write(root, nodes, edges, tag_gaps, isolated)
+
+    source = SITE_SRC_DIR / "404.html"
+    if source.exists():
+        shutil.copy2(source, root / "404.html")
     render_essays(root, essays, no_render)
     return essays
 
@@ -210,31 +250,40 @@ def check(root: Path) -> list[str]:
         if set(payload.get("published", [])) != allowed:
             errors.append("manifest differs from current publish:true allowlist")
 
+    # The catalogue lists every essay. Body text and a page link belong only to
+    # the authorized ones.
     search = root / "search-index.json"
     if search.exists():
-        indexed = {x.get("slug") for x in json.loads(search.read_text(encoding="utf-8"))}
-        leaked = indexed - allowed
-        if leaked:
-            errors.append(f"private slugs in search index: {sorted(leaked)}")
+        for entry in json.loads(search.read_text(encoding="utf-8")):
+            slug = entry.get("slug")
+            if entry.get("published") and slug not in allowed:
+                errors.append(f"entry marked published but not authorized: {slug}")
+            if not entry.get("published"):
+                if entry.get("text"):
+                    errors.append(f"body text exposed for unpublished essay: {slug}")
+                if entry.get("url"):
+                    errors.append(f"unauthorized link in search index: {slug}")
 
-    # The graph deliberately contains every node. What it must never contain is
-    # readable content for, or a way into, anything outside the allowlist.
+    # The map deliberately contains every node. What it must never contain is
+    # body text, a private path, or a way into anything outside the allowlist.
     graph = root / "graph.json"
     if graph.exists():
         payload = json.loads(graph.read_text(encoding="utf-8"))
         for node in payload.get("nodes", []):
-            slug = str(node.get("id", "")).partition(":")[2]
-            readable = bool(node.get("published"))
+            node_id = node.get("id")
+            slug = str(node_id or "").partition(":")[2]
+            readable = bool(node.get("public"))
             if readable and slug not in allowed:
-                errors.append(f"node marked published but not authorized: {node.get('id')}")
-            if not readable and node.get("summary"):
-                errors.append(f"summary exposed for unpublished node: {node.get('id')}")
+                errors.append(f"node marked public but not authorized: {node_id}")
+            link = str(node.get("htmlFile") or "")
+            if link and (not readable or link != f"essays/{slug}.html"):
+                errors.append(f"unauthorized read link in map: {node_id} -> {link}")
             url = str(node.get("url") or "")
-            if url.startswith("essays/") and (not readable or url != f"essays/{slug}.html"):
-                errors.append(f"unauthorized essay link in graph: {node.get('id')} -> {url}")
+            if url and not url.startswith(("http://", "https://")):
+                errors.append(f"non-external url in map: {node_id} -> {url}")
             for field in GRAPH_PRIVATE_FIELDS:
-                if field in node:
-                    errors.append(f"private field '{field}' in graph node {node.get('id')}")
+                if node.get(field):
+                    errors.append(f"private field '{field}' in map node {node_id}")
 
     essays_dir = root / "essays"
     if essays_dir.exists():

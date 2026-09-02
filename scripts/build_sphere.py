@@ -597,6 +597,11 @@ SPHERE_HTML_TEMPLATE = """<!DOCTYPE html>
     text-transform: uppercase; color: var(--ink-dim); opacity: .75;
     border: 1px solid var(--panel-border); border-radius: 3px;
     padding: 1px 5px; vertical-align: middle; white-space: nowrap; }
+  /* Só a projeção pública usa: marca a página que aparece no mapa mas não abre. */
+  .idx-private { margin-left: 8px; font-size: 9px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--ink-dim); opacity: .6;
+    border: 1px dashed var(--panel-border); border-radius: 3px;
+    padding: 1px 5px; vertical-align: middle; white-space: nowrap; }
   .idx-read:hover { color: var(--instrument-blue); border-color: var(--instrument-blue);
     background: rgba(79,168,255,.12); }
   #reader-overlay { display: none; position: fixed; inset: 0; z-index: 60; background: var(--bg); }
@@ -1982,10 +1987,15 @@ function renderTypeIndex() {
       const draft = n.status === "draft"
         ? `<span class="idx-draft" title="Rascunho">draft</span>`
         : "";
+      // `public` só existe no build da projeção pública (build_public_map.py).
+      // No build da wiki o campo não vem e nenhum selo é desenhado.
+      const privateMark = (n.public === false)
+        ? `<span class="idx-private" title="Não publicado: aparece no mapa, não abre">privado</span>`
+        : "";
       const row = `<tr data-id="${escapeHtml(n.id)}">
       <td data-label="Título"><span style="display:flex;align-items:center;gap:8px;">${hasSummary
         ? `<button type="button" class="idx-expand" aria-label="Mostrar resumo" aria-expanded="false">▸</button> `
-        : ""}<span style="flex:1;min-width:0;">${highlightMatch(n.title, state.query)}${draft}</span>${readBtn}</span></td>
+        : ""}<span style="flex:1;min-width:0;">${highlightMatch(n.title, state.query)}${draft}${privateMark}</span>${readBtn}</span></td>
       <td class="idx-tagcell" data-label="Tags">${(n.tags || []).map(t => `<span>${escapeHtml(t)}</span>`).join("")}</td>
       <td data-label="Conexões">${n.degree}</td>
       <td data-label="Tamanho">${sizeOf(n) ? sizeOf(n) + " linhas" : "—"}</td></tr>`;

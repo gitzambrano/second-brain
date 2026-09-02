@@ -1,37 +1,41 @@
 #!/usr/bin/env python3
 """Enforce what the public site may and may not expose.
 
-The site publishes two different things, under two different rules.
+The owner's decision, which this checker encodes:
 
-The **map** (``graph.json``) deliberately carries the whole base: every essay,
-concept, entity, insight and reference, by title, plus every connection. That is
-an explicit decision — a static site cannot hide what it serves, so a node title
-here is public. What the map must never carry is readable content or a way in:
-no summary for an unpublished page, no link into ``essays/`` for one, and no
-field that points back at the private repository.
+    public   title, summary, tags, dates, draft status, connections, and the
+             external URL of a bibliography entry — for the whole base
+    private  the body of any page, any path into the private repository, and a
+             working link to anything that is not an authorized essay
 
-Everything else — the rendered pages, the reading index and the manifest — stays
-restricted to essays authorized with ``publish: true``. An unpublished essay's
-slug or title appearing there is a leak.
+So an unpublished essay is catalogued and mapped, by name and abstract, and
+cannot be opened. A static site cannot hide what it serves: everything in the
+"public" row above is readable by anyone.
+
+The maps embed their data as deflated base64 inside the HTML, so this checker
+inflates that payload and inspects the real nodes rather than grepping text.
 
 No-argument default: audit SITE_ROOT and report PASS/FAIL.
 """
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import re
+import zlib
 
-from repo_paths import ESSAYS_DIR, SITE_ROOT
-from site_common import collect_public, parse
+from repo_paths import SITE_ROOT
+from site_common import collect_all
 
-# graph.json is the map and is checked structurally, not for identities.
-MAP_FILE = "graph.json"
+MAP_FILES = ("graph.html", "sphere.html")
+MACHINE_FILES = ("search-index.json", "graph.json", "site-manifest.json")
 SCANNED_SUFFIXES = {".html", ".json"}
-MACHINE_FILES = ("search-index.json", MAP_FILE, "site-manifest.json")
 
-# Fields that would turn a map node into readable content or a private pointer.
-FORBIDDEN_NODE_FIELDS = ("file", "htmlFile", "body", "text", "path")
+# Fields that would carry body content or point back at the private repository.
+FORBIDDEN_NODE_FIELDS = ("file", "body", "text", "path")
+
+EMBEDDED_PAYLOAD = re.compile(r'id="sb-graph-data">([^<]*)<')
 
 # Generated links and metadata must never name the private repository layout.
 FORBIDDEN_PATHS = [
@@ -39,85 +43,153 @@ FORBIDDEN_PATHS = [
     r"\bwiki/sources/",
     r"\bdata/raw/",
     r"\bdata/plan/",
+    r"\.\./\.\./wiki/",
     r"\bwiki/status\.md",
     r"\bwiki/log\.md",
 ]
 
 
-def private_essays() -> tuple[set[str], list[tuple[str, str]]]:
-    """Return (authorized slugs, [(slug, title), ...] for every other essay)."""
-    allowed = {e.slug for e in collect_public()}
-    private: list[tuple[str, str]] = []
-    if ESSAYS_DIR.exists():
-        for path in sorted(ESSAYS_DIR.glob("*.md")):
-            if path.name == ".gitkeep" or path.stem in allowed:
-                continue
-            _meta, body = parse(path)
-            heading = re.search(r"(?m)^#\s+(.+)$", body)
-            private.append((path.stem, heading.group(1).strip() if heading else path.stem))
-    return allowed, private
+def inflate(encoded: str) -> dict:
+    """Undo `_deflate_b64` from build_graph: raw deflate, base64 wrapped."""
+    return json.loads(zlib.decompress(base64.b64decode(encoded), -15))
 
 
-def audit_map(allowed: set[str]) -> list[str]:
-    """The map may name everything; it may not expose or open anything."""
+def audit_nodes(nodes, allowed: set[str], where: str) -> list[str]:
+    """The map may name everything; it may not open or embody anything."""
     errors: list[str] = []
-    path = SITE_ROOT / MAP_FILE
-    if not path.exists():
-        return [f"missing {MAP_FILE}"]
-
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    for node in payload.get("nodes", []):
-        node_id = node.get("id", "?")
-        slug = str(node_id).partition(":")[2]
-        readable = bool(node.get("published"))
+    for node in nodes:
+        node_id = node.get("id")
+        slug = str(node_id or "").partition(":")[2]
+        readable = bool(node.get("public"))
 
         if readable and slug not in allowed:
-            errors.append(f"node marked published but not authorized: {node_id}")
-        if not readable and node.get("summary"):
-            errors.append(f"summary exposed for unpublished node: {node_id}")
+            errors.append(f"{where}: node marked public but not authorized: {node_id}")
+
+        link = str(node.get("htmlFile") or "")
+        if link and (not readable or link != f"essays/{slug}.html"):
+            errors.append(f"{where}: unauthorized read link: {node_id} -> {link}")
 
         url = str(node.get("url") or "")
-        if url.startswith("essays/") and (not readable or url != f"essays/{slug}.html"):
-            errors.append(f"unauthorized essay link in map: {node_id} -> {url}")
-        if url and not url.startswith(("essays/", "http://", "https://")):
-            errors.append(f"suspicious url in map: {node_id} -> {url}")
+        if url and not url.startswith(("http://", "https://")):
+            errors.append(f"{where}: non-external url: {node_id} -> {url}")
 
         for field in FORBIDDEN_NODE_FIELDS:
-            if field in node:
-                errors.append(f"private field '{field}' in map node {node_id}")
+            if node.get(field):
+                errors.append(f"{where}: private field '{field}' on node {node_id}")
+    return errors
+
+
+def audit_maps(allowed: set[str]) -> list[str]:
+    errors: list[str] = []
+
+    data = SITE_ROOT / "graph.json"
+    if data.exists():
+        payload = json.loads(data.read_text(encoding="utf-8"))
+        errors.extend(audit_nodes(payload.get("nodes", []), allowed, "graph.json"))
+
+    for name in MAP_FILES:
+        path = SITE_ROOT / name
+        if not path.exists():
+            errors.append(f"missing {name}")
+            continue
+        match = EMBEDDED_PAYLOAD.search(path.read_text(encoding="utf-8"))
+        if not match:
+            errors.append(f"{name}: embedded graph payload not found")
+            continue
+        try:
+            payload = inflate(match.group(1))
+        except (ValueError, zlib.error) as exc:
+            errors.append(f"{name}: embedded payload unreadable: {exc}")
+            continue
+        errors.extend(audit_nodes(payload.get("nodes", []), allowed, name))
+    return errors
+
+
+def audit_catalogue(allowed: set[str]) -> list[str]:
+    """The reading index catalogues everything; only the authorized carry text."""
+    errors: list[str] = []
+    path = SITE_ROOT / "search-index.json"
+    if not path.exists():
+        return errors
+    for entry in json.loads(path.read_text(encoding="utf-8")):
+        slug = entry.get("slug")
+        if entry.get("published"):
+            if slug not in allowed:
+                errors.append(f"search index: published but not authorized: {slug}")
+        else:
+            if entry.get("text"):
+                errors.append(f"search index: body text for unpublished essay: {slug}")
+            if entry.get("url"):
+                errors.append(f"search index: link for unpublished essay: {slug}")
+    return errors
+
+
+def audit_pages(allowed: set[str]) -> list[str]:
+    """Only an authorized essay may have a rendered page."""
+    errors: list[str] = []
+    essays_dir = SITE_ROOT / "essays"
+    if essays_dir.exists():
+        extra = {p.stem for p in essays_dir.glob("*.html")} - allowed
+        if extra:
+            errors.append(f"rendered page for unauthorized essay: {sorted(extra)}")
+    return errors
+
+
+def audit_bodies() -> list[str]:
+    """No unpublished essay's prose may appear anywhere in the output."""
+    errors: list[str] = []
+    unpublished = [e for e in collect_all() if not e.published]
+    if not unpublished:
+        return errors
+
+    probes = []
+    for essay in unpublished:
+        # Skip the frontmatter-derived lines and take a distinctive sentence.
+        words = [w for w in " ".join(essay.body.split()).split(" ") if w]
+        for start in (60, 200, 400):
+            window = " ".join(words[start:start + 12])
+            if len(window) > 60:
+                probes.append((essay.slug, window))
+                break
+
+    blobs = []
+    for path in sorted(SITE_ROOT.rglob("*")):
+        if path.is_file() and path.suffix.lower() in SCANNED_SUFFIXES:
+            blobs.append((path.relative_to(SITE_ROOT), path.read_text(
+                encoding="utf-8", errors="replace")))
+
+    for slug, probe in probes:
+        for rel, text in blobs:
+            if probe in text:
+                errors.append(f"body text of unpublished essay '{slug}' found in {rel}")
+                break
     return errors
 
 
 def audit() -> list[str]:
     errors: list[str] = []
-    allowed, private = private_essays()
+    if not SITE_ROOT.exists():
+        return [f"SITE_ROOT does not exist: {SITE_ROOT}"]
+
+    allowed = {e.slug for e in collect_all() if e.published}
 
     for name in MACHINE_FILES:
         if not (SITE_ROOT / name).exists():
             errors.append(f"missing {name}")
 
-    if not SITE_ROOT.exists():
-        return errors
-
-    errors.extend(audit_map(allowed))
+    errors.extend(audit_maps(allowed))
+    errors.extend(audit_catalogue(allowed))
+    errors.extend(audit_pages(allowed))
+    errors.extend(audit_bodies())
 
     for path in sorted(SITE_ROOT.rglob("*")):
         if not path.is_file() or path.suffix.lower() not in SCANNED_SUFFIXES:
             continue
-        rel = path.relative_to(SITE_ROOT)
         text = path.read_text(encoding="utf-8", errors="replace")
-
-        # Outside the map, an unpublished essay must not exist at all.
-        if path.name != MAP_FILE:
-            for slug, title in private:
-                if slug and slug in text:
-                    errors.append(f"private essay slug leaked in {rel}: {slug}")
-                if title and title in text:
-                    errors.append(f"private essay title leaked in {rel}: {title}")
-
         for pattern in FORBIDDEN_PATHS:
             if re.search(pattern, text, re.I):
-                errors.append(f"private path leaked in {rel}: {pattern}")
+                errors.append(
+                    f"private path leaked in {path.relative_to(SITE_ROOT)}: {pattern}")
 
     return errors
 

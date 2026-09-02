@@ -228,9 +228,14 @@ h1, h2, h3, h4 {
 }
 .masthead-lede {
   max-width: 62ch;
-  margin: 0 0 18px;
+  margin: 0 0 6px;
   color: var(--muted);
   font-size: 17px;
+}
+.masthead-author {
+  margin: 0 0 18px;
+  color: var(--faint);
+  font-size: 14px;
 }
 .masthead-stats {
   display: flex;
@@ -449,6 +454,25 @@ h1, h2, h3, h4 {
 }
 .read-link span { transition: transform 0.16s var(--ease); display: inline-block; }
 .essay-card:hover .read-link span { transform: translateX(3px); }
+
+/* An unpublished essay is catalogued, not linked: the card carries its title,
+   summary and badges, and says plainly that the text is not published. */
+.essay-card.is-private { border-style: dashed; }
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  padding: 22px;
+}
+.essay-card .badges { margin: 0; }
+.read-link.muted {
+  color: var(--faint);
+  font-weight: 500;
+}
+
+/* The summary is the point of the catalogue; give it room to breathe. */
+.essay-card p { -webkit-line-clamp: 6; }
 
 /* Compact list view -------------------------------------------------------- */
 

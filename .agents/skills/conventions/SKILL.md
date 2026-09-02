@@ -103,23 +103,36 @@ Para skills que editam prosa:
 
 ## Publicação
 
-`publish:` é uma **allowlist de segurança**, não taxonomia. Nunca use `tags:` para
-controlar privacidade: `tags:` descreve assunto, `publish:` decide exposição pública.
+`publish:` controla **leitura**, não visibilidade no catálogo. Nunca use `tags:`
+para controlar exposição: `tags:` descreve assunto, `publish:` decide quem pode
+ler o texto.
+
+O site tem duas camadas:
+
+| Camada | Alcance | Conteúdo |
+| --- | --- | --- |
+| Catálogo e mapa | base inteira | título, resumo, tags, datas, status, conexões |
+| Texto | só `publish: true` | corpo renderizado, busca full-text, link que abre |
 
 | Valor no frontmatter | Resultado |
 | --- | --- |
-| campo ausente | privado |
-| `publish: false` | privado |
-| `publish: "true"` (string) | inválido; tratado como privado |
-| `publish: true` (booleano YAML) | autorizado a entrar no site público |
+| campo ausente | catalogado como privado; não abre |
+| `publish: false` | catalogado como privado; não abre |
+| `publish: "true"` (string) | inválido; tratado como não publicado |
+| `publish: true` (booleano YAML) | texto legível no site |
 
 Regras:
 
-- só se aplica a **essays**; source, concept, entity, insight, handout, status, log e plano nunca são publicados;
+- `publish:` só se aplica a **essays**; nenhuma outra página tem o campo;
 - nenhuma skill de escrita, revisão ou organização define ou altera `publish:` automaticamente — é decisão explícita do Usuário;
-- a projeção pública deriva somente de essays autorizados;
-- conexão interna para página privada nunca vira nó ou aresta do grafo público, e o wikilink não pode expor slug nem título privado;
-- imagem só é copiada para o site se for referenciada por um essay público **e** estiver dentro de `DATA_ROOT/wiki/assets`.
+- o corpo de uma página não autorizada nunca é renderizado, indexado ou linkado;
+- nenhum caminho para dentro de `data/` pode aparecer na saída pública;
+- imagem só é copiada para o site se for referenciada por um essay publicado **e** estiver dentro de `DATA_ROOT/wiki/assets`;
+- um essay não publicado aparece no catálogo e no mapa com o selo **privado**, e em rascunho com **draft**.
+
+Um site estático não esconde o que serve: título e resumo publicados no catálogo
+são legíveis por qualquer pessoa. A troca é deliberada — o mapa é público, o
+texto não.
 
 Aplicação e verificação ficam em `scripts/publication.py`, `scripts/check_publication.py`
 e `scripts/check_site_privacy.py`. Detalhes de implementação do site não pertencem aqui.

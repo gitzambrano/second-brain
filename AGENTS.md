@@ -153,22 +153,36 @@ A fonte normativa para tags, tipos, status, manifesto/mapa e regras de reuso é 
 
 ## Publicação
 
-Publicação é uma **allowlist de segurança**, não taxonomia. O controle é o campo
-booleano opcional `publish:` no frontmatter do essay.
+O site público tem **duas camadas**, com regras diferentes.
 
-- campo ausente = privado;
-- `publish: false` = privado;
-- somente o booleano YAML `true` autoriza projeção pública;
-- `publish: "true"` (string) é inválido e tratado como privado;
+**Catálogo e mapa — públicos para a base inteira.** O índice lista todos os
+essays e o grafo mostra todos os essays, concepts, entities, insights e
+referências, com título, resumo, tags, datas, status e conexões. É um atlas: a
+forma do conhecimento é pública.
+
+**Texto — só por allowlist.** O corpo de uma página só é renderizado, indexado
+para busca e linkável se o essay tiver o booleano YAML `publish: true`.
+
+- campo ausente = não publicado;
+- `publish: false` = não publicado;
+- somente o booleano YAML `true` autoriza a leitura;
+- `publish: "true"` (string) é inválido e tratado como não publicado;
 - só se aplica a essays — nunca a source, concept, entity, insight, handout, status, log ou plano.
+
+O que **nunca** sai do repo privado: o corpo de qualquer página, qualquer caminho
+para dentro de `data/`, e qualquer link que abra uma página não autorizada. Um
+essay não publicado aparece no catálogo e no mapa marcado como **privado**, e não
+abre.
+
+Um site estático não esconde o que serve: título e resumo no catálogo são
+legíveis por qualquer pessoa. Essa é a troca deliberada.
 
 Nenhuma skill define ou altera `publish:` automaticamente. Nem `/review`, nem
 `/import`, nem `/organize`, nem o subagent `update`. É decisão explícita do Usuário,
 aplicada por `scripts/publication.py`.
 
 `scripts/build_site.py` roda **apenas** sob pedido explícito de publicação, e o
-resultado precisa passar em `scripts/check_site_privacy.py`. Conexões internas para
-páginas privadas nunca viram nó ou aresta do grafo público.
+resultado precisa passar em `scripts/check_site_privacy.py`.
 
 Regras completas em `conventions/SKILL.md`.
 

@@ -34,6 +34,7 @@ class PublicEssay:
     created: str
     status: str
     body: str
+    published: bool = True
 
 
 def parse(path: Path) -> tuple[dict[str, Any], str]:
@@ -68,31 +69,45 @@ def strip_public_body(body: str) -> str:
     return "\n".join(lines).strip()
 
 
-def collect_public() -> list[PublicEssay]:
-    """Every essay explicitly authorized for publication, in slug order."""
+def _essay(path: Path, meta: dict, body: str, published: bool) -> PublicEssay:
+    heading = H1_RE.search(body)
+    tags = meta.get("tags") or []
+    if not isinstance(tags, list):
+        tags = []
+    return PublicEssay(
+        slug=path.stem,
+        path=path,
+        title=heading.group(1).strip() if heading else path.stem,
+        summary=str(meta.get("summary") or "").strip(),
+        tags=tuple(str(t) for t in tags),
+        updated=str(meta.get("updated") or ""),
+        created=str(meta.get("created") or ""),
+        status=str(meta.get("status") or ""),
+        body=body,
+        published=published,
+    )
+
+
+def collect_all() -> list[PublicEssay]:
+    """Every essay in the corpus, each flagged with whether it may be read.
+
+    The catalogue lists all of them — title, summary, tags, status. Only the
+    authorized ones carry a page, and only their body is ever rendered.
+    """
     if not ESSAYS_DIR.exists():
         return []
     essays = []
     for path in sorted(ESSAYS_DIR.glob("*.md")):
-        meta, body = parse(path)
-        if meta.get("publish") is not True:
+        if path.name == ".gitkeep":
             continue
-        heading = H1_RE.search(body)
-        tags = meta.get("tags") or []
-        if not isinstance(tags, list):
-            tags = []
-        essays.append(PublicEssay(
-            slug=path.stem,
-            path=path,
-            title=heading.group(1).strip() if heading else path.stem,
-            summary=str(meta.get("summary") or "").strip(),
-            tags=tuple(str(t) for t in tags),
-            updated=str(meta.get("updated") or ""),
-            created=str(meta.get("created") or ""),
-            status=str(meta.get("status") or ""),
-            body=body,
-        ))
+        meta, body = parse(path)
+        essays.append(_essay(path, meta, body, meta.get("publish") is True))
     return essays
+
+
+def collect_public() -> list[PublicEssay]:
+    """Every essay explicitly authorized for publication, in slug order."""
+    return [essay for essay in collect_all() if essay.published]
 
 
 def public_connections(essay: PublicEssay, allowed: set[str]) -> list[str]:

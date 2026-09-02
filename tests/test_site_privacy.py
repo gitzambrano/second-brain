@@ -1,27 +1,30 @@
 """Sentinel leak test for the public projection.
 
-The site exposes two surfaces under two different rules, and this test pins both:
+The owner's published surface is deliberately wide and its floor is hard:
 
-* the **map** (`graph.json`) names every page in the base and how they connect —
-  that is deliberate — but must never carry a private page's body, summary or a
-  link that opens it;
-* everything else (rendered pages, reading index, manifest) is restricted to
-  essays authorized with `publish: true`.
+* the catalogue and the map name **every** essay, with title, summary, tags and
+  draft status — that is the point of an atlas;
+* the **body** of an unpublished essay never leaves the private repository, it
+  gets no rendered page, and nothing on the site links to it.
 
-Do not weaken this test. Widening what the map may expose is a decision about
+Do not weaken this test. Widening what the site may expose is a decision about
 the owner's privacy, not a refactor.
 """
+import base64
 import json
 import os
+import re
 import subprocess
 import sys
+import zlib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-SENTINEL = "SENTINELA_PRIVADA_49A1"
+SENTINEL = "SENTINELA_PRIVADA_49A1_UMA_FRASE_LONGA_E_DISTINTA_DO_CORPO_PRIVADO"
 PRIVATE_SLUG = "segredo-ultra-privado"
 PRIVATE_TITLE = "SEGREDO ULTRA PRIVADO"
+EMBEDDED_PAYLOAD = re.compile(r'id="sb-graph-data">([^<]*)<')
 
 
 def essay(path, title, publish, body="Corpo."):
@@ -62,6 +65,14 @@ def build(tmp_path):
     return site, env
 
 
+def map_nodes(site):
+    """Inflate the payload the browser actually receives."""
+    match = EMBEDDED_PAYLOAD.search((site / "graph.html").read_text(encoding="utf-8"))
+    assert match, "graph.html carries no embedded payload"
+    payload = json.loads(zlib.decompress(base64.b64decode(match.group(1)), -15))
+    return {node["id"]: node for node in payload["nodes"]}
+
+
 def test_private_body_never_reaches_the_site(tmp_path):
     site, _env = build(tmp_path)
     combined = "\n".join(
@@ -71,47 +82,52 @@ def test_private_body_never_reaches_the_site(tmp_path):
     assert SENTINEL not in combined
 
 
-def test_private_identity_is_absent_outside_the_map(tmp_path):
+def test_unpublished_essay_has_no_page_and_nothing_links_to_it(tmp_path):
     site, _env = build(tmp_path)
+    assert not (site / "essays" / f"{PRIVATE_SLUG}.html").exists()
     for path in site.rglob("*"):
-        if not path.is_file() or path.name == "graph.json":
-            continue
-        text = path.read_text(encoding="utf-8", errors="ignore")
-        assert PRIVATE_SLUG not in text, path.name
-        assert PRIVATE_TITLE not in text, path.name
+        if path.is_file() and path.suffix in {".html", ".json"}:
+            text = path.read_text(encoding="utf-8", errors="ignore")
+            assert f"essays/{PRIVATE_SLUG}.html" not in text, path.name
 
 
-def test_map_names_the_private_essay_but_never_opens_it(tmp_path):
+def test_map_catalogues_the_private_essay_but_never_opens_it(tmp_path):
     site, _env = build(tmp_path)
-    graph = json.loads((site / "graph.json").read_text(encoding="utf-8"))
-    nodes = {n["id"]: n for n in graph["nodes"]}
+    nodes = map_nodes(site)
 
     private = nodes[f"essay:{PRIVATE_SLUG}"]
-    assert private["published"] is False
-    assert "summary" not in private, "an unpublished page must not ship its summary"
-    assert "url" not in private, "an unpublished page must not be openable"
+    assert private["public"] is False
+    assert not private.get("htmlFile"), "an unpublished essay must not be openable"
+    assert not private.get("file"), "no path into the private repository"
     assert SENTINEL not in json.dumps(private, ensure_ascii=False)
 
     public = nodes["essay:dutch-roll"]
-    assert public["published"] is True
-    assert public["url"] == "essays/dutch-roll.html"
-
-    # The connection between them is part of the map.
-    pairs = {tuple(sorted((e["source"], e["target"]))) for e in graph["edges"]}
-    assert tuple(sorted(("essay:dutch-roll", f"essay:{PRIVATE_SLUG}"))) in pairs
+    assert public["public"] is True
+    assert public["htmlFile"] == "essays/dutch-roll.html"
 
 
-def test_reading_index_holds_only_authorized_essays(tmp_path):
+def test_catalogue_lists_every_essay_but_only_publishes_bodies(tmp_path):
     site, _env = build(tmp_path)
     search = json.loads((site / "search-index.json").read_text(encoding="utf-8"))
-    assert [entry["slug"] for entry in search] == ["dutch-roll"]
+    by_slug = {entry["slug"]: entry for entry in search}
+    assert set(by_slug) == {"dutch-roll", PRIVATE_SLUG}
+
+    private = by_slug[PRIVATE_SLUG]
+    assert private["published"] is False
+    assert "text" not in private, "the body of an unpublished essay is never indexed"
+    assert "url" not in private, "an unpublished essay is not linkable"
+
+    published = by_slug["dutch-roll"]
+    assert published["published"] is True
+    assert published["url"] == "essays/dutch-roll.html"
 
     manifest = json.loads((site / "site-manifest.json").read_text(encoding="utf-8"))
     assert manifest["published"] == ["dutch-roll"]
+    assert manifest["catalogue"] == 2
 
 
 def test_privacy_checker_accepts_the_generated_site(tmp_path):
-    site, env = build(tmp_path)
+    _site, env = build(tmp_path)
     proc = subprocess.run(
         [sys.executable, str(ROOT / "scripts/check_site_privacy.py"), "--json"],
         cwd=ROOT, env=env, capture_output=True, text=True,
@@ -119,17 +135,16 @@ def test_privacy_checker_accepts_the_generated_site(tmp_path):
     )
     assert proc.returncode == 0, proc.stdout + proc.stderr
     assert json.loads(proc.stdout)["status"] == "pass"
-    assert site.exists()
 
 
-def test_privacy_checker_rejects_a_leaked_summary(tmp_path):
-    """The checker must actually fail when the map exposes readable content."""
+def test_privacy_checker_rejects_a_forged_read_link(tmp_path):
+    """The checker must actually fail when the map offers a way in."""
     site, env = build(tmp_path)
     graph_path = site / "graph.json"
     graph = json.loads(graph_path.read_text(encoding="utf-8"))
     for node in graph["nodes"]:
         if node["id"] == f"essay:{PRIVATE_SLUG}":
-            node["summary"] = "conteúdo que não deveria vazar"
+            node["htmlFile"] = f"essays/{PRIVATE_SLUG}.html"
     graph_path.write_text(json.dumps(graph, ensure_ascii=False), encoding="utf-8")
 
     proc = subprocess.run(
@@ -139,4 +154,4 @@ def test_privacy_checker_rejects_a_leaked_summary(tmp_path):
     )
     assert proc.returncode == 1
     errors = json.loads(proc.stdout)["errors"]
-    assert any("summary exposed" in e for e in errors), errors
+    assert any("unauthorized read link" in e for e in errors), errors
