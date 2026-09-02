@@ -1,8 +1,7 @@
 /* Library interactions: search, tag filter, sort, and three view modes
-   (grid, compact list, grouped by theme). Plus a small live preview of the
-   public graph in the hero panel. All data comes from the cards already
-   rendered by build_site.py, so the page works with JavaScript disabled
-   down to a plain list of essays. */
+   (grid, compact list, grouped by theme). Everything reads the cards already
+   rendered by build_site.py, so with JavaScript disabled the page degrades to
+   a plain list of every published essay. */
 (function () {
   'use strict';
 
@@ -167,86 +166,4 @@
   });
 
   apply();
-
-  /* --- Hero graph preview ------------------------------------------------ */
-
-  var canvas = document.getElementById('heroGraph');
-  if (!canvas || !window.requestAnimationFrame) return;
-
-  fetch('graph.json', { cache: 'no-store' })
-    .then(function (response) { return response.json(); })
-    .then(function (data) { drawPreview(canvas, data); })
-    .catch(function () { canvas.remove(); });
-
-  function drawPreview(target, data) {
-    var ctx = target.getContext('2d');
-    var nodes = (data.nodes || []).map(function (node, i) {
-      var angle = i * 2.399;
-      var radius = Math.sqrt(i + 1) * 22;
-      return { x: Math.cos(angle) * radius, y: Math.sin(angle) * radius, node: node };
-    });
-    var index = {};
-    nodes.forEach(function (item) { index[item.node.id] = item; });
-    var edges = (data.edges || []).map(function (edge) {
-      return [index[edge.source], index[edge.target]];
-    }).filter(function (pair) { return pair[0] && pair[1]; });
-
-    var width = 0;
-    var height = 0;
-    var frame = 0;
-
-    function resize() {
-      var ratio = window.devicePixelRatio || 1;
-      var rect = target.getBoundingClientRect();
-      width = rect.width;
-      height = rect.height;
-      target.width = Math.max(1, Math.round(width * ratio));
-      target.height = Math.max(1, Math.round(height * ratio));
-      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
-    }
-
-    function draw() {
-      if (!width || !height) resize();
-      var styles = getComputedStyle(document.documentElement);
-      var accent = styles.getPropertyValue('--accent').trim() || '#7aabff';
-      var line = styles.getPropertyValue('--line-strong').trim() || 'rgba(255,255,255,.3)';
-
-      ctx.clearRect(0, 0, width, height);
-      ctx.save();
-      ctx.translate(width / 2, height / 2);
-
-      var drift = Math.sin(frame / 220) * 6;
-
-      ctx.strokeStyle = line;
-      ctx.lineWidth = 1;
-      edges.forEach(function (pair) {
-        ctx.beginPath();
-        ctx.moveTo(pair[0].x + drift, pair[0].y);
-        ctx.lineTo(pair[1].x - drift, pair[1].y);
-        ctx.stroke();
-      });
-
-      nodes.forEach(function (item, i) {
-        var pulse = 1 + Math.sin((frame + i * 40) / 90) * 0.18;
-        ctx.beginPath();
-        ctx.arc(item.x + drift * 0.4, item.y, 4 * pulse, 0, Math.PI * 2);
-        ctx.fillStyle = accent;
-        ctx.globalAlpha = 0.85;
-        ctx.fill();
-        ctx.globalAlpha = 0.16;
-        ctx.beginPath();
-        ctx.arc(item.x + drift * 0.4, item.y, 13 * pulse, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.globalAlpha = 1;
-      });
-
-      ctx.restore();
-      frame += 1;
-      requestAnimationFrame(draw);
-    }
-
-    resize();
-    window.addEventListener('resize', resize);
-    draw();
-  }
 })();

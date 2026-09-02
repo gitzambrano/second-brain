@@ -21,13 +21,9 @@ import sys
 from datetime import date
 from pathlib import Path
 
+from build_public_graph import payload as graph_payload
 from repo_paths import CODE_ROOT, SITE_ROOT, SITE_SRC_DIR
-from site_common import (
-    collect_public,
-    plain_text,
-    public_body_for_index,
-    public_connections,
-)
+from site_common import collect_public, plain_text, public_body_for_index
 
 GENERATED_ROOT_FILES = {
     "index.html", "graph.html", "404.html",
@@ -35,6 +31,10 @@ GENERATED_ROOT_FILES = {
 }
 GENERATED_DIRS = {"essays", "assets"}
 FRONTEND_ASSETS = ("site.css", "theme.js", "site.js", "essay.js", "graph.js")
+
+# Fields that would turn a graph node from an identity into readable content or
+# into a pointer at the private repository.
+GRAPH_PRIVATE_FIELDS = ("file", "htmlFile", "body", "text")
 
 
 def require_site_root(root: Path) -> None:
@@ -90,31 +90,20 @@ def write_data(root: Path, essays) -> None:
         "text": body_text[e.slug],
     } for e in essays]
 
-    nodes = [{
-        "id": e.slug,
-        "title": e.title,
-        "summary": e.summary,
-        "tags": list(e.tags),
-        "updated": e.updated,
-        "url": f"essays/{e.slug}.html",
-    } for e in essays]
-
-    edges = []
-    seen = set()
-    for essay in essays:
-        for target in public_connections(essay, allowed):
-            key = tuple(sorted((essay.slug, target)))
-            if key not in seen:
-                seen.add(key)
-                edges.append({"source": essay.slug, "target": target})
-
-    def dump(name: str, payload) -> None:
+    def dump(name: str, data) -> None:
         (root / name).write_text(
-            json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8"
+            json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
         )
 
     dump("search-index.json", search)
-    dump("graph.json", {"nodes": nodes, "edges": edges})
+
+    # The graph shows the whole base — identity and connections only — while the
+    # reading index above stays restricted to authorized essays.
+    (root / "graph.json").write_text(
+        json.dumps(graph_payload(), ensure_ascii=False, separators=(",", ":")),
+        encoding="utf-8",
+    )
+
     dump("site-manifest.json", {
         "generated": date.today().isoformat(),
         "published": [e.slug for e in essays],
@@ -228,15 +217,24 @@ def check(root: Path) -> list[str]:
         if leaked:
             errors.append(f"private slugs in search index: {sorted(leaked)}")
 
+    # The graph deliberately contains every node. What it must never contain is
+    # readable content for, or a way into, anything outside the allowlist.
     graph = root / "graph.json"
     if graph.exists():
         payload = json.loads(graph.read_text(encoding="utf-8"))
-        leaked = {x.get("id") for x in payload.get("nodes", [])} - allowed
-        if leaked:
-            errors.append(f"private graph nodes: {sorted(leaked)}")
-        for edge in payload.get("edges", []):
-            if edge.get("source") not in allowed or edge.get("target") not in allowed:
-                errors.append(f"private graph edge: {edge}")
+        for node in payload.get("nodes", []):
+            slug = str(node.get("id", "")).partition(":")[2]
+            readable = bool(node.get("published"))
+            if readable and slug not in allowed:
+                errors.append(f"node marked published but not authorized: {node.get('id')}")
+            if not readable and node.get("summary"):
+                errors.append(f"summary exposed for unpublished node: {node.get('id')}")
+            url = str(node.get("url") or "")
+            if url.startswith("essays/") and (not readable or url != f"essays/{slug}.html"):
+                errors.append(f"unauthorized essay link in graph: {node.get('id')} -> {url}")
+            for field in GRAPH_PRIVATE_FIELDS:
+                if field in node:
+                    errors.append(f"private field '{field}' in graph node {node.get('id')}")
 
     essays_dir = root / "essays"
     if essays_dir.exists():
