@@ -80,6 +80,10 @@ ROOT_DIR = CODE_ROOT
 OUTPUT_DIR = HTML_DIR
 TEMPLATE_PATH = Path(__file__).parent / "essay_template.html"
 
+# Shared with render_public_essay.py: the site must read markdown exactly as
+# the export does, or the two renderings drift.
+PANDOC_FROM = 'markdown+smart+tex_math_dollars+pipe_tables+strikeout+superscript+subscript-implicit_figures+gfm_auto_identifiers+lists_without_preceding_blankline'
+
 
 def parse_byline(body):
     """Extract (subtitle, author_date) from the two blockquote byline lines."""
@@ -297,7 +301,7 @@ def export_essay(filepath, output_dir=None, source_dir=None):
         # escreve a legenda em prosa ("Figura 4. Variação..."). Com a extensão
         # ligada, o Pandoc também envolve a imagem num <figure> com <figcaption>
         # tirada do alt text, duplicando a legenda acima da que o autor escreveu.
-        '-f', 'markdown+smart+tex_math_dollars+pipe_tables+strikeout+superscript+subscript-implicit_figures+gfm_auto_identifiers+lists_without_preceding_blankline',
+        '-f', PANDOC_FROM,
 
     ]
 

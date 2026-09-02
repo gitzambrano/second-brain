@@ -155,10 +155,18 @@ def sanitize_private_wikilinks(markdown: str, allowed_public: set[str]) -> str:
     a neutral placeholder, so neither the private slug nor its title leaks.
     """
     def replace(match: re.Match[str]) -> str:
-        target = (match.group(1) or "").split("#", 1)[0].strip()
+        raw = (match.group(1) or "").strip()
         display = (match.group(2) or "").strip()
+
+        # `[[#Capítulo]]` points inside this very page — it is the essay's own
+        # table of contents. Leave it for the renderer to turn into an anchor;
+        # treating it as a foreign page destroyed every Sumário.
+        if raw.startswith("#"):
+            return match.group(0)
+
+        target = raw.split("#", 1)[0].strip()
         if target in allowed_public:
-            return display or target
+            return match.group(0)
         return display or "referência interna"
 
     return WIKILINK_RE.sub(replace, markdown)

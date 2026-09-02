@@ -322,20 +322,8 @@ h1, h2, h3, h4 {
   color: var(--text-strong);
 }
 
-.filter-more {
-  padding: 7px 14px;
-  border: 1px dashed var(--line-strong);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--muted);
-  font-size: 13px;
-  cursor: pointer;
-}
-.filter-more:hover { color: var(--text); }
 
 /* Tags are a filter, not the front page: only the first row shows until asked. */
-.filters:not(.expanded) .filter-chip.overflow { display: none; }
-.filters.expanded .filter-more { display: none; }
 
 /* Summaries collapse in every view, not just the list. */
 .library.no-summaries .essay-card p { display: none; }
@@ -544,12 +532,53 @@ h1, h2, h3, h4 {
   color: var(--text-strong);
 }
 
+/* The themes panel opens on demand; the bar above it stays one line. */
+.filters-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.tag-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tag-toggle:hover { border-color: var(--line-strong); color: var(--text); }
+.tag-toggle[aria-expanded="true"] {
+  border-color: transparent;
+  background: var(--accent-soft);
+  color: var(--text-strong);
+}
+.tag-toggle-current {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--muted) 14%, transparent);
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 500;
+}
+
 .filters {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 28px;
+  margin-bottom: 24px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
 }
+.filters[hidden] { display: none !important; }
 .filter-chip {
   display: inline-flex;
   align-items: center;
@@ -1393,6 +1422,8 @@ h1, h2, h3, h4 {
   .segmented { width: 100%; }
   .segmented button { flex: 1; }
 
+  .cover-map { height: 150px; }
+  .filters-bar { flex-wrap: wrap; }
   .essay-grid { grid-template-columns: 1fr; }
   .essay-grid.as-list .essay-card > a,
 .essay-grid.as-list .essay-card > .card-body {

@@ -1,98 +1,97 @@
-const body=document.getElementById('articleBody'),toc=document.getElementById('toc'),heads=[...body.querySelectorAll('h2,h3')],used=new Map();function slug(s){let v=s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9\s-]/g,'').trim().replace(/[\s-]+/g,'-')||'section',n=used.get(v)||0;used.set(v,n+1);return n?`${v}-${n+1}`:v}for(const h of heads){if(!h.id)h.id=slug(h.textContent);const a=document.createElement('a');a.href=`#${h.id}`;a.textContent=h.textContent;if(h.tagName==='H3')a.classList.add('h3');toc?.appendChild(a)}const links=[...(toc?.querySelectorAll('a')||[])],io=new IntersectionObserver(es=>{for(const e of es)if(e.isIntersecting)links.forEach(a=>a.classList.toggle('active',a.getAttribute('href')===`#${e.target.id}`))},{rootMargin:'-20% 0px -70% 0px'});heads.forEach(h=>io.observe(h));const words=(body?.innerText.trim().match(/\S+/g)||[]).length;document.getElementById('readingTime').textContent=Math.max(1,Math.round(words/220));const p=document.getElementById('readingProgress');addEventListener('scroll',()=>{const d=document.documentElement,m=d.scrollHeight-innerHeight;p.style.width=`${m>0?(scrollY/m)*100:0}%`},{passive:true});
-
-/* Gold chapter breaks: the prose arrives from Pandoc without the label, so the
-   kicker is inserted here. Self-numbered titles ("## 3. ...") hide their number
-   and show CAPÍTULO N; semantic sections keep their word; otherwise a local
-   counter numbers them. References gets a fixed REFERÊNCIAS label. */
+/* Site chrome for an exported essay: floating summary, reading progress and
+   the theme toggle. The essay body itself is rendered by the export pipeline
+   and is not touched here. */
 (function () {
-  var content = document.getElementById('articleBody');
-  if (!content) return;
-  var h2s = [...content.querySelectorAll('h2:not(#sum\u00e1rio):not(#refer\u00eancias):not(#referencias)')];
-  if (!h2s.length) return;
-  var selfNum = h2s.some(function (h) {
-    return /^\s*(?:(?:se[çc][aã]o|cap[íi]tulo|parte)\s+)?(?:\d+|[IVXLC]+)[.\s—–:-]/i.test(h.textContent);
-  });
-  var SECTION_RE = /^\s*(?:(?:se[çc][aã]o|cap[íi]tulo|parte)\s*)?(?:\d+|[IVXLC]+)?\s*[.:\-—–]?\s*(introdu[çc][aã]o|conclus[aã]o|resumo(?:\s+executivo)?|pref[áa]cio|pr[óo]logo|ep[íi]logo|posf[áa]cio|p[óo]s-?escrito|agradecimentos|ap[êe]ndice|anexos?)\b/i;
-  function stripSelfNumber(h) {
-    var n = h.firstChild;
-    while (n && n.nodeType !== 3) n = n.nextSibling;
-    if (!n) return null;
-    var m = /^\s*((?:(?:se[çc][aã]o|cap[íi]tulo|parte)\s+)?((?:\d+|[IVXLC]+))(?:[.\s—–:-]+))(?!\d)([\s\S]*)/i.exec(n.data);
-    if (!m) return null;
-    var span = document.createElement('span');
-    span.className = 'sb-selfnum';
-    span.setAttribute('aria-hidden', 'true');
-    span.textContent = m[1];
-    n.data = m[3];
-    h.insertBefore(span, n);
-    return m[2].toUpperCase();
-  }
-  function makeKicker(text) {
-    var k = document.createElement('span');
-    k.className = 'sb-kicker';
-    k.textContent = text;
-    return k;
-  }
-  var chapterNo = 0;
-  h2s.forEach(function (h) {
-    var sem = SECTION_RE.exec(h.textContent);
-    var num = selfNum ? stripSelfNumber(h) : null;
-    var label = null;
-    if (sem) label = sem[1].toUpperCase();
-    else if (num) label = 'CAPÍTULO ' + (/^[0-9]/.test(num) && num.length < 2 ? '0' + num : num);
-    else if (!selfNum) { chapterNo += 1; label = 'CAPÍTULO ' + (chapterNo < 10 ? '0' + chapterNo : chapterNo); }
-    if (label) h.insertBefore(makeKicker(label), h.firstChild);
-  });
-  var refs = content.querySelector('h2#refer\u00eancias, h2#referencias');
-  if (refs) {
-    var k = makeKicker('REFERÊNCIAS');
-    refs.textContent = '';
-    refs.appendChild(k);
-  }
-})();
+  'use strict';
 
-/* Summary controls: collapsible in the desktop rail, a sheet on a phone.
-   The choice is remembered so it does not have to be made on every essay. */
-(function () {
-  var pane = document.getElementById('tocPane');
-  var toggle = document.getElementById('tocToggle');
-  var fab = document.getElementById('tocFab');
-  if (!pane) return;
+  var root = document.documentElement;
 
-  function setCollapsed(collapsed) {
-    pane.classList.toggle('collapsed', collapsed);
-    if (toggle) {
-      toggle.setAttribute('aria-expanded', String(!collapsed));
-      toggle.setAttribute('aria-label', collapsed ? 'Expandir o sumário' : 'Recolher o sumário');
-      toggle.firstChild.textContent = collapsed ? '+' : '−';
+  /* --- Theme --------------------------------------------------------------- */
+  var themeButton = document.getElementById('sbTheme');
+  function applyTheme(theme, persist) {
+    root.dataset.theme = theme;
+    if (themeButton) themeButton.setAttribute('aria-pressed', String(theme === 'light'));
+    if (persist) {
+      try { localStorage.setItem('sb-theme', theme); } catch (e) { /* private mode */ }
     }
-    try { localStorage.setItem('sb-toc', collapsed ? 'collapsed' : 'open'); } catch (e) { /* private mode */ }
   }
-
-  var stored = null;
-  try { stored = localStorage.getItem('sb-toc'); } catch (e) { /* private mode */ }
-  if (stored === 'collapsed') setCollapsed(true);
-
-  if (toggle) {
-    toggle.addEventListener('click', function () {
-      setCollapsed(!pane.classList.contains('collapsed'));
+  applyTheme(root.dataset.theme || 'dark', false);
+  if (themeButton) {
+    themeButton.addEventListener('click', function () {
+      applyTheme(root.dataset.theme === 'dark' ? 'light' : 'dark', true);
     });
   }
 
-  if (fab) {
-    fab.addEventListener('click', function () {
-      var open = !pane.classList.contains('open');
-      pane.classList.toggle('open', open);
-      fab.setAttribute('aria-expanded', String(open));
-      fab.textContent = open ? 'Fechar' : 'Sumário';
-    });
-    // Following a link means the reader is done with the summary.
-    pane.addEventListener('click', function (event) {
-      if (event.target.closest('a')) {
-        pane.classList.remove('open');
-        fab.setAttribute('aria-expanded', 'false');
-        fab.textContent = 'Sumário';
-      }
-    });
+  /* --- Summary ------------------------------------------------------------- */
+  var list = document.getElementById('sbTocList');
+  var panel = document.getElementById('sbToc');
+  var fab = document.getElementById('sbTocFab');
+  if (!list || !panel || !fab) return;
+
+  var used = {};
+  function slugify(text) {
+    var base = text.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim().replace(/[\s-]+/g, '-') || 'secao';
+    var seen = used[base] || 0;
+    used[base] = seen + 1;
+    return seen ? base + '-' + (seen + 1) : base;
+  }
+
+  var headings = [].slice.call(document.querySelectorAll('.content h2, .content h3'));
+  if (!headings.length) {
+    headings = [].slice.call(document.querySelectorAll('h2, h3'));
+  }
+  headings.forEach(function (heading) {
+    if (!heading.id) heading.id = slugify(heading.textContent);
+    var link = document.createElement('a');
+    link.href = '#' + heading.id;
+    link.textContent = heading.textContent.trim();
+    if (heading.tagName === 'H3') link.className = 'h3';
+    list.appendChild(link);
+  });
+
+  var links = [].slice.call(list.querySelectorAll('a'));
+  if (headings.length && 'IntersectionObserver' in window) {
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (!entry.isIntersecting) return;
+        links.forEach(function (a) {
+          a.classList.toggle('active', a.getAttribute('href') === '#' + entry.target.id);
+        });
+      });
+    }, { rootMargin: '-15% 0px -75% 0px' });
+    headings.forEach(function (h) { observer.observe(h); });
+  }
+
+  function setOpen(open) {
+    panel.hidden = !open;
+    fab.setAttribute('aria-expanded', String(open));
+    try { localStorage.setItem('sb-toc-open', open ? '1' : '0'); } catch (e) { /* private */ }
+  }
+
+  // Always starts closed: an open panel lands on top of the title, and the
+  // first thing a reader wants is the essay, not its index.
+  setOpen(false);
+
+  fab.addEventListener('click', function () { setOpen(panel.hidden); });
+  var close = document.getElementById('sbTocClose');
+  if (close) close.addEventListener('click', function () { setOpen(false); });
+
+  // Following a link means the reader is done choosing; keep it open on desktop.
+  panel.addEventListener('click', function (event) {
+    if (event.target.closest('a') && window.innerWidth < 1280) setOpen(false);
+  });
+
+  document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape' && !panel.hidden) setOpen(false);
+  });
+
+  /* --- Reading progress ---------------------------------------------------- */
+  var fill = document.getElementById('sbProgressFill');
+  if (fill) {
+    addEventListener('scroll', function () {
+      var max = document.documentElement.scrollHeight - innerHeight;
+      fill.style.width = (max > 0 ? (scrollY / max) * 100 : 0) + '%';
+    }, { passive: true });
   }
 })();

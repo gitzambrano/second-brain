@@ -83,8 +83,9 @@ def sanitize(nodes, published: set[str]):
     return public_nodes
 
 
-# Chrome added only to the public copies: a way back to the site, and the index
-# panel hidden because the site already has a full catalogue with search.
+# Chrome added only to the public copies: a way back to the Atlas, a switch
+# between the two maps, and a theme that follows the site. The map's own index
+# panel stays — it already highlights a node on click and opens the public page.
 PUBLIC_CHROME = """
 <style>
   /* z-index baixo (8): o cromo fica sob a caixa de opções/Estilo (modal
@@ -111,8 +112,27 @@ PUBLIC_CHROME = """
     color: #e8eef7; font: 600 13px/1 Inter, system-ui, sans-serif;
     text-decoration: none;
   }
-  #sb-map-switch a:hover { border-color: rgba(255,255,255,.4); }
+  #sb-map-switch a:hover, #sb-theme:hover { border-color: rgba(255,255,255,.4); }
+  #sb-theme {
+    padding: 9px 13px; border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.16);
+    background: rgba(12,20,33,.82); backdrop-filter: blur(10px);
+    color: #e8eef7; font: 600 13px/1 Inter, system-ui, sans-serif; cursor: pointer;
+  }
+  /* In the light Atlas the floating chrome inverts with it. */
+  :root[data-theme="light"] #sb-back,
+  :root[data-theme="light"] #sb-map-switch a,
+  :root[data-theme="light"] #sb-theme {
+    background: rgba(255,255,255,.9);
+    border-color: rgba(16,28,46,.16);
+    color: #101c2e;
+  }
   #sb-map-switch a[aria-current="page"] { color: #7aabff; border-color: #7aabff; }
+  /* The options panel must end above the floating chrome, never behind it. */
+  @media (max-width: 760px) {
+    #panel, .panel, aside { padding-bottom: 64px; }
+    #sb-back, #sb-map-switch a, #sb-theme { padding: 7px 11px; font-size: 12px; }
+  }
   /* Tema claro: o fundo e os controles do mapa seguem o tema do site. O
      fundo do canvas também é pintado por JS (ver script ao final), então
      este bloco só alinha painéis/controles que usam CSS variable. */
@@ -140,17 +160,33 @@ PUBLIC_CHROME = """
 <nav id="sb-map-switch" aria-label="Trocar de mapa">
   <a href="graph.html"__GRAPH_CURRENT__>Grafo</a>
   <a href="sphere.html"__SPHERE_CURRENT__>Globo</a>
+  <button type="button" id="sb-theme" aria-label="Alternar tema" aria-pressed="false">&#9680;</button>
 </nav>
 <script>
-  // The site's own catalogue replaces the in-map index panel.
+  // The map follows the Atlas: same stored theme key, same background.
   (function () {
-    var kill = function (label) {
-      var hit = [].slice.call(document.querySelectorAll('button, a'))
-        .filter(function (el) { return el.textContent.trim() === label; });
-      hit.forEach(function (el) { el.style.display = 'none'; });
+    var apply = function (theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      document.documentElement.style.background = theme === 'light' ? '#f7f9fc' : '#060d18';
+      document.body.style.background = theme === 'light' ? '#f7f9fc' : '#060d18';
+      var button = document.getElementById('sb-theme');
+      if (button) button.setAttribute('aria-pressed', String(theme === 'light'));
     };
-    kill('Índice');
+    var stored = null;
+    try { stored = localStorage.getItem('sb-theme'); } catch (e) { /* private mode */ }
+    if (!stored) {
+      stored = (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches)
+        ? 'light' : 'dark';
+    }
+    apply(stored);
+    document.addEventListener('click', function (event) {
+      if (!event.target.closest('#sb-theme')) return;
+      var next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+      try { localStorage.setItem('sb-theme', next); } catch (e) { /* private mode */ }
+      apply(next);
+    });
   })();
+
   // Tema: o fundo do mapa acompanha o tema do site (claro/escuro) por padrão;
   // um estilo salvo com cor de fundo fixada neste navegador continua mandando.
   (function () {

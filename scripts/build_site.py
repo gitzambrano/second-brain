@@ -13,6 +13,7 @@ No-argument default: rebuild the whole site.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import html
 import json
 import shutil
@@ -129,11 +130,28 @@ def clean(root: Path) -> None:
         _empty(root / name)
 
 
-def copy_frontend(root: Path) -> None:
+def copy_frontend(root: Path) -> dict[str, str]:
+    """Copy the frontend and return a content fingerprint per asset.
+
+    A browser that has visited before will happily keep serving the previous
+    CSS and JS after a redeploy. Versioning each URL by content makes a changed
+    asset a different URL, so a stale mix can never happen.
+    """
     assets = root / "assets"
     assets.mkdir(parents=True, exist_ok=True)
+    fingerprints = {}
     for name in FRONTEND_ASSETS:
-        shutil.copy2(SITE_SRC_DIR / name, assets / name)
+        source = SITE_SRC_DIR / name
+        shutil.copy2(source, assets / name)
+        fingerprints[name] = hashlib.sha256(source.read_bytes()).hexdigest()[:8]
+    return fingerprints
+
+
+def version_assets(html_text: str, fingerprints: dict[str, str]) -> str:
+    """Rewrite `assets/<name>` references to carry the content fingerprint."""
+    for name, digest in fingerprints.items():
+        html_text = html_text.replace(f"assets/{name}\"", f"assets/{name}?v={digest}\"")
+    return html_text
 
 
 WORDS_PER_MINUTE = 220
@@ -191,7 +209,8 @@ def write_data(root: Path, catalogue) -> dict[str, int]:
     return {slug: reading_minutes(text) for slug, text in body_text.items()}
 
 
-def render_index(root: Path, catalogue, minutes: dict[str, int] | None = None) -> None:
+def render_index(root: Path, catalogue, minutes: dict[str, int] | None = None,
+                 fingerprints: dict[str, str] | None = None) -> None:
     """Render the catalogue: every essay, with only the authorized ones linked."""
     minutes = minutes or {}
     template = (SITE_SRC_DIR / "index.html").read_text(encoding="utf-8")
@@ -256,12 +275,11 @@ def render_index(root: Path, catalogue, minutes: dict[str, int] | None = None) -
     # Busiest themes first; the rest stay behind "mais temas" so the page does
     # not open with a wall of tags.
     ordered = sorted(tags, key=lambda name: (-tag_counts[name], name.casefold()))
-    VISIBLE_TAGS = 10
     chips = "".join(
-        f'<button class="filter-chip{"" if i < VISIBLE_TAGS else " overflow"}"'
-        f' type="button" data-tag="{html.escape(name, quote=True)}">'
+        f'<button class="filter-chip" type="button"'
+        f' data-tag="{html.escape(name, quote=True)}">'
         f'{html.escape(name)} <span class="count">{tag_counts[name]}</span></button>'
-        for i, name in enumerate(ordered)
+        for name in ordered
     )
     updated = max((e.updated for e in catalogue if e.updated), default="—")
 
@@ -272,7 +290,8 @@ def render_index(root: Path, catalogue, minutes: dict[str, int] | None = None) -
             .replace("{{UPDATED}}", html.escape(updated))
             .replace("{{CARDS}}", "\n".join(cards))
             .replace("{{TAG_FILTERS}}", chips))
-    (root / "index.html").write_text(page, encoding="utf-8")
+    (root / "index.html").write_text(
+        version_assets(page, fingerprints or {}), encoding="utf-8")
 
 
 def render_essays(root: Path, essays, no_render: bool = False) -> None:
@@ -296,10 +315,10 @@ def build(root: Path, no_render: bool = False):
     catalogue = collect_all()
     essays = [e for e in catalogue if e.published]
     clean(root)
-    copy_frontend(root)
+    fingerprints = copy_frontend(root)
     ensure_site_mathjax(root)
     minutes = write_data(root, catalogue)
-    render_index(root, catalogue, minutes)
+    render_index(root, catalogue, minutes, fingerprints)
 
     # The map is produced by the wiki's own renderers, on sanitized nodes.
     nodes, edges, tag_gaps, isolated = build_public_map.build()
@@ -307,7 +326,9 @@ def build(root: Path, no_render: bool = False):
 
     source = SITE_SRC_DIR / "404.html"
     if source.exists():
-        shutil.copy2(source, root / "404.html")
+        (root / "404.html").write_text(
+            version_assets(source.read_text(encoding="utf-8"), fingerprints),
+            encoding="utf-8")
     render_essays(root, essays, no_render)
     return essays
 

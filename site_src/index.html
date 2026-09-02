@@ -58,19 +58,23 @@
         </div>
       </div>
       <div class="segmented" role="group" aria-label="Modo de exibição">
-        <button type="button" id="viewGrid" data-view="grid" aria-pressed="true">Grade</button>
-        <button type="button" id="viewList" data-view="list" aria-pressed="false">Lista</button>
+        <button type="button" id="viewGrid" data-view="grid" aria-pressed="false">Grade</button>
+        <button type="button" id="viewList" data-view="list" aria-pressed="true">Lista</button>
         <button type="button" id="viewGroup" data-view="group" aria-pressed="false">Por tema</button>
       </div>
       <button class="toggle-chip" type="button" id="toggleSummaries" aria-pressed="true">Resumos</button>
     </div>
 
-    <div class="filters" id="filters" role="group" aria-label="Filtrar por tema">
-      <button class="filter-chip active" type="button" data-tag="">Todos <span class="count">{{COUNT}}</span></button>{{TAG_FILTERS}}
-      <button class="filter-more" type="button" id="moreTags" aria-expanded="false">mais temas</button>
+    <div class="filters-bar">
+      <button class="tag-toggle" type="button" id="tagToggle" aria-expanded="false" aria-controls="filters">
+        Temas <span class="tag-toggle-current" id="tagCurrent">todos</span>
+      </button>
+      <span class="view-meta"><span id="visibleCount" aria-live="polite">{{COUNT}}</span> de {{COUNT}}</span>
     </div>
 
-    <div class="view-meta"><span id="visibleCount" aria-live="polite">{{COUNT}}</span> visíveis</div>
+    <div class="filters" id="filters" role="group" aria-label="Filtrar por tema" hidden>
+      <button class="filter-chip active" type="button" data-tag="">Todos <span class="count">{{COUNT}}</span></button>{{TAG_FILTERS}}
+    </div>
 
     <div class="essay-grid" id="essayGrid">{{CARDS}}</div>
     <div id="groupedView" hidden></div>

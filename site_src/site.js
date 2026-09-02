@@ -17,7 +17,7 @@
   var viewButtons = Array.prototype.slice.call(document.querySelectorAll('.segmented [data-view]'));
 
   var activeTag = '';
-  var view = 'grid';
+  var view = 'list';
 
   function normalize(value) {
     return (value || '')
@@ -317,6 +317,7 @@
       chips.forEach(function (other) { other.classList.remove('active'); });
       chip.classList.add('active');
       activeTag = chip.dataset.tag || '';
+      showActiveTag();
       apply();
     });
   });
@@ -356,13 +357,19 @@
     });
   }
 
+  // Themes live behind a toggle: 35 chips are a wall, not a filter.
   var filters = document.getElementById('filters');
-  var moreTags = document.getElementById('moreTags');
-  if (filters && moreTags) {
-    moreTags.addEventListener('click', function () {
-      filters.classList.add('expanded');
-      moreTags.setAttribute('aria-expanded', 'true');
+  var tagToggle = document.getElementById('tagToggle');
+  var tagCurrent = document.getElementById('tagCurrent');
+  if (filters && tagToggle) {
+    tagToggle.addEventListener('click', function () {
+      var open = filters.hidden;
+      filters.hidden = !open;
+      tagToggle.setAttribute('aria-expanded', String(open));
     });
+  }
+  function showActiveTag() {
+    if (tagCurrent) tagCurrent.textContent = activeTag || 'todos';
   }
 
   apply();
