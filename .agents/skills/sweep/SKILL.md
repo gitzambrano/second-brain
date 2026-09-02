@@ -35,8 +35,8 @@ Mesma lógica nos dois casos, muda só o conjunto de arquivos. Argumento ambígu
 
 Ver `conventions/SKILL.md`:
 
-- **Corpus inteiro**: pula `finalizado`/`maduro`, sem perguntar nem avisar durante a execução. Informa quantos foram pulados no resumo final.
-- **Essay específico**: executa normalmente mesmo se `finalizado`/`maduro`. Ao final, se estava `finalizado`, avisa: "Este essay estava marcado como finalizado; executei porque você pediu diretamente."
+- **Corpus inteiro**: pula `finalizado`/`revisao`, sem perguntar nem avisar durante a execução. Informa quantos foram pulados no resumo final.
+- **Essay específico**: executa normalmente mesmo se `finalizado`/`revisao`. Ao final, se estava `finalizado`, avisa: "Este essay estava marcado como finalizado; executei porque você pediu diretamente."
 
 ## Passo a passo
 
@@ -55,7 +55,7 @@ Execute na ordem para cada essay do escopo, um por vez (não paralelize).
 
    ### Resumo
    - Essays processados: N
-   - Essays pulados por status (finalizado/maduro): K
+   - Essays pulados por status (finalizado/revisao): K
    - Issues de formato resolvidos automaticamente: X
    - Issues de formato restantes (não-automáticos): Y
    - Problemas de continuidade reportados: Z

@@ -3212,7 +3212,7 @@ function renderTypeIndex() {
       // para dizer "ainda em obra", e 45 selos repetidos não diriam nada.
       const draft = n.status === "draft"
         ? `<span class="idx-draft" title="Rascunho">draft</span>`
-        : n.status === "maduro"
+        : (n.status === "revisao" || n.status === "maduro")
           ? `<span class="idx-review" title="Em revisão">em revisão</span>`
           : "";
       // `public` só existe no build da projeção pública (build_public_map.py).

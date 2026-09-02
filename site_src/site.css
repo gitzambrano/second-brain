@@ -1422,7 +1422,25 @@ h1, h2, h3, h4 {
   .segmented { width: 100%; }
   .segmented button { flex: 1; }
 
-  .cover-map { height: 150px; }
+  /* On a phone the chrome must not cost a whole screen before the essays.
+     The cover is decoration, and the controls share two rows instead of four. */
+  .cover-map { display: none; }
+  .masthead { padding-block: 26px 18px; }
+  .masthead-lede { font-size: 15px; margin-bottom: 4px; }
+  .masthead-author { font-size: 13px; margin-bottom: 12px; }
+  .masthead-stats { font-size: 12px; gap: 6px; }
+
+  .toolbar {
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+  }
+  .toolbar .searchbox { grid-column: 1 / -1; }
+  .segmented { width: auto; }
+  .segmented button { padding: 8px 10px; font-size: 12px; }
+  .toggle-chip { width: auto; padding: 0 14px; }
+  .select-control, .sort-button { min-height: 44px; }
+  .searchbox { min-height: 44px; }
+
   .filters-bar { flex-wrap: wrap; }
   .essay-grid { grid-template-columns: 1fr; }
   .essay-grid.as-list .essay-card > a,

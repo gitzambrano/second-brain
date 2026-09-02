@@ -75,7 +75,7 @@ Sugira somente quando agregar valor real:
 
 Classifique:
 
-- **🔴 Crítico:** enfraquece ou invalida a tese; resolver antes de `maduro`.
+- **🔴 Crítico:** enfraquece ou invalida a tese; resolver antes de `revisao`.
 - **🟡 Moderado:** reduz rigor, clareza ou profundidade.
 - **🟢 Sugestão:** enriquecimento opcional.
 
@@ -140,7 +140,7 @@ Após mudanças:
 Revisão: N críticos, M moderados, K sugestões. X modificações aplicadas.
 ```
 
-Se o essay era `draft` e não restar crítico, pergunte se o Usuário quer promover para `maduro`. Não altere status automaticamente.
+Se o essay era `draft` e não restar crítico, pergunte se o Usuário quer promover para `revisao`. Não altere status automaticamente.
 
 Se a edição mudou estrutura ou tese, ofereça repetir `/continuity`.
 

@@ -73,7 +73,9 @@ DIRS = {
 # ---------------------------------------------------------------------------
 
 VALID_TYPES = {"Ensaio", "White Paper", "Brainstorm", "Estudo", "Análise"}
-VALID_STATUS = {"draft", "maduro", "finalizado"}
+# `revisao` substituiu `maduro`; a grafia antiga continua válida para não
+# invalidar um essay que ainda não foi migrado.
+VALID_STATUS = {"draft", "revisao", "finalizado", "maduro"}
 MATURIDADES_VALIDAS = ("solta", "germinando", "madura", "absorvida")
 PLAN_SECOES = ["Tarefas", "Fontes para Ingerir", "Revisões", "Estudos", "Essays Futuros"]
 

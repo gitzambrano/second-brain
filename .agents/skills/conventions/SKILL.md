@@ -47,7 +47,7 @@ Essays acrescentam:
 
 ```yaml
 summary: "Resumo de uma linha, até 120 caracteres."
-status: draft | maduro | finalizado
+status: draft | revisao | finalizado
 visibility: public     # opcional; ver ## Publicação
 ```
 
@@ -87,7 +87,7 @@ Reuse um tipo existente. `Outro` só quando nenhum tipo específico servir.
 
 `manifest.md` e `map.md` são catálogos editáveis; a regra de não modificar `wiki/sources/` protege os documentos originais.
 
-## Status de essay (draft | maduro | finalizado)
+## Status de essay (draft | revisao | finalizado)
 
 `status:` existe apenas em essays.
 
@@ -98,7 +98,7 @@ Reuse um tipo existente. `Outro` só quando nenhum tipo específico servir.
 Status protege a prosa, não a formatação mecânica. `/organize` e `fix_lint.py` podem corrigir estrutura/formatação em qualquer status.
 
 Para skills que editam prosa:
-- **Batch:** pule `maduro` e `finalizado`; informe a contagem no fim.
+- **Batch:** pule `revisao` e `finalizado`; informe a contagem no fim.
 - **Essay nomeado pelo Usuário:** edite normalmente. Se era `finalizado`, avise ao final.
 
 ## Publicação

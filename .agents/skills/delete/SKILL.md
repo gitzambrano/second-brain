@@ -33,7 +33,7 @@ Apaga uma página da wiki. Sem cerimônia: confirma, apaga, loga, e roda `/organ
 
 - Nunca apaga sem confirmação explícita do Usuário.
 - Não decide sozinho o que fazer com um link órfão resultante — isso é o passo de wikilinks mortos do `/organize`.
-- Se a página apagada era `finalizado`/`maduro`, avise no log mesmo assim; `/delete` não olha status, é decisão do Usuário.
+- Se a página apagada era `finalizado`/`revisao`, avise no log mesmo assim; `/delete` não olha status, é decisão do Usuário.
 
 ## Skills relacionadas
 

@@ -240,7 +240,7 @@ def render_index(root: Path, catalogue, minutes: dict[str, int] | None = None,
             badges.append('<span class="badge badge-private">Privado</span>')
         if essay.status == "draft":
             badges.append('<span class="badge badge-draft">Rascunho</span>')
-        elif essay.status == "maduro":
+        elif essay.status in {"revisao", "maduro"}:
             badges.append('<span class="badge badge-review">Em revisão</span>')
         badge_html = f'<div class="badges">{"".join(badges)}</div>' if badges else ""
 

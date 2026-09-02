@@ -223,7 +223,7 @@ def prepare_for_pandoc(filepath):
     body = transform_markdown(body)
 
     summary = str(meta.get('summary', '') or '')
-    # `status:` do frontmatter (draft | maduro | finalizado). Vai para o
+    # `status:` do frontmatter (draft | revisao | finalizado). Vai para o
     # template como `data-status` no <html>; so `draft` muda alguma coisa
     # (troca a meta-row da capa pela marca de rascunho).
     status = str(meta.get('status', '') or '').strip().lower()
