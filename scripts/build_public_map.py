@@ -83,10 +83,71 @@ def sanitize(nodes, published: set[str]):
     return public_nodes
 
 
+# Chrome added only to the public copies: a way back to the site, and the index
+# panel hidden because the site already has a full catalogue with search.
+PUBLIC_CHROME = """
+<style>
+  #sb-back {
+    position: fixed; left: 16px; bottom: 16px; z-index: 90;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 9px 15px; border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.16);
+    background: rgba(12,20,33,.82); backdrop-filter: blur(10px);
+    color: #e8eef7; font: 600 13px/1 Inter, system-ui, sans-serif;
+    text-decoration: none;
+  }
+  #sb-back:hover { border-color: rgba(255,255,255,.4); }
+  #sb-map-switch {
+    position: fixed; right: 16px; bottom: 16px; z-index: 90;
+    display: inline-flex; gap: 8px;
+  }
+  #sb-map-switch a {
+    padding: 9px 15px; border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.16);
+    background: rgba(12,20,33,.82); backdrop-filter: blur(10px);
+    color: #e8eef7; font: 600 13px/1 Inter, system-ui, sans-serif;
+    text-decoration: none;
+  }
+  #sb-map-switch a:hover { border-color: rgba(255,255,255,.4); }
+  #sb-map-switch a[aria-current="page"] { color: #7aabff; border-color: #7aabff; }
+</style>
+<a id="sb-back" href="index.html">&larr; Second Brain Atlas</a>
+<nav id="sb-map-switch" aria-label="Trocar de mapa">
+  <a href="graph.html"__GRAPH_CURRENT__>Grafo</a>
+  <a href="sphere.html"__SPHERE_CURRENT__>Globo</a>
+</nav>
+<script>
+  // The site's own catalogue replaces the in-map index panel.
+  (function () {
+    var kill = function (label) {
+      var hit = [].slice.call(document.querySelectorAll('button, a'))
+        .filter(function (el) { return el.textContent.trim() === label; });
+      hit.forEach(function (el) { el.style.display = 'none'; });
+    };
+    kill('Índice');
+  })();
+</script>
+"""
+
+
+def with_public_chrome(html: str, current: str) -> str:
+    """Add the site navigation to a generated map and drop its index panel."""
+    chrome = (PUBLIC_CHROME
+              .replace("__GRAPH_CURRENT__", ' aria-current="page"' if current == "graph" else "")
+              .replace("__SPHERE_CURRENT__", ' aria-current="page"' if current == "sphere" else ""))
+    if "</body>" in html:
+        return html.replace("</body>", chrome + "</body>", 1)
+    return html + chrome
+
+
 def build(width: int = 1900, height: int = 1200):
     nodes, edges, isolated = build_graph.build_graph()
     tag_gaps = build_graph.compute_tag_gaps(nodes, edges)
+
+    # The two renderers read different coordinates — the graph uses x0/y0, the
+    # sphere ux/uy/uz — so both layouts run over the same nodes.
     build_graph.compute_layout(nodes, edges, width=width, height=height)
+    build_sphere.compute_sphere_layout(nodes, edges)
 
     published = {e.slug for e in collect_public()}
     public_nodes = sanitize(nodes, published)
@@ -118,10 +179,13 @@ def write(root: Path, nodes, edges, tag_gaps, isolated) -> list[tuple[str, float
     )
     written.append(("graph.json", (root / "graph.json").stat().st_size / 1024 / 1024))
 
-    for name, renderer in (("graph.html", build_graph.render_html),
-                           ("sphere.html", build_sphere.render_sphere_html)):
+    for name, renderer, current in (
+        ("graph.html", build_graph.render_html, "graph"),
+        ("sphere.html", build_sphere.render_sphere_html, "sphere"),
+    ):
         path = root / name
-        path.write_text(renderer(nodes, edges, tag_gaps, empty_reader), encoding="utf-8")
+        html = with_public_chrome(renderer(nodes, edges, tag_gaps, empty_reader), current)
+        path.write_text(html, encoding="utf-8")
         written.append((name, path.stat().st_size / 1024 / 1024))
 
     return written

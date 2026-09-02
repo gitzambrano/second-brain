@@ -29,6 +29,7 @@ import yaml
 
 import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
 
+import visibility
 from repo_paths import CODE_ROOT, DATA_ROOT, WIKI_ROOT
 
 ROOT_DIR = CODE_ROOT
@@ -88,6 +89,9 @@ def index_pages(dir_path, node_type):
         if not title:
             continue
         fm = get_frontmatter(content)
+        # `visibility: hidden` removes a page from the wiki's own catalogue too.
+        if visibility.is_hidden(fm):
+            continue
         entry = {
             "title": title,
             "path": str(f.relative_to(DATA_ROOT)),

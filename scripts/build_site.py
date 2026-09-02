@@ -18,6 +18,7 @@ import json
 import shutil
 import subprocess
 import sys
+import time
 from datetime import date
 from pathlib import Path
 
@@ -50,16 +51,46 @@ def require_site_root(root: Path) -> None:
         raise SystemExit(f"refusing to write without .second-brain-site marker: {root}")
 
 
+def _unlink(path: Path, attempts: int = 5) -> None:
+    """Delete a file, retrying briefly through a sync tool's transient lock."""
+    for attempt in range(attempts):
+        try:
+            if path.exists():
+                path.unlink()
+            return
+        except PermissionError:
+            if attempt == attempts - 1:
+                raise
+            time.sleep(0.3)
+
+
+def _empty(directory: Path) -> None:
+    """Remove everything inside a directory, keeping the directory itself.
+
+    The checkout usually lives in a syncing folder (OneDrive/Dropbox) that holds
+    a handle on directories it is watching, so `rmtree` fails on the folder even
+    after its contents are gone. Emptying is equivalent here — the build
+    repopulates the directory immediately — and never trips on that handle.
+    """
+    if not directory.is_dir():
+        return
+    for child in sorted(directory.iterdir(), key=lambda p: len(p.parts), reverse=True):
+        if child.is_dir():
+            _empty(child)
+            try:
+                child.rmdir()
+            except OSError:
+                pass
+        else:
+            _unlink(child)
+
+
 def clean(root: Path) -> None:
     require_site_root(root)
     for name in GENERATED_ROOT_FILES:
-        path = root / name
-        if path.exists():
-            path.unlink()
+        _unlink(root / name)
     for name in GENERATED_DIRS:
-        path = root / name
-        if path.exists():
-            shutil.rmtree(path)
+        _empty(root / name)
 
 
 def copy_frontend(root: Path) -> None:
@@ -183,10 +214,15 @@ def render_index(root: Path, catalogue, minutes: dict[str, int] | None = None) -
             f'{body}</article>'
         )
 
+    # Busiest themes first; the rest stay behind "mais temas" so the page does
+    # not open with a wall of tags.
+    ordered = sorted(tags, key=lambda name: (-tag_counts[name], name.casefold()))
+    VISIBLE_TAGS = 10
     chips = "".join(
-        f'<button class="filter-chip" type="button" data-tag="{html.escape(t, quote=True)}">'
-        f'{html.escape(t)} <span class="count">{tag_counts[t]}</span></button>'
-        for t in tags
+        f'<button class="filter-chip{"" if i < VISIBLE_TAGS else " overflow"}"'
+        f' type="button" data-tag="{html.escape(name, quote=True)}">'
+        f'{html.escape(name)} <span class="count">{tag_counts[name]}</span></button>'
+        for i, name in enumerate(ordered)
     )
     updated = max((e.updated for e in catalogue if e.updated), default="—")
 

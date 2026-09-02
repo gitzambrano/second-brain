@@ -266,6 +266,76 @@ h1, h2, h3, h4 {
   margin-bottom: 14px;
 }
 
+/* --- Cover map ----------------------------------------------------------- */
+
+/* A low-fidelity, non-interactive glimpse of the real graph. It exists to give
+   the cover a face; the interactive map lives on its own page. */
+.cover-map {
+  position: relative;
+  display: block;
+  width: min(var(--shell), calc(100% - 48px));
+  margin: 0 auto;
+  height: 232px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(160deg, var(--panel-2), var(--panel));
+  overflow: hidden;
+  text-decoration: none;
+}
+.cover-map canvas { display: block; width: 100%; height: 100%; }
+.cover-map-hint {
+  position: absolute;
+  right: 16px; bottom: 14px;
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.cover-map:hover .cover-map-hint {
+  color: var(--text-strong);
+  border-color: var(--line-strong);
+}
+
+/* --- Toolbar extras ------------------------------------------------------ */
+
+.toggle-chip {
+  min-height: 48px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.toggle-chip[aria-pressed="true"] {
+  background: var(--accent-soft);
+  border-color: transparent;
+  color: var(--text-strong);
+}
+
+.filter-more {
+  padding: 7px 14px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+.filter-more:hover { color: var(--text); }
+
+/* Tags are a filter, not the front page: only the first row shows until asked. */
+.filters:not(.expanded) .filter-chip.overflow { display: none; }
+.filters.expanded .filter-more { display: none; }
+
+/* Summaries collapse in every view, not just the list. */
+.library.no-summaries .essay-card p { display: none; }
+
 /* --- Library ------------------------------------------------------------- */
 
 .library { padding-block: 28px 96px; }
@@ -279,7 +349,7 @@ h1, h2, h3, h4 {
 
 .toolbar {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: minmax(220px, 1fr) auto auto auto;
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -489,7 +559,8 @@ h1, h2, h3, h4 {
   box-shadow: none;
   background: var(--accent-soft);
 }
-.essay-grid.as-list .essay-card > a {
+.essay-grid.as-list .essay-card > a,
+.essay-grid.as-list .essay-card > .card-body {
   display: grid;
   grid-template-columns: 132px minmax(0, 1fr) minmax(0, 1.25fr) auto;
   grid-template-areas: "meta title summary link";
@@ -497,8 +568,10 @@ h1, h2, h3, h4 {
   gap: 22px;
   padding: 18px 14px;
 }
+.essay-grid.as-list .badges { grid-area: meta; align-self: end; }
 .essay-grid.as-list .card-meta {
   grid-area: meta;
+  align-self: start;
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
@@ -612,14 +685,38 @@ h1, h2, h3, h4 {
   background: var(--line-strong);
 }
 .toc-sticky::-webkit-scrollbar-track { background: transparent; }
+.toc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
 .toc-label {
   color: var(--faint);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  margin-bottom: 12px;
 }
+.toc-toggle {
+  width: 24px; height: 24px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  line-height: 1;
+}
+.toc-toggle:hover { color: var(--text); border-color: var(--line-strong); }
+
+/* Collapsed: the pane keeps its label and gives the column width back. */
+.toc-pane.collapsed #toc { display: none; }
+
+/* The floating button belongs to narrow screens, where the pane is hidden. */
+.toc-fab { display: none; }
 #toc { display: flex; flex-direction: column; gap: 2px; }
 #toc a {
   padding: 5px 12px;
@@ -921,12 +1018,23 @@ h1, h2, h3, h4 {
   background: var(--accent-soft);
   color: var(--accent);
 }
-.badge-private { border-style: dashed; }
+/* Both markers are informational, not alarms: quiet fills, no heavy borders. */
+.badge-private {
+  border-color: transparent;
+  background: rgba(224, 148, 79, 0.14);
+  color: #d08a4a;
+}
 .badge-draft {
   border-color: transparent;
-  background: rgba(242, 166, 90, 0.16);
-  color: #f2a65a;
+  background: rgba(196, 182, 130, 0.14);
+  color: #a99b6d;
 }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .badge-private { color: #e2a469; }
+  :root:not([data-theme="light"]) .badge-draft { color: #c9bd8a; }
+}
+:root[data-theme="dark"] .badge-private { color: #e2a469; }
+:root[data-theme="dark"] .badge-draft { color: #c9bd8a; }
 
 .neighbours { margin-bottom: 16px; }
 .neighbour-list {
@@ -1105,11 +1213,13 @@ h1, h2, h3, h4 {
   .masthead-lede { font-size: 16px; }
 
   .toolbar { grid-template-columns: 1fr; }
+  .toggle-chip { width: 100%; }
   .segmented { width: 100%; }
   .segmented button { flex: 1; }
 
   .essay-grid { grid-template-columns: 1fr; }
-  .essay-grid.as-list .essay-card > a {
+  .essay-grid.as-list .essay-card > a,
+.essay-grid.as-list .essay-card > .card-body {
     grid-template-columns: 1fr;
     grid-template-areas: "meta" "title" "summary";
     align-items: start;
@@ -1126,7 +1236,9 @@ h1, h2, h3, h4 {
   .article-header h1 { font-size: 2.1rem; }
   .article-summary { font-size: 16px; }
   .prose { font-size: 17px; }
-  .article-meta { flex-direction: column; align-items: flex-start; }
+  .article-meta { flex-direction: column; align-items: flex-start; gap: 4px; }
+  .article-meta .dot { display: none; }
+  .article-meta .tags { margin: 8px 0 0; }
 
   .graph-topbar { left: 12px; right: 12px; height: auto; padding: 10px 12px; }
   .graph-controls { flex-wrap: wrap; gap: 8px; }
@@ -1134,6 +1246,45 @@ h1, h2, h3, h4 {
   .graph-inspector { left: 12px; right: 12px; top: auto; bottom: 12px; width: auto; }
   .graph-index { left: 12px; right: 12px; top: 116px; bottom: 12px; width: auto; }
   .graph-legend { display: none; }
+}
+
+/* On a phone the page reads like the exported essay — one column, no rails —
+   and the summary is always one tap away. */
+@media (max-width: 1100px) {
+  .toc-fab {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    position: fixed;
+    right: 16px; bottom: 16px;
+    z-index: 45;
+    padding: 11px 18px;
+    border: 1px solid var(--line-strong);
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--panel) 92%, transparent);
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-sm);
+    color: var(--text-strong);
+    font-size: 13px;
+    font-weight: 650;
+    cursor: pointer;
+  }
+  .toc-pane.open {
+    display: block;
+    position: fixed;
+    left: 12px; right: 12px; bottom: 76px;
+    z-index: 46;
+    max-height: 62vh;
+    padding: 18px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: color-mix(in srgb, var(--panel) 96%, transparent);
+    backdrop-filter: blur(14px);
+    box-shadow: var(--shadow-lg);
+    overflow-y: auto;
+  }
+  .toc-pane.open .toc-sticky { position: static; max-height: none; }
+  .toc-pane.open .toc-toggle { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

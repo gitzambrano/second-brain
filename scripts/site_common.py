@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+import visibility
 import yaml
 from repo_paths import ESSAYS_DIR
 
@@ -35,6 +36,7 @@ class PublicEssay:
     status: str
     body: str
     published: bool = True
+    visibility: str = visibility.PUBLIC
 
 
 def parse(path: Path) -> tuple[dict[str, Any], str]:
@@ -43,7 +45,12 @@ def parse(path: Path) -> tuple[dict[str, Any], str]:
     match = FRONTMATTER_RE.match(text)
     if not match:
         return {}, text
-    meta = yaml.safe_load(match.group(1))
+    try:
+        meta = yaml.safe_load(match.group(1))
+    except yaml.YAMLError:
+        # Unparseable frontmatter is not a licence to publish: treat it as if
+        # the page declared nothing, which is the private default.
+        return {}, text[match.end():]
     return (meta if isinstance(meta, dict) else {}), text[match.end():]
 
 
@@ -69,7 +76,7 @@ def strip_public_body(body: str) -> str:
     return "\n".join(lines).strip()
 
 
-def _essay(path: Path, meta: dict, body: str, published: bool) -> PublicEssay:
+def _essay(path: Path, meta: dict, body: str, level: str) -> PublicEssay:
     heading = H1_RE.search(body)
     tags = meta.get("tags") or []
     if not isinstance(tags, list):
@@ -84,15 +91,17 @@ def _essay(path: Path, meta: dict, body: str, published: bool) -> PublicEssay:
         created=str(meta.get("created") or ""),
         status=str(meta.get("status") or ""),
         body=body,
-        published=published,
+        published=level == visibility.PUBLIC,
+        visibility=level,
     )
 
 
 def collect_all() -> list[PublicEssay]:
-    """Every essay in the corpus, each flagged with whether it may be read.
+    """Every essay the site may name, each flagged with whether it may be read.
 
-    The catalogue lists all of them — title, summary, tags, status. Only the
-    authorized ones carry a page, and only their body is ever rendered.
+    The catalogue lists public and private essays — title, summary, tags,
+    status. Only the public ones carry a page, and only their body is ever
+    rendered. Hidden essays are skipped entirely.
     """
     if not ESSAYS_DIR.exists():
         return []
@@ -101,7 +110,12 @@ def collect_all() -> list[PublicEssay]:
         if path.name == ".gitkeep":
             continue
         meta, body = parse(path)
-        essays.append(_essay(path, meta, body, meta.get("publish") is True))
+        level = visibility.of(meta)
+        # `hidden` means absent, not merely unreadable: it never reaches the
+        # catalogue, the search index or the map.
+        if level == visibility.HIDDEN:
+            continue
+        essays.append(_essay(path, meta, body, level))
     return essays
 
 

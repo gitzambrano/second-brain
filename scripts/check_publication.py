@@ -14,6 +14,7 @@ import json
 import re
 import unicodedata
 
+import visibility
 from repo_paths import ESSAYS_DIR
 from site_common import parse
 
@@ -34,18 +35,22 @@ def audit() -> tuple[list[dict], list[dict], list[str]]:
             if path.name == ".gitkeep":
                 continue
             meta, body = parse(path)
-            value = meta.get("publish", None)
-            if value is True:
+            level = visibility.of(meta)
+            if level == visibility.PUBLIC:
                 heading = re.search(r"(?m)^#\s+(.+)$", body)
                 public.append({
                     "slug": path.stem,
                     "title": heading.group(1).strip() if heading else path.stem,
                 })
-            elif "publish" in meta and value not in (False, None):
-                invalid.append({"slug": path.stem, "value": repr(value)})
+            bad = visibility.invalid_value(meta)
+            if bad:
+                invalid.append({"slug": path.stem, "value": bad})
 
     if invalid:
-        errors.append(f"publish must be YAML boolean: {invalid}")
+        errors.append(
+            "visibility must be public/private/hidden (or the legacy boolean "
+            f"publish: true): {invalid}"
+        )
     return public, invalid, errors
 
 

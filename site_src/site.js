@@ -165,5 +165,138 @@
     }
   });
 
+  /* --- Summaries, tag drawer ---------------------------------------------- */
+
+  var library = document.getElementById('library');
+  var summaryToggle = document.getElementById('toggleSummaries');
+  if (summaryToggle && library) {
+    summaryToggle.addEventListener('click', function () {
+      var on = summaryToggle.getAttribute('aria-pressed') !== 'true';
+      summaryToggle.setAttribute('aria-pressed', String(on));
+      library.classList.toggle('no-summaries', !on);
+    });
+  }
+
+  var filters = document.getElementById('filters');
+  var moreTags = document.getElementById('moreTags');
+  if (filters && moreTags) {
+    moreTags.addEventListener('click', function () {
+      filters.classList.add('expanded');
+      moreTags.setAttribute('aria-expanded', 'true');
+    });
+  }
+
   apply();
+
+  /* --- Cover map ----------------------------------------------------------
+     A still, low-fidelity portrait of the real graph: a sample of nodes drawn
+     once from graph.json. No simulation, no interaction — the map page owns
+     those. It is decoration with the courtesy of being true. */
+
+  var cover = document.getElementById('coverMap');
+  if (!cover) return;
+
+  fetch('graph.json', { cache: 'no-store' })
+    .then(function (response) { return response.json(); })
+    .then(function (data) { paintCover(cover, data); })
+    .catch(function () {
+      var wrap = cover.closest('.cover-map');
+      if (wrap) wrap.remove();
+    });
+
+  function paintCover(canvas, data) {
+    var ctx = canvas.getContext('2d');
+    var TYPE_COLOR = {
+      essay: '#7aabff', concept: '#7be0c3', entity: '#f2a65a',
+      insights: '#c99bff', reference: '#8494ad'
+    };
+
+    // Cap the sample: a few hundred marks read as a constellation, 1352 as mud.
+    var all = (data.nodes || []).filter(function (n) {
+      return typeof n.x0 === 'number' && typeof n.y0 === 'number';
+    });
+    var byDegree = all.slice().sort(function (a, b) {
+      return (b.degree || 0) - (a.degree || 0);
+    });
+    var nodes = byDegree.slice(0, 320);
+    var keep = {};
+    nodes.forEach(function (n) { keep[n.id] = n; });
+    var edges = (data.edges || []).filter(function (e) {
+      return keep[e.source] && keep[e.target];
+    }).slice(0, 700);
+
+    // A force layout throws a few nodes far out; framing on the raw extent
+    // would shrink the whole constellation to a dot. Frame the middle 90%.
+    function span(values) {
+      var sorted = values.slice().sort(function (a, b) { return a - b; });
+      var lo = sorted[Math.floor(sorted.length * 0.05)];
+      var hi = sorted[Math.floor(sorted.length * 0.95)];
+      return [lo, hi === lo ? lo + 1 : hi];
+    }
+    var xs = span(nodes.map(function (n) { return n.x0; }));
+    var ys = span(nodes.map(function (n) { return n.y0; }));
+    var bounds = { minX: xs[0], maxX: xs[1], minY: ys[0], maxY: ys[1] };
+
+    function draw() {
+      var ratio = window.devicePixelRatio || 1;
+      var rect = canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      canvas.width = Math.round(rect.width * ratio);
+      canvas.height = Math.round(rect.height * ratio);
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      ctx.clearRect(0, 0, rect.width, rect.height);
+
+      var spanX = (bounds.maxX - bounds.minX) || 1;
+      var spanY = (bounds.maxY - bounds.minY) || 1;
+      var pad = 26;
+      var scale = Math.min((rect.width - pad * 2) / spanX,
+                           (rect.height - pad * 2) / spanY);
+      var offX = (rect.width - spanX * scale) / 2 - bounds.minX * scale;
+      var offY = (rect.height - spanY * scale) / 2 - bounds.minY * scale;
+      var at = function (n) {
+        return [n.x0 * scale + offX, n.y0 * scale + offY];
+      };
+
+      var styles = getComputedStyle(document.documentElement);
+      ctx.strokeStyle = styles.getPropertyValue('--line-strong').trim() || '#556';
+      ctx.globalAlpha = 0.22;
+      ctx.lineWidth = 0.6;
+      ctx.beginPath();
+      edges.forEach(function (e) {
+        var a = at(keep[e.source]);
+        var b = at(keep[e.target]);
+        ctx.moveTo(a[0], a[1]);
+        ctx.lineTo(b[0], b[1]);
+      });
+      ctx.stroke();
+
+      ctx.globalAlpha = 1;
+      nodes.forEach(function (n) {
+        var p = at(n);
+        if (p[0] < -10 || p[1] < -10 || p[0] > rect.width + 10 || p[1] > rect.height + 10) {
+          return;
+        }
+        var r = 1.4 + Math.min(4.2, Math.sqrt(n.degree || 1) * 0.75);
+        ctx.beginPath();
+        ctx.arc(p[0], p[1], r, 0, Math.PI * 2);
+        ctx.fillStyle = TYPE_COLOR[n.type] || '#7aabff';
+        ctx.globalAlpha = n.public ? 1 : 0.62;
+        ctx.fill();
+        if (n.public) {
+          ctx.globalAlpha = 1;
+          ctx.lineWidth = 1.4;
+          ctx.strokeStyle = styles.getPropertyValue('--text-strong').trim() || '#fff';
+          ctx.stroke();
+        }
+      });
+      ctx.globalAlpha = 1;
+    }
+
+    draw();
+    window.addEventListener('resize', draw);
+    // The palette changes with the theme; redraw when it does.
+    new MutationObserver(draw).observe(document.documentElement, {
+      attributes: true, attributeFilter: ['data-theme']
+    });
+  }
 })();

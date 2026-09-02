@@ -46,6 +46,7 @@ import yaml
 
 import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
 
+import visibility
 from repo_paths import CODE_ROOT, DATA_ROOT, GRAPH_DIR, WIKI_ROOT
 
 ROOT_DIR = CODE_ROOT
@@ -296,6 +297,10 @@ def build_graph():
             if not title:
                 continue
             fm = get_frontmatter(content)
+            # `visibility: hidden` removes a page from the graph entirely,
+            # in the wiki build as well as in the public projection.
+            if visibility.is_hidden(fm):
+                continue
             node_id = f"{node_type}:{file.stem}"
             subtype = None
             if node_type == "insights":

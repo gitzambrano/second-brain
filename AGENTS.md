@@ -161,13 +161,24 @@ referências, com título, resumo, tags, datas, status e conexões. É um atlas:
 forma do conhecimento é pública.
 
 **Texto — só por allowlist.** O corpo de uma página só é renderizado, indexado
-para busca e linkável se o essay tiver o booleano YAML `publish: true`.
+para busca e linkável quando o essay é `public`.
 
-- campo ausente = não publicado;
-- `publish: false` = não publicado;
-- somente o booleano YAML `true` autoriza a leitura;
-- `publish: "true"` (string) é inválido e tratado como não publicado;
+O campo é `visibility:`, com três níveis:
+
+| Valor | Efeito |
+| --- | --- |
+| `public` | texto legível no site |
+| `private` | catalogado e mapeado por título e resumo; o texto não sai |
+| `hidden` | ausente de tudo — site, índice da wiki e grafo da wiki |
+
+- campo ausente = `private`;
+- valor não reconhecido = `private` (nunca publica por engano);
+- `publish: true` continua valendo como grafia antiga de `visibility: public`;
+- aceita as grafias em português: `público`, `privado`, `oculto`;
 - só se aplica a essays — nunca a source, concept, entity, insight, handout, status, log ou plano.
+
+`scripts/publication.py` escreve o campo (`allow`, `deny`, `hide`, `set-exclusive`)
+e sem argumentos lista o corpus por nível.
 
 O que **nunca** sai do repo privado: o corpo de qualquer página, qualquer caminho
 para dentro de `data/`, e qualquer link que abra uma página não autorizada. Um

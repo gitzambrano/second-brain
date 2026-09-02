@@ -48,11 +48,11 @@ Essays acrescentam:
 ```yaml
 summary: "Resumo de uma linha, até 120 caracteres."
 status: draft | maduro | finalizado
-publish: true          # opcional; ver ## Publicação
+visibility: public     # opcional; ver ## Publicação
 ```
 
-`summary:` sempre entre aspas duplas. `publish:` é opcional e sua ausência é o
-estado seguro.
+`summary:` sempre entre aspas duplas. `visibility:` é opcional e sua ausência
+significa privado, o estado seguro.
 
 ## Tags — Vocabulário Controlado
 
@@ -114,12 +114,16 @@ O site tem duas camadas:
 | Catálogo e mapa | base inteira | título, resumo, tags, datas, status, conexões |
 | Texto | só `publish: true` | corpo renderizado, busca full-text, link que abre |
 
-| Valor no frontmatter | Resultado |
+| `visibility:` | Resultado |
 | --- | --- |
-| campo ausente | catalogado como privado; não abre |
-| `publish: false` | catalogado como privado; não abre |
-| `publish: "true"` (string) | inválido; tratado como não publicado |
-| `publish: true` (booleano YAML) | texto legível no site |
+| `public` | texto legível no site |
+| `private` | catalogado e mapeado por título e resumo; não abre |
+| `hidden` | ausente do site, do índice da wiki e do grafo da wiki |
+| campo ausente | tratado como `private` |
+| valor não reconhecido | tratado como `private` |
+| `publish: true` (grafia antiga) | equivale a `public` |
+
+As grafias `público`, `privado` e `oculto` também são aceitas.
 
 Regras:
 

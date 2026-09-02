@@ -32,6 +32,11 @@
     </p>
   </section>
 
+  <a class="cover-map" href="graph.html" aria-label="Abrir o grafo completo">
+    <canvas id="coverMap" aria-hidden="true"></canvas>
+    <span class="cover-map-hint">o mapa inteiro <span aria-hidden="true">↗</span></span>
+  </a>
+
   <section class="library shell" id="library">
     <div class="toolbar">
       <label class="searchbox">
@@ -50,10 +55,12 @@
         <button type="button" id="viewList" data-view="list" aria-pressed="false">Lista</button>
         <button type="button" id="viewGroup" data-view="group" aria-pressed="false">Por tema</button>
       </div>
+      <button class="toggle-chip" type="button" id="toggleSummaries" aria-pressed="true">Resumos</button>
     </div>
 
     <div class="filters" id="filters" role="group" aria-label="Filtrar por tema">
       <button class="filter-chip active" type="button" data-tag="">Todos <span class="count">{{COUNT}}</span></button>{{TAG_FILTERS}}
+      <button class="filter-more" type="button" id="moreTags" aria-expanded="false">mais temas</button>
     </div>
 
     <div class="view-meta"><span id="visibleCount" aria-live="polite">{{COUNT}}</span> visíveis</div>
