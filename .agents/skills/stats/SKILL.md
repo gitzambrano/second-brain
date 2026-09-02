@@ -16,7 +16,7 @@ Dashboard **read-only**. Só relata; `/organize` e `/sweep` corrigem.
 ## Passo a passo
 
 1. Se `qmd` estiver disponível, atualize o índice local. Sem qmd, pule.
-2. Rode `python scripts/sync_skills.py --check`. Se houver drift, reporte e sugira sincronização; não corrija dentro de `/stats`.
+2. Rode `python scripts/check_skills.py`. Se houver erro de contrato de skill, reporte; não corrija dentro de `/stats`.
 3. Rode:
 
 ```bash

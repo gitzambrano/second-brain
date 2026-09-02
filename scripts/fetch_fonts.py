@@ -108,5 +108,7 @@ def ensure_local_fonts(output_dir):
 
 
 if __name__ == "__main__":
-    out = ensure_local_fonts(Path(__file__).resolve().parent.parent / "output" / "html")
+    from repo_paths import HTML_DIR
+
+    out = ensure_local_fonts(HTML_DIR)
     print(out or "sem fontes locais")

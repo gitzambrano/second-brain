@@ -51,6 +51,16 @@ def audit_file(path: Path, result: CheckResult) -> None:
     if not is_executable_script(path, tree):
         return
 
+    subparsers: set[str] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Assign) or not isinstance(node.value, ast.Call):
+            continue
+        func = node.value.func
+        if isinstance(func, ast.Attribute) and func.attr == "add_parser":
+            for target in node.targets:
+                if isinstance(target, ast.Name):
+                    subparsers.add(target.id)
+
     required: list[tuple[str, int]] = []
     for node in ast.walk(tree):
         if (
@@ -60,6 +70,9 @@ def audit_file(path: Path, result: CheckResult) -> None:
         ):
             continue
         if not node.args:
+            continue
+        receiver = node.func.value
+        if isinstance(receiver, ast.Name) and receiver.id in subparsers:
             continue
         name = _literal(node.args[0])
         if not isinstance(name, str) or name.startswith("-"):

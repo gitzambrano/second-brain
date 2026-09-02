@@ -52,8 +52,9 @@ from check_references import (
     try_fix_quoted_title,
 )
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
-WIKI_ROOT = ROOT_DIR / "wiki"
+from repo_paths import CODE_ROOT, DATA_ROOT, WIKI_ROOT
+
+ROOT_DIR = CODE_ROOT
 ESSAYS_DIR = WIKI_ROOT / "essays"
 CONCEPTS_DIR = WIKI_ROOT / "concepts"
 ENTITIES_DIR = WIKI_ROOT / "entities"
@@ -717,7 +718,7 @@ def main():
             if not args.dry_run:
                 save_file_content(file, new_content)
             verb = "Would fix" if args.dry_run else "Fixed"
-            print(f"{verb} formatting and/or links in: {file.relative_to(ROOT_DIR)}")
+            print(f"{verb} formatting and/or links in: {file.relative_to(DATA_ROOT)}")
             fixed_files_count += 1
 
         # A migração de `## Referências` para o padrão AIAA só se aplica a
@@ -727,7 +728,7 @@ def main():
             if n_entries:
                 referencias_fixed_count += 1
                 verb = "would be rewritten" if args.dry_run else "reescritas"
-                print(f"Referências {verb} (padrão AIAA): {file.relative_to(ROOT_DIR)} "
+                print(f"Referências {verb} (padrão AIAA): {file.relative_to(DATA_ROOT)} "
                       f"({n_entries} entrada(s))")
 
     action = "Dry-run completo — nada foi escrito." if args.dry_run else "Completed auto-fix."

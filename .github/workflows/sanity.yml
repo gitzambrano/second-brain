@@ -4,6 +4,9 @@ on:
   push:
   pull_request:
 
+# CI runs against the public engine only. It never checks out the private
+# second-brain-data repository and never receives a private credential.
+
 jobs:
   core:
     strategy:
@@ -17,12 +20,22 @@ jobs:
           python-version: '3.12'
       - name: Install Python test dependencies
         run: python -m pip install pytest ruff PyYAML PyMuPDF beautifulsoup4 html5lib playwright Unidecode
-      - name: Ruff new quality layer
+      - name: Ruff quality layer
         run: >-
           ruff check
           scripts/repo_paths.py scripts/sanity_common.py scripts/check_script_defaults.py
           scripts/check_skills.py scripts/check_env.py scripts/check_repo.py
           scripts/check_html_render.py scripts/check_pdf_content.py scripts/check_export_parity.py
+          scripts/bootstrap_repositories.py scripts/check_workspace.py
+          scripts/migrate_private_data.py scripts/publication.py scripts/check_publication.py
+          scripts/check_path_discipline.py scripts/check_freshness.py scripts/site_common.py
+          scripts/build_public_graph.py scripts/build_site.py scripts/check_site_privacy.py
+          scripts/render_public_essay.py scripts/serve_site.py
+      - name: Nested-Git and path discipline
+        run: |
+          python scripts/repo_paths.py
+          python scripts/check_workspace.py
+          python scripts/check_path_discipline.py
       - run: python scripts/check_repo.py --quick
       - run: python -m pytest -q -m "not html and not pdf and not slow"
 

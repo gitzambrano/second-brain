@@ -38,8 +38,9 @@ from build_references import (
 )
 from check_title import normalize as normalize_title
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
-WIKI_ROOT = ROOT_DIR / "wiki"
+from repo_paths import CODE_ROOT, DATA_ROOT, WIKI_ROOT
+
+ROOT_DIR = CODE_ROOT
 ESSAYS_DIR = WIKI_ROOT / "essays"
 CONCEPTS_DIR = WIKI_ROOT / "concepts"
 ENTITIES_DIR = WIKI_ROOT / "entities"
@@ -65,7 +66,7 @@ def titles_in(directory):
     out = []
     for path in sorted(directory.glob("*.md")):
         title = get_h1(load(path)) or path.stem
-        out.append((title, path.relative_to(ROOT_DIR).as_posix()))
+        out.append((title, path.relative_to(DATA_ROOT).as_posix()))
     return out
 
 

@@ -46,14 +46,15 @@ import yaml
 
 import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
-WIKI_ROOT = ROOT_DIR / "wiki"
+from repo_paths import CODE_ROOT, DATA_ROOT, GRAPH_DIR, WIKI_ROOT
+
+ROOT_DIR = CODE_ROOT
 ESSAYS_DIR = WIKI_ROOT / "essays"
 CONCEPTS_DIR = WIKI_ROOT / "concepts"
 ENTITIES_DIR = WIKI_ROOT / "entities"
 INSIGHTS_DIR = WIKI_ROOT / "insights"
 REFERENCES_JSON_PATH = WIKI_ROOT / "references.json"
-OUTPUT_DIR = ROOT_DIR / "output" / "graph"
+OUTPUT_DIR = GRAPH_DIR
 
 # Arquivo único compartilhável: grafo + leitor de essays com o MESMO
 # template do export HTML. Sem flags, o script gera AS DUAS variantes, cada
@@ -315,7 +316,7 @@ def build_graph():
                 # Windows `relative_to` devolve `wiki\essays\x.md`, montando
                 # `../../wiki\essays\x.md`. Funciona no file:// do Windows e
                 # em mais nenhum lugar.
-                "file": file.relative_to(ROOT_DIR).as_posix(),
+                "file": file.relative_to(DATA_ROOT).as_posix(),
                 # HTML exportado do essay, quando existe. Resolvido no BUILD e
                 # não no navegador: sem isso o modo leve teria de adivinhar se
                 # `/html` já rodou, e quem nunca rodou ganharia link quebrado.
@@ -819,7 +820,8 @@ def render_reader_fragments(essay_nodes):
     payload = {}
     total = len(essay_nodes)
     for i, node in enumerate(essay_nodes, 1):
-        path = ROOT_DIR / node["file"]
+        # node["file"] is stored relative to DATA_ROOT, not to the engine.
+        path = DATA_ROOT / node["file"]
         try:
             body, title, subtitle, author_date, summary, _status = prepare_for_pandoc(path)
         except Exception as e:  # noqa: BLE001 - essay problemático não derruba o build

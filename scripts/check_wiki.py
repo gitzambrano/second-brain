@@ -49,8 +49,9 @@ import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
 # Configuração de caminhos
 # ---------------------------------------------------------------------------
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
-WIKI_ROOT = ROOT_DIR / "wiki"
+from repo_paths import CODE_ROOT, OUTPUT_DIR, PLAN_DIR, WIKI_ROOT
+
+ROOT_DIR = CODE_ROOT
 ESSAYS_DIR = WIKI_ROOT / "essays"
 CONCEPTS_DIR = WIKI_ROOT / "concepts"
 ENTITIES_DIR = WIKI_ROOT / "entities"
@@ -1327,7 +1328,7 @@ def check_plano():
     def add(severity, code, message):
         corpus.append({"section": "PLANO", "severity": severity, "code": code, "message": message})
 
-    plano_path = ROOT_DIR / "plan" / "plano.md"
+    plano_path = PLAN_DIR / "plano.md"
     if not plano_path.exists():
         add("WARNING", "PLANO_MISSING", "plan/plano.md não existe ainda (normal se /plan nunca foi usado)")
         return corpus
@@ -1519,7 +1520,7 @@ def main():
     print(report_text)
 
     if not corpus_skipped:
-        output_report_path = ROOT_DIR / "output" / "comprehensive_lint_output.txt"
+        output_report_path = OUTPUT_DIR / "comprehensive_lint_output.txt"
         output_report_path.parent.mkdir(parents=True, exist_ok=True)
         with open(output_report_path, "w", encoding="utf-8") as f:
             f.write(report_text)

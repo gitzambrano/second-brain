@@ -17,6 +17,36 @@ from repo_paths import CODE_ROOT, HTML_DIR, PDF_DIR, SCRIPTS_DIR, corpus_has_ess
 from sanity_common import CheckResult
 
 
+def run_status_command(name: str, cmd: list[str], result: CheckResult) -> None:
+    """Run a checker emitting {"status", "errors", "warnings"} and fold it in.
+
+    These checkers already exit non-zero on a blocking problem; this only makes
+    their individual messages visible in the unified report.
+    """
+    proc = subprocess.run(cmd, cwd=CODE_ROOT, capture_output=True, text=True,
+                          encoding="utf-8", errors="replace")
+    try:
+        payload = json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        if proc.returncode:
+            result.error("CHECK_FAILED", f"{name} exited {proc.returncode}: "
+                                         f"{(proc.stdout + proc.stderr).strip()[:1000]}")
+        else:
+            result.warning("JSON_UNPARSEABLE", f"{name} --json did not return pure JSON")
+        return
+    errors = payload.get("errors") or []
+    # check_freshness reports a warning *count*; the others report a list.
+    warnings = payload.get("warnings") or []
+    if isinstance(warnings, int):
+        warnings = [f"{warnings} freshness candidate(s)"] if warnings else []
+    for message in errors:
+        result.error("FRAMEWORK_ISSUE", f"{name}: {message}")
+    for message in warnings:
+        result.warning("FRAMEWORK_WARNING", f"{name}: {message}")
+    if not errors and not warnings:
+        result.info("CHECK_OK", name)
+
+
 def run_command(name: str, cmd: list[str], result: CheckResult, parse_json_severity: bool = False) -> None:
     proc = subprocess.run(cmd, cwd=CODE_ROOT, capture_output=True, text=True,
                           encoding="utf-8", errors="replace")
@@ -54,6 +84,16 @@ def run_command(name: str, cmd: list[str], result: CheckResult, parse_json_sever
 
 def quick(result: CheckResult) -> None:
     run_command("compile scripts", [sys.executable, "-m", "compileall", "-q", "scripts"], result)
+    run_status_command(
+        "workspace",
+        [sys.executable, str(SCRIPTS_DIR / "check_workspace.py"), "--json"],
+        result,
+    )
+    run_status_command(
+        "path discipline",
+        [sys.executable, str(SCRIPTS_DIR / "check_path_discipline.py"), "--json"],
+        result,
+    )
     run_command(
         "script no-arg contract",
         [sys.executable, str(SCRIPTS_DIR / "check_script_defaults.py"), "--json"],
@@ -87,6 +127,10 @@ def wiki(result: CheckResult) -> None:
         path = SCRIPTS_DIR / script
         if path.exists():
             run_command(script, [sys.executable, str(path), *extra], result, parse_json_severity=parse_json)
+    for script in ("check_freshness.py", "check_publication.py"):
+        path = SCRIPTS_DIR / script
+        if path.exists():
+            run_status_command(script, [sys.executable, str(path), "--json"], result)
 
 
 def exports(result: CheckResult) -> None:

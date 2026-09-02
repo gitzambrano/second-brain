@@ -18,9 +18,29 @@ def test_known_contract_regressions_are_absent():
     assert "DUPLICATE_RULE" not in codes
 
 
-def test_update_preflight_syncs_generated_mirrors_before_quality_gate():
+def test_update_preflight_validates_workspace_before_quality_gate():
     from pathlib import Path
     root = Path(__file__).resolve().parents[1]
     text = (root / ".agents/agents/update.md").read_text(encoding="utf-8")
-    assert text.index("python scripts/sync_skills.py") < text.index("python scripts/check_repo.py --quick")
+    assert text.index("python scripts/check_workspace.py") < text.index("python scripts/check_repo.py --quick")
+    assert text.index("python scripts/check_path_discipline.py") < text.index("python scripts/check_repo.py --quick")
     assert "NÃO EXECUTADO (gate falhou)" in text
+
+
+def test_update_never_publishes_the_public_site():
+    """`update` closes engine and data. Publication stays an explicit decision."""
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    text = (root / ".agents/agents/update.md").read_text(encoding="utf-8")
+    assert "build_site.py" in text and "não commita em `site/`" in text
+    assert "git -C data" in text and "git -C ." in text
+
+
+def test_no_agent_file_mentions_the_removed_mirror_system():
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    stale = [
+        p for p in (root / ".agents").rglob("*.md")
+        if "sync_skills" in p.read_text(encoding="utf-8")
+    ]
+    assert not stale, [str(p) for p in stale]

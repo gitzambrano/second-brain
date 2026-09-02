@@ -28,9 +28,9 @@ from collections import Counter, defaultdict
 
 import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
-WIKI_ROOT = ROOT_DIR / "wiki"
-PLAN_DIR = ROOT_DIR / "plan"
+from repo_paths import CODE_ROOT, PLAN_DIR, STATS_DIR, WIKI_ROOT
+
+ROOT_DIR = CODE_ROOT
 ESSAYS_DIR = WIKI_ROOT / "essays"
 CONCEPTS_DIR = WIKI_ROOT / "concepts"
 ENTITIES_DIR = WIKI_ROOT / "entities"
@@ -38,7 +38,7 @@ SOURCES_DIR = WIKI_ROOT / "sources"
 HANDOUTS_DIR = WIKI_ROOT / "handouts"
 INSIGHTS_DIR = WIKI_ROOT / "insights"
 PLANO_FILE = PLAN_DIR / "plano.md"
-OUTPUT_DIR = ROOT_DIR / "output" / "stats"
+OUTPUT_DIR = STATS_DIR
 
 SOURCE_TYPES = [
     "Ensaio Completo Importado",

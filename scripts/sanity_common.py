@@ -13,6 +13,21 @@ from typing import Any
 SEVERITIES = ("ERROR", "WARNING", "INFO", "SKIP")
 
 
+def text_contains(haystack_norm: str, needle_norm: str) -> bool:
+    """Presence test tolerant of typographic letter-spacing.
+
+    The PDF template tracks section headings and the byline ("S U M A R I O"),
+    so text extraction returns a space between every glyph and a plain substring
+    test reports the heading as missing. Falling back to a space-free comparison
+    keeps the check honest without weakening it: absent text is still absent.
+    """
+    if not needle_norm:
+        return True
+    if needle_norm in haystack_norm:
+        return True
+    return needle_norm.replace(" ", "") in haystack_norm.replace(" ", "")
+
+
 @dataclass(slots=True)
 class Issue:
     code: str

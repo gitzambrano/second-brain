@@ -16,7 +16,7 @@ import unicodedata
 from pathlib import Path
 
 from repo_paths import ESSAYS_DIR, HTML_DIR, PDF_DIR
-from sanity_common import CheckResult
+from sanity_common import CheckResult, text_contains
 
 
 def norm(text: str) -> str:
@@ -38,6 +38,34 @@ def export_heading(text: str) -> str:
         text,
         flags=re.IGNORECASE,
     ).strip()
+
+
+MATH_SPAN = re.compile(r"\$[^$]*\$|\\\((?:[^\\]|\\(?!\)))*\\\)")
+
+
+PUNCTUATION = re.compile(r"[()\[\]{}:,;.\-–—]")
+
+
+def loose(text: str) -> str:
+    """Normalize and drop punctuation, so both sides compare on words alone."""
+    return norm(PUNCTUATION.sub(" ", text))
+
+
+def prose_fragments(text: str) -> list[str]:
+    """Split a heading into the prose pieces that survive rendering.
+
+    A heading such as ``Efeitos de Primeira Ordem: $C_{n_r}$ e $I_z$`` is emitted
+    as typeset math by both exporters, so the literal TeX is never present in the
+    extracted text and the pieces around it are no longer contiguous. Checking
+    each prose fragment separately keeps the parity check meaningful; the math
+    itself is covered by the HTML and PDF content checkers.
+    """
+    fragments = []
+    for piece in MATH_SPAN.split(text):
+        normalized = loose(piece)
+        if len(normalized) >= 4:
+            fragments.append(normalized)
+    return fragments
 
 
 def html_text(path: Path) -> tuple[str, int]:
@@ -111,15 +139,21 @@ def audit(slug: str | None = None) -> CheckResult:
         htext, himages = html_text(hp)
         fp = source_fingerprint(source)
         nh, npdf = norm(htext), norm(ptext)
+        # Heading comparison ignores punctuation on both sides: the exporters
+        # re-punctuate chapter kickers, and math spans leave stray separators.
+        lh, lpdf = loose(htext), loose(ptext)
         for label in [fp["title"], *fp["h2"]]:
-            if label and norm(label) not in nh:
+            fragments = prose_fragments(label)
+            if not fragments:
+                continue
+            if any(not text_contains(lh, f) for f in fragments):
                 result.error("HTML_TEXT_MISSING", f"missing heading/title: {label}", source.name)
-            if label and norm(label) not in npdf:
+            if any(not text_contains(lpdf, f) for f in fragments):
                 result.error("PDF_TEXT_MISSING", f"missing heading/title: {label}", source.name)
         for title in fp["reference_titles"]:
-            if norm(title) not in nh:
+            if not text_contains(lh, loose(title)):
                 result.error("HTML_REFERENCE_MISSING", title, source.name)
-            if norm(title) not in npdf:
+            if not text_contains(lpdf, loose(title)):
                 result.error("PDF_REFERENCE_MISSING", title, source.name)
         if fp["connections"]:
             if norm("Conexões") in nh:

@@ -42,8 +42,9 @@ from build_references import (
     parse_reference_line,
 )
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
-WIKI_ROOT = ROOT_DIR / "wiki"
+from repo_paths import CODE_ROOT, WIKI_ROOT
+
+ROOT_DIR = CODE_ROOT
 ESSAYS_DIR = WIKI_ROOT / "essays"
 
 # `LINK_NOT_IN_REFERENCIAS` só vale para link que é de fato uma fonte. A regra 3

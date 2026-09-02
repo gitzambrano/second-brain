@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
-"""Central path configuration for repository-quality tooling.
+"""Canonical paths for the nested three-repository Second Brain framework.
 
-Code lives in ``CODE_ROOT``. Content normally lives in the same checkout, but
-quality tests may point data reads/writes at a synthetic corpus with the
-``SECOND_BRAIN_DATA_ROOT`` environment variable.
+Default:
+    CODE_ROOT = this public second-brain-engine checkout
+    DATA_ROOT = CODE_ROOT / "data"  (private nested Git repo)
+    SITE_ROOT = CODE_ROOT / "site"  (public nested Git repo)
 
-No-argument default: print the effective paths and whether the selected data
-root is a skeleton or a populated corpus.
+Tests/worktrees may override the nested roots with:
+    SECOND_BRAIN_DATA_ROOT
+    SECOND_BRAIN_SITE_ROOT
+
+No-argument default is read-only and prints the effective paths.
 """
 from __future__ import annotations
 
@@ -14,11 +18,22 @@ import os
 from pathlib import Path
 
 CODE_ROOT = Path(__file__).resolve().parent.parent
-DATA_ROOT = Path(os.environ.get("SECOND_BRAIN_DATA_ROOT", CODE_ROOT)).expanduser().resolve()
+WORKSPACE_ROOT = CODE_ROOT
+
+DATA_ROOT = Path(
+    os.environ.get("SECOND_BRAIN_DATA_ROOT", CODE_ROOT / "data")
+).expanduser().resolve()
+
+SITE_ROOT = Path(
+    os.environ.get("SECOND_BRAIN_SITE_ROOT", CODE_ROOT / "site")
+).expanduser().resolve()
+
 SCRIPTS_DIR = CODE_ROOT / "scripts"
 AGENTS_DIR = CODE_ROOT / ".agents"
 SKILLS_DIR = AGENTS_DIR / "skills"
 SUBAGENTS_DIR = AGENTS_DIR / "agents"
+SITE_SRC_DIR = CODE_ROOT / "site_src"
+
 WIKI_ROOT = DATA_ROOT / "wiki"
 ESSAYS_DIR = WIKI_ROOT / "essays"
 CONCEPTS_DIR = WIKI_ROOT / "concepts"
@@ -27,6 +42,8 @@ INSIGHTS_DIR = WIKI_ROOT / "insights"
 HANDOUTS_DIR = WIKI_ROOT / "handouts"
 ASSETS_DIR = WIKI_ROOT / "assets"
 SOURCES_DIR = WIKI_ROOT / "sources"
+REFERENCES_JSON = WIKI_ROOT / "references.json"
+
 PLAN_DIR = DATA_ROOT / "plan"
 RAW_DIR = DATA_ROOT / "raw"
 OUTPUT_DIR = DATA_ROOT / "output"
@@ -39,8 +56,30 @@ GRAPH_DIR = OUTPUT_DIR / "graph"
 PAGE_DIRS = (ESSAYS_DIR, CONCEPTS_DIR, ENTITIES_DIR, INSIGHTS_DIR)
 
 
+def _is_within(child: Path, parent: Path) -> bool:
+    try:
+        child.resolve().relative_to(parent.resolve())
+        return True
+    except ValueError:
+        return False
+
+
+def path_layout_valid() -> bool:
+    """Validate logical roots, including external overrides used by tests."""
+    code, data, site = CODE_ROOT.resolve(), DATA_ROOT.resolve(), SITE_ROOT.resolve()
+    if len({code, data, site}) != 3:
+        return False
+    if _is_within(data, site) or _is_within(site, data):
+        return False
+    # DATA/SITE may intentionally be children of CODE_ROOT. They may also be
+    # external when env overrides are used in tests/worktrees.
+    return True
+
+
 def _has_md(directory: Path) -> bool:
-    return directory.is_dir() and any(p.name != ".gitkeep" for p in directory.glob("*.md"))
+    return directory.is_dir() and any(
+        p.name != ".gitkeep" for p in directory.glob("*.md")
+    )
 
 
 def corpus_has_pages() -> bool:
@@ -51,27 +90,42 @@ def corpus_has_essays() -> bool:
     return _has_md(ESSAYS_DIR)
 
 
+def relative_data(path: Path) -> Path:
+    path = Path(path).resolve()
+    try:
+        return path.relative_to(DATA_ROOT)
+    except ValueError:
+        return path
+
 
 def relative_display(path: Path) -> Path:
-    """Return a stable display path relative to DATA_ROOT or CODE_ROOT.
+    """Stable display path for corpus files.
 
-    Synthetic test corpora may live outside the checkout, so callers must not
-    assume every wiki path is underneath CODE_ROOT.
+    Corpus paths are shown relative to DATA_ROOT; engine paths relative to
+    CODE_ROOT. Synthetic fixtures may live outside both, so absolute paths are
+    returned unchanged.
     """
     path = Path(path).resolve()
-    for root in (DATA_ROOT, CODE_ROOT):
+    for base in (DATA_ROOT, CODE_ROOT):
         try:
-            return path.relative_to(root)
+            return path.relative_to(base)
         except ValueError:
-            pass
+            continue
     return path
+
 
 def print_paths() -> None:
     print(f"CODE_ROOT={CODE_ROOT}")
     print(f"DATA_ROOT={DATA_ROOT}")
+    print(f"SITE_ROOT={SITE_ROOT}")
     print(f"WIKI_ROOT={WIKI_ROOT}")
     print(f"OUTPUT_DIR={OUTPUT_DIR}")
-    print(f"mode={'corpus' if corpus_has_pages() else 'skeleton'}")
+    print(f"path_layout_valid={'yes' if path_layout_valid() else 'NO'}")
+    print(f"data_exists={'yes' if DATA_ROOT.is_dir() else 'no'}")
+    print(f"data_git={'yes' if (DATA_ROOT / '.git').exists() else 'no'}")
+    print(f"site_exists={'yes' if SITE_ROOT.is_dir() else 'no'}")
+    print(f"site_git={'yes' if (SITE_ROOT / '.git').exists() else 'no'}")
+    print(f"corpus={'yes' if corpus_has_pages() else 'no'}")
 
 
 if __name__ == "__main__":

@@ -26,8 +26,9 @@ from urllib.parse import urlparse
 
 import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
-WIKI_ROOT = ROOT_DIR / "wiki"
+from repo_paths import CODE_ROOT, DATA_ROOT, WIKI_ROOT
+
+ROOT_DIR = CODE_ROOT
 ESSAYS_DIR = WIKI_ROOT / "essays"
 OUTPUT_JSON_PATH = WIKI_ROOT / "references.json"
 OUTPUT_MD_PATH = WIKI_ROOT / "references.md"
@@ -312,8 +313,8 @@ def main():
     no_link = sum(1 for r in data["references"] if not r["has_link"])
     print(f"Referências indexadas: {len(data['references'])} única(s) em {data['essays_scanned']} essay(s) "
           f"({no_link} sem link).")
-    print(f"  {OUTPUT_JSON_PATH.relative_to(ROOT_DIR)}")
-    print(f"  {OUTPUT_MD_PATH.relative_to(ROOT_DIR)}")
+    print(f"  {OUTPUT_JSON_PATH.relative_to(DATA_ROOT)}")
+    print(f"  {OUTPUT_MD_PATH.relative_to(DATA_ROOT)}")
     return 0
 
 

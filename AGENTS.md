@@ -10,6 +10,28 @@ Siga este arquivo e as skills em `.agents/skills/`. `conventions/SKILL.md` é a 
 
 ## Arquitetura
 
+Este checkout é a raiz do Git **público** do engine. Dentro dele vivem dois
+repositórios Git independentes, que **não** são submodules e são integralmente
+ignorados pelo Git externo:
+
+```text
+./      second-brain-engine  PUBLIC   engine: AGENTS.md, .agents/, scripts, tests, site_src
+data/   second-brain-data    PRIVATE  wiki, plan, raw, output, .obsidian
+site/   second-brain-site    PUBLIC   projeção gerada dos essays autorizados
+```
+
+Neste arquivo e nas skills, caminho de conteúdo é **lógico**:
+
+```text
+wiki/...    ⇒ DATA_ROOT/wiki/...
+plan/...    ⇒ DATA_ROOT/plan/...
+raw/...     ⇒ DATA_ROOT/raw/...
+output/...  ⇒ DATA_ROOT/output/...
+```
+
+`DATA_ROOT` é `data/` por padrão. Scripts resolvem isso por `scripts/repo_paths.py`;
+nunca deduza caminho de conteúdo a partir do diretório corrente.
+
 - **`raw/`** — inbox temporário. Conteúdo ainda não processado. `/import` e `/digest` arquivam a fonte em `wiki/sources/` depois do processamento.
 - **`wiki/`** — espaço de trabalho:
   - `essays/` — conteúdo central: ensaios, white papers e estudos.
@@ -29,18 +51,14 @@ Siga este arquivo e as skills em `.agents/skills/`. `conventions/SKILL.md` é a 
 
 Detalhes de tipos de source, frontmatter, tags, links, referências, prosa, imagens e formatos vivem em `conventions/SKILL.md`.
 
-### Fonte única para múltiplos agentes
+### Fonte única para agentes
 
-| Fonte editável | Espelho/consumidor | Sincronização |
-| ---------------------------------------- | ------------------------------------------------------------ | ------------------------------------ |
-| `AGENTS.md` | `CLAUDE.md` | `CLAUDE.md` importa `@AGENTS.md` |
-| `.agents/skills/`, `.agents/agents/` | `.claude/skills/`, `.claude/agents/`, `.codex/skills/` | `scripts/sync_skills.py` |
+`.agents/` é a única árvore editável de skills e subagents, e vale para todos os
+agentes. Não existem mirrors gerados: `.claude/skills/`, `.claude/agents/` e
+`.codex/skills/` não devem existir. `CLAUDE.md` é apenas um adaptador de uma linha
+que importa `@AGENTS.md`.
 
-Nunca edite espelhos gerados. Para checar drift sem escrever:
-
-```bash
-python scripts/sync_skills.py --check
-```
+Não há passo de sincronização. Editou `.agents/`, terminou.
 
 ## Skills Disponíveis
 
@@ -103,6 +121,7 @@ Tag de modo:
 | PDF     | `/pdf`     | script  | Exportar e validar PDF                  |
 | HTML    | `/html`    | script  | Exportar e validar HTML standalone      |
 | Query   | `/query`   | leitura | Consultar o conhecimento já registrado |
+| Synthesize | `/synthesize` | leitura | Procurar padrões emergentes na combinação de páginas |
 
 `conventions` não tem comando; é referência normativa.
 
@@ -113,6 +132,7 @@ Tag de modo:
 - **Identificar gaps sem agir:** `/gaps`.
 - **Reparar/expandir conexões:** `/connect`; não chame `/gaps` separadamente porque `/connect` já o invoca.
 - **Retrato read-only:** `/stats` para métricas; `/doctor` para saúde do sistema.
+- **Procurar padrão emergente entre páginas:** `/synthesize`; `/query` responde pergunta, `/synthesize` procura o que ainda não foi dito.
 - **Processar `raw/`:** essay completo do Usuário → `/import`; fonte de terceiros → `/digest`. `/absorb` incorpora fonte já processada sob pedido explícito.
 
 ## Essays — Tema Central
@@ -130,6 +150,27 @@ Tag de modo:
 `tags:` das páginas e `Tags:` do manifesto usam o mesmo vocabulário. Tipos de source definem as subpastas físicas em `wiki/sources/`.
 
 A fonte normativa para tags, tipos, status, manifesto/mapa e regras de reuso é `conventions/SKILL.md`. Reuse valores existentes antes de criar novos; `/organize` audita consistência.
+
+## Publicação
+
+Publicação é uma **allowlist de segurança**, não taxonomia. O controle é o campo
+booleano opcional `publish:` no frontmatter do essay.
+
+- campo ausente = privado;
+- `publish: false` = privado;
+- somente o booleano YAML `true` autoriza projeção pública;
+- `publish: "true"` (string) é inválido e tratado como privado;
+- só se aplica a essays — nunca a source, concept, entity, insight, handout, status, log ou plano.
+
+Nenhuma skill define ou altera `publish:` automaticamente. Nem `/review`, nem
+`/import`, nem `/organize`, nem o subagent `update`. É decisão explícita do Usuário,
+aplicada por `scripts/publication.py`.
+
+`scripts/build_site.py` roda **apenas** sob pedido explícito de publicação, e o
+resultado precisa passar em `scripts/check_site_privacy.py`. Conexões internas para
+páginas privadas nunca viram nó ou aresta do grafo público.
+
+Regras completas em `conventions/SKILL.md`.
 
 ## Plano de Longo Prazo
 
@@ -163,6 +204,16 @@ Pendência de curto prazo fica em `wiki/status.md`, não no plano.
 5. **Contradição entre fontes:** não escolha um lado nem faça média. Mostre as versões com localização e aguarde a decisão do Usuário.
 6. Busque na wiki primeiro. Vá às fontes arquivadas quando a wiki não bastar ou quando for necessário verificar a evidência.
 7. Toda a wiki é escrita em Português do Brasil.
+8. **Git é sempre explícito por repositório.** Nunca use um único `git add`/`commit`
+   para representar o workspace inteiro:
+
+   ```bash
+   git -C . status
+   git -C data status
+   git -C site status
+   ```
+
+   O engine ignora `/data/` e `/site/` integralmente; nunca force `git add -f data`.
 
 ## Subagents
 
@@ -193,18 +244,22 @@ Vale para `.agents/skills/` e `.agents/agents/`.
 - Não registre histórico de mudança; o arquivo descreve o comportamento atual.
 - Reserve “nunca” e “sempre” para invariantes realmente bloqueantes.
 - Mudou o comportamento, atualize `description:` do frontmatter.
-- Depois de editar `.agents/`, rode `python scripts/sync_skills.py`.
+- Editou `.agents/`, terminou: não há mirror para sincronizar. Valide com `python scripts/check_skills.py`.
 
 ## Ferramentas
 
-- **qmd** — primeira opção de busca conceitual quando disponível. Collection `secondbrain`, indexando `wiki/**/*.md`. Confirme com `qmd status`; se indisponível, use `scripts/find_text.py`.
+- **qmd** — primeira opção de busca conceitual quando disponível. Collection `secondbrain`, indexando `DATA_ROOT/wiki/**/*.md` (por padrão `data/wiki`), nunca a raiz do engine. Confirme com `qmd status`; se indisponível, use `scripts/find_text.py`.
 - **scripts/find_text.py** — busca textual com contexto na wiki; também serve para termos/wikilinks exatos.
 - **summarize** — resume links, arquivos e mídia quando disponível.
 - **agent-browser** — fallback de navegador quando busca/fetch não resolverem.
 
 ## Repository Quality Gates
 
-O repositório versionado é um **skeleton**. Conteúdo pessoal em `wiki/`, `plan/`, `raw/` e outputs reais não é requisito de CI. Testes de regressão usam `tests/fixtures/mini-brain/`.
+O repositório público versionado é um **engine de código e agentes**, não uma wiki. Ele não
+contém corpus pessoal: `wiki/`, `plan/`, `raw/`, `output/` e `.obsidian/` vivem no repo
+privado `data/` e são ignorados aqui. O único corpus versionado é sintético, em
+`tests/fixtures/mini-brain/`, e os testes o instalam sob `tmp_path` — nunca na `data/` real.
+CI roda sem `data/` e sem `site/`, e nunca clona nem recebe credencial do repo privado.
 
 ```bash
 python scripts/check_repo.py

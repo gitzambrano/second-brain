@@ -1,36 +1,25 @@
 __pycache__/
-.obsidian/*
-!.obsidian/app.json
-!.obsidian/appearance.json
-!.obsidian/core-plugins.json
-!.obsidian/community-plugins.json
-!.obsidian/graph.json
-!.obsidian/snippets/
-!.obsidian/plugins/
-.obsidian/plugins/*/*
-!.obsidian/plugins/*/data.json
 *.code-workspace
-.miktex/*
-.claude/*
-!.claude/settings.json
+.miktex/
 .claude/settings.local.json
-.codex/*
-.qmd-cache/*
-.qmd-config/*
-.qmd-output/*
-raw/**
-!raw/**/
-!raw/**/.gitkeep
-plan/**
-!plan/**/
-!plan/**/.gitkeep
-output/**
-!output/**/
-!output/**/.gitkeep
-wiki/**
-!wiki/**/
-!wiki/**/.gitkeep
-*log*
+.claude/scheduled_tasks.lock
+.claude/worktrees/
+
+# The two nested repositories are intentionally invisible to the outer engine Git.
+/data/
+/site/
+
+# Legacy personal-data locations must never be reintroduced into the public engine.
+/wiki/
+/plan/
+/raw/
+/output/
+/.obsidian/
+
+# Local semantic-search caches
+.qmd-cache/
+.qmd-config/
+.qmd-output/
 
 # Python/test tooling
 .pytest_cache/
@@ -39,3 +28,10 @@ wiki/**
 htmlcov/
 playwright-report/
 test-results/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+
+# Migration handoff package (local only)
+/second-brain-new-framework.zip

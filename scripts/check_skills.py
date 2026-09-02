@@ -2,16 +2,13 @@
 """Static contract checker for skills, subagents, scripts and documentation.
 
 No-argument default: audit all source skills/subagents plus AGENTS.md/README.md.
-Generated mirrors are checked only when they already exist; fresh clones are
-allowed to omit ignored ``.claude/skills`` and ``.codex/skills`` directories.
+``.agents/`` is the single source tree; there is no generated mirror to check.
 """
 from __future__ import annotations
 
 import argparse
 import ast
 import re
-import subprocess
-import sys
 from collections import Counter
 from pathlib import Path
 
@@ -183,20 +180,6 @@ def audit() -> CheckResult:
             result.error("SKILL_NOT_IN_AGENTS", f"/{name} is not documented in AGENTS.md")
         if f"/{name}" not in readme and name not in {"conventions", "doctor"}:
             result.warning("SKILL_NOT_IN_README", f"/{name} is not mentioned in README.md")
-
-    # Generated mirrors are ignored by git. Only assert drift if at least one
-    # generated mirror is present in this checkout.
-    mirrors = [CODE_ROOT / ".claude" / "skills", CODE_ROOT / ".claude" / "agents", CODE_ROOT / ".codex" / "skills"]
-    if any(p.exists() for p in mirrors):
-        proc = subprocess.run([sys.executable, str(SCRIPTS_DIR / "sync_skills.py"), "--check"],
-                              cwd=CODE_ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace")
-        if proc.returncode:
-            result.error("GENERATED_MIRROR_DRIFT", (proc.stdout + proc.stderr).strip()[:800])
-    else:
-        result.skip(
-            "GENERATED_MIRRORS_ABSENT",
-            "generated mirrors are absent in this clone; sync_skills tests cover idempotence",
-        )
 
     result.meta.update(skills=len(skill_files), agents=len(agent_files))
     return result

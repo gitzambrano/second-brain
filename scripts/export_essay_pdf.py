@@ -88,13 +88,20 @@ import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
 # que o filtro scripts/pdf_boxes.lua mapeia para ambientes tcolorbox no LaTeX.
 from html_preprocess import transform_markdown
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
+from repo_paths import (
+    CODE_ROOT,
+    ESSAYS_DIR,
+    HANDOUTS_DIR,
+    HANDOUT_OUTPUT_DIR,
+    OUTPUT_DIR as DATA_OUTPUT_DIR,
+    PDF_DIR,
+)
+
+ROOT_DIR = CODE_ROOT
+# Lua filter and other engine resources stay next to the scripts.
 LUA_FILTER = Path(__file__).resolve().parent / "pdf_boxes.lua"
-ESSAYS_DIR = ROOT_DIR / "wiki" / "essays"
-HANDOUTS_DIR = ROOT_DIR / "wiki" / "handouts"
-OUTPUT_DIR = ROOT_DIR / "output" / "pdf"
-HANDOUT_OUTPUT_DIR = ROOT_DIR / "output" / "handouts"
-TEMPLATE_DIR = ROOT_DIR / "output"
+OUTPUT_DIR = PDF_DIR
+TEMPLATE_DIR = DATA_OUTPUT_DIR
 
 AUTHOR = "Gustavo Zambrano"
 

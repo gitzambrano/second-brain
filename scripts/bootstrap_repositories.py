@@ -1,0 +1,160 @@
+#!/usr/bin/env python3
+"""Create the nested data/ and site/ repository skeletons.
+
+No args: dry-run.
+--create: create missing directories/files without overwriting corpus.
+--init-git: initialize both nested Git repositories on branch main.
+
+The command never creates GitHub remotes and never alters the engine Git index.
+"""
+from __future__ import annotations
+
+import argparse
+import subprocess
+from pathlib import Path
+
+from repo_paths import CODE_ROOT, DATA_ROOT, SITE_ROOT
+
+DATA_DIRS = [
+    "raw",
+    "plan/drafts",
+    "wiki/essays", "wiki/concepts", "wiki/entities", "wiki/insights",
+    "wiki/handouts", "wiki/assets", "wiki/book-chapters",
+    "wiki/sources/ensaio-importado", "wiki/sources/web-clipping",
+    "wiki/sources/artigo-academico", "wiki/sources/livro",
+    "wiki/sources/documentacao-tecnica", "wiki/sources/transcricao",
+    "wiki/sources/ideias", "wiki/sources/outro", "wiki/sources/resumos",
+    "output/html", "output/pdf", "output/handouts", "output/stats", "output/graph",
+]
+
+DATA_GITIGNORE = """# Raw source documents are local-only; metadata/resumos remain versionable.
+wiki/sources/**
+!wiki/sources/**/
+!wiki/sources/**/.gitkeep
+!wiki/sources/manifest.md
+!wiki/sources/map.md
+!wiki/sources/resumos/
+!wiki/sources/resumos/**
+!wiki/sources/resumos/**/.gitkeep
+
+# Generated outputs are reproducible.
+output/**
+!output/**/
+!output/**/.gitkeep
+
+# Migration reports are private/local.
+.migration/
+
+# Semantic-search caches.
+.qmd-cache/
+.qmd-config/
+.qmd-output/
+
+# Obsidian volatile state.
+.obsidian/workspace*
+.obsidian/cache/
+
+# OS/Python/editor.
+.DS_Store
+Thumbs.db
+__pycache__/
+*.tmp
+*.bak
+"""
+
+DATA_GITATTRIBUTES = """* text=auto
+*.md text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+"""
+
+DATA_README = """# Second Brain Data
+
+PRIVATE repository. Contains personal wiki, plan, raw inbox, Obsidian settings
+and private generated outputs.
+
+Raw documents under `wiki/sources/` are intentionally not versioned. The
+curated `manifest.md`, `map.md` and `resumos/` may be versioned.
+
+This repository must never be used as a GitHub Pages source.
+"""
+
+SITE_README = """# Second Brain Site
+
+PUBLIC generated Digital Garden.
+
+Everything committed here must be safe for public Internet access. Content is
+generated only by `../scripts/build_site.py` from essays whose frontmatter has
+the YAML boolean `publish: true`.
+
+Do not copy files manually from the private data repository.
+"""
+
+SITE_GITIGNORE = """.DS_Store
+Thumbs.db
+__pycache__/
+"""
+
+
+def put(path: Path, text: str = "") -> None:
+    if path.exists():
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+
+
+def create() -> None:
+    DATA_ROOT.mkdir(parents=True, exist_ok=True)
+    for rel in DATA_DIRS:
+        d = DATA_ROOT / rel
+        d.mkdir(parents=True, exist_ok=True)
+        put(d / ".gitkeep")
+    put(DATA_ROOT / "README.md", DATA_README)
+    put(DATA_ROOT / ".gitignore", DATA_GITIGNORE)
+    put(DATA_ROOT / ".gitattributes", DATA_GITATTRIBUTES)
+
+    SITE_ROOT.mkdir(parents=True, exist_ok=True)
+    put(SITE_ROOT / "README.md", SITE_README)
+    put(SITE_ROOT / ".gitignore", SITE_GITIGNORE)
+    put(SITE_ROOT / ".nojekyll")
+    put(SITE_ROOT / ".second-brain-site",
+        "Generated public projection. Safe build target.\n")
+
+
+def init_git(root: Path) -> None:
+    if (root / ".git").exists():
+        print(f"git already initialized: {root}")
+        return
+    init = subprocess.run(["git", "-C", str(root), "init", "-b", "main"])
+    if init.returncode:
+        subprocess.run(["git", "-C", str(root), "init"], check=True)
+        subprocess.run(["git", "-C", str(root), "symbolic-ref", "HEAD",
+                        "refs/heads/main"], check=True)
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--create", action="store_true")
+    ap.add_argument("--init-git", action="store_true")
+    args = ap.parse_args()
+
+    if not args.create and not args.init_git:
+        print(f"engine={CODE_ROOT}")
+        print(f"would create private repo at {DATA_ROOT}")
+        print(f"would create public site repo at {SITE_ROOT}")
+        print("no changes made")
+        return 0
+
+    if args.create:
+        create()
+    if args.init_git:
+        if not DATA_ROOT.exists() or not SITE_ROOT.exists():
+            raise SystemExit("run --create before --init-git")
+        init_git(DATA_ROOT)
+        init_git(SITE_ROOT)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

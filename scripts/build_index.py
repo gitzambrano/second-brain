@@ -29,8 +29,9 @@ import yaml
 
 import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
-WIKI_ROOT = ROOT_DIR / "wiki"
+from repo_paths import CODE_ROOT, DATA_ROOT, WIKI_ROOT
+
+ROOT_DIR = CODE_ROOT
 ESSAYS_DIR = WIKI_ROOT / "essays"
 CONCEPTS_DIR = WIKI_ROOT / "concepts"
 ENTITIES_DIR = WIKI_ROOT / "entities"
@@ -89,7 +90,7 @@ def index_pages(dir_path, node_type):
         fm = get_frontmatter(content)
         entry = {
             "title": title,
-            "path": str(f.relative_to(ROOT_DIR)),
+            "path": str(f.relative_to(DATA_ROOT)),
             "tags": as_list(fm.get("tags")),
             "created": as_str(fm.get("created")),
             "updated": as_str(fm.get("updated")),
@@ -219,8 +220,8 @@ def main():
     total_pages = len(index["essays"]) + len(index["concepts"]) + len(index["entities"]) + len(index["insights"])
     print(f"Índice gerado: {total_pages} página(s) + {len(index['sources'])} source(s) "
           f"em manifest.md, {len(index['tags_in_use'])} tag(s) em uso.")
-    print(f"  {OUTPUT_PATH.relative_to(ROOT_DIR)}")
-    print(f"  {OUTPUT_MD_PATH.relative_to(ROOT_DIR)}")
+    print(f"  {OUTPUT_PATH.relative_to(DATA_ROOT)}")
+    print(f"  {OUTPUT_MD_PATH.relative_to(DATA_ROOT)}")
     return 0
 
 

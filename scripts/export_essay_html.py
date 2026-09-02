@@ -68,11 +68,16 @@ from export_essay_pdf import (
 from html_preprocess import transform_markdown
 from fetch_fonts import ensure_local_fonts
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
-ESSAYS_DIR = ROOT_DIR / "wiki" / "essays"
-HANDOUTS_DIR = ROOT_DIR / "wiki" / "handouts"
-OUTPUT_DIR = ROOT_DIR / "output" / "html"
-HANDOUT_OUTPUT_DIR = ROOT_DIR / "output" / "handouts"
+from repo_paths import (
+    CODE_ROOT,
+    ESSAYS_DIR,
+    HANDOUTS_DIR,
+    HANDOUT_OUTPUT_DIR,
+    HTML_DIR,
+)
+
+ROOT_DIR = CODE_ROOT
+OUTPUT_DIR = HTML_DIR
 TEMPLATE_PATH = Path(__file__).parent / "essay_template.html"
 
 

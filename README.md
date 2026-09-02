@@ -9,6 +9,17 @@ Wiki pessoal centrada em **essays** — ensaios, white papers e estudos aprofund
 
 ## Estrutura
 
+Três repositórios Git independentes, aninhados por conveniência de workspace:
+
+```text
+./      second-brain-engine  PUBLIC   engine: agentes, skills, scripts, testes, frontend
+data/   second-brain-data    PRIVATE  wiki, plan, raw, output, Obsidian
+site/   second-brain-site    PUBLIC   projeção gerada dos essays autorizados
+```
+
+`data/` e `site/` **não** são submodules; o Git do engine os ignora integralmente.
+Caminho de conteúdo abaixo é lógico: `wiki/...` significa `data/wiki/...`.
+
 ```text
 raw/                       inbox temporário de material não processado
 
@@ -35,31 +46,42 @@ plan/
 scripts/                    lint, busca, índice, grafo, export e quality gates
 output/                     PDFs, HTML, handouts, stats e grafo gerados
 
-.agents/skills/             fonte das skills
-.agents/agents/             fonte dos subagents
-.claude/skills/             espelho gerado — não editar
-.claude/agents/             espelho gerado — não editar
-.codex/skills/              espelho gerado — não editar
+.agents/skills/             fonte única das skills
+.agents/agents/             fonte única dos subagents
+site_src/                   templates, CSS e JS do site público
 AGENTS.md                   regras operacionais
 CLAUDE.md                   importa AGENTS.md para Claude Code
 ```
 
 Os tipos de source, tags, frontmatter, byline, links, referências, prosa, imagens e demais formatos vivem somente em `conventions/SKILL.md`.
 
-## Fonte única e espelhos
+## Fonte única
 
-| Fonte editável | Derivado | Como sincroniza |
-| ---------------------------------------- | ------------------------------------------------------------ | ------------------------------------ |
-| `AGENTS.md` | `CLAUDE.md` | `CLAUDE.md` importa `@AGENTS.md` |
-| `.agents/skills/`, `.agents/agents/` | `.claude/skills/`, `.claude/agents/`, `.codex/skills/` | `python scripts/sync_skills.py` |
+`.agents/` é a única árvore editável de skills e subagents, compartilhada por todos os
+agentes. Não existem espelhos gerados e não há passo de sincronização. `CLAUDE.md` é um
+adaptador de uma linha que importa `@AGENTS.md`.
 
-Nunca edite os espelhos. Para verificar drift:
+Para validar contratos de skill:
 
 ```bash
-python scripts/sync_skills.py --check
+python scripts/check_skills.py
 ```
 
-O subagent `update` cuida do fechamento mecânico quando uma skill o aciona: rebuild de derivados, quality gates, sync e commit/push. O subagent `lint-report` é diagnóstico read-only sob pedido direto.
+O subagent `update` cuida do fechamento mecânico quando uma skill o aciona: rebuild de derivados privados, quality gates e commit/push separados por repositório. Ele nunca constrói nem publica o site. O subagent `lint-report` é diagnóstico read-only sob pedido direto.
+
+## Publicação
+
+Um essay só vai para o site público se o frontmatter tiver o booleano YAML `publish: true`.
+Campo ausente ou `false` é privado, e nenhuma skill altera esse campo automaticamente.
+
+```bash
+python scripts/publication.py                       # allowlist atual
+python scripts/check_publication.py                 # validação read-only
+python scripts/build_site.py                        # gera site/
+python scripts/build_site.py --check
+python scripts/check_site_privacy.py
+python scripts/serve_site.py                        # inspeção local
+```
 
 ## Skills
 
@@ -116,6 +138,7 @@ O subagent `update` cuida do fechamento mecânico quando uma skill o aciona: reb
 | `/pdf`     | Exportar e validar PDF                     |
 | `/html`    | Exportar e validar HTML standalone         |
 | `/query`   | Consultar a wiki como base de conhecimento |
+| `/synthesize` | Procurar padrões emergentes na combinação de páginas já existentes |
 
 O arquivo de cada skill é a especificação completa. `conventions` não possui comando próprio.
 

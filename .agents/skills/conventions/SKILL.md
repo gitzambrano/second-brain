@@ -48,9 +48,11 @@ Essays acrescentam:
 ```yaml
 summary: "Resumo de uma linha, até 120 caracteres."
 status: draft | maduro | finalizado
+publish: true          # opcional; ver ## Publicação
 ```
 
-`summary:` sempre entre aspas duplas.
+`summary:` sempre entre aspas duplas. `publish:` é opcional e sua ausência é o
+estado seguro.
 
 ## Tags — Vocabulário Controlado
 
@@ -98,6 +100,29 @@ Status protege a prosa, não a formatação mecânica. `/organize` e `fix_lint.p
 Para skills que editam prosa:
 - **Batch:** pule `maduro` e `finalizado`; informe a contagem no fim.
 - **Essay nomeado pelo Usuário:** edite normalmente. Se era `finalizado`, avise ao final.
+
+## Publicação
+
+`publish:` é uma **allowlist de segurança**, não taxonomia. Nunca use `tags:` para
+controlar privacidade: `tags:` descreve assunto, `publish:` decide exposição pública.
+
+| Valor no frontmatter | Resultado |
+| --- | --- |
+| campo ausente | privado |
+| `publish: false` | privado |
+| `publish: "true"` (string) | inválido; tratado como privado |
+| `publish: true` (booleano YAML) | autorizado a entrar no site público |
+
+Regras:
+
+- só se aplica a **essays**; source, concept, entity, insight, handout, status, log e plano nunca são publicados;
+- nenhuma skill de escrita, revisão ou organização define ou altera `publish:` automaticamente — é decisão explícita do Usuário;
+- a projeção pública deriva somente de essays autorizados;
+- conexão interna para página privada nunca vira nó ou aresta do grafo público, e o wikilink não pode expor slug nem título privado;
+- imagem só é copiada para o site se for referenciada por um essay público **e** estiver dentro de `DATA_ROOT/wiki/assets`.
+
+Aplicação e verificação ficam em `scripts/publication.py`, `scripts/check_publication.py`
+e `scripts/check_site_privacy.py`. Detalhes de implementação do site não pertencem aqui.
 
 ## Byline do essay
 

@@ -12,7 +12,7 @@ import unicodedata
 from pathlib import Path
 
 from repo_paths import ESSAYS_DIR, PDF_DIR
-from sanity_common import CheckResult
+from sanity_common import CheckResult, text_contains
 
 A4 = (595.28, 841.89)
 SIZE_TOLERANCE_PT = 4.0
@@ -84,13 +84,13 @@ def audit_file(path: Path, result: CheckResult) -> None:
         if source:
             md = source.read_text(encoding="utf-8-sig")
             h1 = re.search(r"(?m)^#\s+(.+)$", md)
-            if h1 and norm(h1.group(1).strip()) not in joined_norm:
+            if h1 and not text_contains(joined_norm, norm(h1.group(1).strip())):
                 result.error("TITLE_MISSING", f"source title not found in PDF: {h1.group(1).strip()}", path.name)
-            if "Gustavo Zambrano" in md and norm("Gustavo Zambrano") not in joined_norm:
+            if "Gustavo Zambrano" in md and not text_contains(joined_norm, norm("Gustavo Zambrano")):
                 result.error("AUTHOR_MISSING", "author missing from rendered PDF", path.name)
-            if "## Sumário" in md and norm("Sumário") not in joined_norm:
+            if "## Sumário" in md and not text_contains(joined_norm, norm("Sumário")):
                 result.error("SUMARIO_MISSING", "source has Sumário but PDF text does not", path.name)
-            if "## Referências" in md and norm("Referências") not in joined_norm:
+            if "## Referências" in md and not text_contains(joined_norm, norm("Referências")):
                 result.error("REFERENCES_MISSING", "source has Referências but PDF text does not", path.name)
             source_images = len(re.findall(r"!\[[^\]]*\]\([^\)]+\)", md))
             if source_images and image_total < source_images:

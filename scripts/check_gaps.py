@@ -35,8 +35,9 @@ import yaml
 
 import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
-WIKI_ROOT = ROOT_DIR / "wiki"
+from repo_paths import CODE_ROOT, DATA_ROOT, WIKI_ROOT
+
+ROOT_DIR = CODE_ROOT
 ESSAYS_DIR = WIKI_ROOT / "essays"
 CONCEPTS_DIR = WIKI_ROOT / "concepts"
 ENTITIES_DIR = WIKI_ROOT / "entities"
@@ -211,7 +212,7 @@ def collect_existing_pages():
             names = {normalize(p.stem.replace("-", " "))}
             if h1:
                 names.add(normalize(h1))
-            rel = str(p.relative_to(ROOT_DIR))
+            rel = str(p.relative_to(DATA_ROOT))
             for n in names:
                 if n not in pages:
                     pages[n] = (rel, node_type)
@@ -300,7 +301,7 @@ def analyze_unlinked_existing_pages(sources, existing_pages):
     findings = []
     for path, (content, node_type) in sources.items():
         body = strip_frontmatter(content)
-        own_path = str(path.relative_to(ROOT_DIR))
+        own_path = str(path.relative_to(DATA_ROOT))
 
         # Compara PÁGINA-ALVO, não texto do link — mesmo alvo pode ser citado
         # pelo slug ou pelo H1 (\"[[andy-clark|Andy Clark]]\" vs. \"Andy Clark\"

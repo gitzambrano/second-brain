@@ -29,8 +29,9 @@ from pathlib import Path
 
 import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
-WIKI_ROOT = ROOT_DIR / "wiki"
+from repo_paths import CODE_ROOT, DATA_ROOT, WIKI_ROOT
+
+ROOT_DIR = CODE_ROOT
 ESSAYS_DIR = WIKI_ROOT / "essays"
 CONCEPTS_DIR = WIKI_ROOT / "concepts"
 ENTITIES_DIR = WIKI_ROOT / "entities"
@@ -79,7 +80,7 @@ def collect_pages(scopes):
                 continue
             title = get_h1(load(f))
             if title:
-                pages[title] = (scope, str(f.relative_to(ROOT_DIR)))
+                pages[title] = (scope, str(f.relative_to(DATA_ROOT)))
     return pages
 
 
@@ -102,7 +103,7 @@ def build_backlink_index(scopes=ALL_SCOPES):
             for m in re.finditer(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]", body):
                 target = m.group(1).strip()
                 if target != source_title:
-                    index[target].append((source_title, scope, str(f.relative_to(ROOT_DIR))))
+                    index[target].append((source_title, scope, str(f.relative_to(DATA_ROOT))))
     return index, pages
 
 
