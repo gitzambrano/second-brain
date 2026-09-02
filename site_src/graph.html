@@ -1,1 +1,47 @@
-<!doctype html><html lang="pt-BR" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Grafo — Second Brain</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%278%27 fill=%27%230b1627%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27sans-serif%27 font-size=%2713%27 font-weight=%27700%27 fill=%27%2376a8ff%27 text-anchor=%27middle%27%3ESB%3C/text%3E%3C/svg%3E"><meta name="theme-color" content="#07101d"><meta property="og:type" content="website"><meta property="og:site_name" content="Second Brain"><meta property="og:title" content="Grafo — Second Brain"><meta property="og:description" content="Grafo público de conexões entre essays"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="Grafo — Second Brain"><meta name="twitter:description" content="Grafo público de conexões entre essays"><link rel="stylesheet" href="assets/site.css"><script>(function(){var t=null;try{t=localStorage.getItem("sb-theme")}catch(e){}if(!t)t=(window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches)?"light":"dark";document.documentElement.dataset.theme=t})();</script></head><body class="graph-page"><header class="topbar graph-topbar"><a class="brand" href="index.html"><span class="brand-mark">SB</span><span>Second Brain</span></a><div class="graph-controls"><label class="graph-search"><span>⌕</span><input id="graphSearch" type="search" aria-label="Buscar nó" placeholder="Buscar nó…"></label><select id="graphTag" class="select-control" aria-label="Filtrar por tema"><option value="">Todos os temas</option></select><button class="icon-button" type="button" id="recenterGraph" aria-label="Recentralizar o grafo"><span aria-hidden="true">◎</span></button><button class="icon-button" type="button" id="themeToggle" aria-label="Alternar tema" aria-pressed="false"><span aria-hidden="true">◐</span></button><a class="button small ghost" href="index.html">Essays</a></div></header><main class="graph-stage"><canvas id="graphCanvas" role="img" aria-label="Grafo de conexões entre os essays públicos"></canvas><div class="graph-intro" id="graphIntro"><div class="eyebrow">PUBLIC KNOWLEDGE GRAPH</div><h1>Explore as conexões.</h1><p>Arraste para navegar, use a roda para zoom e clique num nó para abrir o essay.</p><button class="button primary" id="closeIntro">Explorar</button></div><aside class="graph-inspector" id="graphInspector" hidden><button class="inspector-close" id="closeInspector">×</button><div class="eyebrow">ESSAY</div><h2 id="inspectorTitle"></h2><p id="inspectorSummary"></p><div class="tags" id="inspectorTags"></div><a class="button primary full" id="inspectorLink">Abrir essay →</a></aside><div class="graph-legend"><span><i class="legend-node"></i><b id="nodeCount">0</b> essays</span><span><i class="legend-edge"></i><b id="edgeCount">0</b> conexões</span></div></main><script src="assets/theme.js"></script><script src="assets/graph.js"></script></body></html>
+<!doctype html><html lang="pt-BR" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Grafo público de conexões entre os essays do Second Brain."><title>Grafo — Second Brain</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%278%27 fill=%27%230b1627%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27sans-serif%27 font-size=%2713%27 font-weight=%27700%27 fill=%27%2376a8ff%27 text-anchor=%27middle%27%3ESB%3C/text%3E%3C/svg%3E"><meta name="theme-color" content="#060d18"><meta property="og:type" content="website"><meta property="og:site_name" content="Second Brain"><meta property="og:title" content="Grafo — Second Brain"><meta property="og:description" content="Grafo público de conexões entre os essays."><meta name="twitter:card" content="summary"><meta name="twitter:title" content="Grafo — Second Brain"><meta name="twitter:description" content="Grafo público de conexões entre os essays."><link rel="stylesheet" href="assets/site.css"><script>(function(){var t=null;try{t=localStorage.getItem("sb-theme")}catch(e){}if(!t)t=(window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches)?"light":"dark";document.documentElement.dataset.theme=t})();</script></head>
+
+<body class="graph-page">
+<header class="topbar graph-topbar">
+  <a class="brand" href="index.html"><span class="brand-mark">SB</span><span>Second Brain</span></a>
+  <div class="graph-controls">
+    <label class="graph-search">
+      <span aria-hidden="true">⌕</span>
+      <input id="graphSearch" type="search" aria-label="Buscar nó" placeholder="Buscar nó…">
+    </label>
+    <select id="graphTag" class="select-control" aria-label="Filtrar por tema">
+      <option value="">Todos os temas</option>
+    </select>
+    <button class="icon-button" type="button" id="recenterGraph" aria-label="Enquadrar o grafo"><span aria-hidden="true">◎</span></button>
+    <button class="icon-button" type="button" id="themeToggle" aria-label="Alternar tema" aria-pressed="false"><span aria-hidden="true">◐</span></button>
+    <a class="button small ghost" href="index.html">Essays</a>
+  </div>
+</header>
+
+<main class="graph-stage">
+  <canvas id="graphCanvas" role="img" aria-label="Grafo de conexões entre os essays públicos"></canvas>
+
+  <div class="graph-intro" id="graphIntro">
+    <div class="eyebrow">PUBLIC KNOWLEDGE GRAPH</div>
+    <h1>Explore as conexões.</h1>
+    <p>Arraste para navegar, use a roda para zoom, arraste um nó para reposicioná-lo e clique para abrir o essay.</p>
+    <button class="button primary" type="button" id="closeIntro">Explorar</button>
+  </div>
+
+  <aside class="graph-inspector" id="graphInspector" hidden>
+    <button class="inspector-close" type="button" id="closeInspector" aria-label="Fechar">×</button>
+    <div class="eyebrow">ESSAY</div>
+    <h2 id="inspectorTitle"></h2>
+    <p id="inspectorSummary"></p>
+    <div class="tags" id="inspectorTags"></div>
+    <a class="button primary full" id="inspectorLink">Abrir essay <span aria-hidden="true">→</span></a>
+  </aside>
+
+  <div class="graph-legend" id="graphLegend">
+    <span><i class="legend-node"></i><b id="nodeCount">0</b> essays</span>
+    <span><i class="legend-edge"></i><b id="edgeCount">0</b> conexões</span>
+  </div>
+</main>
+
+<script src="assets/theme.js"></script>
+<script src="assets/graph.js"></script>
+</body></html>

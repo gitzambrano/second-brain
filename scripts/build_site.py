@@ -64,9 +64,19 @@ def copy_frontend(root: Path) -> None:
         shutil.copy2(SITE_SRC_DIR / name, assets / name)
 
 
+WORDS_PER_MINUTE = 220
+
+
+def reading_minutes(text: str) -> int:
+    """Rounded reading time, never below one minute."""
+    words = len(text.split())
+    return max(1, round(words / WORDS_PER_MINUTE))
+
+
 def write_data(root: Path, essays) -> None:
     """Write the machine files. They carry public identities only."""
     allowed = {e.slug for e in essays}
+    body_text = {e.slug: plain_text(public_body_for_index(e, allowed)) for e in essays}
 
     search = [{
         "slug": e.slug,
@@ -75,8 +85,9 @@ def write_data(root: Path, essays) -> None:
         "tags": list(e.tags),
         "updated": e.updated,
         "created": e.created,
+        "minutes": reading_minutes(body_text[e.slug]),
         "url": f"essays/{e.slug}.html",
-        "text": plain_text(public_body_for_index(e, allowed)),
+        "text": body_text[e.slug],
     } for e in essays]
 
     nodes = [{
@@ -109,11 +120,14 @@ def write_data(root: Path, essays) -> None:
         "published": [e.slug for e in essays],
         "count": len(essays),
     })
+    return {e.slug: reading_minutes(body_text[e.slug]) for e in essays}
 
 
-def render_index(root: Path, essays) -> None:
+def render_index(root: Path, essays, minutes: dict[str, int] | None = None) -> None:
+    minutes = minutes or {}
     template = (SITE_SRC_DIR / "index.html").read_text(encoding="utf-8")
     tags = sorted({t for e in essays for t in e.tags}, key=str.casefold)
+    tag_counts = {t: sum(1 for e in essays if t in e.tags) for t in tags}
     latest = sorted(essays, key=lambda e: e.updated or e.created, reverse=True)
 
     cards = []
@@ -121,17 +135,24 @@ def render_index(root: Path, essays) -> None:
         tag_html = "".join(
             f'<span class="tag">{html.escape(t)}</span>' for t in essay.tags
         )
+        # The search haystack is pre-folded so the client only lowercases input.
         searchable = html.escape(
             " ".join([essay.title, essay.summary, *essay.tags]).casefold(), quote=True
+        )
+        reading = minutes.get(essay.slug, 0)
+        reading_html = (
+            f'<span class="dot" aria-hidden="true">·</span><span>{reading} min de leitura</span>'
+            if reading else ""
         )
         cards.append(
             '<article class="essay-card"'
             f' data-search="{searchable}"'
             f' data-tags="{html.escape("|".join(essay.tags), quote=True)}"'
             f' data-updated="{html.escape(essay.updated, quote=True)}"'
+            f' data-minutes="{reading}"'
             f' data-title="{html.escape(essay.title, quote=True)}">'
             f'<a href="essays/{html.escape(essay.slug)}.html">'
-            f'<div class="card-meta"><span>{html.escape(essay.updated)}</span></div>'
+            f'<div class="card-meta"><span>{html.escape(essay.updated)}</span>{reading_html}</div>'
             f'<h3>{html.escape(essay.title)}</h3>'
             f'<p>{html.escape(essay.summary)}</p>'
             f'<div class="tags">{tag_html}</div>'
@@ -141,7 +162,7 @@ def render_index(root: Path, essays) -> None:
 
     chips = "".join(
         f'<button class="filter-chip" type="button" data-tag="{html.escape(t, quote=True)}">'
-        f'{html.escape(t)}</button>'
+        f'{html.escape(t)} <span class="count">{tag_counts[t]}</span></button>'
         for t in tags
     )
     updated = max((e.updated for e in essays if e.updated), default="—")
@@ -176,8 +197,8 @@ def build(root: Path, no_render: bool = False):
     essays = collect_public()
     clean(root)
     copy_frontend(root)
-    write_data(root, essays)
-    render_index(root, essays)
+    minutes = write_data(root, essays)
+    render_index(root, essays, minutes)
     for name in ("graph.html", "404.html"):
         source = SITE_SRC_DIR / name
         if source.exists():
