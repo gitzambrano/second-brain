@@ -364,11 +364,17 @@ SPHERE_HTML_TEMPLATE = """<!DOCTYPE html>
   #graph { width: 100vw; height: 100vh; height: 100dvh; display: block; touch-action: none; -webkit-user-select: none; }
 
   #panel-toggle {
-    display: none; position: fixed; z-index: 12; top: 10px; left: 10px;
+    display: flex; position: fixed; z-index: 12; top: 10px; left: 10px;
     width: 40px; height: 40px; border-radius: 10px; cursor: pointer;
     border: 1px solid var(--panel-border); background: var(--panel); color: var(--ink);
     font-size: 17px; line-height: 1; align-items: center; justify-content: center;
     box-shadow: 0 4px 14px rgba(0,0,0,.4);
+  }
+  /* Painel colapsável em TODAS as telas (não só na pequena). */
+  #panel.collapsed { display: none; }
+  @media (min-width: 900px) {
+    #panel-toggle { top: 26px; left: 288px; }
+    body:has(#panel.collapsed) #panel-toggle { top: 16px; left: 16px; }
   }
   #panel {
     position: fixed; top: 16px; left: 16px; width: 320px; max-height: calc(100vh - 32px);
@@ -598,6 +604,10 @@ SPHERE_HTML_TEMPLATE = """<!DOCTYPE html>
     border: 1px solid var(--panel-border); border-radius: 3px;
     padding: 1px 5px; vertical-align: middle; white-space: nowrap; }
   /* Só a projeção pública usa: marca a página que aparece no mapa mas não abre. */
+  .idx-review { margin-left: 8px; font-size: 9px; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--ink-dim); opacity: .7;
+    border: 1px solid var(--panel-border); border-radius: 3px;
+    padding: 1px 5px; vertical-align: middle; white-space: nowrap; }
   .idx-private { margin-left: 8px; font-size: 9px; letter-spacing: .14em;
     text-transform: uppercase; color: var(--ink-dim); opacity: .6;
     border: 1px dashed var(--panel-border); border-radius: 3px;
@@ -1481,15 +1491,14 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden) sche
 // ---- Painel recolhível (tela pequena) --------------------------------------
 const panelEl = document.getElementById("panel");
 const toggleEl = document.getElementById("panel-toggle");
-const telaPequena = () => getComputedStyle(toggleEl).display !== "none";
+  const telaPequena = () => window.matchMedia("(max-width: 720px), (pointer: coarse) and (max-width: 900px)").matches;
 
-function definirPainel(aberto) {
-  const esconder = !aberto && telaPequena();
-  panelEl.classList.toggle("collapsed", !aberto);
-  panelEl.style.display = esconder ? "none" : "";
-  toggleEl.setAttribute("aria-expanded", String(aberto));
-  toggleEl.textContent = aberto ? "✕" : "☰";
-}
+  function definirPainel(aberto) {
+    panelEl.classList.toggle("collapsed", !aberto);
+    panelEl.style.display = aberto ? "" : "none";
+    toggleEl.setAttribute("aria-expanded", String(aberto));
+    toggleEl.textContent = aberto ? "✕" : "☰";
+  }
 toggleEl.addEventListener("click", () => {
   definirPainel(panelEl.classList.contains("collapsed"));
 });
@@ -1986,7 +1995,9 @@ function renderTypeIndex() {
           : "");
       const draft = n.status === "draft"
         ? `<span class="idx-draft" title="Rascunho">draft</span>`
-        : "";
+        : n.status === "maduro"
+          ? `<span class="idx-review" title="Em revisão">em revisão</span>`
+          : "";
       // `public` só existe no build da projeção pública (build_public_map.py).
       // No build da wiki o campo não vem e nenhum selo é desenhado.
       const privateMark = (n.public === false)

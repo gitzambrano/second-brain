@@ -11,7 +11,6 @@
   var cards = Array.prototype.slice.call(grid.querySelectorAll('.essay-card'));
   var grouped = document.getElementById('groupedView');
   var input = document.getElementById('searchInput');
-  var sortSelect = document.getElementById('sortSelect');
   var empty = document.getElementById('emptyState');
   var counter = document.getElementById('visibleCount');
   var chips = Array.prototype.slice.call(document.querySelectorAll('.filter-chip'));
@@ -39,26 +38,207 @@
   }
 
   function comparator() {
-    var mode = sortSelect ? sortSelect.value : 'recent';
-    if (mode === 'title') {
-      return function (a, b) {
-        return a.dataset.title.localeCompare(b.dataset.title, 'pt-BR');
-      };
-    }
-    if (mode === 'oldest') {
-      return function (a, b) {
+    return makeComparator();
+  }
+
+  /* --- Ordenação por prioridade de dimensões -----------------------------
+     A lista ordena por um conjunto de critérios (status, privacidade, data,
+     título, leitura) em que a ORDEM lista a importância de cada um — quem
+     está primeiro vale mais, e só desempata quem vem depois. O padrão é o
+     que o Usuário pediu: maduro e público primeiro, depois os mais novos,
+     depois alfabético. A preferência fica no localStorage. */
+  var SORT_KEY = 'sb-sort-v1';
+
+  function statusRank(card) {
+    var s = (card.dataset.status || '').toLowerCase();
+    if (s === 'maduro') return 3;
+    if (s === 'finalizado') return 2;
+    if (s === 'draft') return 1;
+    return 0;
+  }
+
+  var SORT_DIMS = {
+    status: {
+      label: 'Status',
+      dir: -1,
+      compare: function (a, b) { return statusRank(a) - statusRank(b); }
+    },
+    privacy: {
+      label: 'Privacidade',
+      dir: -1,
+      compare: function (a, b) {
+        return ((a.dataset.published === '1') ? 1 : 0) - ((b.dataset.published === '1') ? 1 : 0);
+      }
+    },
+    date: {
+      label: 'Data',
+      dir: -1,
+      compare: function (a, b) {
         return (a.dataset.updated || '').localeCompare(b.dataset.updated || '');
-      };
-    }
-    if (mode === 'reading') {
-      return function (a, b) {
+      }
+    },
+    title: {
+      label: 'Título',
+      dir: 1,
+      compare: function (a, b) {
+        return (a.dataset.title || '').localeCompare(b.dataset.title || '', 'pt-BR');
+      }
+    },
+    reading: {
+      label: 'Leitura',
+      dir: 1,
+      compare: function (a, b) {
         return (+a.dataset.minutes || 0) - (+b.dataset.minutes || 0);
-      };
+      }
     }
+  };
+
+  var DEFAULT_ORDER = ['status', 'privacy', 'date', 'title', 'reading'];
+
+  function defaultState() {
+    var dir = {};
+    Object.keys(SORT_DIMS).forEach(function (k) { dir[k] = SORT_DIMS[k].dir; });
+    return { order: DEFAULT_ORDER.slice(), dir: dir };
+  }
+
+  var sortState;
+  try {
+    sortState = JSON.parse(localStorage.getItem(SORT_KEY) || 'null');
+  } catch (e) { sortState = null; }
+  if (!sortState || !Array.isArray(sortState.order) ||
+      sortState.order.some(function (k) { return !SORT_DIMS[k]; }) ||
+      !sortState.order.length) {
+    sortState = defaultState();
+  }
+
+  function saveSort() {
+    try { localStorage.setItem(SORT_KEY, JSON.stringify(sortState)); } catch (e) { /* sem storage */ }
+  }
+
+  function makeComparator() {
+    var dims = sortState.order.map(function (k) { return SORT_DIMS[k]; });
     return function (a, b) {
-      return (b.dataset.updated || '').localeCompare(a.dataset.updated || '');
+      for (var i = 0; i < dims.length; i++) {
+        var c = dims[i].compare(a, b);
+        if (c) return dims[i].dir < 0 ? -c : c;
+      }
+      return 0;
     };
   }
+
+  function directionLabel(key) {
+    var d = SORT_DIMS[key], dir = sortState.dir[key];
+    var value = dir < 0 ? '↑ ' : '↓ ';
+    if (key === 'status') return value + (dir < 0 ? 'maduro primeiro' : 'rascunho primeiro');
+    if (key === 'privacy') return value + (dir < 0 ? 'público primeiro' : 'privado primeiro');
+    if (key === 'date') return value + (dir < 0 ? 'mais novo primeiro' : 'mais antigo primeiro');
+    if (key === 'title') return value + (dir < 0 ? 'Z–A' : 'A–Z');
+    return value + (dir < 0 ? 'mais longa primeiro' : 'mais curta primeiro');
+  }
+
+  function renderSortList() {
+    var list = document.getElementById('sortList');
+    if (!list) return;
+    list.textContent = '';
+    sortState.order.forEach(function (key, idx) {
+      var item = document.createElement('div');
+      item.className = 'sort-item';
+      item.dataset.key = key;
+      item.setAttribute('role', 'listitem');
+
+      var up = document.createElement('button');
+      up.type = 'button';
+      up.className = 'sort-move';
+      up.setAttribute('aria-label', 'Subir prioridade de ' + SORT_DIMS[key].label);
+      up.textContent = '↑';
+      up.disabled = idx === 0;
+      up.addEventListener('click', function () { moveSort(key, -1); });
+
+      var down = document.createElement('button');
+      down.type = 'button';
+      down.className = 'sort-move';
+      down.setAttribute('aria-label', 'Descer prioridade de ' + SORT_DIMS[key].label);
+      down.textContent = '↓';
+      down.disabled = idx === sortState.order.length - 1;
+      down.addEventListener('click', function () { moveSort(key, 1); });
+
+      var dim = document.createElement('button');
+      dim.type = 'button';
+      dim.className = 'sort-dim';
+      dim.setAttribute('aria-pressed', String(sortState.dir[key] > 0));
+      var name = document.createElement('span');
+      name.className = 'sort-dim-name';
+      name.textContent = SORT_DIMS[key].label;
+      var label = document.createElement('span');
+      label.className = 'sort-dim-dir';
+      label.textContent = directionLabel(key);
+      dim.appendChild(name);
+      dim.appendChild(label);
+      dim.addEventListener('click', function () { flipSort(key); });
+
+      item.appendChild(up);
+      item.appendChild(down);
+      item.appendChild(dim);
+      list.appendChild(item);
+    });
+  }
+
+  function refreshSort() {
+    renderSortList();
+    updateSortSummary();
+    saveSort();
+    apply();
+  }
+
+  function updateSortSummary() {
+    var summary = document.getElementById('sortSummary');
+    if (summary) {
+      summary.textContent = sortState.order.slice(0, 3)
+        .map(function (k) { return SORT_DIMS[k].label; })
+        .join(' → ') + (sortState.order.length > 3 ? ' → …' : '');
+    }
+  }
+
+  function moveSort(key, delta) {
+    var i = sortState.order.indexOf(key);
+    var j = i + delta;
+    if (i < 0 || j < 0 || j >= sortState.order.length) return;
+    sortState.order.splice(i, 1);
+    sortState.order.splice(j, 0, key);
+    refreshSort();
+  }
+
+  function flipSort(key) {
+    sortState.dir[key] = sortState.dir[key] < 0 ? 1 : -1;
+    refreshSort();
+  }
+
+  var sortToggle = document.getElementById('sortToggle');
+  var sortPanel = document.getElementById('sortPanel');
+  if (sortToggle && sortPanel) {
+    sortToggle.addEventListener('click', function (event) {
+      event.stopPropagation();
+      var open = sortPanel.hidden;
+      sortPanel.hidden = !open;
+      sortToggle.setAttribute('aria-expanded', String(open));
+      if (open) renderSortList();
+    });
+    document.addEventListener('click', function (event) {
+      if (!sortPanel.hidden && !sortPanel.contains(event.target)) {
+        sortPanel.hidden = true;
+        sortToggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape' && !sortPanel.hidden) {
+        sortPanel.hidden = true;
+        sortToggle.setAttribute('aria-expanded', 'false');
+        sortToggle.focus();
+      }
+    });
+  }
+  renderSortList();
+  updateSortSummary();
 
   function renderFlat(visible) {
     grouped.hidden = true;
@@ -131,7 +311,6 @@
   }
 
   if (input) input.addEventListener('input', apply);
-  if (sortSelect) sortSelect.addEventListener('change', apply);
 
   chips.forEach(function (chip) {
     chip.addEventListener('click', function () {

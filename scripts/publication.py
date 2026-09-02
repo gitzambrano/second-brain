@@ -128,6 +128,33 @@ def one(slug: str) -> Path:
     return path
 
 
+def status_of(path: Path) -> str:
+    return str(frontmatter(path).get("status") or "").strip().casefold()
+
+
+def publish_all() -> int:
+    """Publish everything that is finished enough to be read.
+
+    A draft stays private — it is not ready for a reader. A hidden essay stays
+    hidden: this command is about publishing, never about surfacing something
+    that was deliberately taken off the map.
+    """
+    all_essays = essays()
+    require_frontmatter(all_essays)
+
+    changed = {visibility.PUBLIC: [], visibility.PRIVATE: []}
+    for path in all_essays:
+        if level_of(path) == visibility.HIDDEN:
+            continue
+        wanted = visibility.PRIVATE if status_of(path) == "draft" else visibility.PUBLIC
+        if set_level(path, wanted):
+            changed[wanted].append(path.stem)
+
+    print(f"public:  +{len(changed[visibility.PUBLIC])}")
+    print(f"private: +{len(changed[visibility.PRIVATE])} (rascunhos)")
+    return 0
+
+
 def report() -> int:
     buckets: dict[str, list[Path]] = {level: [] for level in visibility.LEVELS}
     for path in essays():
@@ -151,6 +178,10 @@ def main() -> int:
     hide.add_argument("slug")
     exclusive = sub.add_parser("set-exclusive", help="make exactly one essay public")
     exclusive.add_argument("query")
+    sub.add_parser(
+        "publish-all",
+        help="publish every finished essay; drafts stay private, hidden stays hidden",
+    )
     args = ap.parse_args()
 
     if args.cmd is None:
@@ -164,6 +195,9 @@ def main() -> int:
         changed = set_level(path, level)
         print(f"{path.stem}: {level}" + ("" if changed else " (sem mudança)"))
         return 0
+
+    if args.cmd == "publish-all":
+        return publish_all()
 
     matches = resolve(args.query)
     if len(matches) != 1:

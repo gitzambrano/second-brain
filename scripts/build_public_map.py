@@ -87,8 +87,11 @@ def sanitize(nodes, published: set[str]):
 # panel hidden because the site already has a full catalogue with search.
 PUBLIC_CHROME = """
 <style>
+  /* z-index baixo (8): o cromo fica sob a caixa de opções/Estilo (modal
+     z-index 20 e popover 30) e sob o painel, então a última linha do painel
+     expandido nunca fica escondida atrás dos botões de voltar. */
   #sb-back {
-    position: fixed; left: 16px; bottom: 16px; z-index: 90;
+    position: fixed; left: 16px; bottom: 16px; z-index: 8;
     display: inline-flex; align-items: center; gap: 8px;
     padding: 9px 15px; border-radius: 999px;
     border: 1px solid rgba(255,255,255,.16);
@@ -98,7 +101,7 @@ PUBLIC_CHROME = """
   }
   #sb-back:hover { border-color: rgba(255,255,255,.4); }
   #sb-map-switch {
-    position: fixed; right: 16px; bottom: 16px; z-index: 90;
+    position: fixed; right: 16px; bottom: 16px; z-index: 8;
     display: inline-flex; gap: 8px;
   }
   #sb-map-switch a {
@@ -110,6 +113,28 @@ PUBLIC_CHROME = """
   }
   #sb-map-switch a:hover { border-color: rgba(255,255,255,.4); }
   #sb-map-switch a[aria-current="page"] { color: #7aabff; border-color: #7aabff; }
+  /* Tema claro: o fundo e os controles do mapa seguem o tema do site. O
+     fundo do canvas também é pintado por JS (ver script ao final), então
+     este bloco só alinha painéis/controles que usam CSS variable. */
+  html[data-theme="light"] {
+    --bg: #ffffff;
+    --panel: #ffffff;
+    --panel-border: #d7dde4;
+    --ink: #1a1f24;
+    --ink-dim: #5b6570;
+    --edge: #5b6570;
+    --edge-ref: #b0b8c0;
+    --reference: #6b7280;
+  }
+  html[data-theme="light"] #search,
+  html[data-theme="light"] .btn,
+  html[data-theme="light"] .idx-expand,
+  html[data-theme="light"] #idx-search,
+  html[data-theme="light"] .idx-range input[type="number"],
+  html[data-theme="light"] #idx-maturidade,
+  html[data-theme="light"] .idx-read { background: #ffffff; }
+  html[data-theme="light"] .legend-item:hover,
+  html[data-theme="light"] #modal .close { background: rgba(0,0,0,.05); }
 </style>
 <a id="sb-back" href="index.html">&larr; Second Brain Atlas</a>
 <nav id="sb-map-switch" aria-label="Trocar de mapa">
@@ -125,6 +150,31 @@ PUBLIC_CHROME = """
       hit.forEach(function (el) { el.style.display = 'none'; });
     };
     kill('Índice');
+  })();
+  // Tema: o fundo do mapa acompanha o tema do site (claro/escuro) por padrão;
+  // um estilo salvo com cor de fundo fixada neste navegador continua mandando.
+  (function () {
+    var root = document.documentElement;
+    var theme = null;
+    try { theme = localStorage.getItem('sb-theme'); } catch (e) {}
+    if (theme !== 'light' && theme !== 'dark') {
+      theme = (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches)
+        ? 'light' : 'dark';
+    }
+    root.dataset.theme = theme;
+    try {
+      // Scope the style check to THIS map (Grafo vs Globo), so a style saved on
+      // one map never suppresses the theme background on the other.
+      var current = document.querySelector('#sb-map-switch a[aria-current="page"]');
+      var styleKey = current && current.textContent.trim() === 'Globo'
+        ? 'sb-sphere-style-v1' : 'sb-graph-style-v1';
+      var saved = JSON.parse(localStorage.getItem(styleKey) || 'null');
+      var pinned = saved && saved.colors && saved.colors.background;
+      if (!pinned && typeof styleConfig !== 'undefined' && typeof applyStyle === 'function') {
+        styleConfig.colors.background = theme === 'light' ? '#ffffff' : '#0a0a0a';
+        applyStyle(styleConfig, { silent: true });
+      }
+    } catch (e) {}
   })();
 </script>
 """

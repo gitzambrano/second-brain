@@ -37,16 +37,17 @@ FORBIDDEN_NODE_FIELDS = ("file", "body", "text", "path")
 
 EMBEDDED_PAYLOAD = re.compile(r'id="sb-graph-data">([^<]*)<')
 
-# Generated links and metadata must never name the private repository layout.
-FORBIDDEN_PATHS = [
-    r"\bdata/wiki/",
-    r"\bwiki/sources/",
-    r"\bdata/raw/",
-    r"\bdata/plan/",
-    r"\.\./\.\./wiki/",
-    r"\bwiki/status\.md",
-    r"\bwiki/log\.md",
-]
+# A generated link or metadata value must never point into the private
+# repository. Prose may legitimately *mention* these paths — several essays are
+# about this very system — so the check inspects link targets and JSON path
+# values, not free text.
+PRIVATE_TARGET = re.compile(
+    r"""(?:href|src|action|data-[\w-]+)\s*=\s*["']([^"']*)["']"""
+    r"""|"(?:url|path|file|htmlFile)"\s*:\s*"([^"]*)\"""",
+    re.I,
+)
+PRIVATE_PATH = re.compile(r"(?:\A|/|\.\./)(?:data/)?(?:wiki|plan|raw|output)/", re.I)
+EXTERNAL_URL = re.compile(r"\s*(?:[a-z][a-z0-9+.-]*:|//)", re.I)
 
 
 def inflate(encoded: str) -> dict:
@@ -186,10 +187,16 @@ def audit() -> list[str]:
         if not path.is_file() or path.suffix.lower() not in SCANNED_SUFFIXES:
             continue
         text = path.read_text(encoding="utf-8", errors="replace")
-        for pattern in FORBIDDEN_PATHS:
-            if re.search(pattern, text, re.I):
+        for match in PRIVATE_TARGET.finditer(text):
+            target = match.group(1) or match.group(2) or ""
+            # An external URL cannot reach the private repository, and plenty of
+            # them legitimately contain a /wiki/ segment (Wikipedia, for one).
+            if EXTERNAL_URL.match(target):
+                continue
+            if PRIVATE_PATH.search(target):
                 errors.append(
-                    f"private path leaked in {path.relative_to(SITE_ROOT)}: {pattern}")
+                    f"link into the private repository in "
+                    f"{path.relative_to(SITE_ROOT)}: {target[:120]}")
 
     return errors
 

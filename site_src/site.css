@@ -21,6 +21,8 @@
   --accent: #7aabff;
   --accent-soft: rgba(122, 171, 255, 0.14);
   --accent-2: #7be0c3;
+  --gold: #c9a45c;
+  --gold-dim: #8a6b33;
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.24);
   --shadow: 0 24px 64px rgba(0, 0, 0, 0.36);
   --shadow-lg: 0 40px 120px rgba(0, 0, 0, 0.46);
@@ -54,6 +56,8 @@
   --accent: #2f5fb0;
   --accent-soft: rgba(47, 95, 176, 0.1);
   --accent-2: #0f7a63;
+  --gold: #8a6b33;
+  --gold-dim: #6f5526;
   --shadow-sm: 0 1px 4px rgba(23, 42, 71, 0.08);
   --shadow: 0 20px 56px rgba(23, 42, 71, 0.12);
   --shadow-lg: 0 32px 96px rgba(23, 42, 71, 0.16);
@@ -396,6 +400,127 @@ h1, h2, h3, h4 {
   cursor: pointer;
 }
 
+/* --- Sort popover -------------------------------------------------------- */
+
+.sort-wrap { position: relative; }
+
+.sort-button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1px;
+  min-height: 48px;
+  min-width: 200px;
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.16s var(--ease);
+}
+.sort-button:hover { border-color: var(--line-strong); }
+.sort-button[aria-expanded="true"] { border-color: var(--accent); }
+.sort-button-label {
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.sort-button-summary {
+  font-size: 12.5px;
+  color: var(--text);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sort-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 40;
+  width: 320px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+.sort-panel-head strong {
+  display: block;
+  color: var(--text-strong);
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+.sort-panel-head p {
+  margin: 0 0 12px;
+  color: var(--faint);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.sort-list { display: flex; flex-direction: column; gap: 6px; }
+
+.sort-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel-2);
+}
+.sort-move {
+  width: 30px; height: 30px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  cursor: pointer;
+}
+.sort-move:hover:not(:disabled) { color: var(--text); border-color: var(--line-strong); }
+.sort-move:disabled { opacity: 0.35; cursor: default; }
+.sort-dim {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.sort-dim:hover { background: var(--accent-soft); }
+.sort-dim-name { font-size: 13px; font-weight: 650; }
+.sort-dim-dir { font-size: 11px; color: var(--faint); }
+
+/* On small screens the popover must never overflow the viewport. */
+@media (max-width: 760px) {
+  .sort-button { min-width: 0; width: 100%; }
+  .sort-panel {
+    position: fixed;
+    left: 14px; right: 14px;
+    top: auto; bottom: 14px;
+    width: auto;
+  }
+}
+
 .segmented {
   display: inline-flex;
   padding: 4px;
@@ -563,15 +688,19 @@ h1, h2, h3, h4 {
 .essay-grid.as-list .essay-card > .card-body {
   display: grid;
   grid-template-columns: 132px minmax(0, 1fr) minmax(0, 1.25fr) auto;
-  grid-template-areas: "meta title summary link";
+  grid-template-areas: "meta title summary link" "badges title summary link";
   align-items: center;
   gap: 22px;
   padding: 18px 14px;
 }
-.essay-grid.as-list .badges { grid-area: meta; align-self: end; }
+/* Data e badges ocupam a MESMA coluna, mas em ROWS separadas. Antes viviam na
+   mesma célula de grid (uma `align-self:start`, outra `end`) e, quando o
+   resumo era ocultado pelo filtro "Resumos", a linha encolhia e a data caía
+   por cima da tag "Privado". Separando em linhas o overlap some em qualquer
+   altura. */
+.essay-grid.as-list .badges { grid-area: badges; margin: 0; }
 .essay-grid.as-list .card-meta {
   grid-area: meta;
-  align-self: start;
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
@@ -742,10 +871,28 @@ h1, h2, h3, h4 {
   text-decoration: none;
 }
 .back-link:hover { color: var(--text); }
+
+/* Cover: title set in the display serif, gold rule, small-caps meta. */
+.cover-kicker {
+  margin: 0 0 14px;
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.cover-rule {
+  width: 90px;
+  margin: 26px 0 24px;
+  border: 0;
+  border-top: 2px solid var(--gold);
+}
 .article-header h1 {
-  margin: 0 0 18px;
-  font-size: clamp(2.2rem, 4.4vw, 3.4rem);
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(2.4rem, 5vw, 3.6rem);
   letter-spacing: -0.04em;
+  text-wrap: balance;
 }
 .article-summary {
   margin: 0 0 22px;
@@ -765,6 +912,29 @@ h1, h2, h3, h4 {
 }
 .article-meta .dot { opacity: 0.5; }
 .article-meta .tags { margin-left: auto; }
+
+/* Gold chapter break: an elastic rule and a CAPÍTULO label inserted by JS
+   before each h2 (the prose arrives from Pandoc without the label). */
+.sb-kicker {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 12px;
+}
+.sb-kicker::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--gold-dim), transparent);
+}
+.sb-selfnum { display: none; }
+.prose h2:first-child .sb-kicker { margin-top: 8px; }
 
 .prose {
   font-family: var(--serif);
@@ -1029,12 +1199,18 @@ h1, h2, h3, h4 {
   background: rgba(196, 182, 130, 0.14);
   color: #a99b6d;
 }
+.badge-review {
+  border-color: transparent;
+  background: rgba(123, 224, 195, 0.13);
+  color: #3f8d78;
+}
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .badge-private { color: #e2a469; }
   :root:not([data-theme="light"]) .badge-draft { color: #c9bd8a; }
 }
 :root[data-theme="dark"] .badge-private { color: #e2a469; }
 :root[data-theme="dark"] .badge-draft { color: #c9bd8a; }
+:root[data-theme="dark"] .badge-review { color: #7be0c3; }
 
 .neighbours { margin-bottom: 16px; }
 .neighbour-list {
@@ -1221,12 +1397,13 @@ h1, h2, h3, h4 {
   .essay-grid.as-list .essay-card > a,
 .essay-grid.as-list .essay-card > .card-body {
     grid-template-columns: 1fr;
-    grid-template-areas: "meta" "title" "summary";
+    grid-template-areas: "meta" "badges" "title" "summary";
     align-items: start;
     gap: 6px;
     padding: 18px 4px;
   }
   .essay-grid.as-list .card-meta { flex-direction: row; align-items: center; }
+  .essay-grid.as-list .badges { margin: 0; }
   .essay-grid.as-list .card-meta .dot { display: inline; }
   .essay-grid.as-list .read-link { display: none; }
 
@@ -1270,11 +1447,11 @@ h1, h2, h3, h4 {
     cursor: pointer;
   }
   .toc-pane.open {
-    display: block;
+    display: flex;
+    flex-direction: column;
     position: fixed;
-    left: 12px; right: 12px; bottom: 76px;
+    left: 12px; right: 12px; top: 10px; bottom: 76px;
     z-index: 46;
-    max-height: 62vh;
     padding: 18px;
     border: 1px solid var(--line);
     border-radius: var(--radius-lg);
@@ -1283,7 +1460,8 @@ h1, h2, h3, h4 {
     box-shadow: var(--shadow-lg);
     overflow-y: auto;
   }
-  .toc-pane.open .toc-sticky { position: static; max-height: none; }
+  .toc-pane.open .toc-head { flex-shrink: 0; }
+  .toc-pane.open .toc-sticky { position: static; max-height: none; flex: 1; overflow-y: auto; }
   .toc-pane.open .toc-toggle { display: none; }
 }
 

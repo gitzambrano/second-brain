@@ -155,3 +155,32 @@ def test_privacy_checker_rejects_a_forged_read_link(tmp_path):
     assert proc.returncode == 1
     errors = json.loads(proc.stdout)["errors"]
     assert any("unauthorized read link" in e for e in errors), errors
+
+
+def test_private_path_check_reads_links_not_prose():
+    """Regression: the rule flagged essays that merely *write about* the vault.
+
+    Several essays describe this very system and print `wiki/sources/` in a code
+    block. What must be caught is a link or metadata value that would actually
+    reach the private repository.
+    """
+    sys.path.insert(0, str(ROOT / "scripts"))
+    from check_site_privacy import EXTERNAL_URL, PRIVATE_PATH, PRIVATE_TARGET
+
+    def flagged(text):
+        out = []
+        for match in PRIVATE_TARGET.finditer(text):
+            target = match.group(1) or match.group(2) or ""
+            if EXTERNAL_URL.match(target):
+                continue
+            if PRIVATE_PATH.search(target):
+                out.append(target)
+        return out
+
+    assert flagged("<p>a página em <code>wiki/sources/</code></p>") == []
+    assert flagged('<a href="https://en.wikipedia.org/wiki/Autopoiesis">x</a>') == []
+    assert flagged('{"htmlFile": "essays/dutch-roll.html"}') == []
+
+    assert flagged('<a href="../../wiki/essays/segredo.md">x</a>')
+    assert flagged('{"file": "wiki/essays/segredo.md"}')
+    assert flagged('<img src="../output/html/x.png">')

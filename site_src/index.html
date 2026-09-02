@@ -44,12 +44,19 @@
         <input id="searchInput" type="search" placeholder="Buscar título, resumo ou tema…" autocomplete="off" aria-label="Buscar essays">
         <kbd>/</kbd>
       </label>
-      <select id="sortSelect" class="select-control" aria-label="Ordenar">
-        <option value="recent">Mais recentes</option>
-        <option value="oldest">Mais antigos</option>
-        <option value="title">Título A–Z</option>
-        <option value="reading">Leitura mais curta</option>
-      </select>
+      <div class="sort-wrap">
+        <button class="sort-button" id="sortToggle" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="sortPanel">
+          <span class="sort-button-label">Ordenar</span>
+          <span class="sort-button-summary" id="sortSummary">Status → Privacidade → Data</span>
+        </button>
+        <div class="sort-panel" id="sortPanel" hidden>
+          <div class="sort-panel-head">
+            <strong>Ordem dos essays</strong>
+            <p>Quem está em cima vale mais. Clique em uma linha para inverter a direção e use as setas para trocar a prioridade.</p>
+          </div>
+          <div class="sort-list" id="sortList" role="list"></div>
+        </div>
+      </div>
       <div class="segmented" role="group" aria-label="Modo de exibição">
         <button type="button" id="viewGrid" data-view="grid" aria-pressed="true">Grade</button>
         <button type="button" id="viewList" data-view="list" aria-pressed="false">Lista</button>

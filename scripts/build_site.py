@@ -19,11 +19,12 @@ import shutil
 import subprocess
 import sys
 import time
+import urllib.request
 from datetime import date
 from pathlib import Path
 
 import build_public_map
-from repo_paths import CODE_ROOT, SITE_ROOT, SITE_SRC_DIR
+from repo_paths import CODE_ROOT, OUTPUT_DIR, SITE_ROOT, SITE_SRC_DIR
 from site_common import (
     collect_all,
     collect_public,
@@ -37,6 +38,41 @@ GENERATED_ROOT_FILES = {
 }
 GENERATED_DIRS = {"essays", "assets"}
 FRONTEND_ASSETS = ("site.css", "theme.js", "site.js", "essay.js")
+
+# The essay template loads MathJax from a local asset so the reader never
+# depends on a third-party CDN (blocked on some mobile networks/ad-blockers,
+# which left equations as raw LaTeX). The source is the same single copy shared
+# by the graph/HTML readers; it is fetched at build time, not at read time.
+MATHJAX_URL = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg-full.js"
+MATHJAX_SHARED_CACHE = OUTPUT_DIR / "graph" / "_mathjax_cache.js"
+MATHJAX_DEST = "assets/mathjax/tex-svg.js"
+
+
+def ensure_site_mathjax(root: Path) -> bool:
+    """Serve a local MathJax bundle under SITE_ROOT/assets/mathjax/tex-svg.js.
+
+    Reuses the shared graph/HTML reader cache when present, otherwise downloads
+    from the CDN. Returns False (with a warning) only when neither is available,
+    in which case equations fall back to raw LaTeX — same tolerated behaviour as
+    the standalone HTML export.
+    """
+    if (root / MATHJAX_DEST).exists() and (root / MATHJAX_DEST).stat().st_size > 100_000:
+        return True
+    try:
+        if MATHJAX_SHARED_CACHE.exists() and MATHJAX_SHARED_CACHE.stat().st_size > 100_000:
+            src = MATHJAX_SHARED_CACHE.read_text(encoding="utf-8", errors="replace")
+        else:
+            with urllib.request.urlopen(MATHJAX_URL, timeout=60) as resp:
+                src = resp.read().decode("utf-8", errors="replace")
+            MATHJAX_SHARED_CACHE.parent.mkdir(parents=True, exist_ok=True)
+            MATHJAX_SHARED_CACHE.write_text(src, encoding="utf-8")
+    except Exception as e:  # noqa: BLE001 - offline build degrades gracefully
+        print(f"  aviso: MathJax local indisponível ({e}); fórmulas ficarão como LaTeX cru.")
+        return False
+    dest = root / MATHJAX_DEST
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(src, encoding="utf-8")
+    return True
 
 # Fields that would turn a map node into readable body content or into a pointer
 # at the private repository. `htmlFile` is the read link and is checked on its own.
@@ -185,6 +221,8 @@ def render_index(root: Path, catalogue, minutes: dict[str, int] | None = None) -
             badges.append('<span class="badge badge-private">Privado</span>')
         if essay.status == "draft":
             badges.append('<span class="badge badge-draft">Rascunho</span>')
+        elif essay.status == "maduro":
+            badges.append('<span class="badge badge-review">Em revisão</span>')
         badge_html = f'<div class="badges">{"".join(badges)}</div>' if badges else ""
 
         inner = (
@@ -210,6 +248,7 @@ def render_index(root: Path, catalogue, minutes: dict[str, int] | None = None) -
             f' data-updated="{html.escape(essay.updated, quote=True)}"'
             f' data-minutes="{reading}"'
             f' data-published="{"1" if essay.published else "0"}"'
+            f' data-status="{html.escape(essay.status or "", quote=True)}"'
             f' data-title="{html.escape(essay.title, quote=True)}">'
             f'{body}</article>'
         )
@@ -258,6 +297,7 @@ def build(root: Path, no_render: bool = False):
     essays = [e for e in catalogue if e.published]
     clean(root)
     copy_frontend(root)
+    ensure_site_mathjax(root)
     minutes = write_data(root, catalogue)
     render_index(root, catalogue, minutes)
 
