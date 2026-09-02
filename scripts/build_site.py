@@ -16,6 +16,7 @@ import argparse
 import hashlib
 import html
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -156,11 +157,16 @@ def version_assets(html_text: str, fingerprints: dict[str, str]) -> str:
 
 WORDS_PER_MINUTE = 220
 
+# A formula is read, not scanned word by word; counting `rac{a}{b}` as five
+# words turned a 30-minute essay into a 100-minute one.
+MATH_SPAN = re.compile(r"\$[^$]{1,400}\$|\\[[\s\S]{1,2000}?\\]")
+CODE_SPAN = re.compile(r"`[^`]{1,200}`")
+
 
 def reading_minutes(text: str) -> int:
-    """Rounded reading time, never below one minute."""
-    words = len(text.split())
-    return max(1, round(words / WORDS_PER_MINUTE))
+    """Rounded reading time over prose alone, never below one minute."""
+    prose = CODE_SPAN.sub(" ", MATH_SPAN.sub(" ", text))
+    return max(1, round(len(prose.split()) / WORDS_PER_MINUTE))
 
 
 def write_data(root: Path, catalogue) -> dict[str, int]:

@@ -164,6 +164,17 @@ PUBLIC_CHROME = """
 </nav>
 <script>
   // The map follows the Atlas: same stored theme key, same background.
+  // The map must open showing the whole base. Its own control does exactly
+  // that, so press it once the layout has settled instead of duplicating it.
+  (function () {
+    var fit = function () {
+      var button = [].slice.call(document.querySelectorAll('button'))
+        .filter(function (el) { return /ajustar/i.test(el.textContent); })[0];
+      if (button) button.click();
+    };
+    if (document.readyState === 'complete') setTimeout(fit, 400);
+    else window.addEventListener('load', function () { setTimeout(fit, 400); });
+  })();
   (function () {
     var apply = function (theme) {
       document.documentElement.setAttribute('data-theme', theme);
