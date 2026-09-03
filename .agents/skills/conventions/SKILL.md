@@ -46,13 +46,19 @@ updated: YYYY-MM-DD
 Essays acrescentam:
 
 ```yaml
-summary: "Resumo de uma linha, até 120 caracteres."
+summary: "Resumo em prosa contínua, entre 200 e 530 caracteres."
 status: draft | revisao | finalizado
 visibility: public     # opcional; ver ## Publicação
 ```
 
 `summary:` sempre entre aspas duplas. `visibility:` é opcional e sua ausência
 significa privado, o estado seguro.
+
+O `summary:` de um essay tem entre **200 e 530 caracteres**, cobrados por
+`check_wiki.py`. Ele descreve o arco do argumento, não só o tema: `wiki/index.md`
+e o catálogo do site mostram esse texto como única amostra do essay, e um rótulo
+de uma frase não permite escolher o que ler. Escreva em prosa contínua, sem
+quebra de linha.
 
 ### `updated:` mede o texto, não a manutenção
 
@@ -284,7 +290,7 @@ Vale para texto novo ou reescrito pela wiki. Texto original importado só muda s
 Gerado por `python scripts/build_index.py`; nunca editar à mão.
 
 ```markdown
-- [Título do Essay](essays/nome-do-arquivo.md) — Resumo de uma linha.
+- [Título do Essay](essays/nome-do-arquivo.md) — Resumo do frontmatter, em uma linha só.
   `tag-1` · `tag-2`
 ```
 
