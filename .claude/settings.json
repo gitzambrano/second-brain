@@ -1,9 +1,5 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
-  "extraKnownMarketplaces": {
-    "second-brain-local": {
-      "source": { "source": "directory", "path": "." }
-    }
-  },
-  "enabledPlugins": { "second-brain@second-brain-local": true }
+  "enabledPlugins": {},
+  "extraKnownMarketplaces": {}
 }

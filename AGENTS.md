@@ -60,6 +60,27 @@ que importa `@AGENTS.md`.
 
 Não há passo de sincronização. Editou `.agents/`, terminou.
 
+#### Registro no Claude Code
+
+Skills em `.agents/` não são descobertas sozinhas: o Claude Code só varre
+`.claude/skills/` e `.claude/agents/`, que aqui não existem por decisão de
+arquitetura. O registro é feito por um plugin local, sem duplicar arquivo:
+
+| Arquivo | Papel |
+| --- | --- |
+| `.claude-plugin/plugin.json` | aponta `skills` para `./.agents/skills/` e `agents` para cada `.md` de `.agents/agents/` |
+| `.claude-plugin/marketplace.json` | declara o próprio repositório como marketplace `second-brain-local` |
+| `.claude/settings.json` | liga o plugin por `extraKnownMarketplaces` e `enabledPlugins` |
+
+O campo `skills` aceita diretório; `agents` exige caminho de arquivo `.md`, um
+por subagent. Todo caminho é relativo à raiz do plugin e precisa começar com
+`./`. Subagent novo em `.agents/agents/` só aparece depois de ser listado em
+`plugin.json`.
+
+Isso continua não sendo mirror: nenhum conteúdo é copiado e `.agents/` segue
+como fonte única. Mudança em `plugin.json` ou `settings.json` só vale na próxima
+sessão, porque skills são registradas na inicialização.
+
 ## Skills Disponíveis
 
 Tag de modo:
