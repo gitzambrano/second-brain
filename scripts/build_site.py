@@ -340,6 +340,20 @@ def build(root: Path, no_render: bool = False):
     nodes, edges, tag_gaps, isolated = build_public_map.build()
     build_public_map.write(root, nodes, edges, tag_gaps, isolated)
 
+    # O retrato da capa sai do graph.html recém-escrito, e por isso vem
+    # depois dele. Sem navegador headless o passo é pulado e o PNG anterior
+    # permanece: publicar não pode depender do Playwright estar instalado.
+    # Importado aqui, e não no topo: `scripts/lib/` só entra no sys.path
+    # quando `repo_paths` é carregado, e o topo deste arquivo roda antes disso.
+    import build_cover
+
+    assado = build_cover.render(root)
+    if assado is None:
+        print("  capa: SKIP (Playwright indisponível)")
+    else:
+        for nome, kb in assado:
+            print(f"  assets/{nome} ({kb:.0f} KB)")
+
     source = SITE_SRC_DIR / "404.html"
     if source.exists():
         (root / "404.html").write_text(

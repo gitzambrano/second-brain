@@ -227,10 +227,18 @@ Pendência de curto prazo fica em `wiki/status.md`, não no plano.
 2. Derivados (`index.*`, `references.*`, grafo, stats) são gerados por script; nunca editar à mão.
 3. Registre operações de conteúdo em `wiki/log.md` quando a skill exigir; o log é append-only.
 4. Toda página segue frontmatter, nomenclatura e estrutura de `conventions/SKILL.md`.
-5. **Contradição entre fontes:** não escolha um lado nem faça média. Mostre as versões com localização e aguarde a decisão do Usuário.
-6. Busque na wiki primeiro. Vá às fontes arquivadas quando a wiki não bastar ou quando for necessário verificar a evidência.
-7. Toda a wiki é escrita em Português do Brasil.
-8. **Git é sempre explícito por repositório.** Nunca use um único `git add`/`commit`
+5. **`updated:` mede o texto, não a manutenção.** Só mexa na data quando a prosa
+   do corpo mudar de forma apreciável — capítulo novo, argumento reescrito, seção
+   fundida ou dividida. Correção mecânica, frontmatter, byline, cabeçalho,
+   `## Sumário`, `## Conexões`, `## Referências`, wikilink, link externo, tag,
+   renomeação e `visibility:` **não** atualizam a data. Uma passada de lint que
+   empurra dezenas de essays para o mesmo dia transforma o campo em ruído e faz o
+   catálogo ordenar por manutenção em vez de por escrita. Regra completa em
+   `conventions/SKILL.md`.
+6. **Contradição entre fontes:** não escolha um lado nem faça média. Mostre as versões com localização e aguarde a decisão do Usuário.
+7. Busque na wiki primeiro. Vá às fontes arquivadas quando a wiki não bastar ou quando for necessário verificar a evidência.
+8. Toda a wiki é escrita em Português do Brasil.
+9. **Git é sempre explícito por repositório.** Nunca use um único `git add`/`commit`
    para representar o workspace inteiro:
 
    ```bash

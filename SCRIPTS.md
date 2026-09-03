@@ -100,6 +100,7 @@ Arquivos que funcionam exclusivamente como bibliotecas internas e rotinas auxili
 - **`scripts/lib/console_encoding.py`**: Configuração segura de codificação UTF-8 para stdout/stderr em Windows e POSIX.
 - **`scripts/lib/html_preprocess.py`**: Filtros de pré-processamento de Markdown para renderizadores Pandoc.
 - **`scripts/lib/build_public_map.py`**: Algoritmos de sanitização dos nós públicos do Atlas (grafo/esfera).
+- **`scripts/lib/build_cover.py`**: Assa o retrato estático do mapa que ilustra a capa do Atlas, capturando o próprio `graph.html` num navegador headless (um PNG por tema). Chamado por `build_site.py`; sem Playwright o passo é pulado e o PNG anterior permanece.
 - **`scripts/lib/render_public_essay.py`**: Compilação e estilização de páginas de leitura do site.
 - **`scripts/lib/fetch_fonts.py`**: Rotina interna de download e empacotamento local de fontes tipográficas.
 

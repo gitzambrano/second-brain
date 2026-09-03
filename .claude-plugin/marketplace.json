@@ -1,0 +1,11 @@
+{
+  "name": "second-brain-local",
+  "owner": { "name": "Gustavo Zambrano" },
+  "plugins": [
+    {
+      "name": "second-brain",
+      "source": "./",
+      "description": "Skills e subagents do Second Brain, servidos direto de .agents/ sem mirror."
+    }
+  ]
+}

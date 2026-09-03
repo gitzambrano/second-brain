@@ -293,6 +293,7 @@ def build_graph():
     bodies = {}          # id -> body text (for edge extraction)
     slug_to_id = {}       # essay slug (filename stem) -> node id
 
+    hidden_ids = set()
     for node_type, dir_path in DIRS.items():
         if not dir_path.exists():
             continue
@@ -307,10 +308,6 @@ def build_graph():
             # inline do título viraria "_Teetering_" literal em cima do nó.
             title = title_plain(title)
             fm = get_frontmatter(content)
-            # `visibility: hidden` removes a page from the graph entirely,
-            # in the wiki build as well as in the public projection.
-            if visibility.is_hidden(fm):
-                continue
             node_id = f"{node_type}:{file.stem}"
             subtype = None
             if node_type == "insights":
@@ -349,6 +346,12 @@ def build_graph():
                 "url": None,
                 "degree": 0,
             }
+            # `visibility: hidden` tira a página do grafo inteiro — build da
+            # wiki e projeção pública. O nó não é descartado AQUI, e sim depois
+            # de as arestas existirem: `prune_hidden` precisa saber o que ele
+            # sustentava para levar junto o que só existia por causa dele.
+            if visibility.is_hidden(fm):
+                hidden_ids.add(node_id)
             title_to_id[title] = node_id
             # O slug do arquivo também indexa o nó. A forma canônica de wikilink
             # na wiki é `[[slug|Título]]`, porque é a única que o Obsidian
@@ -410,8 +413,68 @@ def build_graph():
             nodes[essay_id]["degree"] += 1
             nodes[ref_id]["degree"] += 1
 
+    nodes, edges = prune_hidden(nodes, edges, hidden_ids)
+
     isolated = [n["title"] for n in nodes.values() if n["degree"] == 0]
     return list(nodes.values()), edges, isolated
+
+
+def prune_hidden(nodes, edges, hidden_ids):
+    """Remove as páginas ocultas e o que só existia para sustentá-las.
+
+    Esconder um essay não pode deixar para trás o concept, a entity ou a
+    referência que só ele citava: o nó ficaria na tela sem nada que o
+    sustente, denunciando por omissão que existe algo ali. A regra é a que o
+    Usuário pediu — conexão exclusiva do essay oculto some junto; conexão que
+    outro essay também alcança permanece.
+
+    O critério é ALCANCE, não grau. Um concept citado só pelo essay oculto
+    costuma ter arestas próprias (para uma referência, para outro concept), e
+    contar grau o deixaria de pé com todo o rastro pendurado nele. O que
+    decide é se ainda existe caminho até algum essay visível.
+
+    Um nó que já não era alcançável por essay nenhum ANTES da poda é
+    preservado: isso não é consequência de ocultar nada, é um buraco real da
+    wiki, e `isolated` existe para denunciá-lo em vez de escondê-lo.
+    """
+    if not hidden_ids:
+        return nodes, edges
+
+    def alcancaveis(a_partir_de, proibidos):
+        vizinhos = {}
+        for e in edges:
+            a, b = e["source"], e["target"]
+            if a in proibidos or b in proibidos:
+                continue
+            vizinhos.setdefault(a, []).append(b)
+            vizinhos.setdefault(b, []).append(a)
+        vistos, fila = set(a_partir_de), list(a_partir_de)
+        while fila:
+            for viz in vizinhos.get(fila.pop(), ()):
+                if viz not in vistos:
+                    vistos.add(viz)
+                    fila.append(viz)
+        return vistos
+
+    todos_essays = {nid for nid in nodes if nid.startswith("essay:")}
+    sustentado_antes = alcancaveis(todos_essays, set())
+    sustentado_depois = alcancaveis(todos_essays - hidden_ids, hidden_ids)
+
+    removidos = set(hidden_ids) | {
+        nid for nid in nodes
+        if nid not in hidden_ids
+        and nid in sustentado_antes          # era sustentado por algum essay
+        and nid not in sustentado_depois     # e deixou de ser ao ocultar
+    }
+
+    nodes = {nid: n for nid, n in nodes.items() if nid not in removidos}
+    edges = [e for e in edges if e["source"] in nodes and e["target"] in nodes]
+    for n in nodes.values():
+        n["degree"] = 0
+    for e in edges:
+        nodes[e["source"]]["degree"] += 1
+        nodes[e["target"]]["degree"] += 1
+    return nodes, edges
 
 
 def compute_layout(nodes, edges, width=1600, height=1000, iterations=None, seed=42):
