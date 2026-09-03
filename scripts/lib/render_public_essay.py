@@ -144,8 +144,9 @@ def site_chrome(essay, related) -> str:
 <div class="sb-progress"><span id="sbProgressFill"></span></div>
 <div class="sb-tags">{tags}</div>
 {related_block}
-<button class="sb-toc-fab" type="button" id="sbTocFab" aria-expanded="false" aria-controls="sbToc">
-  <span aria-hidden="true">☰</span> Sumário
+<button class="sb-toc-fab" type="button" id="sbTocFab" aria-expanded="false" aria-controls="sbToc" title="Sumário do essay">
+  <span class="sb-toc-icon" aria-hidden="true">☰</span>
+  <span class="sb-toc-text">Sumário</span>
 </button>
 <aside class="sb-toc" id="sbToc" hidden aria-label="Sumário do essay">
   <header><strong>Sumário</strong>

@@ -37,15 +37,40 @@
     return seen ? base + '-' + (seen + 1) : base;
   }
 
-  var headings = [].slice.call(document.querySelectorAll('.content h2, .content h3'));
+  function cleanHeadingText(heading) {
+    var clone = heading.cloneNode(true);
+    var kicker = clone.querySelector('.sb-kicker');
+    var kickerText = kicker ? kicker.textContent.trim() : '';
+    if (kicker) kicker.remove();
+    var selfnum = clone.querySelector('.sb-selfnum');
+    var selfnumText = selfnum ? selfnum.textContent.trim() : '';
+    if (selfnum) selfnum.remove();
+    var hlink = clone.querySelector('.hlink');
+    if (hlink) hlink.remove();
+
+    var baseText = clone.textContent.replace(/\s+/g, ' ').trim();
+
+    if (kickerText) {
+      if (!baseText.toLowerCase().startsWith(kickerText.toLowerCase())) {
+        return kickerText + ' — ' + baseText;
+      }
+    } else if (selfnumText) {
+      if (!baseText.startsWith(selfnumText)) {
+        return selfnumText + ' ' + baseText;
+      }
+    }
+    return baseText;
+  }
+
+  var headings = [].slice.call(document.querySelectorAll('.content h2:not(#sumário):not(#sumario), .content h3'));
   if (!headings.length) {
-    headings = [].slice.call(document.querySelectorAll('h2, h3'));
+    headings = [].slice.call(document.querySelectorAll('h2:not(#sumário):not(#sumario), h3'));
   }
   headings.forEach(function (heading) {
     if (!heading.id) heading.id = slugify(heading.textContent);
     var link = document.createElement('a');
     link.href = '#' + heading.id;
-    link.textContent = heading.textContent.trim();
+    link.textContent = cleanHeadingText(heading);
     if (heading.tagName === 'H3') link.className = 'h3';
     list.appendChild(link);
   });

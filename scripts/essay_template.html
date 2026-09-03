@@ -113,16 +113,31 @@ body{
 /* Masthead = capa de livro (sempre escura, qualquer tema da pagina)   */
 /* ------------------------------------------------------------------ */
 .masthead{
-  /* Paleta escura fixa no escopo da capa: as variaveis abaixo vencem
-     as do tema claro/escuro para tudo DENTRO da capa. */
-  --bg:#0A0A0A;--surface:#111111;--surface2:#181818;--border:#2A2A2A;
-  --text:#D4CFC8;--text-dim:#8A857E;--text-bright:#EDE8DF;
-  --gold:#C9922A;--gold-dim:#8A6520;--rust:#A03C28;--rust-bright:#C44A30;
-  background:radial-gradient(120% 90% at 50% 0%,#16130E 0%,var(--bg) 62%);
   min-height:88svh;
   display:flex;flex-direction:column;justify-content:center;
   text-align:center;
   padding:calc(2.5rem + env(safe-area-inset-top)) 1.2rem calc(2rem + env(safe-area-inset-bottom));
+  transition:background .25s ease,color .25s ease;
+}
+/* Tema claro: capa branca nobre com brilho suave dourado */
+[data-theme="light"] .masthead,
+:root:not([data-theme="dark"]) .masthead{
+  background:radial-gradient(120% 90% at 50% 0%, rgba(176,139,79,0.08) 0%, #FAF9F6 40%, #FFFFFF 85%);
+  color:#171310;
+}
+[data-theme="light"] .masthead .hero-title,
+:root:not([data-theme="dark"]) .masthead .hero-title{
+  color:#15120E;
+}
+/* Tema escuro: capa preta editorial */
+[data-theme="dark"] .masthead,
+:root[data-theme="dark"] .masthead{
+  background:radial-gradient(120% 90% at 50% 0%, #16130E 0%, #0A0A0A 62%);
+  color:#EDE8DF;
+}
+[data-theme="dark"] .masthead .hero-title,
+:root[data-theme="dark"] .masthead .hero-title{
+  color:#EDE8DF;
 }
 @media (max-width:900px){
   .masthead{min-height:92svh;}
@@ -257,18 +272,40 @@ li::marker{color:color-mix(in srgb,var(--gold-dim) 70%,var(--text-dim));}
 .hlink:hover{color:var(--gold);}
 
 .content hr{
-  border:none;text-align:center;margin:2.8rem auto;line-height:1;
+  border:none;border-top:1px solid var(--border);
+  text-align:center;margin:2.8rem auto;line-height:1;opacity:0.35;
 }
-.content hr::before{
+/* Losango (✦) apenas estritamente entre capitulos (## que nao seja sumario nem referencias) */
+.content hr.sb-hr-chapter,
+.content hr:has(+ h2:not(#sumário):not(#sumario):not(#referências):not(#referencias)){
+  border-top:none;opacity:1;
+}
+.content hr.sb-hr-chapter::before,
+.content hr:has(+ h2:not(#sumário):not(#sumario):not(#referências):not(#referencias))::before{
   content:"\2726";color:var(--gold);font-size:1.1rem;
   letter-spacing:.4em;padding-left:.4rem;opacity:.9;
 }
-/* Fecho: o divisor imediatamente antes de Referências usa infinito. */
+/* Fecho: o divisor imediatamente antes de Referencias usa infinito */
+.content hr.sb-hr-references,
+.content hr:has(+ h2#referências),
+.content hr:has(+ h2#referencias){
+  border-top:none;opacity:1;
+}
+.content hr.sb-hr-references::before,
 .content hr:has(+ h2#referências)::before,
 .content hr:has(+ h2#referencias)::before{
   content:"\221E";
   font-size:1.25rem;
   color:var(--gold);
+}
+/* Oculta divisores adjacentes ao sumario (o sumario ja possui bordas proprias) */
+.content hr:has(+ h2#sumário),
+.content hr:has(+ h2#sumario),
+.content #sumário + ul + hr,
+.content #sumário + ol + hr,
+.content #sumario + ul + hr,
+.content #sumario + ol + hr{
+  display:none;
 }
 
 /* ------------------------------------------------------------------ */
@@ -626,9 +663,26 @@ $body$
   });
   /* Voltar ao topo */
   var toTop=document.getElementById("sbToTop");
-  toTop.addEventListener("click",function(){window.scrollTo({top:0,behavior:"smooth"});});
+  if(toTop){toTop.addEventListener("click",function(){window.scrollTo({top:0,behavior:"smooth"});});}
   window.addEventListener("scroll",onScroll,{passive:true});
   onScroll();
+  /* Identifica e classifica divisores de capitulo: o losango so aparece onde ha capitulo real */
+  document.querySelectorAll(".content hr").forEach(function(hr){
+    var next=hr.nextElementSibling;
+    while(next&&next.nodeType===1&&next.tagName==="P"&&!next.textContent.trim()){
+      next=next.nextElementSibling;
+    }
+    if(next&&next.tagName==="H2"){
+      var id=(next.id||"").toLowerCase();
+      if(id.indexOf("sum")===0){
+        hr.style.display="none";
+      }else if(id.indexOf("ref")===0){
+        hr.classList.add("sb-hr-references");
+      }else{
+        hr.classList.add("sb-hr-chapter");
+      }
+    }
+  });
   /* Ancoras discretas nos capitulos */
   document.querySelectorAll(".content h2[id]").forEach(function(h){
     var a=document.createElement("a");

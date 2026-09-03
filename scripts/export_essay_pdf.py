@@ -305,14 +305,14 @@ def resolve_image_paths(text, essay_dir):
     def replace_img(m):
         alt = m.group(1)
         path = m.group(2)
-        if path.startswith('http://') or path.startswith('https://'):
-            return m.group(0)  # leave URLs alone
+        if path.startswith(('http://', 'https://', 'data:', '../assets/media/', '/assets/')):
+            return m.group(0)  # leave URLs and site assets alone
         abs_path = (essay_dir / path).resolve()
         if abs_path.suffix.lower() == '.svg':
             png = abs_path.with_suffix('.png')
             if png.exists():
                 abs_path = png
-        return f'![{alt}]({abs_path})'
+        return f'![{alt}]({abs_path.as_posix()})'
 
     return re.sub(r'!\[([^\]]*)\]\(([^)]+)\)', replace_img, text)
 
