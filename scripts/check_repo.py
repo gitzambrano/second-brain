@@ -7,13 +7,14 @@ to inspect. The checker never creates or edits wiki content.
 """
 from __future__ import annotations
 
+import console_encoding  # noqa: F401 — força UTF-8 em stdout/stderr no Windows
 import argparse
 import json
 import subprocess
 import sys
 from typing import Any
 
-from repo_paths import CODE_ROOT, HTML_DIR, PDF_DIR, SCRIPTS_DIR, corpus_has_essays
+from repo_paths import CODE_ROOT, HTML_DIR, PDF_DIR, SCRIPTS_DIR, SITE_ROOT, corpus_has_essays
 from sanity_common import CheckResult
 
 
@@ -85,8 +86,8 @@ def run_command(name: str, cmd: list[str], result: CheckResult, parse_json_sever
 def quick(result: CheckResult) -> None:
     run_command("compile scripts", [sys.executable, "-m", "compileall", "-q", "scripts"], result)
     run_status_command(
-        "workspace",
-        [sys.executable, str(SCRIPTS_DIR / "check_workspace.py"), "--json"],
+        "git isolation",
+        [sys.executable, str(SCRIPTS_DIR / "check_git_isolation.py"), "--json"],
         result,
     )
     run_status_command(
@@ -127,7 +128,7 @@ def wiki(result: CheckResult) -> None:
         path = SCRIPTS_DIR / script
         if path.exists():
             run_command(script, [sys.executable, str(path), *extra], result, parse_json_severity=parse_json)
-    for script in ("check_freshness.py", "check_publication.py"):
+    for script in ("check_freshness.py", "check_visibility_field.py"):
         path = SCRIPTS_DIR / script
         if path.exists():
             run_status_command(script, [sys.executable, str(path), "--json"], result)
@@ -137,7 +138,7 @@ def exports(result: CheckResult) -> None:
     if not any(HTML_DIR.glob("*.html")) if HTML_DIR.exists() else True:
         result.skip("NO_HTML_EXPORTS", "no HTML exports to validate")
     else:
-        for script in ("check_html_export.py", "check_html_render.py"):
+        for script in ("check_html_structure.py", "check_html_browser.py"):
             path = SCRIPTS_DIR / script
             if path.exists():
                 run_command(script, [sys.executable, str(path), "--json"], result, parse_json_severity=True)
@@ -158,6 +159,18 @@ def exports(result: CheckResult) -> None:
             )
 
 
+def site(result: CheckResult) -> None:
+    if not corpus_has_essays():
+        result.skip("SKELETON_NO_ESSAYS", "no essays present; site privacy validation skipped")
+        return
+    if not (SITE_ROOT / ".second-brain-site").exists():
+        result.skip("NO_SITE", "site checkout not initialized; site privacy validation skipped")
+        return
+    path = SCRIPTS_DIR / "check_site_privacy.py"
+    if path.exists():
+        run_status_command("check_site_privacy.py", [sys.executable, str(path), "--json"], result)
+
+
 def audit(mode: str) -> CheckResult:
     result = CheckResult("repository")
     if mode in {"quick", "full"}:
@@ -166,6 +179,8 @@ def audit(mode: str) -> CheckResult:
         wiki(result)
     if mode in {"exports", "full"}:
         exports(result)
+    if mode in {"site", "full"}:
+        site(result)
     result.meta["mode"] = mode
     return result
 
@@ -176,11 +191,12 @@ def main() -> int:
     group.add_argument("--quick", action="store_true", help="fast repository/skill/CLI checks")
     group.add_argument("--wiki", action="store_true", help="corpus checks only")
     group.add_argument("--exports", action="store_true", help="existing HTML/PDF checks only")
+    group.add_argument("--site", action="store_true", help="site privacy checks only")
     group.add_argument("--full", action="store_true", help="all checks (also the no-argument default)")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--fail-on-warning", action="store_true")
     args = ap.parse_args()
-    mode = "quick" if args.quick else "wiki" if args.wiki else "exports" if args.exports else "full"
+    mode = "quick" if args.quick else "wiki" if args.wiki else "exports" if args.exports else "site" if args.site else "full"
     result = audit(mode)
     result.print(args.json)
     return result.exit_code(args.fail_on_warning)

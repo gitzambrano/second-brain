@@ -1,91 +1,109 @@
-# Testing and Repository Quality
+# 🧪 Testing and Repository Quality Gates
 
-The public engine repository contains **no personal corpus**. The wiki, plan, raw inbox
-and generated outputs live in the private nested repository `data/`, which the engine Git
-ignores completely. CI never needs `data/` or `site/`, never clones the private
-repository and never receives a private credential.
+> Guia de qualidade, testes automatizados e proteção de integridade do **`second-brain-engine`**.
 
-Path resolution goes through `scripts/repo_paths.py`:
+O engine público versionado **não contém corpus pessoal**. A suíte de testes do repositório foi desenhada para rodar de forma 100% isolada e reproduzível em qualquer ambiente de CI, sem depender de credenciais privadas ou do repositório `data/`.
+
+---
+
+## 🏛️ Isolamento e Resolução de Caminhos
+
+Os testes e scripts resolvem caminhos através de `scripts/repo_paths.py`:
 
 ```text
-CODE_ROOT  this engine checkout
-DATA_ROOT  data/  (override: SECOND_BRAIN_DATA_ROOT)
-SITE_ROOT  site/  (override: SECOND_BRAIN_SITE_ROOT)
+CODE_ROOT   → Raiz do engine público (onde vive este repositório)
+DATA_ROOT   → data/ (ou variável de ambiente SECOND_BRAIN_DATA_ROOT)
+SITE_ROOT   → site/ (ou variável de ambiente SECOND_BRAIN_SITE_ROOT)
 ```
 
-## Defaults
+Durante a execução dos testes, o fixture sintético `tests/fixtures/mini-brain/` é copiado para um diretório temporário isolado do pytest (`tmp_path`). **Os testes nunca gravam no repositório real ou na pasta `data/` ativa.**
 
-Every executable script must do something useful with no positional CLI arguments. Read-only tools run the broadest audit/inventory; generators generate all applicable outputs; mutation tools that cannot choose a safe mutation fall back to a read-only global diagnosis.
+---
 
-Enforcement:
+## 🚦 Portais de Qualidade (Quality Gates)
 
-```bash
-python scripts/check_script_defaults.py
-```
+### 1. Diagnóstico do Repositório (`check_repo.py`)
 
-## Main entry point
+O script `scripts/check_repo.py` é o ponto de entrada canônico para validar a saúde do ecossistema:
 
-```bash
-python scripts/check_repo.py          # full diagnosis (default)
-python scripts/check_repo.py --quick
-python scripts/check_repo.py --wiki
-python scripts/check_repo.py --exports
-```
+| Comando | Finalidade |
+| :--- | :--- |
+| `python scripts/check_repo.py` | **Diagnóstico completo** de ambiente, scripts, disciplina de caminhos e integridade. |
+| `python scripts/check_repo.py --quick` | **Checagem rápida** (isolamento de git aninhado e disciplina de caminhos; ideal para pré-commit). |
+| `python scripts/check_repo.py --wiki` | Validação estendida da wiki (frescor temporal e conformidade de publicação). |
+| `python scripts/check_repo.py --exports` | Validação de exportações e paridade documental. |
+| `python scripts/check_repo.py --site` | Validação da sentinela de privacidade do site (conformidade de publicação e zero vazamento). |
 
-A checkout without a populated `data/` returns `SKIP` for corpus/export groups.
+> [!NOTE]
+> Em ambientes de CI ou clones novos sem a pasta `data/` populada, os grupos de teste que dependem de corpus real retornam status `SKIP` com elegância, sem falhar o build.
 
-`--quick` also validates nested-Git isolation (`check_workspace.py`) and path discipline
-(`check_path_discipline.py`). `--wiki` also runs `check_freshness.py` and
-`check_publication.py`.
+### 2. Contratos de Scripts e Skills
 
-The public site is a **separate, explicit gate** and is never built by `check_repo.py`:
+- **Defaults sem argumentos:** Todo script executável em `scripts/` deve executar uma tarefa útil ou diagnóstico seguro quando chamado sem argumentos:
+  ```bash
+  python scripts/check_script_defaults.py
+  ```
+- **Contratos de Skills:** Valida frontmatter, sintaxe e regras de isolamento em `.agents/`:
+  ```bash
+  python scripts/check_skills.py
+  ```
+- **Fonte única de agentes:** Garante que não existam árvores espelhadas não autorizadas (como `.claude/` ou `.codex/`):
+  ```bash
+  python -m pytest tests/test_no_agent_mirrors.py
+  ```
+
+---
+
+## 🛡️ Sentinela de Privacidade do Site
+
+A publicação pública possui uma barreira estrita e dedicada para impedir vazamento de notas e rascunhos:
 
 ```bash
 python scripts/build_site.py --check
 python scripts/check_site_privacy.py
 ```
 
-## Synthetic corpus
+O teste automatizado **`tests/test_site_privacy.py`** atua como sentinela:
+- Cria um site sintético com um ensaio público e um ensaio privado com marcadores sentinela exclusivos.
+- Comprova que corpos de texto privados, links de leitura restritos, slugs ou nós do grafo privado **nunca** chegam aos arquivos gerados em `site/`.
+- **Nunca enfraqueça ou desative este teste.**
 
-`tests/fixtures/mini-brain/` is artificial. It contains no personal content and exercises frontmatter, byline, headings, internal/external links, LaTeX, tables, code, images, references and connections.
+---
 
-Integration tests copy this fixture into a pytest `tmp_path` and point the scripts at it
-with `SECOND_BRAIN_DATA_ROOT`. **Tests never write into the engine checkout or into the
-real `data/` repository** — that isolation is a privacy requirement, not a convenience.
+## 🏃 Executando a Suíte de Testes (pytest)
 
-`tests/test_site_privacy.py` is the sentinel leak test: it builds a synthetic site with one
-public essay and one private essay carrying a unique sentinel, plus a public→private
-connection, and proves the private body, slug, title, graph node and graph edge never reach
-the site output. Do not weaken or remove it.
-
-## pytest
-
+### Execução Rápida
 ```bash
 python -m pytest -q
-python -m pytest -m html
-python -m pytest -m pdf
-python -m pytest -m "not slow"
 ```
 
-There is a single `.agents/` source tree and no generated skill mirror;
-`tests/test_no_agent_mirrors.py` enforces that.
-
-HTML browser checks need Playwright Chromium:
-
+### Execução Seletiva por Marcadores
 ```bash
-python -m playwright install chromium
+python -m pytest -m "not slow"   # Pula verificações demoradas de renderização
+python -m pytest -m html         # Valida exports e visualização HTML
+python -m pytest -m pdf          # Valida exportação e layout PDF
 ```
 
-PDF export checks need Pandoc + LuaLaTeX.
+---
 
-## Bug regression rule
+## 📦 Dependências de Teste
 
-For deterministic mechanical bugs:
+| Ferramenta | Necessária Para | Instalação / Verificação |
+| :--- | :--- | :--- |
+| **PyYAML & pytest** | Suíte básica do engine | `pip install pyyaml pytest` |
+| **Playwright (Chromium)** | Testes visuais de HTML | `python -m playwright install chromium` |
+| **Pandoc & LuaLaTeX** | Testes de exportação em PDF | Binários de sistema instalados no PATH |
 
-1. reproduce the bug with a fixture/mutation;
-2. add a test that fails;
-3. apply the fix;
-4. confirm the focused test passes;
-5. run the relevant suite.
+---
 
-Do not add real essays as regression fixtures.
+## 🐛 Protocolo de Regressão para Bugs Mecânicos
+
+Para qualquer correção mecânica determinística:
+1. **Reprodução:** Crie uma mutação ou caso de teste no fixture sintético `tests/fixtures/mini-brain/`.
+2. **Falha comprovada:** Escreva um teste que falha no comportamento incorreto.
+3. **Correção:** Aplique o fix no código do engine.
+4. **Verificação:** Confirme que o teste focado passa.
+5. **Garantia:** Execute a suíte completa para prevenir efeitos colaterais.
+
+> [!CAUTION]
+> Nunca use ensaios reais do repositório privado como fixtures de regressão. Use sempre o mini-brain sintético.

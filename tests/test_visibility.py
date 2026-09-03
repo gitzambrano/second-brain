@@ -12,6 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
+sys.path.insert(0, str(ROOT / "scripts" / "lib"))
 
 
 def essay(path, title, level=None, legacy_publish=None):
@@ -63,10 +64,10 @@ def test_exclusive_publication(tmp_path):
     essay(essays / "dutch-roll.md", "Dutch Roll: Dinâmica Látero-Direcional")
     essay(essays / "secreto.md", "Secreto", level="hidden")
 
-    p = run("publication.py", "set-exclusive", "Dutch Roll", data_root=tmp_path)
+    p = run("set_visibility.py", "set-exclusive", "Dutch Roll", data_root=tmp_path)
     assert p.returncode == 0, p.stdout + p.stderr
 
-    c = run("check_publication.py", "--expect-only", "Dutch Roll", data_root=tmp_path)
+    c = run("check_visibility_field.py", "--expect-only", "Dutch Roll", data_root=tmp_path)
     assert c.returncode == 0, c.stdout + c.stderr
 
     assert "visibility: public" in (essays / "dutch-roll.md").read_text(encoding="utf-8")
@@ -82,15 +83,17 @@ def test_hidden_essay_is_absent_from_catalogue_and_index(tmp_path, monkeypatch):
     essay(essays / "secreto.md", "Secreto", level="hidden")
 
     monkeypatch.setenv("SECOND_BRAIN_DATA_ROOT", str(tmp_path))
-    for module in ("repo_paths", "site_common", "visibility"):
-        sys.modules.pop(module, None)
+    for mod in list(sys.modules.keys()):
+        if any(name in mod for name in ("repo_paths", "site_common", "visibility")):
+            sys.modules.pop(mod, None)
     from site_common import collect_all
 
     slugs = {e.slug for e in collect_all()}
     assert slugs == {"visivel"}
 
-    for module in ("repo_paths", "site_common", "visibility"):
-        sys.modules.pop(module, None)
+    for mod in list(sys.modules.keys()):
+        if any(name in mod for name in ("repo_paths", "site_common", "visibility")):
+            sys.modules.pop(mod, None)
 
 
 def test_writing_visibility_never_touches_the_body(tmp_path):
@@ -99,7 +102,7 @@ def test_writing_visibility_never_touches_the_body(tmp_path):
     Setting visibility is metadata surgery. Everything after the closing `---`
     line must survive byte for byte, whatever whitespace surrounds it.
     """
-    import publication
+    import set_visibility
 
     variants = {
         "no-blank": "---\ntags: [A]\n---\n# T\n\nCorpo.\n",
@@ -112,7 +115,7 @@ def test_writing_visibility_never_touches_the_body(tmp_path):
         for level in ("public", "private", "hidden"):
             path = tmp_path / f"{name}-{level}.md"
             path.write_text(text, encoding="utf-8")
-            publication.set_level(path, level)
+            set_visibility.set_level(path, level)
             after = path.read_text(encoding="utf-8")
             marker = "\n---\n"
             assert after[after.index(marker) + len(marker):] == \
@@ -123,14 +126,14 @@ def test_writing_visibility_never_touches_the_body(tmp_path):
 
 
 def test_setting_visibility_is_idempotent(tmp_path):
-    import publication
+    import set_visibility
 
     path = tmp_path / "e.md"
     path.write_text("---\ntags: [A]\n---\n\n# T\n\nCorpo.\n", encoding="utf-8")
-    assert publication.set_level(path, "public") is True
-    assert publication.set_level(path, "public") is False
-    assert publication.set_level(path, "hidden") is True
-    assert publication.set_level(path, "hidden") is False
+    assert set_visibility.set_level(path, "public") is True
+    assert set_visibility.set_level(path, "public") is False
+    assert set_visibility.set_level(path, "hidden") is True
+    assert set_visibility.set_level(path, "hidden") is False
 
 
 def test_checker_reports_an_unusable_value(tmp_path):
@@ -138,7 +141,7 @@ def test_checker_reports_an_unusable_value(tmp_path):
     essays.mkdir(parents=True)
     essay(essays / "ruim.md", "Ruim", level="talvez")
 
-    c = run("check_publication.py", "--json", data_root=tmp_path)
+    c = run("check_visibility_field.py", "--json", data_root=tmp_path)
     assert c.returncode == 1
     payload = json.loads(c.stdout)
     assert payload["invalid"], payload

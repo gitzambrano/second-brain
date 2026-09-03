@@ -13,8 +13,8 @@ Gera HTML standalone a partir de `wiki/essays/` ou handouts. Sem argumento, o ex
 
 ```bash
 python scripts/export_essay_html.py <slug-ou---all>
-python scripts/check_html_export.py <slug-opcional>
-python scripts/check_html_render.py <slug-opcional>
+python scripts/check_html_structure.py <slug-opcional>
+python scripts/check_html_browser.py <slug-opcional>
 ```
 
 Para batch, omita o slug nos dois checkers: ambos auditam tudo por default.
@@ -26,6 +26,6 @@ Estados de saída:
 - **EXPORT OK + VALIDATION FAIL** — não declare o HTML validado; reporte os códigos.
 - **EXPORT FAILED** — reporte STDERR/causa.
 
-`check_html_export.py` cobre estrutura/DOM, anchors, resíduos, imagens e dependências externas. `check_html_render.py` abre mobile + desktop e cobre overflow, imagens, console e navegação interna.
+`check_html_structure.py` cobre estrutura/DOM, anchors, resíduos, imagens e dependências externas. `check_html_browser.py` abre mobile + desktop e cobre overflow, imagens, console e navegação interna.
 
 Não atualize `wiki/log.md`: export é operação de leitura.

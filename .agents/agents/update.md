@@ -25,7 +25,7 @@ Este subagent atua em `./` e em `data/`. **Nunca** em `site/`.
 
 ```bash
 python scripts/repo_paths.py
-python scripts/check_workspace.py
+python scripts/check_git_isolation.py
 python scripts/check_path_discipline.py
 python scripts/check_repo.py --quick
 ```
@@ -100,4 +100,4 @@ erros: nenhum | <lista>
 - Não resolve contradição, não funde/deleta página, não reescreve prosa.
 - Não faz commit/push depois de erro bloqueante.
 - Não gera artefatos antes do fixer e depois deixa índices stale.
-- Não roda `build_site.py`, não commita em `site/`, não altera `publish:` de nenhum essay.
+- Não roda `build_site.py`, não commita em `site/`, não altera `visibility:` de nenhum essay.

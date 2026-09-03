@@ -46,8 +46,9 @@ nunca deduza caminho de conteúdo a partir do diretório corrente.
   - `log.md` — histórico append-only.
   - `status.md` — estado de curto prazo entre sessões.
 - **`plan/`** — plano de longo prazo. `plano.md` guarda pendências; `drafts/` guarda outlines antes de `/essay`.
-- **`output/`** — saídas derivadas para compartilhamento: PDF, HTML, handouts, stats e grafo.
 - **`scripts/`** — lint, busca, índices, grafo, export e quality gates.
+- **`site_src/`** — templates, estilos CSS e scripts do frontend do site público.
+- **`tests/`** — testes automatizados e fixtures sintéticas isoladas.
 
 Detalhes de tipos de source, frontmatter, tags, links, referências, prosa, imagens e formatos vivem em `conventions/SKILL.md`.
 
@@ -120,6 +121,7 @@ Tag de modo:
 | Handout | `/handout` | leitura | Resumo de uma página                   |
 | PDF     | `/pdf`     | script  | Exportar e validar PDF                  |
 | HTML    | `/html`    | script  | Exportar e validar HTML standalone      |
+| Publish | `/publish` | ambos   | Publicar o Second Brain Atlas no site público via GitHub Pages |
 | Query   | `/query`   | leitura | Consultar o conhecimento já registrado |
 | Synthesize | `/synthesize` | leitura | Procurar padrões emergentes na combinação de páginas |
 
@@ -177,7 +179,7 @@ O campo é `visibility:`, com três níveis:
 - aceita as grafias em português: `público`, `privado`, `oculto`;
 - só se aplica a essays — nunca a source, concept, entity, insight, handout, status, log ou plano.
 
-`scripts/publication.py` escreve o campo (`allow`, `deny`, `hide`, `set-exclusive`)
+`scripts/set_visibility.py` escreve o campo (`allow`, `deny`, `hide`, `set-exclusive`)
 e sem argumentos lista o corpus por nível.
 
 O que **nunca** sai do repo privado: o corpo de qualquer página, qualquer caminho
@@ -188,11 +190,11 @@ abre.
 Um site estático não esconde o que serve: título e resumo no catálogo são
 legíveis por qualquer pessoa. Essa é a troca deliberada.
 
-Nenhuma skill define ou altera `publish:` automaticamente. Nem `/review`, nem
+Nenhuma skill define ou altera `visibility:` automaticamente. Nem `/review`, nem
 `/import`, nem `/organize`, nem o subagent `update`. É decisão explícita do Usuário,
-aplicada por `scripts/publication.py`.
+aplicada por `scripts/set_visibility.py` ou pela skill `/publish`.
 
-`scripts/build_site.py` roda **apenas** sob pedido explícito de publicação, e o
+`scripts/build_site.py` roda **apenas** sob pedido explícito de publicação (via skill `/publish`), e o
 resultado precisa passar em `scripts/check_site_privacy.py`.
 
 Regras completas em `conventions/SKILL.md`.
@@ -242,7 +244,7 @@ Pendência de curto prazo fica em `wiki/status.md`, não no plano.
 
 ## Subagents
 
-`.agents/agents/` guarda subagents mecânicos; `.claude/agents/` é espelho gerado.
+`.agents/agents/` guarda subagents mecânicos.
 
 ### `update`
 

@@ -103,8 +103,8 @@ Para skills que editam prosa:
 
 ## Publicação
 
-`publish:` controla **leitura**, não visibilidade no catálogo. Nunca use `tags:`
-para controlar exposição: `tags:` descreve assunto, `publish:` decide quem pode
+`visibility:` controla **leitura**, não visibilidade no catálogo. Nunca use `tags:`
+para controlar exposição: `tags:` descreve assunto, `visibility:` decide quem pode
 ler o texto.
 
 O site tem duas camadas:
@@ -112,7 +112,7 @@ O site tem duas camadas:
 | Camada | Alcance | Conteúdo |
 | --- | --- | --- |
 | Catálogo e mapa | base inteira | título, resumo, tags, datas, status, conexões |
-| Texto | só `publish: true` | corpo renderizado, busca full-text, link que abre |
+| Texto | só `visibility: public` (ou legado `publish: true`) | corpo renderizado, busca full-text, link que abre |
 
 | `visibility:` | Resultado |
 | --- | --- |
@@ -127,8 +127,8 @@ As grafias `público`, `privado` e `oculto` também são aceitas.
 
 Regras:
 
-- `publish:` só se aplica a **essays**; nenhuma outra página tem o campo;
-- nenhuma skill de escrita, revisão ou organização define ou altera `publish:` automaticamente — é decisão explícita do Usuário;
+- `visibility:` só se aplica a **essays**; nenhuma outra página tem o campo;
+- nenhuma skill de escrita, revisão ou organização define ou altera `visibility:` automaticamente — é decisão explícita do Usuário;
 - o corpo de uma página não autorizada nunca é renderizado, indexado ou linkado;
 - nenhum caminho para dentro de `data/` pode aparecer na saída pública;
 - imagem só é copiada para o site se for referenciada por um essay publicado **e** estiver dentro de `DATA_ROOT/wiki/assets`;
@@ -138,7 +138,7 @@ Um site estático não esconde o que serve: título e resumo publicados no catá
 são legíveis por qualquer pessoa. A troca é deliberada — o mapa é público, o
 texto não.
 
-Aplicação e verificação ficam em `scripts/publication.py`, `scripts/check_publication.py`
+Aplicação e verificação ficam em `scripts/set_visibility.py`, `scripts/check_visibility_field.py`
 e `scripts/check_site_privacy.py`. Detalhes de implementação do site não pertencem aqui.
 
 ## Byline do essay

@@ -26,7 +26,7 @@ def test_html_render_checker_accepts_valid_and_rejects_broken(tmp_path):
         '<a href="#x">x</a><h2 id="x">X</h2><p>ok</p></body></html>',
         encoding="utf-8",
     )
-    ok = run_script("check_html_render.py", "good", "--json", data_root=root)
+    ok = run_script("check_html_browser.py", "good", "--json", data_root=root)
     assert ok.returncode == 0, ok.stdout + ok.stderr
     payload = json.loads(ok.stdout)
     assert payload["errors"] == 0
@@ -37,7 +37,7 @@ def test_html_render_checker_accepts_valid_and_rejects_broken(tmp_path):
         '<a href="#missing">bad</a><p>[[raw]]</p></body></html>',
         encoding="utf-8",
     )
-    fail = run_script("check_html_render.py", "bad", "--json", data_root=root)
+    fail = run_script("check_html_browser.py", "bad", "--json", data_root=root)
     assert fail.returncode == 1, fail.stdout + fail.stderr
     payload = json.loads(fail.stdout)
     codes = {x["code"] for x in payload["issues"]}
@@ -130,3 +130,12 @@ Texto.
     assert broken.returncode == 1
     payload = json.loads(broken.stdout)
     assert any(i["code"] == "HTML_TEXT_MISSING" for i in payload["issues"])
+
+
+def test_check_repo_quick_prints_non_ascii_without_crashing(tmp_path):
+    """Regression: check_repo.py deve imprimir o traço '—' sem UnicodeEncodeError no Windows (cp1252)."""
+    # Roda --quick no skeleton (sem corpus) que já é suficiente para activar CheckResult.print().
+    result = run_script("check_repo.py", "--quick", data_root=tmp_path / "empty")
+    # Em nenhuma circunstância deve abortar com traceback de UnicodeEncodeError.
+    assert "UnicodeEncodeError" not in result.stderr, result.stderr
+    assert result.returncode in (0, 1)  # PASS ou FAIL, nunca crash não tratado

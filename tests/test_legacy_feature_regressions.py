@@ -106,7 +106,7 @@ def test_find_text_explicit_query_keeps_empty_corpus_error(tmp_path):
 
 def test_html_br_stack_inside_quote_is_not_regression(tmp_path):
     sys.path.insert(0, str(SCRIPTS))
-    import check_html_export
+    import check_html_structure as check_html_export
     html = tmp_path / "quote.html"
     long = "linha de citação " * 30
     html.write_text(

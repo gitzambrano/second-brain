@@ -16,7 +16,7 @@ from pathlib import Path
 from repo_paths import CODE_ROOT, SCRIPTS_DIR
 from sanity_common import CheckResult
 
-HELPER_MODULES = {"console_encoding.py", "sanity_common.py"}
+HELPER_MODULES: set[str] = set()
 
 
 def is_executable_script(path: Path, tree: ast.AST) -> bool:

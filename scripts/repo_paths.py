@@ -15,6 +15,7 @@ No-argument default is read-only and prints the effective paths.
 from __future__ import annotations
 
 import os
+import sys
 from pathlib import Path
 
 CODE_ROOT = Path(__file__).resolve().parent.parent
@@ -29,6 +30,10 @@ SITE_ROOT = Path(
 ).expanduser().resolve()
 
 SCRIPTS_DIR = CODE_ROOT / "scripts"
+LIB_DIR = SCRIPTS_DIR / "lib"
+if str(LIB_DIR) not in sys.path:
+    sys.path.insert(0, str(LIB_DIR))
+
 AGENTS_DIR = CODE_ROOT / ".agents"
 SKILLS_DIR = AGENTS_DIR / "skills"
 SUBAGENTS_DIR = AGENTS_DIR / "agents"

@@ -7,9 +7,9 @@ def test_html_fixture_export_and_validation(installed_mini_brain):
     assert export.returncode==0,export.stdout+export.stderr
     hp=installed_mini_brain/"output"/"html"/"kitchen-sink.html"
     assert hp.exists() and hp.stat().st_size>500
-    structural=run_script("check_html_export.py","kitchen-sink","--json")
+    structural=run_script("check_html_structure.py","kitchen-sink","--json")
     assert structural.returncode==0,structural.stdout+structural.stderr
     payload=json.loads(structural.stdout);issues=[i for values in payload["issues"].values() for i in values]
     assert not [i for i in issues if i["severity"]=="ERROR"],issues
-    rendered=run_script("check_html_render.py","kitchen-sink","--json",timeout=300)
+    rendered=run_script("check_html_browser.py","kitchen-sink","--json",timeout=300)
     assert rendered.returncode==0,rendered.stdout+rendered.stderr

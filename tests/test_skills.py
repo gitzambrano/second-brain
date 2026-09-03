@@ -22,7 +22,7 @@ def test_update_preflight_validates_workspace_before_quality_gate():
     from pathlib import Path
     root = Path(__file__).resolve().parents[1]
     text = (root / ".agents/agents/update.md").read_text(encoding="utf-8")
-    assert text.index("python scripts/check_workspace.py") < text.index("python scripts/check_repo.py --quick")
+    assert text.index("python scripts/check_git_isolation.py") < text.index("python scripts/check_repo.py --quick")
     assert text.index("python scripts/check_path_discipline.py") < text.index("python scripts/check_repo.py --quick")
     assert "NÃO EXECUTADO (gate falhou)" in text
 

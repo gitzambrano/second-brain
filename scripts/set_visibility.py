@@ -9,10 +9,10 @@ Three levels, described in `visibility.py`:
 
 No args: list the corpus by level.
 
-    python scripts/publication.py set-exclusive "Dutch Roll"
-    python scripts/publication.py allow <slug>
-    python scripts/publication.py deny  <slug>
-    python scripts/publication.py hide  <slug>
+    python scripts/set_visibility.py set-exclusive "Dutch Roll"
+    python scripts/set_visibility.py allow <slug>
+    python scripts/set_visibility.py deny  <slug>
+    python scripts/set_visibility.py hide  <slug>
 
 `set-exclusive` makes exactly one essay public and returns every other public
 essay to private. It never changes a hidden essay, and it aborts unless the
