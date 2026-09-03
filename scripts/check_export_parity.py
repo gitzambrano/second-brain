@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Compare semantic invariants across Markdown, HTML and PDF exports.
+"""
+Compara invariantes semânticos entre Markdown, HTML e PDF.
 
-This is intentionally not byte/pixel regression. It checks whether exportable
-information survived the pipeline. ``## Conexões`` is the known exception: it
-must remain in Markdown and disappear from both external formats.
+Isto deliberadamente não é regressão de bytes nem de pixels. O que se checa é
+se a informação exportável sobreviveu ao pipeline. ``## Conexões`` é a exceção
+conhecida: precisa permanecer no Markdown e sumir dos dois formatos externos.
 
-No-argument default: audit every essay for which both HTML and PDF exist.
+Default sem argumentos: auditar todo essay que tenha HTML e PDF.
 """
 from __future__ import annotations
 

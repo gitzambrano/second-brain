@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Exact/fuzzy title check before creating pages.
+"""
+Checagem de título exato e aproximado antes de criar página.
 
-No-argument default audits the whole corpus for exact-normalized and fuzzy title
-collisions. Supplying a title preserves the original candidate lookup mode.
+O default sem argumentos audita o corpus inteiro em busca de colisão de título
+normalizado exato e de colisão aproximada. Informar um título preserva o modo
+original de consulta por candidato.
 """
 import argparse
 import difflib

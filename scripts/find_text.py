@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Search the wiki with merged line context, without external grep.
+"""
+Busca na wiki com contexto de linhas mesclado, sem depender de grep externo.
 
-No-argument default prints a complete searchable-corpus inventory instead of
-failing for a missing query.
+O default sem argumentos imprime o inventário completo do corpus pesquisável,
+em vez de falhar por falta de termo de busca.
 """
 import argparse
 import re

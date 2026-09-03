@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Shared model of the public projection.
+"""
+Modelo compartilhado da projeção pública.
 
-Reads DATA_ROOT and never writes there. Everything public flows through
-``collect_public()``: an essay reaches the site only when its frontmatter has the
-YAML boolean ``publish: true``. Any other value — absent, false, or the string
-``"true"`` — is private.
+Lê DATA_ROOT e nunca escreve lá. Tudo que é público passa por
+``collect_public()``: um essay chega ao site só quando o frontmatter o autoriza
+com ``visibility: public`` — ou com o legado ``visibility: publico`` e o antigo
+booleano ``publish: true``. Qualquer outro valor, inclusive a ausência do campo,
+é privado.
 """
 from __future__ import annotations
 

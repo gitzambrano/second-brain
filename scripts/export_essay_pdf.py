@@ -192,7 +192,7 @@ def convert_heading_wikilinks(text):
 
 
 def clean_residual_wikilinks(text):
-    """Remove any remaining [[wikilinks]] converting to plain text."""
+    """Remove [[wikilinks]] que sobraram, convertendo para texto puro."""
     # [[Target|Display]] -> Display
     text = re.sub(r'\[\[([^\]|]+)\|([^\]]+)\]\]', r'\2', text)
     # [[Target]] -> Target
@@ -263,7 +263,7 @@ from site_common import title_html, title_plain  # noqa: E402
 
 
 def extract_title(body):
-    """Extract H1 title from markdown body."""
+    """Extrai o título do H1 do corpo markdown."""
     for line in body.split('\n'):
         m = re.match(r'^# (.+)', line)
         if m:
@@ -273,7 +273,7 @@ def extract_title(body):
 
 
 def remove_h1_and_byline(body):
-    """Remove the H1 title and byline (> ...) from body since Pandoc generates title on cover."""
+    """Tira o H1 e a byline (> ...) do corpo: o Pandoc gera o título na capa."""
     lines = body.split('\n')
     result = []
     i = 0
@@ -981,6 +981,7 @@ def _semantic_label(heading_text):
 
 
 def _roman(num):
+    """Converte o número de capítulo para romano, preservando a subseção (3.1 -> III.1)."""
     parts = str(num).split('.')
     label = ROMAN_MAP.get(parts[0], parts[0])
     if len(parts) > 1:
@@ -1132,7 +1133,7 @@ def inject_chapter_kickers(body):
 
 
 def prepare_for_pandoc(filepath):
-    """Prepare a markdown file for Pandoc PDF conversion."""
+    """Prepara um arquivo markdown para a conversão em PDF pelo Pandoc."""
     with open(filepath, 'r', encoding='utf-8') as f:
         content = f.read()
     
@@ -1277,7 +1278,7 @@ include-before:
 
 
 def export_essay(filepath, output_dir=None, source_dir=None):
-    """Export a single essay (or handout, if source_dir=HANDOUTS_DIR) to PDF."""
+    """Exporta um essay (ou handout, se source_dir=HANDOUTS_DIR) para PDF."""
     filepath = Path(filepath)
     if source_dir is None:
         source_dir = ESSAYS_DIR
@@ -1371,7 +1372,7 @@ def export_essay(filepath, output_dir=None, source_dir=None):
 
 
 def list_essays():
-    """List all available essays."""
+    """Lista todos os essays disponíveis."""
     essays = sorted(ESSAYS_DIR.glob('*.md'))
     print(f"\nAvailable essays ({len(essays)}):\n")
     for e in essays:
@@ -1386,7 +1387,7 @@ def list_essays():
 
 
 def list_handouts():
-    """List all available handouts."""
+    """Lista todos os handouts disponíveis."""
     handouts = sorted(HANDOUTS_DIR.glob('*.md')) if HANDOUTS_DIR.exists() else []
     print(f"\nAvailable handouts ({len(handouts)}):\n")
     for h in handouts:

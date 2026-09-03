@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Audit executable Python scripts for a useful no-argument default.
+"""
+Audita se todo script Python executável tem um default útil sem argumentos.
 
-The repository contract is intentionally simple: an executable script must not
-have a required positional CLI argument. A script may still accept optional
-positionals (``nargs='?'``/``'*'``) and validate partial invocations itself.
+O contrato do repositório é deliberadamente simples: script executável não pode
+ter argumento posicional obrigatório. Ele ainda pode aceitar posicionais
+opcionais (``nargs='?'``/``'*'``) e validar por conta própria as invocações
+parciais.
 
-No-argument default: audit every executable ``scripts/*.py`` file.
+Default sem argumentos: auditar todo ``scripts/*.py`` executável.
 """
 from __future__ import annotations
 

@@ -716,7 +716,7 @@ SPHERE_HTML_TEMPLATE = """<!DOCTYPE html>
   <div class="legend-item" data-type="concept"><span class="dot" style="background:var(--concept)"></span> Concept</div>
   <div class="legend-item" data-type="entity"><span class="dot" style="background:var(--entity)"></span> Entity</div>
   <div class="legend-item" data-type="insights"><span class="dot" style="background:var(--insight)"></span> Insight</div>
-  <div class="legend-item disabled" data-type="reference"><span class="dot" style="background:var(--reference)"></span> Reference</div>
+  <div class="legend-item" data-type="reference"><span class="dot" style="background:var(--reference)"></span> Reference</div>
 
   <button class="btn" id="btn-index">Índice</button>
   <button class="btn" id="btn-gaps">Gaps entre tags</button>
@@ -987,9 +987,9 @@ function aimAtFocus() {
 const nodeById = new Map(data.nodes.map(n => [n.id, n]));
 const endpoint = (v) => (typeof v === "object" ? v : nodeById.get(v));
 
-// Reference começa oculto — mesma decisão do plano: centenas de nós-folha
-// que afogam a estrutura entre essays/concepts/entities.
-const hiddenTypes = new Set(["reference"]);
+// Nenhum tipo começa oculto — mesma decisão do grafo plano: a bibliografia
+// faz parte do mapa. Desligar continua a um clique na legenda.
+const hiddenTypes = new Set();
 function isNodeVisible(n) { return !hiddenTypes.has(n.type); }
 
 function recomputeVisibleDegrees() {

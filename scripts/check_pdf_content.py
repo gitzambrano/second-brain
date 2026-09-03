@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Semantic/integrity checker for exported PDFs using PyMuPDF.
+"""
+Checador semântico e de integridade dos PDFs exportados, via PyMuPDF.
 
-No-argument default: audit every ``output/pdf/*.pdf``. A skeleton repository
-with no PDFs is a valid SKIP, not a failure.
+Default sem argumentos: auditar cada ``output/pdf/*.pdf``. Um repositório
+esqueleto sem PDF nenhum é um SKIP válido, não uma falha.
 """
 from __future__ import annotations
 

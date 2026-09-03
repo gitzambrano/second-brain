@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
-"""Copy and verify legacy personal data into nested data/ before deletion.
+"""
+Copia e confere os dados pessoais legados para o data/ aninhado, antes de apagar.
 
-Legacy source locations:
+Origens legadas:
     ./wiki ./plan ./raw ./output ./.obsidian
 
-Destination:
-    ./data/<same relative path>
+Destino:
+    ./data/<mesmo caminho relativo>
 
-No args: inventory only.
---copy: copy without deleting source.
---verify: SHA-256 compare every source file with destination.
---finalize: verify first, then delete legacy source directories.
+Sem argumentos: apenas inventário.
+--copy: copia sem apagar a origem.
+--verify: compara cada arquivo de origem com o destino por SHA-256.
+--finalize: confere primeiro, depois apaga os diretórios legados de origem.
 
-The tool never touches ./data/.git and never writes an inventory to the public
-engine repository.
+A ferramenta nunca toca em ./data/.git e nunca escreve inventário no repositório
+público do engine.
 """
 from __future__ import annotations
 

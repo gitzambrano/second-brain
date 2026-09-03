@@ -108,6 +108,7 @@ def build_backlink_index(scopes=ALL_SCOPES):
 
 
 def lookup(title, scopes=ALL_SCOPES):
+    """Devolve quem linka um título, no formato do índice reverso."""
     index, _ = build_backlink_index(scopes)
     return index.get(title, [])
 

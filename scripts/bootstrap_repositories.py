@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Create the nested data/ and site/ repository skeletons.
+"""
+Cria os esqueletos dos repositórios aninhados data/ e site/.
 
-No args: dry-run.
---create: create missing directories/files without overwriting corpus.
---init-git: initialize both nested Git repositories on branch main.
+Sem argumentos: dry-run.
+--create: cria diretórios e arquivos ausentes sem sobrescrever corpus.
+--init-git: inicializa os dois repositórios Git aninhados no branch main.
 
-The command never creates GitHub remotes and never alters the engine Git index.
+O comando nunca cria remote no GitHub e nunca altera o índice Git do engine.
 """
 from __future__ import annotations
 

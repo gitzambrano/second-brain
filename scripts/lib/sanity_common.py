@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""Shared result model for repository sanity checkers.
+"""
+Modelo compartilhado de resultado dos checadores de sanidade do repositório.
 
-No-argument default: print the severity vocabulary and exit-code contract.
+Default sem argumentos: imprimir o vocabulário de severidade e o contrato de
+código de saída.
 """
 from __future__ import annotations
 

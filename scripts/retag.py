@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Rename/consolidate a tag across the wiki.
+"""
+Renomeia ou consolida uma tag em toda a wiki.
 
-No-argument default is read-only and prints a complete tag inventory. A rename
-still requires both ``old_tag`` and ``new_tag``; partial invocations are errors.
+O default sem argumentos é read-only e imprime o inventário completo de tags.
+Uma renomeação ainda exige ``old_tag`` e ``new_tag``; invocação parcial é erro.
 """
 import argparse
 import re

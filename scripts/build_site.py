@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
-"""Build the public Digital Garden into SITE_ROOT from the publication allowlist.
+"""
+Compila o Jardim Digital público em SITE_ROOT a partir da allowlist de publicação.
 
-The site is a one-way projection. The catalogue and the map cover the whole
-base; only an essay authorized with ``visibility: public`` (or the legacy
-``publish: true``) has its text rendered, indexed for search or linked. Nothing
-else from the private data repository is ever copied.
+O site é uma projeção de mão única. O catálogo e o mapa cobrem a base inteira;
+só um essay autorizado com ``visibility: public`` (ou o legado ``publish:
+true``) tem o texto renderizado, indexado para busca ou linkado. Nada mais do
+repositório privado de dados é copiado, nunca.
 
-No-argument default: rebuild the whole site.
-    --manifest   print what would be published, write nothing
-    --check      verify an existing site against the current allowlist
-    --no-render  skip Pandoc rendering (structure/index only)
+Default sem argumentos: reconstruir o site inteiro.
+    --manifest   imprime o que seria publicado, não escreve nada
+    --check      confere um site existente contra a allowlist atual
+    --no-render  pula a renderização do Pandoc (só estrutura e índice)
 """
 from __future__ import annotations
 

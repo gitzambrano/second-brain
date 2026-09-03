@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Read-only validation of the publication allowlist in essay frontmatter.
+"""
+Validação read-only da allowlist de publicação no frontmatter dos essays.
 
-Only the YAML boolean ``true`` authorizes publication. A string ``"true"`` — or
-any other truthy-looking value — is reported as invalid and treated as private.
+Só o booleano YAML ``true`` autoriza publicação. A string ``"true"`` — ou
+qualquer outro valor de aparência verdadeira — é reportada como inválida e
+tratada como privada.
 
-No-argument default: list the current allowlist and validate it.
-    --expect-only "<query>"  require exactly one public essay matching the query
+Default sem argumentos: listar a allowlist atual e validá-la.
+    --expect-only "<busca>"  exige exatamente um essay público casando com a busca
 """
 from __future__ import annotations
 

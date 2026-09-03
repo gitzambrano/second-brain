@@ -87,6 +87,12 @@ def get_frontmatter(content):
 
 
 def strip_code_and_urls(body):
+    """Tira do corpo o que não é prosa antes da análise léxica.
+
+    Bloco e trecho de código, blockquote (a byline é estrutura, não texto) e link
+    de âncora interna — o par inteiro, para o texto-âncora capitalizado não virar
+    falso positivo de nome próprio.
+    """
     body = re.sub(r"```.*?```", "", body, flags=re.DOTALL)
     body = re.sub(r"`[^`]*`", "", body)
     # byline (\"> Tipo\") e qualquer blockquote — estrutural, não prosa
@@ -115,6 +121,7 @@ def extract_external_link_anchors(body):
 
 
 def extract_bold_terms(body):
+    """Devolve os termos em negrito do corpo, de 3 a 60 caracteres."""
     return [m.group(1).strip() for m in re.finditer(r"\*\*([^\*\n]{3,60})\*\*", body)]
 
 
@@ -177,6 +184,7 @@ NOISE_TERMS = {
 
 
 def normalize(term):
+    """Forma de comparação de um termo: minúsculas, sem espaço nem pontuação nas bordas."""
     return term.strip().lower().rstrip(".,;:")
 
 
@@ -252,6 +260,11 @@ def collect_page_prefixes(existing_pages):
 
 def analyze_gap_candidates(sources, existing_pages, entity_surnames, page_prefixes):
     # term -> {"pages": set((node_type, filename)), "total": int, "kinds": set()}
+    """Levanta os candidatos a página nova a partir dos termos recorrentes.
+
+    `## Referências` e `## Conexões` ficam de fora: são boilerplate de formato, e
+    a entrada AIAA produziria "Wikipedia", "Link" e "Autor" em todo essay.
+    """
     stats = defaultdict(lambda: {"pages": set(), "total": 0, "kinds": set()})
 
     for path, (content, node_type) in sources.items():

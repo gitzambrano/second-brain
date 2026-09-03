@@ -215,51 +215,45 @@ h1, h2, h3 {
 
 /* --- Cover map ----------------------------------------------------------- */
 
-/* A still, low-fidelity portrait of the real graph. Decoration with the
-   courtesy of being true — and a door into the map that owns the interaction. */
+/* Um retrato parado do grafo real, com o mesmo desenho dele — mesma paleta,
+   mesmo raio por grau, mesmo halo no escuro. Sem moldura, sem fundo e sem
+   rótulo: flutua sobre a página em vez de virar mais um quadro nela.
+
+   Continua sendo canvas, e não um PNG transparente gerado no build: o canvas
+   acompanha o corpus sozinho, segue o tema sem precisar de dois arquivos, e a
+   página já busca `graph.json` de qualquer jeito. Um PNG seria um segundo
+   artefato para manter em dia — e dois, contando claro e escuro. */
 .cover-map {
   position: relative;
   display: block;
   aspect-ratio: 16 / 10;
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  background: var(--panel-2);
-  overflow: hidden;
   text-decoration: none;
-  transition: border-color 0.2s var(--ease);
+  opacity: 0.92;
+  transition: opacity 0.2s var(--ease);
 }
-.cover-map:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.cover-map:hover { opacity: 1; }
 .cover-map canvas { display: block; width: 100%; height: 100%; }
-.cover-map-hint {
-  position: absolute;
-  left: 0; right: 0; bottom: 0;
-  padding: 26px 16px 12px;
-  background: linear-gradient(transparent, color-mix(in srgb, var(--panel-2) 94%, transparent));
-  color: var(--muted);
-  font-size: 11.5px;
-  font-weight: 600;
-  text-align: center;
-}
-.cover-map:hover .cover-map-hint { color: var(--accent); }
 
 /* --- Library ------------------------------------------------------------- */
 
 .library { padding-block: 26px 90px; }
 
+/* Uma linha só: busca, temas e os dois modos. Antes os temas moravam numa
+   segunda barra, o que dava duas fileiras de controle para uma decisão só. */
 .toolbar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-bottom: 18px;
+  gap: 8px;
+  margin-bottom: 14px;
 }
 
 .searchbox {
   display: flex;
   align-items: center;
   gap: 9px;
-  flex: 0 1 320px;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 340px;
   padding: 0 13px;
   min-height: 40px;
   border: 1px solid var(--line);
@@ -288,15 +282,17 @@ h1, h2, h3 {
   font-size: 10.5px;
 }
 
-.view-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+/* No desktop o rótulo é a palavra; no celular, o glifo. Trocar o conteúdo
+   custa menos que manter dois controles. */
+.seg-icon { display: none; }
+
+.segmented { flex: none; }
 
 .segmented {
   display: inline-flex;
   padding: 3px;
+  min-height: 40px;
+  align-items: center;
   border: 1px solid var(--line);
   border-radius: 10px;
   background: var(--panel-2);
@@ -323,13 +319,16 @@ h1, h2, h3 {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 14px;
+  min-height: 20px;
+  margin-bottom: 12px;
 }
 .tag-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 7px 14px;
+  flex: none;
+  gap: 7px;
+  min-height: 40px;
+  padding: 0 13px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: transparent;
@@ -766,11 +765,22 @@ h1, h2, h3 {
   .masthead-lede { font-size: 15px; }
   .masthead-stats { font-size: 12px; gap: 6px; }
 
-  .toolbar { gap: 10px; }
-  .searchbox { flex: 1 1 100%; min-height: 42px; }
-  .view-controls { width: 100%; }
-  .view-controls .segmented { flex: 1; }
-  .view-controls .segmented button { flex: 1; padding: 8px 6px; }
+  /* Tudo continua numa linha: a busca encolhe até o mínimo legível e os dois
+     modos viram glifo. O rótulo por extenso não caberia em 390px. */
+  .toolbar { gap: 6px; }
+  .searchbox { flex: 1 1 0; min-width: 84px; max-width: none; min-height: 40px; padding: 0 9px; }
+  .searchbox kbd { display: none; }
+  .tag-toggle { padding: 0 10px; gap: 5px; font-size: 12px; }
+  .segmented { padding: 2px; }
+  .segmented button { padding: 6px 8px; }
+  .seg-full { display: none; }
+  .seg-icon { display: inline; font-size: 13px; line-height: 1; }
+
+  /* Só no celular a capa é centrada: o bloco ocupa a largura toda e o eixo à
+     esquerda deixa de ter o que alinhar. */
+  .masthead { text-align: center; }
+  .masthead-lede { margin-inline: auto; }
+  .masthead-stats { justify-content: center; }
 
   .filters-bar { flex-wrap: wrap; }
   .filters { max-height: 46vh; overflow-y: auto; }

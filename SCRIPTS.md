@@ -103,11 +103,12 @@ Arquivos que funcionam exclusivamente como bibliotecas internas e rotinas auxili
 - **`scripts/lib/render_public_essay.py`**: Compilação e estilização de páginas de leitura do site.
 - **`scripts/lib/fetch_fonts.py`**: Rotina interna de download e empacotamento local de fontes tipográficas.
 
-Cada um desses módulos tem, em `scripts/`, um arquivo homônimo de duas linhas que
-apenas re-exporta a versão de `lib/`. Ele não é um comando: existe porque
+Cada um desses módulos tem, em `scripts/`, um arquivo homônimo curto que apenas
+re-exporta a versão de `lib/`. Ele não é um comando: existe porque
 dezenove scripts fazem `import console_encoding` (e afins) **antes** de importar
 `repo_paths`, que é quem coloca `scripts/lib/` no `sys.path`. Sem o shim, esses
 imports quebrariam. Quando o módulo de `lib/` também é um comando — hoje
-`build_public_map.py` e `render_public_essay.py` —, o shim precisa encaminhar o
-`main()`: um shim que só re-exporta transforma a execução do comando num no-op
-que ainda sai com código 0. `check_script_defaults.py` verifica isso.
+`build_public_map.py`, `render_public_essay.py` e `sanity_common.py` —, o shim
+precisa encaminhar o `main()`: um shim que só re-exporta transforma a execução
+do comando num no-op que ainda sai com código 0. `check_script_defaults.py`
+verifica isso.

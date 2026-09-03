@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Block corpus scripts that hard-code engine-local wiki/plan/raw/output paths.
+"""
+Barra script de corpus que fixa caminhos wiki/plan/raw/output locais ao engine.
 
-Corpus and generated private artifacts must be resolved through ``repo_paths``
-so they land in DATA_ROOT, never in the public engine checkout.
+Corpus e artefatos privados gerados precisam ser resolvidos por ``repo_paths``,
+para caírem em DATA_ROOT e nunca no checkout público do engine.
 
-No-argument default: audit every script and report PASS/FAIL.
+Default sem argumentos: auditar todos os scripts e reportar PASS/FAIL.
 """
 from __future__ import annotations
 

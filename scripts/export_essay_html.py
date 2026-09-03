@@ -87,7 +87,7 @@ PANDOC_FROM = 'markdown+smart+tex_math_dollars+pipe_tables+strikeout+superscript
 
 
 def parse_byline(body):
-    """Extract (subtitle, author_date) from the two blockquote byline lines."""
+    """Extrai (subtítulo, autor_data) das duas linhas de byline em blockquote."""
     subtitle = ''
     author_date = ''
     for line in body.split('\n'):
@@ -105,7 +105,7 @@ def parse_byline(body):
 
 
 def remove_h1_and_byline(body):
-    """Remove the H1 title and byline blockquote lines (header is rebuilt by the template)."""
+    """Tira o H1 e as linhas de byline: o cabeçalho é remontado pelo template."""
     lines = body.split('\n')
     result = []
     i = 0
@@ -215,9 +215,10 @@ def prepare_body(filepath):
 
 
 def prepare_for_pandoc(filepath):
-    """Prepare a markdown file for Pandoc HTML conversion.
+    """Prepara um arquivo markdown para a conversão em HTML pelo Pandoc.
 
-    Returns (markdown_text, title, subtitle, author_date, summary, status)."""
+    Devolve (markdown, title, subtitle, author_date, summary, status).
+    """
     body, meta, title, subtitle, author_date = prepare_body(filepath)
 
     # Caixas de realce -> fenced divs semanticos (ver html_preprocess.py).
@@ -235,12 +236,12 @@ MATH_PATTERN = re.compile(r'(?<!\\)\$[^\s$][^$]*\$|\\\[.*?\\\]|\\\(.*?\\\)', re.
 
 
 def body_has_math(body):
-    """Heuristic: does the essay body contain any $...$ / \\[...\\] math?"""
+    """Heurística: o corpo do essay tem alguma fórmula $...$ / \[...\]?"""
     return bool(MATH_PATTERN.search(body))
 
 
 def export_essay(filepath, output_dir=None, source_dir=None):
-    """Export a single essay (or handout, if source_dir=HANDOUTS_DIR) to a standalone HTML file."""
+    """Exporta um essay (ou handout, se source_dir=HANDOUTS_DIR) para HTML standalone."""
     source_dir = source_dir or ESSAYS_DIR
     filepath = Path(filepath)
     if not filepath.exists():
@@ -375,6 +376,7 @@ def export_essay(filepath, output_dir=None, source_dir=None):
 
 
 def list_essays():
+    """Imprime os essays disponíveis com o título, e o modo de uso."""
     essays = sorted(ESSAYS_DIR.glob('*.md'))
     print(f"\nAvailable essays ({len(essays)}):\n")
     for e in essays:
@@ -388,6 +390,7 @@ def list_essays():
 
 
 def list_handouts():
+    """Imprime os handouts disponíveis com o título, e o modo de uso."""
     handouts = sorted(HANDOUTS_DIR.glob('*.md')) if HANDOUTS_DIR.exists() else []
     print(f"\nAvailable handouts ({len(handouts)}):\n")
     for h in handouts:

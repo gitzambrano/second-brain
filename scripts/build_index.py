@@ -65,6 +65,9 @@ def get_frontmatter(content):
 
 
 def as_list(v):
+    """Normaliza um campo do frontmatter para lista de strings, venha ele como
+    lista, escalar ou ausente.
+    """
     if isinstance(v, list):
         return [str(x).strip() for x in v]
     if v is None:
@@ -78,6 +81,7 @@ def as_str(v):
 
 
 def index_pages(dir_path, node_type):
+    """Indexa as páginas de um diretório, pulando as marcadas `visibility: hidden`."""
     entries = []
     if not dir_path.exists():
         return entries
@@ -188,6 +192,7 @@ def render_index_md(essays, generated):
 
 
 def build():
+    """Monta o índice completo da wiki e o vocabulário de tags em uso."""
     essays = index_pages(ESSAYS_DIR, "essays")
     concepts = index_pages(CONCEPTS_DIR, "concepts")
     entities = index_pages(ENTITIES_DIR, "entities")

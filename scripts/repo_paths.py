@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
-"""Canonical paths for the nested three-repository Second Brain framework.
+"""
+Caminhos canônicos da estrutura de três repositórios aninhados.
 
-Default:
-    CODE_ROOT = this public second-brain-engine checkout
-    DATA_ROOT = CODE_ROOT / "data"  (private nested Git repo)
-    SITE_ROOT = CODE_ROOT / "site"  (public nested Git repo)
+Padrão:
+    CODE_ROOT = este checkout público do second-brain-engine
+    DATA_ROOT = CODE_ROOT / "data"  (repo Git privado aninhado)
+    SITE_ROOT = CODE_ROOT / "site"  (repo Git público aninhado)
 
-Tests/worktrees may override the nested roots with:
+Testes e worktrees podem sobrescrever as raízes aninhadas com:
     SECOND_BRAIN_DATA_ROOT
     SECOND_BRAIN_SITE_ROOT
 
-No-argument default is read-only and prints the effective paths.
+Default sem argumentos é read-only e imprime os caminhos efetivos.
 """
 from __future__ import annotations
 

@@ -1,21 +1,23 @@
 #!/usr/bin/env python3
-"""Enforce what the public site may and may not expose.
+"""
+Impõe o que o site público pode e o que não pode expor.
 
-The owner's decision, which this checker encodes:
+A decisão do Usuário, que este checador codifica:
 
-    public   title, summary, tags, dates, draft status, connections, and the
-             external URL of a bibliography entry — for the whole base
-    private  the body of any page, any path into the private repository, and a
-             working link to anything that is not an authorized essay
+    público  título, resumo, tags, datas, status de rascunho, conexões e a URL
+             externa de uma entrada de bibliografia — para a base inteira
+    privado  o corpo de qualquer página, qualquer caminho para dentro do repo
+             privado, e link que abra algo que não seja um essay autorizado
 
-So an unpublished essay is catalogued and mapped, by name and abstract, and
-cannot be opened. A static site cannot hide what it serves: everything in the
-"public" row above is readable by anyone.
+Ou seja: um essay não publicado é catalogado e mapeado, por título e resumo, e
+não abre. Um site estático não esconde o que serve: tudo na linha "público"
+acima é legível por qualquer pessoa.
 
-The maps embed their data as deflated base64 inside the HTML, so this checker
-inflates that payload and inspects the real nodes rather than grepping text.
+Os mapas embutem os dados como base64 deflacionado dentro do HTML, então este
+checador infla essa carga e inspeciona os nós de verdade, em vez de procurar
+texto com grep.
 
-No-argument default: audit SITE_ROOT and report PASS/FAIL.
+Default sem argumentos: auditar SITE_ROOT e reportar PASS/FAIL.
 """
 from __future__ import annotations
 

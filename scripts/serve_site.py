@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Serve the generated public site locally for inspection.
+"""
+Serve o site público gerado localmente, para inspeção.
 
-No-argument default: serve SITE_ROOT on http://127.0.0.1:8000. Read-only.
+Default sem argumentos: servir SITE_ROOT em http://127.0.0.1:8000. Read-only.
 """
 from __future__ import annotations
 

@@ -54,6 +54,21 @@ visibility: public     # opcional; ver ## Publicação
 `summary:` sempre entre aspas duplas. `visibility:` é opcional e sua ausência
 significa privado, o estado seguro.
 
+### `updated:` mede o texto, não a manutenção
+
+Só mexa em `updated:` quando a **prosa do corpo** mudar de forma apreciável —
+capítulo novo, argumento reescrito, seção fundida ou dividida. É o caso de
+`/essay`, `/import`, `/expand` e `/chapter`.
+
+Não atualize a data por: correção mecânica, frontmatter, byline, cabeçalho,
+`## Sumário`, `## Conexões`, `## Referências`, wikilink, link externo, tag,
+renomeação ou mudança de `visibility:`. Ou seja: `/organize`, `/connect`,
+`/linkify`, `/proofread`, `/polish` e o subagent `update` não tocam a data.
+
+O motivo é que a data é lida como "quando este texto mudou". Uma passada de lint
+que empurra 43 essays para a mesma quinta-feira transforma o campo em ruído: o
+catálogo passa a ordenar por data de manutenção, não por data de escrita.
+
 ## Tags — Vocabulário Controlado
 
 `tags:` das páginas e `Tags:` de `wiki/sources/manifest.md` usam o mesmo vocabulário, consolidado em `tags_in_use` de `wiki/index.json`.

@@ -101,6 +101,7 @@ PAKO_VENDORED = VENDOR_DIR / "pako.min.js"
 # bootstrap pedir — primeira pintura não espera os MB de dados. Pako embutido
 # infla de forma síncrona, sem reestruturar o script principal.
 def _deflate_b64(text):
+    """Comprime o texto em deflate cru e devolve em base64, para embutir no HTML."""
     comp = zlib.compressobj(9, zlib.DEFLATED, -15)
     data = comp.compress(text.encode("utf-8")) + comp.flush()
     return base64.b64encode(data).decode("ascii")
@@ -267,11 +268,16 @@ def strip_frontmatter(content):
 
 
 def strip_fences(body):
-    """Remove fenced code blocks so example wikilinks in docs don't become edges."""
+    """Remove blocos de código cercados, para wikilink de exemplo em documentação
+    não virar aresta.
+    """
     return re.sub(r"```.*?```", "", body, flags=re.DOTALL)
 
 
 def load_references():
+    """Lê wiki/references.json; devolve lista vazia se o arquivo faltar ou não
+    for JSON válido — o grafo é gerado sem as referências, não falha.
+    """
     if not REFERENCES_JSON_PATH.exists():
         return []
     try:
@@ -577,6 +583,7 @@ MERMAID_CLASS = {
 
 
 def render_mermaid(nodes, edges):
+    """Gera o fallback Mermaid do grafo, para quem abre o .md sem navegador."""
     lines = ["```mermaid", "graph TD"]
     for n in nodes:
         safe_id = n["id"].replace(":", "_").replace("-", "_").replace(".", "_").replace(" ", "_")
@@ -1430,7 +1437,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <div class="legend-item" data-type="concept"><span class="dot" style="background:var(--concept)"></span> Concept</div>
   <div class="legend-item" data-type="entity"><span class="dot" style="background:var(--entity)"></span> Entity</div>
   <div class="legend-item" data-type="insights"><span class="dot" style="background:var(--insight)"></span> Insight</div>
-  <div class="legend-item disabled" data-type="reference"><span class="dot" style="background:var(--reference)"></span> Reference</div>
+  <div class="legend-item" data-type="reference"><span class="dot" style="background:var(--reference)"></span> Reference</div>
 
   <button class="btn" id="btn-index">Índice</button>
   <button class="btn" id="btn-gaps">Gaps entre tags</button>
@@ -1744,13 +1751,14 @@ const endpoint = (v) => (typeof v === "object" ? v : nodeById.get(v));
 // ~1100 nós a cada clique/arrasto/hover, a árvore descarta ramos inteiros
 // fora do raio de busca. Reconstruída a cada tick (a simulação move os nós),
 // mas isso é O(n log n) e desprezível perto do custo de desenhar.
-// Reference começa oculto: são centenas de nós-folha que afogam a estrutura
-// entre essays, concepts e entities, que é o que o grafo existe para mostrar.
+// Nenhum tipo começa oculto: a bibliografia faz parte do mapa, e escondê-la
+// por padrão dava a impressão de que o corpus não citava nada. Quem achar os
+// nós-folha demais desliga na legenda, que continua sendo um clique.
 // Declarado AQUI, e não junto da legenda lá embaixo, porque rebuildQuadtree()
 // e draw() leem `hiddenTypes` durante a inicialização no topo do script — um
 // `const` mais abaixo estouraria em ReferenceError (temporal dead zone) e
 // mataria o script inteiro, deixando o grafo em branco.
-const hiddenTypes = new Set(["reference"]);
+const hiddenTypes = new Set();
 
 function isNodeVisible(n) {
   return !hiddenTypes.has(n.type);

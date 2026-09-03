@@ -1,22 +1,25 @@
 #!/usr/bin/env python3
-"""Render public essays with the very same pipeline as the HTML export.
+"""
+Renderiza os essays públicos com o mesmo pipeline do export HTML.
 
-The export already solves essay typography: `html_preprocess.transform_markdown`
-turns the corpus blockquote conventions into typed boxes, verdicts, pull-quotes
-and cards, and `essay_template.html` lays out the cover, byline, chapter rules,
-ornaments, justified measure and footnotes. Reimplementing any of that for the
-site would mean maintaining two renderers that drift.
+O export já resolve a tipografia do essay: `html_preprocess.transform_markdown`
+converte as convenções de blockquote do corpus em caixas tipadas, veredictos,
+pull-quotes e cards, e `essay_template.html` monta a capa, a assinatura, os
+filetes de capítulo, os ornamentos, a medida justificada e as notas de rodapé.
+Reimplementar qualquer parte disso para o site significaria manter dois
+renderizadores que divergem.
 
-So this module calls the export's own `prepare_for_pandoc` and its template, and
-then layers the site on top:
+Então este módulo chama o `prepare_for_pandoc` do próprio export e o template
+dele, e só então sobrepõe o site:
 
-    * a theme override — the site palette, background and font;
-    * site chrome — nav back to the Atlas, a floating summary, related essays;
-    * shared images instead of data URIs, so a page stays tens of kilobytes.
+    * um override de tema — paleta, fundo e fonte do site;
+    * o cromo do site — volta para o Atlas, sumário flutuante, essays relacionados;
+    * imagens compartilhadas em vez de data URIs, para a página ficar em dezenas
+      de kilobytes.
 
-Only essays authorized with `visibility: public` can be rendered.
+Só essays autorizados com `visibility: public` podem ser renderizados.
 
-No-argument default: render every public essay into SITE_ROOT/essays.
+Default sem argumentos: renderizar todo essay público em SITE_ROOT/essays.
 """
 from __future__ import annotations
 
@@ -209,8 +212,9 @@ def render(slug: str, output: Path) -> None:
         '<script>(function(){'
         'var t=null;'
         'try{t=localStorage.getItem("sb-theme")}catch(e){}'
-        'if(!t)t=(window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches)'
-        '?"light":"dark";'
+        # Sem escolha guardada, claro. Seguir o `prefers-color-scheme` abria o
+        # site inteiro no escuro em qualquer aparelho com o sistema escuro.
+        'if(!t)t="light";'
         'document.documentElement.dataset.theme=t'
         '})();</script>'
     )

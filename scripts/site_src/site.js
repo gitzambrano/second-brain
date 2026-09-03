@@ -144,8 +144,11 @@
 
   function showActiveTags() {
     if (tagCurrent) {
-      tagCurrent.textContent = activeTags.length === 0 ? 'todos'
-        : activeTags.length === 1 ? activeTags[0]
+      // Sem seleção o chip diria "todos", que é o estado já implícito no botão
+      // — e no celular, onde o espaço é o recurso escasso, ele empurraria o
+      // rótulo para fora. Só aparece quando há o que mostrar.
+      tagCurrent.hidden = activeTags.length === 0;
+      tagCurrent.textContent = activeTags.length === 1 ? activeTags[0]
         : activeTags.length + ' temas';
     }
     if (tagToggle) tagToggle.classList.toggle('has-selection', activeTags.length > 0);
@@ -250,14 +253,33 @@
       if (wrap) wrap.remove();
     });
 
+  /* O desenho é o do grafo, congelado: mesma paleta de fábrica, mesmo raio
+     (`radiusBase + sqrt(grau) * radiusScale`), mesmo gradiente radial no nó e
+     o mesmo halo — que, como no mapa, só existe no escuro, porque em fundo
+     claro ele vira sombra colorida e suja tudo. */
+  var GRAPH_COLORS = {
+    essay: '#4fa8ff', concept: '#5fd3c4', entity: '#e8b657',
+    insights: '#b48ce8', reference: '#8a8f96'
+  };
+  var RADIUS_BASE = 5;
+  var RADIUS_SCALE = 3;
+
+  function rgba(hex, alpha) {
+    var n = parseInt(hex.slice(1), 16);
+    return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + alpha + ')';
+  }
+
+  function mixWhite(hex, amount) {
+    var n = parseInt(hex.slice(1), 16);
+    var mix = function (c) { return Math.round(c + (255 - c) * amount); };
+    return 'rgb(' + mix((n >> 16) & 255) + ',' + mix((n >> 8) & 255) + ',' + mix(n & 255) + ')';
+  }
+
   function paintCover(canvas, data) {
     var ctx = canvas.getContext('2d');
-    var TYPE_COLOR = {
-      essay: '#4fa8ff', concept: '#5fd3c4', entity: '#e8b657',
-      insights: '#b48ce8', reference: '#8a8f96'
-    };
 
-    // Cap the sample: a few hundred marks read as a constellation, 1352 as mud.
+    // Uma amostra: algumas centenas de marcas leem como constelação, 1352 como
+    // borrão. Referências entram na disputa como qualquer outro tipo.
     var all = (data.nodes || []).filter(function (n) {
       return typeof n.x0 === 'number' && typeof n.y0 === 'number';
     });
@@ -270,12 +292,13 @@
       return keep[e.source] && keep[e.target];
     }).slice(0, 600);
 
-    // A force layout throws a few nodes far out; framing on the raw extent
-    // would shrink the whole constellation to a dot. Frame the middle 90%.
+    // Extensão TOTAL da amostra, não o miolo: com um recorte percentil os nós
+    // de fora eram desenhados além do quadro e o canvas os cortava numa reta —
+    // o contorno que não pode existir. Como a amostra já são os 300 de maior
+    // grau, o extremo cru não tem outlier que achate o desenho.
     function span(values) {
-      var sorted = values.slice().sort(function (a, b) { return a - b; });
-      var lo = sorted[Math.floor(sorted.length * 0.05)];
-      var hi = sorted[Math.floor(sorted.length * 0.95)];
+      var lo = Math.min.apply(null, values);
+      var hi = Math.max.apply(null, values);
       return [lo, hi === lo ? lo + 1 : hi];
     }
     var xs = span(nodes.map(function (n) { return n.x0; }));
@@ -292,20 +315,28 @@
 
       var spanX = (xs[1] - xs[0]) || 1;
       var spanY = (ys[1] - ys[0]) || 1;
-      var pad = 22;
-      // `cover` fills the frame instead of fitting inside it: a constellation
-      // that touches the edges reads as a fragment of something larger, which
-      // is exactly what it is.
-      var scale = Math.max((rect.width - pad * 2) / spanX,
+      // A folga reserva o raio do maior nó (e o halo, 2.4x): o enquadramento
+      // é dos CENTROS, e sem isso o círculo mais gordo vazaria pela borda.
+      var maxDegree = nodes.reduce(function (m, n) { return Math.max(m, n.degree || 1); }, 1);
+      var pad = 6 + (RADIUS_BASE + Math.sqrt(maxDegree) * RADIUS_SCALE)
+                    * Math.min(rect.width / spanX, rect.height / spanY) * 2.4;
+      // Cabe INTEIRO dentro do quadro, em vez de preenchê-lo. Sem moldura, um
+      // desenho sangrado deixaria o corte reto do canvas à mostra — que é
+      // exatamente o contorno que não deve existir. Assim a silhueta do
+      // próprio grafo é a forma, e ele flutua sobre a página.
+      var scale = Math.min((rect.width - pad * 2) / spanX,
                            (rect.height - pad * 2) / spanY);
       var offX = (rect.width - spanX * scale) / 2 - xs[0] * scale;
       var offY = (rect.height - spanY * scale) / 2 - ys[0] * scale;
       var at = function (n) { return [n.x0 * scale + offX, n.y0 * scale + offY]; };
+      var radius = function (n) {
+        return Math.max(0.9, (RADIUS_BASE + Math.sqrt(n.degree || 1) * RADIUS_SCALE) * scale);
+      };
+      var dark = document.documentElement.dataset.theme !== 'light';
 
-      var styles = getComputedStyle(document.documentElement);
-      ctx.strokeStyle = styles.getPropertyValue('--line-strong').trim() || '#556';
-      ctx.globalAlpha = 0.3;
-      ctx.lineWidth = 0.6;
+      ctx.strokeStyle = dark ? '#9aa0a8' : '#8a99aa';
+      ctx.globalAlpha = 0.45;
+      ctx.lineWidth = 0.7;
       ctx.beginPath();
       edges.forEach(function (e) {
         var a = at(keep[e.source]);
@@ -314,25 +345,40 @@
         ctx.lineTo(b[0], b[1]);
       });
       ctx.stroke();
+      ctx.globalAlpha = 1;
 
       nodes.forEach(function (n) {
         var p = at(n);
         if (p[0] < -12 || p[1] < -12 || p[0] > rect.width + 12 || p[1] > rect.height + 12) {
           return;
         }
-        var r = 1.3 + Math.min(4, Math.sqrt(n.degree || 1) * 0.7);
+        var r = radius(n);
+        var color = GRAPH_COLORS[n.type] || GRAPH_COLORS.essay;
+
+        if (dark) {
+          var halo = ctx.createRadialGradient(p[0], p[1], 0, p[0], p[1], r * 2.4);
+          halo.addColorStop(0, rgba(color, 0.5));
+          halo.addColorStop(1, rgba(color, 0));
+          ctx.fillStyle = halo;
+          ctx.beginPath();
+          ctx.arc(p[0], p[1], r * 2.4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        var fill = ctx.createRadialGradient(
+          p[0] - r * 0.3, p[1] - r * 0.35, 0, p[0], p[1], r);
+        fill.addColorStop(0, mixWhite(color, 0.55));
+        fill.addColorStop(1, color);
+        ctx.fillStyle = fill;
         ctx.beginPath();
         ctx.arc(p[0], p[1], r, 0, Math.PI * 2);
-        ctx.fillStyle = TYPE_COLOR[n.type] || '#4fa8ff';
-        ctx.globalAlpha = n.public ? 0.95 : 0.5;
         ctx.fill();
       });
-      ctx.globalAlpha = 1;
     }
 
     draw();
     window.addEventListener('resize', draw);
-    // The palette changes with the theme; redraw when it does.
+    // O halo existe só no escuro; redesenha quando o tema muda.
     new MutationObserver(draw).observe(document.documentElement, {
       attributes: true, attributeFilter: ['data-theme']
     });

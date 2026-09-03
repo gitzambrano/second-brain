@@ -69,7 +69,7 @@ def load(path):
 
 
 def get_frontmatter_field(content, field):
-    """Very small YAML-ish extractor, good enough for tags/sources lists and dates."""
+    """Extrator YAML-ish minúsculo, suficiente para listas de tags/sources e datas."""
     m = re.search(rf"(?m)^{field}:\s*(.*)$", content)
     if not m:
         return None
@@ -77,6 +77,7 @@ def get_frontmatter_field(content, field):
 
 
 def parse_list_field(raw):
+    """Lê um campo de lista do frontmatter, com ou sem colchetes, e devolve os itens."""
     if raw is None:
         return []
     raw = raw.strip()
@@ -91,7 +92,7 @@ def get_h1(content):
 
 
 def count_travessoes(content):
-    """Count em-dashes in argumentative prose, excluding fixed formatting spots."""
+    """Conta travessões na prosa argumentativa, fora dos pontos de formatação fixa."""
     # Drop the byline lines (use · not travessão, but be safe), the index-style
     # wikilink display separators, and code blocks before counting.
     lines = content.split("\n")
@@ -110,6 +111,9 @@ def count_travessoes(content):
 
 
 def essay_stats():
+    """Percorre wiki/essays e devolve contagens, vocabulário de tags e as pendências
+    de formato (Sumário, Referências e Conexões ausentes, excesso de travessão).
+    """
     essays = sorted(ESSAYS_DIR.glob("*.md")) if ESSAYS_DIR.exists() else []
     tag_counts = Counter()
     type_counts = Counter()
@@ -209,6 +213,9 @@ def orphan_stats(essay_titles):
 
 
 def source_stats():
+    """Confronta wiki/sources com o manifesto: o que está no disco sem entrada, o que
+    está na pasta errada, e as tags declaradas em cada entrada.
+    """
     if not SOURCES_DIR.exists():
         return {"total": 0, "by_type_folder": {}, "unmanifested": [], "misfiled": [], "manifest_entries": 0,
                 "tag_counts": Counter(), "missing_tags": []}
@@ -269,6 +276,7 @@ def source_stats():
 
 
 def handout_stats():
+    """Conta os handouts existentes."""
     if not HANDOUTS_DIR.exists():
         return {"count": 0, "essays_without_handout_but_flagged": []}
     handouts = list(HANDOUTS_DIR.glob("*.md"))
@@ -327,7 +335,7 @@ def plan_stats():
 
 
 def insights_stats():
-    """Count wiki/insights/ pages by maturidade (solta/germinando/madura)."""
+    """Conta páginas de wiki/insights/ por maturidade (solta/germinando/madura)."""
     if not INSIGHTS_DIR.exists():
         return {"total": 0, "by_maturidade": Counter(), "madura_ready": []}
 
@@ -349,6 +357,7 @@ def insights_stats():
 
 
 def format_report(essay, orphans, sem_essay, sources, handouts, insights, plan):
+    """Monta o relatório em Markdown a partir das estatísticas já apuradas."""
     lines = []
     lines.append(f"# Second Brain Stats — {datetime.date.today().isoformat()}")
     lines.append("")

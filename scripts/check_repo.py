@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Unified repository quality gate.
+"""
+Portão unificado de qualidade do repositório.
 
-No-argument default is the most complete useful diagnosis (``full``). A fresh
-skeleton clone is valid: corpus/export checks report SKIP when there is nothing
-to inspect. The checker never creates or edits wiki content.
+O default sem argumentos é o diagnóstico mais completo que é útil (``full``). Um
+clone esqueleto recém-criado é válido: as checagens de corpus e de export
+reportam SKIP quando não há o que inspecionar. O checador nunca cria nem edita
+conteúdo da wiki.
 """
 from __future__ import annotations
 

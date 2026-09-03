@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Structural audit of exported standalone HTML.
+"""
+Auditoria estrutural do HTML standalone exportado.
 
-No-argument default: audit every ``output/html/*.html``. The checker combines
-fast source-pattern checks with DOM checks when BeautifulSoup is available.
+Default sem argumentos: auditar cada ``output/html/*.html``. O checador combina
+checagens rápidas por padrão no fonte com checagens de DOM quando o
+BeautifulSoup está disponível.
 """
 from __future__ import annotations
 

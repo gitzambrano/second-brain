@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Convert Mermaid .mmd files to PNG via Mermaid CLI (mmdc).
+"""
+Converte arquivos Mermaid .mmd em PNG via Mermaid CLI (mmdc).
 
-No-argument default discovers every ``*.mmd`` under wiki/assets and plan and
-converts all of them. If none exist, the complete batch is an empty success.
+O default sem argumentos descobre todo ``*.mmd`` sob wiki/assets e plan e
+converte todos. Se não existir nenhum, o lote completo é um sucesso vazio.
 """
 import argparse
 import os

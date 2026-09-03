@@ -1,1 +1,3 @@
-"""Internal libraries for second-brain-engine."""
+"""
+Bibliotecas internas do second-brain-engine.
+"""

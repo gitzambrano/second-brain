@@ -1,9 +1,9 @@
-// Shared theme control. The initial value is applied by a tiny inline snippet in
-// each page <head> so the first paint already has the right palette; this file
-// only wires the toggle and keeps it in sync with the system preference.
+// Controle de tema compartilhado. O valor inicial é aplicado por um trecho
+// inline no <head> de cada página, para a primeira pintura já sair na paleta
+// certa; este arquivo só liga o botão e guarda a escolha. A preferência do
+// sistema não é consultada: sem escolha guardada, o site abre no claro.
 (function () {
   var root = document.documentElement;
-  var media = window.matchMedia ? matchMedia('(prefers-color-scheme: light)') : null;
 
   function apply(theme, persist) {
     root.dataset.theme = theme;
@@ -19,16 +19,10 @@
     }
   }
 
-  apply(root.dataset.theme || 'dark', false);
+  apply(root.dataset.theme || 'light', false);
 
   document.getElementById('themeToggle')?.addEventListener('click', function () {
     apply(root.dataset.theme === 'dark' ? 'light' : 'dark', true);
   });
 
-  // Follow the system only while the visitor has not made an explicit choice.
-  media?.addEventListener?.('change', function (event) {
-    var stored = null;
-    try { stored = localStorage.getItem('sb-theme'); } catch (e) { /* private mode */ }
-    if (!stored) apply(event.matches ? 'light' : 'dark', false);
-  });
 })();

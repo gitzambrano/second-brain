@@ -1,4 +1,4 @@
-<!doctype html><html lang="pt-BR" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Ideário de ensaios filosóficos, artigos técnicos e estudos, de Gustavo Zambrano."><title>Second Brain Atlas</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%278%27 fill=%27%230b1627%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27sans-serif%27 font-size=%2713%27 font-weight=%27700%27 fill=%27%2376a8ff%27 text-anchor=%27middle%27%3ESB%3C/text%3E%3C/svg%3E"><meta name="theme-color" content="#090909"><meta property="og:type" content="website"><meta property="og:site_name" content="Second Brain"><meta property="og:title" content="Second Brain Atlas"><meta property="og:description" content="Ideário de ensaios filosóficos, artigos técnicos e estudos."><meta name="twitter:card" content="summary"><meta name="twitter:title" content="Second Brain Atlas"><meta name="twitter:description" content="Ideário de ensaios filosóficos, artigos técnicos e estudos."><link rel="stylesheet" href="assets/site.css"><script>(function(){var t=null;try{t=localStorage.getItem("sb-theme")}catch(e){}if(!t)t=(window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches)?"light":"dark";document.documentElement.dataset.theme=t})();</script></head>
+<!doctype html><html lang="pt-BR" data-theme="light"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Ideário de ensaios filosóficos, artigos técnicos e estudos, de Gustavo Zambrano."><title>Second Brain Atlas</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%278%27 fill=%27%230b1627%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27sans-serif%27 font-size=%2713%27 font-weight=%27700%27 fill=%27%2376a8ff%27 text-anchor=%27middle%27%3ESB%3C/text%3E%3C/svg%3E"><meta name="theme-color" content="#ffffff"><meta property="og:type" content="website"><meta property="og:site_name" content="Second Brain"><meta property="og:title" content="Second Brain Atlas"><meta property="og:description" content="Ideário de ensaios filosóficos, artigos técnicos e estudos."><meta name="twitter:card" content="summary"><meta name="twitter:title" content="Second Brain Atlas"><meta name="twitter:description" content="Ideário de ensaios filosóficos, artigos técnicos e estudos."><link rel="stylesheet" href="assets/site.css"><script>(function(){var t=null;try{t=localStorage.getItem("sb-theme")}catch(e){}if(!t)t="light";document.documentElement.dataset.theme=t})();</script></head>
 
 <body class="landing">
 <a class="skip-link" href="#library">Pular para a biblioteca</a>
@@ -30,7 +30,6 @@
     </div>
     <a class="cover-map" href="graph.html" aria-label="Abrir o mapa completo">
       <canvas id="coverMap" aria-hidden="true"></canvas>
-      <span class="cover-map-hint">o mapa inteiro <span aria-hidden="true">↗</span></span>
     </a>
   </section>
 
@@ -38,25 +37,24 @@
     <div class="toolbar">
       <label class="searchbox">
         <span aria-hidden="true">⌕</span>
-        <input id="searchInput" type="search" placeholder="Buscar título, resumo ou tema…" autocomplete="off" aria-label="Buscar essays">
+        <input id="searchInput" type="search" placeholder="Buscar…" autocomplete="off" aria-label="Buscar essays">
         <kbd>/</kbd>
       </label>
-      <div class="view-controls">
-        <div class="segmented" role="group" aria-label="Disposição">
-          <button type="button" data-layout="list" aria-pressed="true">Lista</button>
-          <button type="button" data-layout="grid" aria-pressed="false">Grade</button>
-        </div>
-        <div class="segmented" role="group" aria-label="Densidade">
-          <button type="button" data-density="compact" aria-pressed="true">Compacto</button>
-          <button type="button" data-density="full" aria-pressed="false">Completo</button>
-        </div>
+      <button class="tag-toggle" type="button" id="tagToggle" aria-expanded="false" aria-controls="filters">
+        <span class="tag-toggle-label">Temas</span>
+        <span class="tag-toggle-current" id="tagCurrent">todos</span>
+      </button>
+      <div class="segmented" role="group" aria-label="Disposição">
+        <button type="button" data-layout="list" aria-pressed="true" title="Lista" aria-label="Lista"><span class="seg-full">Lista</span><span class="seg-icon" aria-hidden="true">☰</span></button>
+        <button type="button" data-layout="grid" aria-pressed="false" title="Grade" aria-label="Grade"><span class="seg-full">Grade</span><span class="seg-icon" aria-hidden="true">▦</span></button>
+      </div>
+      <div class="segmented" role="group" aria-label="Densidade">
+        <button type="button" data-density="compact" aria-pressed="true" title="Compacto" aria-label="Compacto"><span class="seg-full">Compacto</span><span class="seg-icon" aria-hidden="true">▭</span></button>
+        <button type="button" data-density="full" aria-pressed="false" title="Completo" aria-label="Completo"><span class="seg-full">Completo</span><span class="seg-icon" aria-hidden="true">▤</span></button>
       </div>
     </div>
 
     <div class="filters-bar">
-      <button class="tag-toggle" type="button" id="tagToggle" aria-expanded="false" aria-controls="filters">
-        Temas <span class="tag-toggle-current" id="tagCurrent">todos</span>
-      </button>
       <button class="tag-clear" type="button" id="tagClear" hidden>Limpar seleção</button>
       <span class="view-meta"><span id="visibleCount" aria-live="polite">{{COUNT}}</span> de {{COUNT}}</span>
     </div>

@@ -1,21 +1,22 @@
 #!/usr/bin/env python3
-"""Three levels of essay visibility, read from frontmatter.
+"""
+Três níveis de visibilidade de essay, lidos do frontmatter.
 
-    public   the text is readable on the public site
-    private  catalogued and mapped by name and summary; the text is not published
-    hidden   absent everywhere — public site, wiki index and wiki graph alike
+    public   o texto é legível no site público
+    private  catalogado e mapeado por título e resumo; o texto não sai
+    hidden   ausente de tudo — site, índice da wiki e grafo da wiki
 
-The field is `visibility:`. The older boolean `publish: true` still means public,
-so essays written before this field existed keep working.
+O campo é `visibility:`. O booleano antigo `publish: true` continua valendo como
+`public`, então essays escritos antes de o campo existir seguem funcionando.
 
-    visibility: public          # readable
-    visibility: private         # listed, not readable   (also the default)
-    visibility: hidden          # not listed at all
-    publish: true               # legacy spelling of `visibility: public`
+    visibility: public          # legível
+    visibility: private         # listado, não legível   (também é o padrão)
+    visibility: hidden          # nem listado
+    publish: true               # grafia antiga de `visibility: public`
 
-Absence is the safe state: an essay with neither field is private.
+A ausência é o estado seguro: um essay sem nenhum dos dois campos é privado.
 
-No-argument default: report how the corpus is distributed across the levels.
+Default sem argumentos: relatar como o corpus se distribui entre os níveis.
 """
 from __future__ import annotations
 

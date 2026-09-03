@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Browser-level validation of exported standalone HTML files.
+"""
+Validação em navegador dos arquivos HTML standalone exportados.
 
-No-argument default: audit every ``output/html/*.html`` file at mobile and
-desktop viewports. If no HTML exists (normal skeleton mode), report SKIP.
+Default sem argumentos: auditar cada ``output/html/*.html`` nos viewports de
+celular e de desktop. Se não existir HTML (modo esqueleto, normal), reportar
+SKIP.
 """
 from __future__ import annotations
 

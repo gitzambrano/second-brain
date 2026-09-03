@@ -1,24 +1,25 @@
 #!/usr/bin/env python3
-"""Generate the public map — graph and sphere — with the wiki's own renderers.
+"""
+Gera o mapa público — grafo e globo — com os renderizadores da própria wiki.
 
-`build_graph.py` and `build_sphere.py` already produce the interactive map the
-wiki uses — index panel, expandable summaries, draft badges, search, styling.
-This script does not reimplement any of that. It takes the same node set, strips
-what must not be public, and hands it to the same renderers.
+`build_graph.py` e `build_sphere.py` já produzem o mapa interativo que a wiki
+usa: painel de índice, resumos expansíveis, selo de rascunho, busca, estilo.
+Este script não reimplementa nada disso. Ele pega o mesmo conjunto de nós, tira
+o que não pode ser público e entrega aos mesmos renderizadores.
 
-What crosses into the public map:
-    title, type, tags, summary (essays), draft status, degree, size, layout,
-    every connection, and the external URL of a bibliography entry.
+O que atravessa para o mapa público:
+    título, tipo, tags, resumo (de essays), status de rascunho, grau, tamanho,
+    layout, todas as conexões e a URL externa de uma entrada de bibliografia.
 
-What never crosses:
-    the body of any page, the `file` path into the private repository, and a
-    read link for anything that is not an authorized essay. An unpublished node
-    is on the map and cannot be opened.
+O que nunca atravessa:
+    o corpo de qualquer página, o caminho `file` para dentro do repositório
+    privado, e link de leitura para qualquer coisa que não seja um essay
+    autorizado. Um nó não publicado está no mapa e não abre.
 
-A static site cannot hide what it serves: a title or summary here is public.
-That is the deliberate trade — the catalogue is public, the text is not.
+Um site estático não esconde o que serve: título e resumo aqui são públicos.
+Essa é a troca deliberada — o catálogo é público, o texto não.
 
-No-argument default: write the public map into SITE_ROOT.
+Default sem argumentos: escrever o mapa público em SITE_ROOT.
 """
 from __future__ import annotations
 
@@ -202,10 +203,10 @@ PUBLIC_CHROME = """
 
     var stored = null;
     try { stored = localStorage.getItem('sb-theme'); } catch (e) { /* private mode */ }
-    if (!stored) {
-      stored = (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches)
-        ? 'light' : 'dark';
-    }
+    // Mesmo padrão do Atlas: sem escolha guardada, claro. Antes o mapa lia o
+    // `prefers-color-scheme` e abria preto num celular com o sistema escuro,
+    // desmentindo a página de onde o leitor veio.
+    if (!stored) stored = 'light';
     apply(stored);
     document.addEventListener('click', function (event) {
       if (!event.target.closest('#sb-theme')) return;

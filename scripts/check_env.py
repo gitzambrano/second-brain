@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Diagnose runtime dependencies used by repository and export tooling.
+"""
+Diagnostica as dependências de runtime usadas pelo repositório e pelos exports.
 
-No-argument default: run the complete environment diagnosis. Missing export
-engines are warnings by default because core repository checks must work in a
-minimal clone; ``--strict`` promotes them to errors.
+Default sem argumentos: rodar o diagnóstico completo do ambiente. Motor de
+export ausente é aviso por padrão, porque as checagens centrais do repositório
+precisam funcionar num clone mínimo; ``--strict`` promove esses avisos a erro.
 """
 from __future__ import annotations
 

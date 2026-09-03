@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Static contract checker for skills, subagents, scripts and documentation.
+"""
+Checador estático de contrato de skills, subagents, scripts e documentação.
 
-No-argument default: audit all source skills/subagents plus AGENTS.md/README.md.
-``.agents/`` is the single source tree; there is no generated mirror to check.
+Default sem argumentos: auditar todas as skills e subagents de origem, mais
+AGENTS.md e README.md. ``.agents/`` é a única árvore-fonte; não há mirror
+gerado para conferir.
 """
 from __future__ import annotations
 

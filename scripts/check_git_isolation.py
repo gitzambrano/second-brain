@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Validate nested Git isolation and repository identity.
+"""
+Valida o isolamento dos Gits aninhados e a identidade de cada repositório.
 
-Default is read-only. Missing data/site are warnings so CI skeleton clones stay
-valid. --strict turns missing nested repos and wrong/missing remotes into errors.
+O padrão é read-only. data/ e site/ ausentes são avisos, para que clones
+esqueleto de CI continuem válidos. --strict transforma repo aninhado ausente e
+remote errado ou ausente em erro.
 """
 from __future__ import annotations
 

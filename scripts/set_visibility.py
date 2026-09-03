@@ -1,22 +1,23 @@
 #!/usr/bin/env python3
-"""Set an essay's visibility in its frontmatter.
+"""
+Define a visibilidade de um essay no frontmatter.
 
-Three levels, described in `visibility.py`:
+Três níveis, descritos em `visibility.py`:
 
-    public   the text is readable on the public site
-    private  catalogued and mapped by name and summary; the text is not published
-    hidden   absent everywhere, including the wiki's own index and graph
+    public   o texto é legível no site público
+    private  catalogado e mapeado por título e resumo; o texto não sai
+    hidden   ausente de tudo, inclusive do índice e do grafo da própria wiki
 
-No args: list the corpus by level.
+Sem argumentos: lista o corpus por nível.
 
     python scripts/set_visibility.py set-exclusive "Dutch Roll"
     python scripts/set_visibility.py allow <slug>
     python scripts/set_visibility.py deny  <slug>
     python scripts/set_visibility.py hide  <slug>
 
-`set-exclusive` makes exactly one essay public and returns every other public
-essay to private. It never changes a hidden essay, and it aborts unless the
-query resolves to exactly one essay.
+`set-exclusive` torna público exatamente um essay e devolve todos os outros
+públicos para privado. Nunca mexe num essay oculto, e aborta se a busca não
+resolver para exatamente um essay.
 """
 from __future__ import annotations
 

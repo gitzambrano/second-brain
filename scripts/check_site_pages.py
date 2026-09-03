@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
-"""Open every page of the built public site in a real browser and audit it.
+"""
+Abre cada página do site público construído num navegador real e a audita.
 
-`check_html_browser.py` covers the standalone HTML export. The site's pages are
-a different artefact — the same essay template plus the Atlas overlay, its own
-chrome and its own stylesheet — and nothing was looking at them. This does:
-it serves SITE_ROOT on a local port, opens each page, waits for MathJax, and
-reports what a reader would actually hit.
+`check_html_browser.py` cobre o export HTML standalone. As páginas do site são
+outro artefato — o mesmo template de essay mais a sobreposição do Atlas, o
+cromo próprio e a folha de estilo própria — e ninguém estava olhando para elas.
+Este script olha: sobe SITE_ROOT numa porta local, abre cada página, espera o
+MathJax e reporta o que um leitor encontraria de fato.
 
-Checked on a phone and on a desktop viewport:
-    horizontal overflow, broken images, broken in-page anchors, failed
-    requests, console errors, Markdown that leaked into the rendered text,
-    and — on an essay — the site bar, a summary with entries, and a cover
-    title free of Markdown markers.
+Verificado num celular e num desktop:
+    overflow horizontal, imagem quebrada, âncora interna morta, requisição que
+    falhou, erro de console, Markdown vazando no texto renderizado e — num
+    essay — a barra do site, um sumário com entradas e um título de capa sem
+    marcadores de Markdown.
 
-No-argument default: audit every page of SITE_ROOT.
+Default sem argumentos: auditar todas as páginas de SITE_ROOT.
 """
 from __future__ import annotations
 

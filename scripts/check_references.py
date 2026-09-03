@@ -220,6 +220,11 @@ def parse_entries(section):
 
 
 def check_essay(path):
+    """Audita a seção `## Referências` de um essay.
+
+    A ausência da seção não é reportada aqui: NO_REFERENCIAS é responsabilidade
+    de check_wiki.py.
+    """
     content = load(path)
     issues = []
     section = extract_referencias_section(content)
@@ -395,6 +400,7 @@ def check_essay(path):
 
 
 def resolve_essay(slug):
+    """Resolve um slug para o arquivo do essay, aceitando também um caminho direto."""
     p = Path(slug)
     if p.exists():
         return p.resolve()

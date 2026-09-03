@@ -82,7 +82,7 @@ def save_file_content(path, content):
 
 
 def split_frontmatter(content):
-    """Return (frontmatter_including_delimiters, body). frontmatter is '' if none."""
+    """Devolve (frontmatter_com_delimitadores, corpo). O frontmatter é '' se não houver."""
     if content.startswith("---\n"):
         end = content.find("\n---", 4)
         if end != -1:
@@ -93,8 +93,9 @@ def split_frontmatter(content):
 
 
 def apply_outside_fences(body, fn):
-    """Apply fn(segment) only to segments of `body` that are NOT inside a
-    fenced code block, leaving fences (and their contents) untouched."""
+    """Aplica fn(trecho) só aos trechos de `body` FORA de bloco de código cercado,
+    deixando as cercas — e o conteúdo delas — intactas.
+    """
     lines = body.split("\n")
     out_segments = []
     buffer = []
@@ -131,6 +132,7 @@ def fix_blank_line_before_heading(segment):
 
 
 def fix_heading_spacing(segment):
+    """Garante uma linha em branco depois de cada heading."""
     lines = segment.split("\n")
     new_lines = []
     for i, line in enumerate(lines):
@@ -144,6 +146,10 @@ def fix_heading_spacing(segment):
 
 
 def fix_wikilinks_colons(segment):
+    """Troca `:` por travessão dentro de [[wikilink]] — o Windows não aceita
+    dois-pontos em nome de arquivo. Preserva `[[#Seção]]`, que aponta para uma
+    âncora do próprio arquivo e não para um nome de arquivo.
+    """
     def repl(match):
         raw_link = match.group(1)
         # `[[#Heading]]` referencia seção do próprio arquivo, não um arquivo: o
@@ -354,6 +360,11 @@ def fix_ascii_double_quotes(segment):
 
 
 def fix_content(content):
+    """Aplica todas as correções mecânicas ao conteúdo, na ordem.
+
+    O frontmatter sai fora antes e volta intacto no fim; as correções de prosa
+    passam por `apply_outside_fences`, então bloco de código nunca é reescrito.
+    """
     frontmatter, body = split_frontmatter(content)
     body = apply_outside_fences(body, fix_hr_needs_blank_line)
     body = fix_sumario_anchors(body)
@@ -403,6 +414,7 @@ def fix_bare_title_wikilinks(body, title_to_slug, all_slugs):
 
 
 def resolve_essay(slug: str) -> Path:
+    """Resolve um slug para o arquivo do essay, aceitando também um caminho direto."""
     p = Path(slug)
     if p.exists():
         return p.resolve()

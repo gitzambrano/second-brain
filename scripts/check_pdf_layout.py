@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Audit PDF pagination/layout geometry using PyMuPDF.
+"""
+Audita a geometria de paginação e layout dos PDFs, via PyMuPDF.
 
-Checks right/left margin overflow, orphan headings and unusually empty pages.
-No-argument default audits every ``output/pdf/*.pdf`` and fails on blocking
-layout defects; use ``--report-only`` for the former always-zero behavior.
+Checa estouro de margem à direita e à esquerda, título órfão e páginas
+anormalmente vazias. O default sem argumentos audita cada ``output/pdf/*.pdf``
+e falha em defeito de layout bloqueante; use ``--report-only`` para o antigo
+comportamento de sempre sair zero.
 """
 from __future__ import annotations
 
