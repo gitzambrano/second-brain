@@ -1,6 +1,11 @@
 __pycache__/
 *.code-workspace
 .miktex/
+
+# .claude/skills/ e .claude/agents/ são espelhos gerados de .agents/ (scripts/sync_skills.py).
+# Apenas .claude/settings.json é versionado.
+.claude/*
+!.claude/settings.json
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
 .claude/worktrees/

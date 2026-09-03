@@ -24,6 +24,7 @@ Este subagent atua em `./` e em `data/`. **Nunca** em `site/`.
 ## 1. Pre-flight
 
 ```bash
+python scripts/sync_skills.py
 python scripts/repo_paths.py
 python scripts/check_git_isolation.py
 python scripts/check_path_discipline.py
@@ -58,6 +59,7 @@ A collection `secondbrain` indexa `DATA_ROOT/wiki`.
 ## 4. Post-flight
 
 ```bash
+python scripts/sync_skills.py --check
 python scripts/check_repo.py --wiki
 ```
 

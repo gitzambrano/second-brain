@@ -754,6 +754,13 @@ def main():
             "própria obra saem sinalizadas como REFERENCIA_SEM_LINK e precisam de /linkify."
         )
 
+    if not args.dry_run:
+        try:
+            from sync_skills import sync
+            sync()
+        except Exception as exc:
+            print(f"Aviso: sync_skills falhou: {exc}")
+
 
 if __name__ == "__main__":
     main()

@@ -35,7 +35,7 @@ Se o arquivo não existir, crie-o com o template abaixo e avise que é a primeir
    - **Perguntas em aberto**;
    - **Decisões recentes**.
 4. Reescreva `wiki/status.md` inteiro com `Atualizado:` na data atual.
-5. Se a sessão editou muitas páginas ou alterou `.agents/skills/`/`.agents/agents/`, ofereça o subagent `update`.
+5. Execute `python scripts/sync_skills.py` para manter os espelhos `.claude/` sincronizados. Se a sessão editou muitas páginas ou alterou `.agents/skills/`/`.agents/agents/`, ofereça o subagent `update`.
 6. Não registre `/status update` em `wiki/log.md`.
 
 Decisões recentes pertencem ao status enquanto forem úteis entre sessões. Regras permanentes de estrutura/estilo só entram em `conventions/SKILL.md` quando representam o comportamento normativo atual; não mantenha histórico de decisões lá.
