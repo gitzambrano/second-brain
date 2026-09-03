@@ -1343,13 +1343,7 @@ def export_essay(filepath, output_dir=None, source_dir=None):
         # interromper o parágrafo e ela sai como prosa corrida com hífens
         # literais no meio da frase, nos DOIS exports. Ligar aqui corrige o
         # corpus inteiro sem editar um `.md` sequer.
-        # +tex_math_single_backslash: reconhece \[...\] e \(...\) como modo
-        # matemático. Essays que usam esses delimitadores (modelos-de-inflow,
-        # rotores-e-orbitas, cy-inflow) falhavam porque o Pandoc tratava o bloco
-        # como texto literal com colchetes escapados ({[}...{]}), fazendo
-        # \mathrm/\mathbf caírem fora do ambiente matemático e o LuaLaTeX abortar.
-        # Essays que só usam $$ não são afetados.
-        '-f', 'markdown+smart+tex_math_dollars+tex_math_single_backslash+pipe_tables+strikeout+superscript+subscript-implicit_figures+gfm_auto_identifiers+lists_without_preceding_blankline',
+        '-f', 'markdown+smart+tex_math_dollars+pipe_tables+strikeout+superscript+subscript-implicit_figures+gfm_auto_identifiers+lists_without_preceding_blankline',
     ]
     
     print(f"  Exporting: {filepath.name} -> {pdf_path.name}")
