@@ -1150,6 +1150,18 @@ function drawTagTint(inViewFn) {
   ctx.globalCompositeOperation = "source-over";
 }
 
+function getLabelColor() {
+  if (styleConfig.colors && styleConfig.colors.text) return styleConfig.colors.text;
+  const isLight = document.documentElement.getAttribute("data-theme") === "light";
+  const bg = (styleConfig.colors && styleConfig.colors.background) || (isLight ? "#ffffff" : "#1b1e21");
+  if (isLight) return "#1e293b";
+  if (typeof bg === "string" && bg.startsWith("#") && bg.length >= 7) {
+    const r = parseInt(bg.slice(1, 3), 16), g = parseInt(bg.slice(3, 5), 16), b = parseInt(bg.slice(5, 7), 16);
+    if ((0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.55) return "#1e293b";
+  }
+  return "#e6e9ec";
+}
+
 // ---- Desenho ---------------------------------------------------------------
 function drawHalo(n, r, alpha) {
   const hr = r * 2.4;
@@ -1332,12 +1344,13 @@ function draw() {
   if (labelsShown) {
     ctx.font = `${styleConfig.labelSize}px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif`;
     ctx.textAlign = "center";
-    ctx.fillStyle = "#e6e9ec";
+    ctx.fillStyle = getLabelColor();
+    const isLight = document.documentElement.getAttribute("data-theme") === "light";
     data.nodes.forEach(n => {
       // Rótulos só na frente: texto atravessando o globo vira sopa.
       if (n.type === "reference" || !isNodeVisible(n) || n.sz < 0.05 || !inViewFn(n)) return;
       const dim = nodeDimmed(n);
-      ctx.globalAlpha = (dim ? 0.08 : 0.85) * Math.min(1, depthAlpha(n.sz));
+      ctx.globalAlpha = (dim ? 0.08 : (isLight ? 0.95 : 0.85)) * Math.min(1, depthAlpha(n.sz));
       ctx.fillText(n.title, n.sx, n.sy - (2 + rScreenOf(n)));
     });
     ctx.globalAlpha = 1;
@@ -2492,7 +2505,7 @@ function drawSphereForSvgExport(simple) {
   if (labelsShown) {
     c.font = `${svgStyle.labelSize}px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif`;
     c.textAlign = "center";
-    c.fillStyle = "#e6e9ec";
+    c.fillStyle = getLabelColor();
     data.nodes.forEach(n => {
       if (n.type === "reference" || !isNodeVisible(n) || n.sz < 0.05 || !inViewFn(n)) return;
       c.globalAlpha = (nodeDimmed(n) ? 0.08 : 0.85) * Math.min(1, depthAlpha(n.sz));

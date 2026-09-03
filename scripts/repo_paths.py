@@ -37,7 +37,7 @@ if str(LIB_DIR) not in sys.path:
 AGENTS_DIR = CODE_ROOT / ".agents"
 SKILLS_DIR = AGENTS_DIR / "skills"
 SUBAGENTS_DIR = AGENTS_DIR / "agents"
-SITE_SRC_DIR = CODE_ROOT / "site_src"
+SITE_SRC_DIR = SCRIPTS_DIR / "site_src"
 
 WIKI_ROOT = DATA_ROOT / "wiki"
 ESSAYS_DIR = WIKI_ROOT / "essays"

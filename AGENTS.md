@@ -15,7 +15,7 @@ repositórios Git independentes, que **não** são submodules e são integralmen
 ignorados pelo Git externo:
 
 ```text
-./      second-brain-engine  PUBLIC   engine: AGENTS.md, .agents/, scripts, tests, site_src
+./      second-brain-engine  PUBLIC   engine: AGENTS.md, .agents/, scripts, tests
 data/   second-brain-data    PRIVATE  wiki, plan, raw, output, .obsidian
 site/   second-brain-site    PUBLIC   projeção gerada dos essays autorizados
 ```
@@ -46,8 +46,7 @@ nunca deduza caminho de conteúdo a partir do diretório corrente.
   - `log.md` — histórico append-only.
   - `status.md` — estado de curto prazo entre sessões.
 - **`plan/`** — plano de longo prazo. `plano.md` guarda pendências; `drafts/` guarda outlines antes de `/essay`.
-- **`scripts/`** — lint, busca, índices, grafo, export e quality gates.
-- **`site_src/`** — templates, estilos CSS e scripts do frontend do site público.
+- **`scripts/`** — lint, busca, índices, grafo, export, quality gates e templates do site (`scripts/site_src/`).
 - **`tests/`** — testes automatizados e fixtures sintéticas isoladas.
 
 Detalhes de tipos de source, frontmatter, tags, links, referências, prosa, imagens e formatos vivem em `conventions/SKILL.md`.

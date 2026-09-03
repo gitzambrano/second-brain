@@ -2144,6 +2144,18 @@ function drawNodeSprite(n) {
   ctx.drawImage(sprite, n.x - dw / 2, n.y - dw / 2, dw, dw);
 }
 
+function getLabelColor() {
+  if (styleConfig.colors && styleConfig.colors.text) return styleConfig.colors.text;
+  const isLight = document.documentElement.getAttribute("data-theme") === "light";
+  const bg = (styleConfig.colors && styleConfig.colors.background) || (isLight ? "#ffffff" : "#1b1e21");
+  if (isLight) return "#1e293b";
+  if (typeof bg === "string" && bg.startsWith("#") && bg.length >= 7) {
+    const r = parseInt(bg.slice(1, 3), 16), g = parseInt(bg.slice(3, 5), 16), b = parseInt(bg.slice(5, 7), 16);
+    if ((0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.55) return "#1e293b";
+  }
+  return "#e6e9ec";
+}
+
 function drawLabel(n) {
   // font/fillStyle/textAlign já vêm setados uma vez só pelo chamador (draw())
   // antes do loop — não mudam de rótulo pra rótulo, só a posição e o alpha
@@ -2151,7 +2163,8 @@ function drawLabel(n) {
   // Canvas a reparsear a string de fonte a cada um dos ~1100 nós.
   const dimmed = nodeDimmed(n);
   const r = radiusOf(n);
-  ctx.globalAlpha = dimmed ? 0.08 : 0.85;
+  const isLight = document.documentElement.getAttribute("data-theme") === "light";
+  ctx.globalAlpha = dimmed ? 0.08 : (isLight ? 0.95 : 0.85);
   ctx.fillText(n.title, n.x, n.y - (2 + r));
 }
 
@@ -2386,7 +2399,7 @@ function draw() {
     // cada rótulo economiza reparse de `ctx.font` (não é grátis no Canvas).
     ctx.font = `${styleConfig.labelSize}px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif`;
     ctx.textAlign = "center";
-    ctx.fillStyle = "#e6e9ec";
+    ctx.fillStyle = getLabelColor();
     data.nodes.forEach(n => {
       if (n.type === "reference" || !isNodeVisible(n) || !inView(n)) return;
       drawLabel(n);
@@ -3807,7 +3820,7 @@ function drawForSvgExport(simple) {
   if (labelsShown) {
     c.font = `${svgStyle.labelSize}px -apple-system, "Segoe UI", Helvetica, Arial, sans-serif`;
     c.textAlign = "center";
-    c.fillStyle = "#e6e9ec";
+    c.fillStyle = getLabelColor();
     data.nodes.forEach(n => {
       if (n.type === "reference" || !isNodeVisible(n) || !inView(n)) return;
       c.globalAlpha = nodeDimmed(n) ? 0.08 : 0.85;

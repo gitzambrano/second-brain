@@ -176,13 +176,31 @@ PUBLIC_CHROME = """
     else window.addEventListener('load', function () { setTimeout(fit, 400); });
   })();
   (function () {
+    var updateMapStyle = function (theme) {
+      try {
+        var current = document.querySelector('#sb-map-switch a[aria-current="page"]');
+        var styleKey = current && current.textContent.trim() === 'Globo'
+          ? 'sb-sphere-style-v1' : 'sb-graph-style-v1';
+        var saved = JSON.parse(localStorage.getItem(styleKey) || 'null');
+        var pinned = saved && saved.colors && saved.colors.background;
+        if (!pinned && typeof styleConfig !== 'undefined' && typeof applyStyle === 'function') {
+          styleConfig.colors.background = theme === 'light' ? '#ffffff' : '#0a0a0a';
+          styleConfig.colors.edge = theme === 'light' ? '#8a99aa' : '#9aa0a8';
+          applyStyle(styleConfig, { silent: true });
+        }
+      } catch (e) {}
+    };
+
     var apply = function (theme) {
       document.documentElement.setAttribute('data-theme', theme);
-      document.documentElement.style.background = theme === 'light' ? '#f7f9fc' : '#060d18';
-      document.body.style.background = theme === 'light' ? '#f7f9fc' : '#060d18';
+      document.documentElement.dataset.theme = theme;
+      document.documentElement.style.background = theme === 'light' ? '#ffffff' : '#060d18';
+      document.body.style.background = theme === 'light' ? '#ffffff' : '#060d18';
       var button = document.getElementById('sb-theme');
       if (button) button.setAttribute('aria-pressed', String(theme === 'light'));
+      updateMapStyle(theme);
     };
+
     var stored = null;
     try { stored = localStorage.getItem('sb-theme'); } catch (e) { /* private mode */ }
     if (!stored) {
@@ -196,32 +214,6 @@ PUBLIC_CHROME = """
       try { localStorage.setItem('sb-theme', next); } catch (e) { /* private mode */ }
       apply(next);
     });
-  })();
-
-  // Tema: o fundo do mapa acompanha o tema do site (claro/escuro) por padrão;
-  // um estilo salvo com cor de fundo fixada neste navegador continua mandando.
-  (function () {
-    var root = document.documentElement;
-    var theme = null;
-    try { theme = localStorage.getItem('sb-theme'); } catch (e) {}
-    if (theme !== 'light' && theme !== 'dark') {
-      theme = (window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches)
-        ? 'light' : 'dark';
-    }
-    root.dataset.theme = theme;
-    try {
-      // Scope the style check to THIS map (Grafo vs Globo), so a style saved on
-      // one map never suppresses the theme background on the other.
-      var current = document.querySelector('#sb-map-switch a[aria-current="page"]');
-      var styleKey = current && current.textContent.trim() === 'Globo'
-        ? 'sb-sphere-style-v1' : 'sb-graph-style-v1';
-      var saved = JSON.parse(localStorage.getItem(styleKey) || 'null');
-      var pinned = saved && saved.colors && saved.colors.background;
-      if (!pinned && typeof styleConfig !== 'undefined' && typeof applyStyle === 'function') {
-        styleConfig.colors.background = theme === 'light' ? '#ffffff' : '#0a0a0a';
-        applyStyle(styleConfig, { silent: true });
-      }
-    } catch (e) {}
   })();
 </script>
 """
