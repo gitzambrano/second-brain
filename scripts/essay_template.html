@@ -39,14 +39,14 @@ $endif$
 }
 [data-theme="light"]{
   --bg:#FFFFFF;
-  --surface:#F6F3EC;
-  --surface2:#EDE9DE;
-  --border:#DCD5C5;
-  --text:#3A342B;
-  --text-dim:#7E7566;
-  --text-bright:#171310;
-  --gold:#8A6B33;
-  --gold-dim:#B08A2E;
+  --surface:#F7F9FC;
+  --surface2:#EDF2F8;
+  --border:#D6DEE9;
+  --text:#2B3645;
+  --text-dim:#66758A;
+  --text-bright:#0E1928;
+  --gold:#2F5FB0;
+  --gold-dim:#234A86;
   --rust:#8E4636;
   --rust-bright:#A04030;
   --accent:#35708A;
@@ -61,14 +61,14 @@ $endif$
      escuro para quem preferir. Playfair permanece em todos os temas */
   :root:not([data-theme="dark"]){
     --bg:#FFFFFF;
-    --surface:#F7F5EF;
-    --surface2:#EEEAE0;
-    --border:#D9D3C4;
-    --text:#33302B;
-    --text-dim:#7E7566;
-    --text-bright:#15120E;
-    --gold:#8A6B33;
-    --gold-dim:#A98A2E;
+    --surface:#F7F9FC;
+    --surface2:#EDF2F8;
+    --border:#D6DEE9;
+    --text:#2B3645;
+    --text-dim:#66758A;
+    --text-bright:#0E1928;
+    --gold:#2F5FB0;
+    --gold-dim:#234A86;
     --rust:#8E4636;
     --rust-bright:#A04030;
     --accent:#35708A;
@@ -122,7 +122,7 @@ body{
 /* Tema claro: capa branca nobre com brilho suave dourado */
 [data-theme="light"] .masthead,
 :root:not([data-theme="dark"]) .masthead{
-  background:radial-gradient(120% 90% at 50% 0%, rgba(176,139,79,0.08) 0%, #FAF9F6 40%, #FFFFFF 85%);
+  background:#F3F5F7;
   color:#171310;
 }
 [data-theme="light"] .masthead .hero-title,
@@ -132,7 +132,7 @@ body{
 /* Tema escuro: capa preta editorial */
 [data-theme="dark"] .masthead,
 :root[data-theme="dark"] .masthead{
-  background:radial-gradient(120% 90% at 50% 0%, #16130E 0%, #0A0A0A 62%);
+  background:#0A0A0A;
   color:#EDE8DF;
 }
 [data-theme="dark"] .masthead .hero-title,
@@ -142,7 +142,7 @@ body{
 @media (max-width:900px){
   .masthead{min-height:92svh;}
 }
-.stripe{height:4px;background:linear-gradient(90deg,var(--rust) 0%,var(--gold) 50%,var(--rust) 100%);}
+.stripe{height:4px;background:linear-gradient(90deg,var(--gold-dim) 0%,var(--gold) 50%,var(--gold-dim) 100%);}
 .masthead-inner{max-width:var(--max-width);margin:0 auto;padding:0 1.2rem;width:100%;}
 .hero-title{
   font-family:var(--font-display);
@@ -173,6 +173,19 @@ body{
   border-radius:2px;padding:.3rem .7rem;
   display:inline-block;
 }
+
+.cover-summary{
+  max-width:min(760px,92%);
+  margin:1.45rem auto 0;
+  color:color-mix(in srgb,var(--text) 88%,var(--text-dim));
+  font-size:clamp(.96rem,2vw,1.08rem);
+  line-height:1.58;
+  text-wrap:balance;
+}
+[data-theme="light"] .cover-summary,
+:root:not([data-theme="dark"]) .cover-summary{color:#435166;}
+[data-theme="dark"] .cover-summary,
+:root[data-theme="dark"] .cover-summary{color:#C8C2B8;}
 
 /* ------------------------------------------------------------------ */
 /* Conteudo                                                            */
@@ -620,6 +633,9 @@ $endif$
     <h1 class="hero-title">$title$</h1>
     <hr class="masthead-rule">
     <p class="byline">$author$</p>
+$if(summary)$
+    <p class="cover-summary">$summary$</p>
+$endif$
   </div>
 </header>
 

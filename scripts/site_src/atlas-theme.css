@@ -1,0 +1,151 @@
+/* Second Brain Atlas shared palette: clean editorial, one accent per theme. */
+:root{
+  --bg:#090909;--bg-elevated:#0d0d0d;--panel:#121212;--panel-2:#191919;
+  --text:#e8e8e8;--text-strong:#ffffff;--muted:#a6a6a6;--faint:#808080;
+  --line:rgba(255,255,255,.12);--line-strong:rgba(255,255,255,.22);
+  --accent:#c9a45c;--accent-soft:rgba(201,164,92,.10);--accent-2:#aa8950;
+  --gold:#c9a45c;--gold-dim:#8a6b33;
+  --shadow-sm:0 2px 8px rgba(0,0,0,.30);
+  --shadow:0 24px 64px rgba(0,0,0,.42);
+  --shadow-lg:0 40px 120px rgba(0,0,0,.54);
+}
+:root[data-theme="light"]{
+  --bg:#ffffff;--bg-elevated:#ffffff;--panel:#ffffff;--panel-2:#f5f8fc;
+  --text:#172235;--text-strong:#0a1525;--muted:#607087;--faint:#697b92;
+  --line:rgba(23,34,53,.12);--line-strong:rgba(23,34,53,.24);
+  --accent:#2f5fb0;--accent-soft:rgba(47,95,176,.09);--accent-2:#4777c7;
+  --gold:#2f5fb0;--gold-dim:#234a86;
+  --shadow-sm:0 1px 5px rgba(24,45,78,.08);
+  --shadow:0 20px 56px rgba(24,45,78,.11);
+  --shadow-lg:0 32px 96px rgba(24,45,78,.14);
+}
+:root[data-theme="light"] .ambient-a{
+  background:radial-gradient(circle,rgba(47,95,176,.08),transparent 70%);
+}
+:root[data-theme="light"] .ambient-b{
+  background:radial-gradient(circle,rgba(47,95,176,.035),transparent 72%);
+}
+:root:not([data-theme="light"]) .ambient-a{
+  background:radial-gradient(circle,rgba(201,164,92,.055),transparent 70%);
+}
+:root:not([data-theme="light"]) .ambient-b{
+  background:radial-gradient(circle,rgba(201,164,92,.025),transparent 72%);
+}
+::selection{background:color-mix(in srgb,var(--accent) 24%,transparent);}
+.faint,.card-meta,.view-meta,.footer{color:var(--muted);}
+.read-link,.nav-link.active,.brand-mark,.cover-map-hint{color:var(--accent);}
+:root:not([data-theme="light"]) body,:root:not([data-theme="light"]) .landing{background-color:#090909;}
+
+
+/* Atlas library UX — compact controls + expandable summaries */
+.sort-wrap,
+#toggleSummaries {
+  display: none !important;
+}
+
+.library-order-note {
+  display: inline-flex;
+  align-items: center;
+  gap: .42rem;
+  min-height: 38px;
+  padding: 0 .78rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: .76rem;
+  white-space: nowrap;
+}
+
+.library-order-note::before {
+  content: "↕";
+  color: var(--accent);
+}
+
+.filters-bar {
+  gap: .65rem;
+}
+
+.tag-toggle {
+  border-radius: 999px !important;
+  background: transparent !important;
+}
+
+.tag-toggle:hover,
+.tag-toggle[aria-expanded="true"] {
+  border-color: color-mix(in srgb, var(--accent) 52%, var(--line)) !important;
+  background: var(--accent-soft) !important;
+}
+
+.filters {
+  padding-top: .75rem !important;
+  gap: .42rem !important;
+  background: transparent !important;
+}
+
+.filter-chip {
+  border-radius: 999px !important;
+  padding: .36rem .7rem !important;
+}
+
+.filter-chip.active {
+  color: var(--accent) !important;
+  border-color: color-mix(in srgb, var(--accent) 62%, var(--line)) !important;
+  background: var(--accent-soft) !important;
+}
+
+.card-summary {
+  position: relative;
+  padding-right: 1.55rem;
+  cursor: pointer;
+  outline: none;
+}
+
+.card-summary::after {
+  content: "⌄";
+  position: absolute;
+  right: .08rem;
+  top: .02rem;
+  color: var(--accent);
+  font-family: var(--sans);
+  transition: transform .16s ease;
+}
+
+.card-summary:focus-visible {
+  border-radius: 4px;
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.essay-card:not(.summary-expanded) .card-summary {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.essay-grid.as-list .essay-card:not(.summary-expanded) .card-summary {
+  -webkit-line-clamp: 1;
+}
+
+.essay-grid:not(.as-list) .essay-card:not(.summary-expanded) .card-summary {
+  -webkit-line-clamp: 3;
+}
+
+.essay-card.summary-expanded .card-summary {
+  display: block;
+  overflow: visible;
+}
+
+.essay-card.summary-expanded .card-summary::after {
+  transform: rotate(180deg);
+}
+
+@media (max-width: 720px) {
+  .library-order-note {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .filters {
+    max-height: 42vh;
+    overflow-y: auto;
+  }
+}

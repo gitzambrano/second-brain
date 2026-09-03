@@ -51,8 +51,8 @@
 
   function statusRank(card) {
     var s = (card.dataset.status || '').toLowerCase();
-    if (s === 'maduro') return 3;
-    if (s === 'finalizado') return 2;
+    if (s === 'finalizado') return 3;
+    if (s === 'revisao' || s === 'maduro') return 2;
     if (s === 'draft') return 1;
     return 0;
   }
@@ -116,13 +116,18 @@
   }
 
   function makeComparator() {
-    var dims = sortState.order.map(function (k) { return SORT_DIMS[k]; });
     return function (a, b) {
-      for (var i = 0; i < dims.length; i++) {
-        var c = dims[i].compare(a, b);
-        if (c) return dims[i].dir < 0 ? -c : c;
-      }
-      return 0;
+      var status = statusRank(b) - statusRank(a);
+      if (status) return status;
+
+      var publicA = a.dataset.published === '1' ? 1 : 0;
+      var publicB = b.dataset.published === '1' ? 1 : 0;
+      if (publicA !== publicB) return publicB - publicA;
+
+      var date = (b.dataset.updated || '').localeCompare(a.dataset.updated || '');
+      if (date) return date;
+
+      return (a.dataset.title || '').localeCompare(b.dataset.title || '', 'pt-BR');
     };
   }
 
@@ -314,8 +319,12 @@
 
   chips.forEach(function (chip) {
     chip.addEventListener('click', function () {
-      chips.forEach(function (other) { other.classList.remove('active'); });
+      chips.forEach(function (other) {
+        other.classList.remove('active');
+        other.setAttribute('aria-pressed', 'false');
+      });
       chip.classList.add('active');
+      chip.setAttribute('aria-pressed', 'true');
       activeTag = chip.dataset.tag || '';
       showActiveTag();
       apply();
@@ -334,7 +343,7 @@
 
   document.addEventListener('keydown', function (event) {
     var tag = document.activeElement && document.activeElement.tagName;
-    if (event.key === '/' && tag !== 'INPUT' && tag !== 'TEXTAREA') {
+    if (event.key === '/' && tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT' && tag !== 'BUTTON' && !document.activeElement.isContentEditable) {
       event.preventDefault();
       if (input) input.focus();
     }
@@ -342,6 +351,31 @@
       input.value = '';
       apply();
       input.blur();
+    }
+  });
+
+  /* Expand a single summary without navigating the card. */
+  function toggleCardSummary(summary, event) {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    var card = summary.closest('.essay-card');
+    if (!card) return;
+    var expanded = card.classList.toggle('summary-expanded');
+    summary.setAttribute('aria-expanded', String(expanded));
+    summary.title = expanded ? 'Recolher resumo' : 'Expandir resumo';
+  }
+
+  document.addEventListener('click', function (event) {
+    var summary = event.target.closest && event.target.closest('.card-summary');
+    if (summary) toggleCardSummary(summary, event);
+  });
+
+  document.addEventListener('keydown', function (event) {
+    var summary = event.target.closest && event.target.closest('.card-summary');
+    if (summary && (event.key === 'Enter' || event.key === ' ')) {
+      toggleCardSummary(summary, event);
     }
   });
 

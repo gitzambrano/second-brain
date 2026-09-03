@@ -90,7 +90,7 @@ def pandoc(markdown: str, title: str, subtitle: str, author: str,
             "--standalone",
             f"--template={TEMPLATE_PATH}",
             "--highlight-style=pygments",
-            "--mathjax",
+            "--mathjax=../assets/mathjax/tex-svg.js",
             "-V", f"title={title}",
             "-V", f"subtitle={subtitle}",
             "-V", f"author={author}",
@@ -144,7 +144,8 @@ def site_chrome(essay, related) -> str:
 <div class="sb-progress"><span id="sbProgressFill"></span></div>
 <div class="sb-tags">{tags}</div>
 {related_block}
-<button class="sb-toc-fab" type="button" id="sbTocFab" aria-expanded="false" aria-controls="sbToc" title="Sumário do essay">
+<button class="sb-toc-fab" type="button" id="sbTocFab" aria-expanded="false"
+        aria-controls="sbToc" title="Sumário do essay">
   <span class="sb-toc-icon" aria-hidden="true">☰</span>
   <span class="sb-toc-text">Sumário</span>
 </button>
@@ -183,7 +184,18 @@ def render(slug: str, output: Path) -> None:
     related = [by_slug[s] for s in public_connections(essay, allowed) if s in by_slug]
     chrome = site_chrome(essay, related)
 
-    page = page.replace("</head>", f"<style>{theme}</style>\n</head>", 1)
+    early_theme = (
+        '<script>(function(){'
+        'var t=null;'
+        'try{t=localStorage.getItem("sb-theme")}catch(e){}'
+        'if(!t)t=(window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches)'
+        '?"light":"dark";'
+        'document.documentElement.dataset.theme=t'
+        '})();</script>'
+    )
+    page = page.replace(
+        "</head>", early_theme + f"<style>{theme}</style>\n</head>", 1
+    )
     page = page.replace("</body>", chrome + "</body>", 1)
 
     output.parent.mkdir(parents=True, exist_ok=True)

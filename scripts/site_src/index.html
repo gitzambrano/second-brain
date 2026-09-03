@@ -1,4 +1,4 @@
-<!doctype html><html lang="pt-BR" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Ideário de ensaios filosóficos, artigos técnicos e estudos, de Gustavo Zambrano."><title>Second Brain Atlas</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%278%27 fill=%27%230b1627%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27sans-serif%27 font-size=%2713%27 font-weight=%27700%27 fill=%27%2376a8ff%27 text-anchor=%27middle%27%3ESB%3C/text%3E%3C/svg%3E"><meta name="theme-color" content="#060d18"><meta property="og:type" content="website"><meta property="og:site_name" content="Second Brain"><meta property="og:title" content="Second Brain Atlas"><meta property="og:description" content="Ideário de ensaios filosóficos, artigos técnicos e estudos."><meta name="twitter:card" content="summary"><meta name="twitter:title" content="Second Brain Atlas"><meta name="twitter:description" content="Ideário de ensaios filosóficos, artigos técnicos e estudos."><link rel="stylesheet" href="assets/site.css"><script>(function(){var t=null;try{t=localStorage.getItem("sb-theme")}catch(e){}if(!t)t=(window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches)?"light":"dark";document.documentElement.dataset.theme=t})();</script></head>
+<!doctype html><html lang="pt-BR" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Ideário de ensaios filosóficos, artigos técnicos e estudos, de Gustavo Zambrano."><title>Second Brain Atlas</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%278%27 fill=%27%230b1627%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27sans-serif%27 font-size=%2713%27 font-weight=%27700%27 fill=%27%2376a8ff%27 text-anchor=%27middle%27%3ESB%3C/text%3E%3C/svg%3E"><meta name="theme-color" content="#060d18"><meta property="og:type" content="website"><meta property="og:site_name" content="Second Brain"><meta property="og:title" content="Second Brain Atlas"><meta property="og:description" content="Ideário de ensaios filosóficos, artigos técnicos e estudos."><meta name="twitter:card" content="summary"><meta name="twitter:title" content="Second Brain Atlas"><meta name="twitter:description" content="Ideário de ensaios filosóficos, artigos técnicos e estudos."><link rel="stylesheet" href="assets/site.css"><link rel="stylesheet" href="assets/atlas-theme.css"><script>(function(){var t=null;try{t=localStorage.getItem("sb-theme")}catch(e){}if(!t)t=(window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches)?"light":"dark";document.documentElement.dataset.theme=t})();</script></head>
 
 <body class="landing">
 <a class="skip-link" href="#library">Pular para a biblioteca</a>
@@ -44,25 +44,12 @@
         <input id="searchInput" type="search" placeholder="Buscar título, resumo ou tema…" autocomplete="off" aria-label="Buscar essays">
         <kbd>/</kbd>
       </label>
-      <div class="sort-wrap">
-        <button class="sort-button" id="sortToggle" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="sortPanel">
-          <span class="sort-button-label">Ordenar</span>
-          <span class="sort-button-summary" id="sortSummary">Status → Privacidade → Data</span>
-        </button>
-        <div class="sort-panel" id="sortPanel" hidden>
-          <div class="sort-panel-head">
-            <strong>Ordem dos essays</strong>
-            <p>Quem está em cima vale mais. Clique em uma linha para inverter a direção e use as setas para trocar a prioridade.</p>
-          </div>
-          <div class="sort-list" id="sortList" role="list"></div>
-        </div>
-      </div>
+      <span class="library-order-note" title="Ordem fixa: status, privacidade e data">Finalizados · públicos · recentes</span>
       <div class="segmented" role="group" aria-label="Modo de exibição">
         <button type="button" id="viewGrid" data-view="grid" aria-pressed="false">Grade</button>
         <button type="button" id="viewList" data-view="list" aria-pressed="true">Lista</button>
         <button type="button" id="viewGroup" data-view="group" aria-pressed="false">Por tema</button>
       </div>
-      <button class="toggle-chip" type="button" id="toggleSummaries" aria-pressed="true">Resumos</button>
     </div>
 
     <div class="filters-bar">

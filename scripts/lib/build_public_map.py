@@ -96,7 +96,7 @@ PUBLIC_CHROME = """
     display: inline-flex; align-items: center; gap: 8px;
     padding: 9px 15px; border-radius: 999px;
     border: 1px solid rgba(255,255,255,.16);
-    background: rgba(12,20,33,.82); backdrop-filter: blur(10px);
+    background: rgba(9,9,9,.88); backdrop-filter: blur(10px);
     color: #e8eef7; font: 600 13px/1 Inter, system-ui, sans-serif;
     text-decoration: none;
   }
@@ -108,7 +108,7 @@ PUBLIC_CHROME = """
   #sb-map-switch a {
     padding: 9px 15px; border-radius: 999px;
     border: 1px solid rgba(255,255,255,.16);
-    background: rgba(12,20,33,.82); backdrop-filter: blur(10px);
+    background: rgba(9,9,9,.88); backdrop-filter: blur(10px);
     color: #e8eef7; font: 600 13px/1 Inter, system-ui, sans-serif;
     text-decoration: none;
   }
@@ -116,7 +116,7 @@ PUBLIC_CHROME = """
   #sb-theme {
     padding: 9px 13px; border-radius: 999px;
     border: 1px solid rgba(255,255,255,.16);
-    background: rgba(12,20,33,.82); backdrop-filter: blur(10px);
+    background: rgba(9,9,9,.88); backdrop-filter: blur(10px);
     color: #e8eef7; font: 600 13px/1 Inter, system-ui, sans-serif; cursor: pointer;
   }
   /* In the light Atlas the floating chrome inverts with it. */
@@ -127,7 +127,8 @@ PUBLIC_CHROME = """
     border-color: rgba(16,28,46,.16);
     color: #101c2e;
   }
-  #sb-map-switch a[aria-current="page"] { color: #7aabff; border-color: #7aabff; }
+  #sb-map-switch a[aria-current="page"] { color: #c9a45c; border-color: #c9a45c; }
+  :root[data-theme="light"] #sb-map-switch a[aria-current="page"] { color: #2f5fb0; border-color: #2f5fb0; }
   /* The options panel must end above the floating chrome, never behind it. */
   @media (max-width: 760px) {
     #panel, .panel, aside { padding-bottom: 64px; }
@@ -184,7 +185,7 @@ PUBLIC_CHROME = """
         var saved = JSON.parse(localStorage.getItem(styleKey) || 'null');
         var pinned = saved && saved.colors && saved.colors.background;
         if (!pinned && typeof styleConfig !== 'undefined' && typeof applyStyle === 'function') {
-          styleConfig.colors.background = theme === 'light' ? '#ffffff' : '#0a0a0a';
+          styleConfig.colors.background = theme === 'light' ? '#ffffff' : '#090909';
           styleConfig.colors.edge = theme === 'light' ? '#8a99aa' : '#9aa0a8';
           applyStyle(styleConfig, { silent: true });
         }
@@ -194,8 +195,8 @@ PUBLIC_CHROME = """
     var apply = function (theme) {
       document.documentElement.setAttribute('data-theme', theme);
       document.documentElement.dataset.theme = theme;
-      document.documentElement.style.background = theme === 'light' ? '#ffffff' : '#060d18';
-      document.body.style.background = theme === 'light' ? '#ffffff' : '#060d18';
+      document.documentElement.style.background = theme === 'light' ? '#ffffff' : '#090909';
+      document.body.style.background = theme === 'light' ? '#ffffff' : '#090909';
       var button = document.getElementById('sb-theme');
       if (button) button.setAttribute('aria-pressed', String(theme === 'light'));
       updateMapStyle(theme);

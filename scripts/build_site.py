@@ -39,7 +39,7 @@ GENERATED_ROOT_FILES = {
     "graph.json", "search-index.json", "site-manifest.json",
 }
 GENERATED_DIRS = {"essays", "assets"}
-FRONTEND_ASSETS = ("site.css", "theme.js", "site.js", "essay.js")
+FRONTEND_ASSETS = ("site.css", "atlas-theme.css", "theme.js", "site.js", "essay.js")
 
 # The essay template loads MathJax from a local asset so the reader never
 # depends on a third-party CDN (blocked on some mobile networks/ad-blockers,
@@ -159,7 +159,7 @@ WORDS_PER_MINUTE = 220
 
 # A formula is read, not scanned word by word; counting `rac{a}{b}` as five
 # words turned a 30-minute essay into a 100-minute one.
-MATH_SPAN = re.compile(r"\$[^$]{1,400}\$|\\[[\s\S]{1,2000}?\\]")
+MATH_SPAN = re.compile(r"\$[^$]{1,400}\$|\\\[[\s\S]{1,2000}?\\\]")
 CODE_SPAN = re.compile(r"`[^`]{1,200}`")
 
 
@@ -254,7 +254,9 @@ def render_index(root: Path, catalogue, minutes: dict[str, int] | None = None,
             f'<div class="card-meta">{"".join(meta)}</div>'
             f'{badge_html}'
             f'<h3>{html.escape(essay.title)}</h3>'
-            f'<p>{html.escape(essay.summary)}</p>'
+            f'<p class="card-summary" role="button" tabindex="0" '
+            f'aria-expanded="false" title="Expandir resumo">'
+            f'{html.escape(essay.summary)}</p>'
             f'<div class="tags">{tag_html}</div>'
         )
         if essay.published:
