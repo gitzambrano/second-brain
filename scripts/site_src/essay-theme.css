@@ -201,7 +201,10 @@ body > .sb-progress:not(:has(.sb-progress-fill)) span{
   .sb-toc-text{display:none;}
   .sb-related-grid{grid-template-columns:1fr;}
 }
+/* Duas palavras curtas cabem em qualquer telefone. Esconder a segunda tirava
+   o unico caminho para o mapa na tela onde ele mais importa. */
 @media(max-width:520px){
   .sb-brand{gap:7px;font-size:0;}
-  .sb-nav a:nth-child(2),.sb-nav a:nth-child(3){display:none;}
+  .sb-nav{gap:14px;}
+  .sb-nav a{font-size:12.5px;}
 }

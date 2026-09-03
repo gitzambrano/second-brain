@@ -1,41 +1,38 @@
-<!doctype html><html lang="pt-BR" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Ideário de ensaios filosóficos, artigos técnicos e estudos, de Gustavo Zambrano."><title>Second Brain Atlas</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%278%27 fill=%27%230b1627%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27sans-serif%27 font-size=%2713%27 font-weight=%27700%27 fill=%27%2376a8ff%27 text-anchor=%27middle%27%3ESB%3C/text%3E%3C/svg%3E"><meta name="theme-color" content="#060d18"><meta property="og:type" content="website"><meta property="og:site_name" content="Second Brain"><meta property="og:title" content="Second Brain Atlas"><meta property="og:description" content="Ideário de ensaios filosóficos, artigos técnicos e estudos."><meta name="twitter:card" content="summary"><meta name="twitter:title" content="Second Brain Atlas"><meta name="twitter:description" content="Ideário de ensaios filosóficos, artigos técnicos e estudos."><link rel="stylesheet" href="assets/site.css"><link rel="stylesheet" href="assets/atlas-theme.css"><script>(function(){var t=null;try{t=localStorage.getItem("sb-theme")}catch(e){}if(!t)t=(window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches)?"light":"dark";document.documentElement.dataset.theme=t})();</script></head>
+<!doctype html><html lang="pt-BR" data-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="description" content="Ideário de ensaios filosóficos, artigos técnicos e estudos, de Gustavo Zambrano."><title>Second Brain Atlas</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%278%27 fill=%27%230b1627%27/%3E%3Ctext x=%2716%27 y=%2721%27 font-family=%27sans-serif%27 font-size=%2713%27 font-weight=%27700%27 fill=%27%2376a8ff%27 text-anchor=%27middle%27%3ESB%3C/text%3E%3C/svg%3E"><meta name="theme-color" content="#090909"><meta property="og:type" content="website"><meta property="og:site_name" content="Second Brain"><meta property="og:title" content="Second Brain Atlas"><meta property="og:description" content="Ideário de ensaios filosóficos, artigos técnicos e estudos."><meta name="twitter:card" content="summary"><meta name="twitter:title" content="Second Brain Atlas"><meta name="twitter:description" content="Ideário de ensaios filosóficos, artigos técnicos e estudos."><link rel="stylesheet" href="assets/site.css"><script>(function(){var t=null;try{t=localStorage.getItem("sb-theme")}catch(e){}if(!t)t=(window.matchMedia&&matchMedia("(prefers-color-scheme: light)").matches)?"light":"dark";document.documentElement.dataset.theme=t})();</script></head>
 
 <body class="landing">
 <a class="skip-link" href="#library">Pular para a biblioteca</a>
 
 <header class="topbar shell">
   <a class="brand" href="index.html"><span class="brand-mark">SB</span><span>Second Brain</span></a>
-  <nav>
+  <nav class="topnav">
     <a class="nav-link active" href="index.html">Essays</a>
     <a class="nav-link" href="graph.html">Grafo</a>
-    <a class="nav-link" href="sphere.html">Globo</a>
     <button class="icon-button" type="button" id="themeToggle" aria-label="Alternar tema" aria-pressed="false"><span aria-hidden="true">◐</span></button>
   </nav>
 </header>
 
 <main>
   <section class="masthead shell">
-    <h1>Second Brain Atlas</h1>
-    <p class="masthead-lede">Ideário de ensaios filosóficos, artigos técnicos e estudos.</p>
-    <p class="masthead-author">Gustavo Zambrano</p>
-    <p class="masthead-stats">
-      <span><strong>{{COUNT}}</strong> ensaios</span>
-      <span class="dot" aria-hidden="true">·</span>
-      <span><strong>{{PUBLISHED}}</strong> publicados</span>
-      <span class="dot" aria-hidden="true">·</span>
-      <span><strong>{{TAG_COUNT}}</strong> temas</span>
-      <span class="dot" aria-hidden="true">·</span>
-      <span>atualizado em {{UPDATED}}</span>
-      <span class="dot" aria-hidden="true">·</span>
-      <a href="graph.html">grafo <span aria-hidden="true">↗</span></a>
-      <a href="sphere.html">globo <span aria-hidden="true">↗</span></a>
-    </p>
+    <div class="masthead-text">
+      <h1>Second Brain Atlas</h1>
+      <p class="masthead-lede">Ideário de ensaios filosóficos, artigos técnicos e estudos.</p>
+      <p class="masthead-author">Gustavo Zambrano</p>
+      <p class="masthead-stats">
+        <span><strong>{{COUNT}}</strong> ensaios</span>
+        <span class="dot" aria-hidden="true">·</span>
+        <span><strong>{{PUBLISHED}}</strong> publicados</span>
+        <span class="dot" aria-hidden="true">·</span>
+        <span><strong>{{TAG_COUNT}}</strong> temas</span>
+        <span class="dot" aria-hidden="true">·</span>
+        <span>atualizado em {{UPDATED}}</span>
+      </p>
+    </div>
+    <a class="cover-map" href="graph.html" aria-label="Abrir o mapa completo">
+      <canvas id="coverMap" aria-hidden="true"></canvas>
+      <span class="cover-map-hint">o mapa inteiro <span aria-hidden="true">↗</span></span>
+    </a>
   </section>
-
-  <a class="cover-map" href="graph.html" aria-label="Abrir o grafo completo">
-    <canvas id="coverMap" aria-hidden="true"></canvas>
-    <span class="cover-map-hint">o mapa inteiro <span aria-hidden="true">↗</span></span>
-  </a>
 
   <section class="library shell" id="library">
     <div class="toolbar">
@@ -44,11 +41,15 @@
         <input id="searchInput" type="search" placeholder="Buscar título, resumo ou tema…" autocomplete="off" aria-label="Buscar essays">
         <kbd>/</kbd>
       </label>
-      <span class="library-order-note" title="Ordem fixa: status, privacidade e data">Finalizados · públicos · recentes</span>
-      <div class="segmented" role="group" aria-label="Modo de exibição">
-        <button type="button" id="viewGrid" data-view="grid" aria-pressed="false">Grade</button>
-        <button type="button" id="viewList" data-view="list" aria-pressed="true">Lista</button>
-        <button type="button" id="viewGroup" data-view="group" aria-pressed="false">Por tema</button>
+      <div class="view-controls">
+        <div class="segmented" role="group" aria-label="Disposição">
+          <button type="button" data-layout="list" aria-pressed="true">Lista</button>
+          <button type="button" data-layout="grid" aria-pressed="false">Grade</button>
+        </div>
+        <div class="segmented" role="group" aria-label="Densidade">
+          <button type="button" data-density="compact" aria-pressed="true">Compacto</button>
+          <button type="button" data-density="full" aria-pressed="false">Completo</button>
+        </div>
       </div>
     </div>
 
@@ -56,19 +57,17 @@
       <button class="tag-toggle" type="button" id="tagToggle" aria-expanded="false" aria-controls="filters">
         Temas <span class="tag-toggle-current" id="tagCurrent">todos</span>
       </button>
+      <button class="tag-clear" type="button" id="tagClear" hidden>Limpar seleção</button>
       <span class="view-meta"><span id="visibleCount" aria-live="polite">{{COUNT}}</span> de {{COUNT}}</span>
     </div>
 
-    <div class="filters" id="filters" role="group" aria-label="Filtrar por tema" hidden>
-      <button class="filter-chip active" type="button" data-tag="">Todos <span class="count">{{COUNT}}</span></button>{{TAG_FILTERS}}
-    </div>
+    <div class="filters" id="filters" role="group" aria-label="Filtrar por tema (vários ao mesmo tempo)" hidden>{{TAG_FILTERS}}</div>
 
-    <div class="essay-grid" id="essayGrid">{{CARDS}}</div>
-    <div id="groupedView" hidden></div>
+    <div class="essay-grid layout-list density-compact" id="essayGrid">{{CARDS}}</div>
 
     <div class="empty-state" id="emptyState" hidden>
       <strong>Nada encontrado.</strong>
-      <span>Tente remover um filtro ou buscar outro termo.</span>
+      <span>Tente remover um tema ou buscar outro termo.</span>
     </div>
   </section>
 </main>

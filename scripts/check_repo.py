@@ -7,13 +7,13 @@ to inspect. The checker never creates or edits wiki content.
 """
 from __future__ import annotations
 
-import console_encoding  # noqa: F401 — força UTF-8 em stdout/stderr no Windows
 import argparse
 import json
 import subprocess
 import sys
 from typing import Any
 
+import console_encoding  # noqa: F401 — força UTF-8 em stdout/stderr no Windows
 from repo_paths import CODE_ROOT, HTML_DIR, PDF_DIR, SCRIPTS_DIR, SITE_ROOT, corpus_has_essays
 from sanity_common import CheckResult
 
@@ -166,9 +166,10 @@ def site(result: CheckResult) -> None:
     if not (SITE_ROOT / ".second-brain-site").exists():
         result.skip("NO_SITE", "site checkout not initialized; site privacy validation skipped")
         return
-    path = SCRIPTS_DIR / "check_site_privacy.py"
-    if path.exists():
-        run_status_command("check_site_privacy.py", [sys.executable, str(path), "--json"], result)
+    for name in ("check_site_privacy.py", "check_site_pages.py"):
+        path = SCRIPTS_DIR / name
+        if path.exists():
+            run_status_command(name, [sys.executable, str(path), "--json"], result)
 
 
 def audit(mode: str) -> CheckResult:
@@ -196,7 +197,11 @@ def main() -> int:
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--fail-on-warning", action="store_true")
     args = ap.parse_args()
-    mode = "quick" if args.quick else "wiki" if args.wiki else "exports" if args.exports else "site" if args.site else "full"
+    mode = ("quick" if args.quick
+            else "wiki" if args.wiki
+            else "exports" if args.exports
+            else "site" if args.site
+            else "full")
     result = audit(mode)
     result.print(args.json)
     return result.exit_code(args.fail_on_warning)

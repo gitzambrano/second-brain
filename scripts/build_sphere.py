@@ -390,17 +390,56 @@ SPHERE_HTML_TEMPLATE = """<!DOCTYPE html>
     cursor: pointer; padding: 3px 6px; border-radius: 5px; user-select: none; }
   .legend-item:hover { background: rgba(255,255,255,.05); }
   .legend-item.disabled { opacity: 0.5; text-decoration: line-through; }
-  .legend-item.disabled .dot { background: #000000 !important; border: 1px solid var(--panel-border); }
+  /* Um ponto preto e chapado num fundo branco parece um tipo a mais, nao um
+     tipo desligado. Vazio com contorno le como "apagado" nos dois temas. */
+  .legend-item.disabled .dot { background: transparent !important; border: 1px solid var(--ink-dim); }
   .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
   .btn { width: 100%; padding: 7px 10px; margin-top: 6px; border-radius: 6px; border: 1px solid var(--panel-border);
     background: #1b1e21; color: var(--ink); font-size: 12px; cursor: pointer; text-align: left; }
   .btn:hover { background: rgba(255,255,255,.06); border-color: var(--instrument-blue); }
   #detail { margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--panel-border); }
   .detail-title { font-size: 13px; color: var(--ink); line-height: 1.35; }
+  .detail-kind { display: flex; align-items: center; gap: 6px; margin-bottom: 7px;
+    font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-dim); }
+  .detail-kind i { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .detail-title.is-citation { font-size: 12px; color: var(--ink-dim); line-height: 1.5; }
+  .detail-summary { margin: 8px 0 0; font-size: 11.5px; line-height: 1.5; color: var(--ink-dim); }
+  .conn { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--panel-border); }
+  .conn-tabs { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 9px; }
+  .conn-tab { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px;
+    border: 1px solid var(--panel-border); border-radius: 999px; background: transparent;
+    color: var(--ink-dim); font: inherit; font-size: 10.5px; cursor: pointer;
+    transition: color .12s ease, border-color .12s ease, background .12s ease; }
+  .conn-tab:hover { color: var(--ink); border-color: var(--ink-dim); }
+  .conn-tab b { font-weight: 700; font-variant-numeric: tabular-nums; opacity: .7; }
+  .conn-tab.active { background: rgba(79,168,255,.14); border-color: var(--instrument-blue);
+    color: var(--instrument-blue); }
+  .conn-panes { max-height: 210px; overflow-y: auto; scrollbar-width: thin; }
+  .conn-pane { display: flex; flex-direction: column; gap: 1px; }
+  /* `display` declarado vence o padrao do atributo `hidden` no navegador:
+     sem isto os paineis das outras abas continuavam desenhados embaixo do
+     ativo e a aba nao trocava nada. */
+  .conn-pane[hidden] { display: none !important; }
+  .conn-item { display: flex; align-items: center; gap: 8px; width: 100%; padding: 5px 7px;
+    border: 0; border-radius: 6px; background: transparent; color: var(--ink-dim);
+    font: inherit; font-size: 11.5px; text-align: left; cursor: pointer; }
+  .conn-item:hover { background: rgba(79,168,255,.10); color: var(--ink); }
+  .conn-item i { flex: none; width: 6px; height: 6px; border-radius: 50%; }
+  .conn-item span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; }
+  .conn-empty { margin: 12px 0 0; font-size: 11px; color: var(--ink-dim); }
+  .idx-detail { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+    gap: 10px 32px; padding: 4px 2px 8px; }
+  .idx-detail .conn { margin-top: 0; padding-top: 0; border-top: 0; }
+  .idx-detail .conn-panes { max-height: 180px; }
+  @media (max-width: 900px) {
+    .idx-detail { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  }
   .detail-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
   .detail-tags span, .idx-tagcell span {
     font-size: 10px; color: var(--ink-dim); background: rgba(255,255,255,.05);
     border-radius: 4px; padding: 2px 6px; white-space: nowrap; }
+  .idx-tagcell span { display: inline-block; margin: 0 4px 2px 0; }
   /* Ações do cartão de detalhe: LER e .MD lado a lado, mesmo tamanho. */
   .detail-actions { display: flex; gap: 8px; margin-top: 12px; }
   .detail-actions > * { flex: 1; display: inline-flex; align-items: center;
@@ -416,11 +455,17 @@ SPHERE_HTML_TEMPLATE = """<!DOCTYPE html>
   #modal-overlay.open { display: flex; align-items: stretch; justify-content: stretch; }
   #modal { width: 100vw; height: 100dvh; max-height: 100dvh; overflow-y: auto;
     background: var(--panel); border: none; border-radius: 0; padding: 0; box-shadow: none; }
+  /* Mesma medida do corpo: sem isto o "Fechar" fica na borda da tela enquanto o
+     conteudo esta centrado, e os dois nao parecem a mesma pagina. */
   #modal-topbar { position: sticky; top: 0; z-index: 5; display: flex; justify-content: flex-end;
+    width: 100%; max-width: 1280px; margin-inline: auto;
     padding: 20px clamp(20px, 4vw, 64px) 0; background: linear-gradient(var(--panel) 65%, transparent);
     pointer-events: none; }
   #modal-topbar .close { pointer-events: auto; }
-  #modal-body { margin: -4px 0 0; padding: 4px clamp(20px, 4vw, 64px) 72px; width: 100%; }
+  /* O modal ocupa a tela inteira de proposito, mas o CONTEUDO tem medida:
+     sem isto a tabela do indice se estica a 1900px numa tela larga. */
+  #modal-body { margin: -4px auto 0; padding: 4px clamp(20px, 4vw, 64px) 72px;
+    width: 100%; max-width: 1280px; }
   #modal h2 { margin: 8px 0 20px 0; font-size: 20px; letter-spacing: -.01em;
     color: var(--ink); font-weight: 600; }
   #modal table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -428,14 +473,24 @@ SPHERE_HTML_TEMPLATE = """<!DOCTYPE html>
     font-size: 11px; letter-spacing: .04em; text-transform: uppercase; }
   #modal th:hover { color: var(--ink); }
   #modal th.sorted { color: var(--instrument-blue); }
-  #modal td { padding: 11px 12px; border-bottom: 1px solid #2b2f33; vertical-align: top; }
+  #modal td { padding: 11px 12px; border-bottom: 1px solid var(--panel-border);
+    vertical-align: middle; }
+  /* Numa tela larga a tabela esticava ate a borda: o titulo ficava sozinho a
+     esquerda, o botao de ler voava para o meio e os numeros para o canto —
+     quatro colunas sem relacao visual entre si. Proporcoes fixas resolvem. */
+  #modal table { table-layout: fixed; }
+  #modal th:nth-child(1), #modal td:nth-child(1) { width: 46%; }
+  #modal th:nth-child(2), #modal td:nth-child(2) { width: 36%; }
+  #modal th:nth-child(3), #modal td:nth-child(3) { width: 9%; }
+  #modal th:nth-child(4), #modal td:nth-child(4) { width: 9%; }
+  #modal td:nth-child(1) > span { min-width: 0; }
   #modal tbody tr { cursor: pointer; transition: background .12s ease; }
   #modal tbody tr:hover td { background: rgba(79,168,255,.08); }
 
   .idx-summary-row { cursor: default; }
   .idx-summary-row:hover td { background: rgba(255,255,255,.02) !important; }
   .idx-summary-row td { padding-top: 2px; padding-bottom: 14px; background: rgba(255,255,255,.02); }
-  .idx-summary { margin: 0; font-size: 12px; color: var(--ink-dim); line-height: 1.5; max-width: 60ch; }
+  .idx-summary { margin: 0; font-size: 12px; color: var(--ink-dim); line-height: 1.6; }
   .idx-expand { width: 28px; height: 28px; padding: 0; border-radius: 50%; flex: none;
     border: 1px solid var(--panel-border); background: #1b1e21; color: var(--ink-dim);
     cursor: pointer; font-family: inherit; font-size: 13px; line-height: 1;
@@ -485,7 +540,11 @@ SPHERE_HTML_TEMPLATE = """<!DOCTYPE html>
     transition: background .12s ease, border-color .12s ease, color .12s ease; }
   .idx-chip:hover { color: var(--ink); border-color: var(--ink-dim); }
   .idx-chip.on { background: rgba(79,168,255,.18); border-color: var(--instrument-blue); color: var(--instrument-blue); }
-  .idx-tagcell { display: flex; flex-wrap: wrap; gap: 4px; }
+  /* `display:flex` tira o <td> do modelo de caixa da tabela: a celula passa a
+     ter a altura do proprio conteudo e a borda de baixo dela desalinha das
+     outras (11px acima), quebrando a regua da linha em tres pedacos soltos.
+     As tags quebram linha do mesmo jeito como inline-block. */
+  .idx-tagcell { line-height: 1.85; }
   .idx-empty { font-size: 13px; color: var(--ink-dim); padding: 40px 4px; text-align: center; }
   .idx-count { font-size: 12px; color: var(--ink-dim); margin-bottom: 10px; letter-spacing: .01em; }
   #modal mark { background: rgba(79,168,255,.35); color: var(--ink); border-radius: 2px; padding: 0 1px; }
@@ -524,6 +583,15 @@ SPHERE_HTML_TEMPLATE = """<!DOCTYPE html>
     .idx-chip { padding: 6px 11px; font-size: 11px; }
     .idx-tags { flex-wrap: nowrap; overflow-x: auto; max-height: none; padding-bottom: 4px; }
     .idx-chip { flex: none; }
+    /* As proporcoes fixas do desktop (table-layout + width por coluna) nao
+       valem aqui: com as celulas em `display: block` elas espremiam o titulo
+       numa coluna de 46% da tela. */
+    #modal table { table-layout: auto; }
+    #modal th, #modal td,
+    #modal th:nth-child(1), #modal td:nth-child(1),
+    #modal th:nth-child(2), #modal td:nth-child(2),
+    #modal th:nth-child(3), #modal td:nth-child(3),
+    #modal th:nth-child(4), #modal td:nth-child(4) { width: auto; }
     #modal table, #modal tbody, #modal tbody tr, #modal td { display: block; width: 100%; }
     /* display:block vence o [hidden] do UA e impede de esconder a linha do
        resumo no mobile — restaura o comportamento do atributo. */
@@ -1150,11 +1218,17 @@ function drawTagTint(inViewFn) {
   ctx.globalCompositeOperation = "source-over";
 }
 
+// O mapa publico segue o tema do Atlas (data-theme no <html>); no build da
+// wiki o atributo nunca e "light", entao tudo aqui e no-op por la.
+function isLightTheme() {
+  return document.documentElement.getAttribute("data-theme") === "light";
+}
+
 function getLabelColor() {
   if (styleConfig.colors && styleConfig.colors.text) return styleConfig.colors.text;
-  const isLight = document.documentElement.getAttribute("data-theme") === "light";
+  const isLight = isLightTheme();
   const bg = (styleConfig.colors && styleConfig.colors.background) || (isLight ? "#ffffff" : "#1b1e21");
-  if (isLight) return "#1e293b";
+  if (isLight) return "#3d4757";
   if (typeof bg === "string" && bg.startsWith("#") && bg.length >= 7) {
     const r = parseInt(bg.slice(1, 3), 16), g = parseInt(bg.slice(3, 5), 16), b = parseInt(bg.slice(5, 7), 16);
     if ((0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.55) return "#1e293b";
@@ -1224,7 +1298,9 @@ function shouldSpin() {
 // separação que dá leitura de casca sólida sem z-order por nó.
 function nodePass(front, inViewFn) {
   const useSprites = styleConfig.glow === "alto" || styleConfig.gradient || styleConfig.sphereShading;
-  const drawHalosHere = styleConfig.glow === "leve";
+  // Em fundo claro o halo vira uma sombra colorida em volta de cada bolinha e
+  // suja o mapa inteiro; no escuro ele e o que da profundidade. Some no claro.
+  const drawHalosHere = styleConfig.glow === "leve" && !isLightTheme();
   if (drawHalosHere) {
     data.nodes.forEach(n => {
       if (!isNodeVisible(n) || !inViewFn(n)) return;
@@ -1511,7 +1587,21 @@ const toggleEl = document.getElementById("panel-toggle");
     panelEl.style.display = aberto ? "" : "none";
     toggleEl.setAttribute("aria-expanded", String(aberto));
     toggleEl.textContent = aberto ? "✕" : "☰";
+    if (aberto) revelarDetalhe();
   }
+
+// Num celular o painel é uma folha de 58dvh e o cartão de detalhe mora DEPOIS
+// da busca, da legenda e de seis botões — ou seja, fora da dobra. Selecionar um
+// nó parecia não fazer nada. O painel rola; só faltava levá-lo até lá.
+function revelarDetalhe() {
+  if (!telaPequena() || detailEl.hidden || panelEl.classList.contains("collapsed")) return;
+  requestAnimationFrame(() => {
+    // `offsetParent` do cartao E o proprio painel, entao `offsetTop` ja e
+    // relativo a ele: subtrair a posicao do painel na tela deixava a rolagem
+    // curta exatamente essa distancia.
+    panelEl.scrollTop = detailEl.offsetTop - 8;
+  });
+}
 toggleEl.addEventListener("click", () => {
   definirPainel(panelEl.classList.contains("collapsed"));
 });
@@ -1525,6 +1615,60 @@ function resetHighlight() {
   searchMatchIds = null;
   detailEl.hidden = true;
   scheduleDraw();
+}
+
+// ---- Conexoes por tipo: abas -----------------------------------------------
+// Mesmo componente do grafo plano (build_graph.py): os dois mapas mostram a
+// mesma base e nao devem divergir no que oferecem ao clicar num no.
+const CONN_ORDER = ["concept", "entity", "reference", "insights", "essay"];
+
+function connectionsByType(id) {
+  const buckets = new Map();
+  neighborsOf(id).forEach(other => {
+    if (other === id) return;
+    const n = nodeById.get(other);
+    if (!n) return;
+    if (!buckets.has(n.type)) buckets.set(n.type, []);
+    buckets.get(n.type).push(n);
+  });
+  buckets.forEach(list => list.sort((a, b) => a.title.localeCompare(b.title, "pt-BR")));
+  return buckets;
+}
+
+function connectionsHtml(id) {
+  const buckets = connectionsByType(id);
+  const types = CONN_ORDER.filter(t => buckets.has(t));
+  if (!types.length) return `<p class="conn-empty">Sem conexoes registradas.</p>`;
+  const tabs = types.map((t, i) =>
+    `<button type="button" class="conn-tab${i ? "" : " active"}" data-conn-tab="${t}">` +
+    `${TYPE_LABELS[t]}<b>${buckets.get(t).length}</b></button>`).join("");
+  const panes = types.map((t, i) =>
+    `<div class="conn-pane" data-conn-pane="${t}"${i ? " hidden" : ""}>` +
+    buckets.get(t).map(n =>
+      `<button type="button" class="conn-item" data-conn-go="${escapeHtml(n.id)}" title="${escapeHtml(n.title)}">` +
+      `<i style="background:${typeColorRaw(n)}"></i><span>${escapeHtml(n.title)}</span></button>`).join("") +
+    `</div>`).join("");
+  return `<div class="conn"><div class="conn-tabs">${tabs}</div><div class="conn-panes">${panes}</div></div>`;
+}
+
+function wireConnections(root, onGo) {
+  root.querySelectorAll("[data-conn-tab]").forEach(tab => {
+    tab.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const key = tab.getAttribute("data-conn-tab");
+      root.querySelectorAll("[data-conn-tab]").forEach(x => x.classList.toggle("active", x === tab));
+      root.querySelectorAll("[data-conn-pane]").forEach(pane => {
+        pane.hidden = pane.getAttribute("data-conn-pane") !== key;
+      });
+    });
+  });
+  root.querySelectorAll("[data-conn-go]").forEach(item => {
+    item.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const n = nodeById.get(item.getAttribute("data-conn-go"));
+      if (n && onGo) onGo(n);
+    });
+  });
 }
 
 function selectNode(d) {
@@ -1551,15 +1695,24 @@ function selectNode(d) {
     (hasReader ? `<button type="button" class="read-btn" data-read="${escapeHtml(slug)}">📖 Ler</button>` : "") +
     (readHref ? `<a class="read-btn" href="${escapeHtml(readHref)}" target="_blank">📖 Ler</a>` : "") +
     (target ? `<a class="detail-open" href="${escapeHtml(target)}" target="_blank">${d.type === "essay" ? ".MD" : "Abrir"}</a>` : "");
+  // Uma referencia nao desenha rotulo no mapa (seria uma citacao inteira em
+  // cima de cada ponto); e aqui, ao clicar, que ela se apresenta por extenso.
+  const kind = TYPE_LABEL_ONE[d.type] || TYPE_LABELS[d.type] || "";
   detailEl.innerHTML =
-    `<div class="detail-title">${escapeHtml(d.title)}</div>` +
+    `<div class="detail-kind"><i style="background:${typeColorRaw(d)}"></i>${escapeHtml(kind)}</div>` +
+    `<div class="detail-title${d.type === "reference" ? " is-citation" : ""}">${escapeHtml(d.title)}</div>` +
+    (d.type === "essay" && d.summary
+      ? `<p class="detail-summary">${escapeHtml(d.summary)}</p>` : "") +
     `<div class="detail-tags">${(d.tags || []).map(x => `<span>${escapeHtml(x)}</span>`).join("")}</div>` +
-    (actions ? `<div class="detail-actions">${actions}</div>` : "");
+    (actions ? `<div class="detail-actions">${actions}</div>` : "") +
+    connectionsHtml(d.id);
+  wireConnections(detailEl, selectNode);
   const readBtn = detailEl.querySelector("button.read-btn");
   if (readBtn) readBtn.addEventListener("click", (ev) => {
     ev.stopPropagation();
     openReader(readBtn.getAttribute("data-read"));
   });
+  revelarDetalhe();
 }
 
 function openNode(d) {
@@ -1643,6 +1796,13 @@ modalOverlay.addEventListener("click", (e) => { if (e.target === modalOverlay) m
 const TYPE_LABELS = {
   essay: "Essays", concept: "Concepts", entity: "Entities",
   insights: "Insights", reference: "Referências",
+};
+
+// O plural nomeia uma aba ("Concepts 22"); o singular nomeia o nó aberto no
+// cartão de detalhe, onde "ESSAYS" para um único essay soaria errado.
+const TYPE_LABEL_ONE = {
+  essay: "Essay", concept: "Concept", entity: "Entity",
+  insights: "Insight", reference: "Referência",
 };
 
 function escapeHtml(s) {
@@ -1999,7 +2159,10 @@ function renderTypeIndex() {
     // trás); sem `summary:` no arquivo, não mostra o botão de expandir.
     const showSummary = state.type === "essay";
     tbody.innerHTML = rows.map(n => {
+      // A linha expande para um painel de detalhe: resumo (quando existe) e as
+      // conexoes daquele no separadas por tipo.
       const hasSummary = showSummary && n.summary;
+      const hasDetail = hasSummary || connectionsByType(n.id).size > 0;
       const rSlug = essaySlugOf(n);
       const readBtn = (rSlug && readerEssays()[rSlug])
         ? `<button type="button" class="idx-read" data-read="${escapeHtml(rSlug)}" aria-label="Ler ${escapeHtml(n.title)}" title="Ler">📖</button>`
@@ -2017,14 +2180,17 @@ function renderTypeIndex() {
         ? `<span class="idx-private" title="Não publicado: aparece no mapa, não abre">privado</span>`
         : "";
       const row = `<tr data-id="${escapeHtml(n.id)}">
-      <td data-label="Título"><span style="display:flex;align-items:center;gap:8px;">${hasSummary
-        ? `<button type="button" class="idx-expand" aria-label="Mostrar resumo" aria-expanded="false">▸</button> `
-        : ""}<span style="flex:1;min-width:0;">${highlightMatch(n.title, state.query)}${draft}${privateMark}</span>${readBtn}</span></td>
+      <td data-label="Título"><span style="display:flex;align-items:center;gap:8px;">${hasDetail
+        ? `<button type="button" class="idx-expand" aria-label="Mostrar detalhe" aria-expanded="false">▸</button> `
+        : ""}<span style="flex:0 1 auto;min-width:0;">${highlightMatch(n.title, state.query)}${draft}${privateMark}</span>${readBtn}</span></td>
       <td class="idx-tagcell" data-label="Tags">${(n.tags || []).map(t => `<span>${escapeHtml(t)}</span>`).join("")}</td>
       <td data-label="Conexões">${n.degree}</td>
       <td data-label="Tamanho">${sizeOf(n) ? sizeOf(n) + " linhas" : "—"}</td></tr>`;
-      const summaryRow = hasSummary
-        ? `<tr class="idx-summary-row" hidden><td colspan="4"><p class="idx-summary">${escapeHtml(n.summary)}</p></td></tr>`
+      const summaryRow = hasDetail
+        ? `<tr class="idx-summary-row" hidden><td colspan="4"><div class="idx-detail">`
+          + (n.summary ? `<p class="idx-summary">${escapeHtml(n.summary)}</p>` : "")
+          + connectionsHtml(n.id)
+          + `</div></td></tr>`
         : "";
       return row + summaryRow;
     }).join("");
@@ -2041,6 +2207,13 @@ function renderTypeIndex() {
         if (!summaryRow || !summaryRow.classList.contains("idx-summary-row")) return;
         const willOpen = summaryRow.hidden;
         summaryRow.hidden = !willOpen;
+        if (willOpen && !summaryRow.dataset.wired) {
+          summaryRow.dataset.wired = "1";
+          wireConnections(summaryRow, (node) => {
+            modalOverlay.classList.remove("open");
+            selectNode(node);
+          });
+        }
         btn.textContent = willOpen ? "▾" : "▸";
         btn.setAttribute("aria-expanded", String(willOpen));
       });

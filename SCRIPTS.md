@@ -43,6 +43,7 @@ Os scripts utilizam prefixos verbais padronizados que revelam imediatamente sua 
 | **`visibility.py`** | Leitor utilitário que relata a distribuição de visibilidade do corpus (público, privado, oculto). | `python scripts/visibility.py` |
 | **`build_site.py`** | Compila os essays autorizados para HTML e gera os índices e mapas interativos em `site/`. | `python scripts/build_site.py` |
 | **`check_site_privacy.py`** | **Sentinela estrita de privacidade**: garante que nenhum texto ou link não autorizado chegue a `site/`. | `python scripts/check_site_privacy.py` |
+| **`check_site_pages.py`** | Abre cada página do site construído num navegador real (celular e desktop) e audita overflow, imagens, âncoras, console e vazamento de Markdown. | `python scripts/check_site_pages.py` |
 | **`serve_site.py`** | Inicia servidor HTTP local leve para inspecionar e testar o Atlas gerado antes do deploy. | `python scripts/serve_site.py` |
 
 ### 3. Manutenção da Wiki e Conteúdo (`data/`)
@@ -93,7 +94,7 @@ Os scripts utilizam prefixos verbais padronizados que revelam imediatamente sua 
 
 Arquivos que funcionam exclusivamente como bibliotecas internas e rotinas auxiliares de build vivem na subpasta **`scripts/lib/`** e não devem ser executados diretamente como comandos CLI pelo usuário:
 
-- **`scripts/lib/repo_paths.py`**: Resolução lógica de caminhos e variáveis de ambiente.
+- **`scripts/repo_paths.py`**: Resolução lógica de caminhos e variáveis de ambiente.
 - **`scripts/lib/sanity_common.py`**: Estruturas de resultado `CheckResult` e classes base de testes.
 - **`scripts/lib/site_common.py`**: Helpers de build, parsing de catálogo e sanitização do site.
 - **`scripts/lib/console_encoding.py`**: Configuração segura de codificação UTF-8 para stdout/stderr em Windows e POSIX.
@@ -101,3 +102,12 @@ Arquivos que funcionam exclusivamente como bibliotecas internas e rotinas auxili
 - **`scripts/lib/build_public_map.py`**: Algoritmos de sanitização dos nós públicos do Atlas (grafo/esfera).
 - **`scripts/lib/render_public_essay.py`**: Compilação e estilização de páginas de leitura do site.
 - **`scripts/lib/fetch_fonts.py`**: Rotina interna de download e empacotamento local de fontes tipográficas.
+
+Cada um desses módulos tem, em `scripts/`, um arquivo homônimo de duas linhas que
+apenas re-exporta a versão de `lib/`. Ele não é um comando: existe porque
+dezenove scripts fazem `import console_encoding` (e afins) **antes** de importar
+`repo_paths`, que é quem coloca `scripts/lib/` no `sys.path`. Sem o shim, esses
+imports quebrariam. Quando o módulo de `lib/` também é um comando — hoje
+`build_public_map.py` e `render_public_essay.py` —, o shim precisa encaminhar o
+`main()`: um shim que só re-exporta transforma a execução do comando num no-op
+que ainda sai com código 0. `check_script_defaults.py` verifica isso.

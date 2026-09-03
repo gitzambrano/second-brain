@@ -66,6 +66,7 @@ from export_essay_pdf import (
     AUTHOR,
 )
 from html_preprocess import transform_markdown
+from site_common import title_html, title_plain
 from fetch_fonts import ensure_local_fonts
 
 from repo_paths import (
@@ -274,7 +275,8 @@ def export_essay(filepath, output_dir=None, source_dir=None):
         '--embed-resources',
         f'--template={TEMPLATE_PATH}',
         '--highlight-style=pygments',
-        '-V', f'title={title}',
+        '-V', f'title={title_plain(title)}',
+        '-V', f'titlehtml={title_html(title)}',
         '-V', f'subtitle={safe_subtitle}',
         '-V', f'author={safe_author}',
         '-V', f'summary={safe_summary}',

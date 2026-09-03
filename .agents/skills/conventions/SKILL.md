@@ -299,11 +299,16 @@ Uma entrada por fonte processada:
 Tipo: <tipo controlado>
 Tags: [tag1, tag2]
 Pasta: wiki/sources/<subpasta>/
-Virou: [[slug-do-essay|Essay]] | enriqueceu [[slug|Essay]] | ainda não — ver resumo
+Virou: [[slug-do-essay|Essay]] | enriqueceu [[slug|Essay]] | ainda não — ver resumo | None
 Verificação: referências confirmadas | não verificado — checar antes de citar
 ```
 
 `Tags:` é obrigatório e usa o mesmo vocabulário das páginas. Atualize manifesto e mapa quando a fonte sair de `raw/` para `wiki/sources/`.
+
+Numa fonte `Tipo: Ensaio Completo Importado`, `Virou:` é obrigatório — mas
+`None` é uma resposta válida, não uma omissão: registra que o Usuário examinou
+a fonte e concluiu que ela não virou essay nenhum. `check_wiki.py` aceita
+`None`, `nenhum`, `nenhuma`, `-` e `—`.
 
 ## Formato do mapa de sources (`wiki/sources/map.md`)
 

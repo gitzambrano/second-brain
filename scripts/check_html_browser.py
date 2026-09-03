@@ -16,78 +16,87 @@ from sanity_common import CheckResult
 VIEWPORTS = ((390, 844, "mobile"), (1440, 900, "desktop"))
 
 
-def audit_file(path: Path, result: CheckResult) -> None:
-    try:
-        from playwright.sync_api import sync_playwright
-    except ImportError:
-        result.skip("PLAYWRIGHT_MISSING", "browser validation unavailable; install playwright", path.name)
-        return
-
-    with sync_playwright() as p:
-        managed = Path(p.chromium.executable_path)
-        browser_names = ("chromium", "chromium-browser", "google-chrome", "google-chrome-stable")
-        system = next((shutil.which(x) for x in browser_names if shutil.which(x)), None)
-        executable = str(managed) if managed.exists() else system
-        if not executable:
-            result.skip("CHROMIUM_MISSING", "no Playwright-managed or system Chromium/Chrome found", path.name)
-            return
-        browser = p.chromium.launch(headless=True, executable_path=executable)
-        try:
-            for width, height, label in VIEWPORTS:
-                page = browser.new_page(viewport={"width": width, "height": height})
-                console_errors: list[str] = []
-                failed: list[str] = []
-                page.on("console", lambda msg: console_errors.append(msg.text) if msg.type == "error" else None)
-                page.on("requestfailed", lambda req: failed.append(req.url))
-                raw = path.read_text(encoding="utf-8", errors="replace")
-                page.set_content(raw, wait_until="load")
-                page.wait_for_timeout(250)
-                data = page.evaluate("""() => ({
-                  docWidth: document.documentElement.scrollWidth,
-                  innerWidth: window.innerWidth,
-                  badImages: [...document.images].filter(i => !i.complete || i.naturalWidth === 0).map(i => i.src),
-                  brokenAnchors: [...document.querySelectorAll('a[href^="#"]')]
-                    .map(a => a.getAttribute('href').slice(1)).filter(id => id && !document.getElementById(id)),
-                  rawWikilinks: (() => {
-                  const clean = document.body.cloneNode(true);
-                  clean.querySelectorAll('pre, code, script, style').forEach(el => el.remove());
-                  const text = clean.textContent || '';
-                  return text.includes('[[') && text.includes(']]');
-                  })(),
-                  rawFencedDiv: document.body.innerText.includes(':::{') || document.body.innerText.includes('::: {')
-                })""")
-                if data["docWidth"] > data["innerWidth"] + 2:
-                    result.error(
-                        "PAGE_HORIZONTAL_OVERFLOW",
-                        f"{label}: document {data['docWidth']}px > viewport {data['innerWidth']}px",
-                        path.name,
-                    )
-                if data["badImages"]:
-                    result.error(
-                        "BROKEN_IMAGE",
-                        f"{label}: {len(data['badImages'])} image(s) failed",
-                        path.name,
-                        details=data["badImages"][:5],
-                    )
-                if data["brokenAnchors"]:
-                    result.error(
-                        "BROKEN_TOC_NAVIGATION",
-                        f"{label}: broken anchors {data['brokenAnchors'][:5]}",
-                        path.name,
-                    )
-                if data["rawWikilinks"]:
-                    result.error("VISIBLE_WIKILINK", f"{label}: raw [[wikilink]] visible", path.name)
-                if data["rawFencedDiv"]:
-                    result.error("VISIBLE_FENCED_DIV", f"{label}: fenced div marker visible", path.name)
-                for message in console_errors[:5]:
-                    result.error("CONSOLE_ERROR", f"{label}: {message}", path.name)
-                for url in failed[:5]:
-                    # file:// requests for intentionally absent local links are not page resources.
-                    if not url.startswith("file://"):
-                        result.error("FAILED_REQUEST", f"{label}: {url}", path.name)
-                page.close()
-        finally:
-            browser.close()
+def audit_file(browser, path: Path, result: CheckResult) -> None:
+    for width, height, label in VIEWPORTS:
+        page = browser.new_page(viewport={"width": width, "height": height})
+        console_errors: list[str] = []
+        failed: list[str] = []
+        page.on("console", lambda msg: console_errors.append(msg.text) if msg.type == "error" else None)
+        page.on("requestfailed", lambda req: failed.append(req.url))
+        raw = path.read_text(encoding="utf-8", errors="replace")
+        page.set_content(raw, wait_until="load")
+        # Wait for MathJax before measuring. A page caught mid-typeset
+        # still has raw TeX laid out as running text, which reports a
+        # width the finished page does not have — and the naive
+        # "MathJax is absent" guard passed instantly, because at that
+        # moment its script had simply not run yet.
+        if "MathJax" in raw:
+            try:
+                # Await MathJax's own startup promise. A state() >= N
+                # guard is not enough: the early states are reached
+                # almost immediately, so the page was still measured
+                # mid-typeset, with raw TeX laid out as running text.
+                page.wait_for_function(
+                    "() => !!(window.MathJax && window.MathJax.startup"
+                    " && window.MathJax.startup.promise)",
+                    timeout=30000,
+                )
+                # Bounded: a document whose typeset never settles would
+                # otherwise hang the whole audit on an await with no timeout.
+                page.evaluate(
+                    "async () => {"
+                    " const p = window.MathJax && window.MathJax.startup"
+                    " && window.MathJax.startup.promise;"
+                    " if (!p) return;"
+                    " await Promise.race([p, new Promise(r => setTimeout(r, 20000))]); }"
+                )
+            except Exception:  # noqa: BLE001 - measure anyway, never hang
+                pass
+        page.wait_for_timeout(400)
+        data = page.evaluate("""() => ({
+          docWidth: document.documentElement.scrollWidth,
+          innerWidth: window.innerWidth,
+          badImages: [...document.images].filter(i => !i.complete || i.naturalWidth === 0).map(i => i.src),
+          brokenAnchors: [...document.querySelectorAll('a[href^="#"]')]
+            .map(a => a.getAttribute('href').slice(1)).filter(id => id && !document.getElementById(id)),
+          rawWikilinks: (() => {
+          const clean = document.body.cloneNode(true);
+          clean.querySelectorAll('pre, code, script, style').forEach(el => el.remove());
+          const text = clean.textContent || '';
+          return text.includes('[[') && text.includes(']]');
+          })(),
+          rawFencedDiv: document.body.innerText.includes(':::{') || document.body.innerText.includes('::: {')
+        })""")
+        if data["docWidth"] > data["innerWidth"] + 2:
+            result.error(
+                "PAGE_HORIZONTAL_OVERFLOW",
+                f"{label}: document {data['docWidth']}px > viewport {data['innerWidth']}px",
+                path.name,
+            )
+        if data["badImages"]:
+            result.error(
+                "BROKEN_IMAGE",
+                f"{label}: {len(data['badImages'])} image(s) failed",
+                path.name,
+                details=data["badImages"][:5],
+            )
+        if data["brokenAnchors"]:
+            result.error(
+                "BROKEN_TOC_NAVIGATION",
+                f"{label}: broken anchors {data['brokenAnchors'][:5]}",
+                path.name,
+            )
+        if data["rawWikilinks"]:
+            result.error("VISIBLE_WIKILINK", f"{label}: raw [[wikilink]] visible", path.name)
+        if data["rawFencedDiv"]:
+            result.error("VISIBLE_FENCED_DIV", f"{label}: fenced div marker visible", path.name)
+        for message in console_errors[:5]:
+            result.error("CONSOLE_ERROR", f"{label}: {message}", path.name)
+        for url in failed[:5]:
+            # file:// requests for intentionally absent local links are not page resources.
+            if not url.startswith("file://"):
+                result.error("FAILED_REQUEST", f"{label}: {url}", path.name)
+        page.close()
 
 
 def audit(slug: str | None = None) -> CheckResult:
@@ -96,8 +105,29 @@ def audit(slug: str | None = None) -> CheckResult:
     if not files:
         result.skip("NO_HTML", f"no HTML exports in {HTML_DIR}")
         return result
-    for path in files:
-        audit_file(path, result)
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        result.skip("PLAYWRIGHT_MISSING", "browser validation unavailable; install playwright")
+        return result
+
+    # One browser for the whole audit. Launching Chromium per file cost more
+    # than the checking did: 47 exports meant 47 cold starts.
+    with sync_playwright() as p:
+        managed = Path(p.chromium.executable_path)
+        names = ("chromium", "chromium-browser", "google-chrome", "google-chrome-stable")
+        system = next((shutil.which(x) for x in names if shutil.which(x)), None)
+        executable = str(managed) if managed.exists() else system
+        if not executable:
+            result.skip("CHROMIUM_MISSING", "no Playwright-managed or system Chromium/Chrome found")
+            return result
+        browser = p.chromium.launch(headless=True, executable_path=executable)
+        try:
+            for path in files:
+                audit_file(browser, path, result)
+        finally:
+            browser.close()
+
     result.meta["files"] = len(files)
     return result
 

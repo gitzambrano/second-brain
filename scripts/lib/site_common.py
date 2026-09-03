@@ -76,6 +76,37 @@ def strip_public_body(body: str) -> str:
     return "\n".join(lines).strip()
 
 
+# Um título pode trazer ênfase inline — "Rotor _Teetering_ Controlado" — que é
+# markdown legítimo no arquivo. Mas o título viaja para lugares que não
+# renderizam markdown: <title>, og:title, o catálogo do site, os rótulos do
+# grafo. Nesses ele vai como texto corrido; só a capa, que sabe desenhar
+# itálico, recebe a versão marcada.
+EMPHASIS_RE = re.compile(r"(?<!\w)([*_]{1,2})(?=\S)(.+?)(?<=\S)\1(?!\w)", re.S)
+
+
+def title_plain(title: str) -> str:
+    """The title as running text: emphasis markers dropped, words kept."""
+    previous = None
+    while previous != title:
+        previous = title
+        title = EMPHASIS_RE.sub(r"\2", title)
+    return title
+
+
+def title_html(title: str) -> str:
+    """The title with its emphasis rendered, for a cover that can show it."""
+    out = title.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    previous = None
+    while previous != out:
+        previous = out
+        out = EMPHASIS_RE.sub(
+            lambda m: ("<strong>" + m.group(2) + "</strong>") if len(m.group(1)) == 2
+            else ("<em>" + m.group(2) + "</em>"),
+            out,
+        )
+    return out
+
+
 def _essay(path: Path, meta: dict, body: str, level: str) -> PublicEssay:
     heading = H1_RE.search(body)
     tags = meta.get("tags") or []
@@ -84,7 +115,7 @@ def _essay(path: Path, meta: dict, body: str, level: str) -> PublicEssay:
     return PublicEssay(
         slug=path.stem,
         path=path,
-        title=heading.group(1).strip() if heading else path.stem,
+        title=title_plain(heading.group(1).strip()) if heading else path.stem,
         summary=str(meta.get("summary") or "").strip(),
         tags=tuple(str(t) for t in tags),
         updated=str(meta.get("updated") or ""),

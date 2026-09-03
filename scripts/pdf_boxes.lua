@@ -180,28 +180,42 @@ end
 -- "rio" e nunca casa com "sumário" (dois bytes). Busca literal (plain=true)
 -- em cada grafia e o jeito seguro — sem esta correcao o Sumario continuava
 -- lista de bullets e as Referencias nunca recebiam recuo pendente.
-local function matches_any(haystack, needles)
+-- Casa o titulo INTEIRO, nao um pedaco dele. Com busca por substring, o
+-- capitulo "Indice de Experimentos Mentais e Evidencias Empiricas" (um
+-- capitulo de verdade, em quem-e-voce) era lido como o Sumario gerado: o
+-- titulo era apagado e a lista seguinte reformatada como sumario. O lado
+-- Python ja tinha essa correcao em SEMANTIC_APARATO_RE; aqui faltava.
+--
+-- O sufixo opcional cobre as variantes reais ("Referencias Bibliograficas")
+-- sem reabrir a porta para qualquer continuacao.
+local function equals_any(haystack, needles, suffixes)
+  local title = haystack:gsub("^%s+", ""):gsub("%s+$", "")
   for _, n in ipairs(needles) do
-    if haystack:find(n, 1, true) then return true end
+    if title == n then return true end
+    for _, suffix in ipairs(suffixes or {}) do
+      if title == n .. ' ' .. suffix then return true end
+    end
   end
   return false
 end
 
 local SUMARIO_TITLES = {'sumário', 'sumario', 'summary', 'índice', 'indice'}
 local REFS_TITLES = {'referências', 'referencias', 'references', 'bibliography'}
+local REFS_SUFFIXES = {'bibliográficas', 'bibliograficas', 'bibliográfica',
+                       'bibliografica', 'citadas', 'consultadas'}
 
 function Header(el)
   if el.level == 2 then
     after_sumario = false
     in_references = false
     local title = pandoc.text.lower(stringify(el))
-    if matches_any(title, SUMARIO_TITLES) then
+    if equals_any(title, SUMARIO_TITLES) then
       after_sumario = true
       -- O kicker \sbkicker{Sumário} ja nomeia a secao (mesmo comportamento do
       -- HTML, onde `h2#sumário` fica display:none). Manter o titulo aqui
       -- imprimiria "SUMÁRIO" e "Sumário" em duas linhas seguidas.
       return {}
-    elseif matches_any(title, REFS_TITLES) then
+    elseif equals_any(title, REFS_TITLES, REFS_SUFFIXES) then
       in_references = true
       -- O kicker \sbkicker{Referências} já nomeia a seção em dourado.
       -- Suprime o título duplicado.

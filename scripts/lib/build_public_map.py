@@ -29,7 +29,7 @@ from pathlib import Path
 
 import build_graph
 import build_sphere
-from repo_paths import SITE_ROOT
+from repo_paths import SITE_ROOT, SITE_SRC_DIR
 from site_common import collect_public
 
 # Node fields that would leak content or point back at the private repository.
@@ -129,9 +129,16 @@ PUBLIC_CHROME = """
   }
   #sb-map-switch a[aria-current="page"] { color: #c9a45c; border-color: #c9a45c; }
   :root[data-theme="light"] #sb-map-switch a[aria-current="page"] { color: #2f5fb0; border-color: #2f5fb0; }
-  /* The options panel must end above the floating chrome, never behind it. */
+  /* The options panel must end above the floating chrome, never behind it —
+     the detail card now grows with the connection lists, so its last row
+     would otherwise sit under the "Second Brain Atlas" pill. */
+  #panel { padding-bottom: 56px; }
   @media (max-width: 760px) {
-    #panel, .panel, aside { padding-bottom: 64px; }
+    /* No celular o painel e uma folha colada no rodape — e o cromo flutuante
+       ficava POR CIMA dela, cobrindo o fim do cartao de detalhe. Levantar a
+       folha acima do cromo e a unica correcao que nao esconde nenhum dos dois. */
+    #panel { bottom: 58px; border-radius: 14px; }
+    #panel, .panel, aside { padding-bottom: 12px; }
     #sb-back, #sb-map-switch a, #sb-theme { padding: 7px 11px; font-size: 12px; }
   }
   /* Tema claro: o fundo e os controles do mapa seguem o tema do site. O
@@ -165,17 +172,8 @@ PUBLIC_CHROME = """
 </nav>
 <script>
   // The map follows the Atlas: same stored theme key, same background.
-  // The map must open showing the whole base. Its own control does exactly
-  // that, so press it once the layout has settled instead of duplicating it.
-  (function () {
-    var fit = function () {
-      var button = [].slice.call(document.querySelectorAll('button'))
-        .filter(function (el) { return /ajustar/i.test(el.textContent); })[0];
-      if (button) button.click();
-    };
-    if (document.readyState === 'complete') setTimeout(fit, 400);
-    else window.addEventListener('load', function () { setTimeout(fit, 400); });
-  })();
+  // Framing is the renderer's job — it now fits the whole base on load for
+  // every screen size, so there is nothing to press from out here.
   (function () {
     var updateMapStyle = function (theme) {
       try {
@@ -220,11 +218,28 @@ PUBLIC_CHROME = """
 """
 
 
+FAVICON_RE = re.compile(r'<link rel="icon" href="[^"]+">')
+
+
+def favicon_link() -> str:
+    """The Atlas icon, read from the index instead of copied.
+
+    Without it the browser asks for /favicon.ico on every map page and gets a
+    404, and the tab opens with no identity — the same defect the essay pages
+    had. One literal, in `scripts/site_src/index.html`.
+    """
+    index = (SITE_SRC_DIR / "index.html").read_text(encoding="utf-8")
+    match = FAVICON_RE.search(index)
+    return match.group(0) if match else ""
+
+
 def with_public_chrome(html: str, current: str) -> str:
     """Add the site navigation to a generated map and drop its index panel."""
     chrome = (PUBLIC_CHROME
               .replace("__GRAPH_CURRENT__", ' aria-current="page"' if current == "graph" else "")
               .replace("__SPHERE_CURRENT__", ' aria-current="page"' if current == "sphere" else ""))
+    if "</head>" in html:
+        html = html.replace("</head>", favicon_link() + "</head>", 1)
     if "</body>" in html:
         return html.replace("</body>", chrome + "</body>", 1)
     return html + chrome

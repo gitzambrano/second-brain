@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Build the public Digital Garden into SITE_ROOT from the publication allowlist.
 
-The site is a one-way projection: only essays whose frontmatter carries the YAML
-boolean ``publish: true`` are rendered, indexed or linked. Nothing else from the
-private data repository is ever copied.
+The site is a one-way projection. The catalogue and the map cover the whole
+base; only an essay authorized with ``visibility: public`` (or the legacy
+``publish: true``) has its text rendered, indexed for search or linked. Nothing
+else from the private data repository is ever copied.
 
 No-argument default: rebuild the whole site.
     --manifest   print what would be published, write nothing
@@ -39,7 +40,7 @@ GENERATED_ROOT_FILES = {
     "graph.json", "search-index.json", "site-manifest.json",
 }
 GENERATED_DIRS = {"essays", "assets"}
-FRONTEND_ASSETS = ("site.css", "atlas-theme.css", "theme.js", "site.js", "essay.js")
+FRONTEND_ASSETS = ("site.css", "theme.js", "site.js", "essay.js")
 
 # The essay template loads MathJax from a local asset so the reader never
 # depends on a third-party CDN (blocked on some mobile networks/ad-blockers,
@@ -250,23 +251,29 @@ def render_index(root: Path, catalogue, minutes: dict[str, int] | None = None,
             badges.append('<span class="badge badge-review">Em revisão</span>')
         badge_html = f'<div class="badges">{"".join(badges)}</div>' if badges else ""
 
-        inner = (
-            f'<div class="card-meta">{"".join(meta)}</div>'
-            f'{badge_html}'
-            f'<h3>{html.escape(essay.title)}</h3>'
-            f'<p class="card-summary" role="button" tabindex="0" '
-            f'aria-expanded="false" title="Expandir resumo">'
-            f'{html.escape(essay.summary)}</p>'
-            f'<div class="tags">{tag_html}</div>'
-        )
+        # The title carries the link and stretches over the whole card (see
+        # site.css); the expander is a sibling, never nested inside a link.
         if essay.published:
-            inner += ('<span class="read-link">Ler essay '
-                      '<span aria-hidden="true">&rarr;</span></span>')
-            body = f'<a href="essays/{html.escape(essay.slug)}.html">{inner}</a>'
+            title_html = (f'<a href="essays/{html.escape(essay.slug)}.html">'
+                          f'{html.escape(essay.title)}</a>')
+            read_html = ('<span class="read-link">Ler essay '
+                         '<span aria-hidden="true">&rarr;</span></span>')
         else:
             # No link: the text is not published, and the card must not pretend.
-            inner += '<span class="read-link muted">Não publicado</span>'
-            body = f'<div class="card-body">{inner}</div>'
+            title_html = html.escape(essay.title)
+            read_html = '<span class="read-link is-muted">Não publicado</span>'
+
+        body = (
+            f'<div class="card-head">'
+            f'<div class="card-meta">{"".join(meta)}</div>{badge_html}</div>'
+            f'<h3 class="card-title">{title_html}</h3>'
+            f'<p class="card-summary">{html.escape(essay.summary)}</p>'
+            f'<button class="card-expand" type="button" aria-expanded="false">'
+            f'<span class="card-expand-text">Resumo</span>'
+            f'<i aria-hidden="true">⌄</i></button>'
+            f'<div class="tags">{tag_html}</div>'
+            f'{read_html}'
+        )
 
         cards.append(
             f'<article class="essay-card{"" if essay.published else " is-private"}"'
@@ -392,9 +399,16 @@ def check(root: Path) -> list[str]:
 
     essays_dir = root / "essays"
     if essays_dir.exists():
-        extra = {p.stem for p in essays_dir.glob("*.html")} - allowed
+        present = {p.stem for p in essays_dir.glob("*.html")}
+        extra = present - allowed
         if extra:
             errors.append(f"stale/private HTML: {sorted(extra)}")
+        # A page missing is as wrong as a page too many: `--no-render` empties
+        # this directory, and a site checked only for what it must NOT contain
+        # would pass with every essay gone.
+        missing = allowed - present
+        if missing:
+            errors.append(f"authorized essay without a page: {sorted(missing)}")
 
     return errors
 

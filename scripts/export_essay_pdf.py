@@ -259,6 +259,9 @@ def convert_section_separators(body):
     return '\n'.join(out)
 
 
+from site_common import title_html, title_plain  # noqa: E402
+
+
 def extract_title(body):
     """Extract H1 title from markdown body."""
     for line in body.split('\n'):
@@ -266,6 +269,7 @@ def extract_title(body):
         if m:
             return m.group(1).strip()
     return "Untitled"
+
 
 
 def remove_h1_and_byline(body):
@@ -1196,7 +1200,10 @@ def prepare_for_pandoc(filepath):
     body = inject_chapter_kickers(body)
     
     # Escape quotes in title for YAML and format for raw LaTeX cover
-    safe_title = title.replace('"', '\\"')
+    # Metadado do PDF (titulo da janela, marcador): texto corrido, sem os
+    # marcadores de enfase. A capa recebe o titulo em LaTeX, logo abaixo, e
+    # continua mostrando o italico de verdade.
+    safe_title = title_plain(title).replace('"', '\\"')
     safe_title_latex = re.sub(r'[_*]([^\n_*]+)[_*]', r'\\textit{\1}', title)
     safe_title_latex = (safe_title_latex.replace('&', '\\&').replace('%', '\\%').replace('#', '\\#'))
     safe_title_latex = re.sub(r'(?<!\\)_', r'\\_', safe_title_latex)

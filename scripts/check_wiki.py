@@ -89,6 +89,10 @@ SOURCE_TYPE_TO_FOLDER = {
     "Ideias": "ideias",
     "Outro": "outro",
 }
+# Valores que registram "examinei e não virou essay": grafias aceitas para
+# `Virou:` numa fonte do tipo Ensaio Completo Importado.
+MANIFEST_VIROU_NONE = {"none", "nenhum", "nenhuma", "-", "—"}
+
 UTILITY_SOURCE_FOLDERS = {"resumos"}
 
 # `summary:` é o resumo de uma linha usado por build_index.py. O corpus
@@ -1299,10 +1303,17 @@ def check_sources_manifest(essay_titles):
                 add("ERROR", "MANIFEST_ENTRY_NO_FILE",
                     f"manifest.md tem entrada para '{filename}' mas o arquivo não existe em wiki/sources/**")
             if entry["tipo"] == "Ensaio Completo Importado":
-                if not entry["virou"] or "[[" not in (entry["virou"] or ""):
+                # `Virou: None` é uma resposta, não uma omissão: registra que o
+                # Usuário examinou a fonte e decidiu que ela não virou essay
+                # nenhum. Sem esse valor, a única forma de calar o erro seria
+                # apontar para um essay que não existe.
+                virou = (entry["virou"] or "").strip()
+                if virou.lower().strip('"').strip("'") in MANIFEST_VIROU_NONE:
+                    pass
+                elif not virou or "[[" not in virou:
                     add("ERROR", "MANIFEST_IMPORTED_NO_ESSAY",
                         f"source '{filename}' é Tipo: Ensaio Completo Importado mas não registra "
-                        f"'Virou: [[Essay]]'")
+                        f"'Virou: [[Essay]]' nem 'Virou: None'")
                 elif entry["virou"]:
                     virou_target = re.search(r"\[\[([^\]|]+)", entry["virou"])
                     if virou_target and virou_target.group(1).strip() not in essay_titles:

@@ -55,3 +55,15 @@ def test_letter_spaced_headings_are_still_found():
     rendered = loose("S U M Á R I O\nIntrodução")
     assert text_contains(rendered, loose("Sumário"))
     assert not text_contains(rendered, loose("Referências"))
+
+
+def test_the_word_conexoes_in_prose_is_not_an_exported_section():
+    """Regression: the checker matched the bare substring, so an essay whose
+    summary mentioned "conexões" was reported as leaking the private section."""
+    from check_export_parity import has_standalone_line
+
+    prose = "reune estrutura, links, referencias e conexoes em um documento"
+    assert not has_standalone_line(prose, "Conexões")
+    assert has_standalone_line("Referências\nConexões\n- [[outro]]", "Conexões")
+    # The PDF template tracks headings into spaced-out capitals.
+    assert has_standalone_line("C O N E X Õ E S", "Conexões")

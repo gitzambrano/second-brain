@@ -26,6 +26,7 @@ jobs:
           scripts/check_site_privacy.py scripts/render_public_essay.py
           scripts/lib/render_public_essay.py scripts/lib/build_public_map.py
           tests/test_site_theme_contract.py tests/test_workflow_integrity.py
+          tests/test_docs_references.py
       - name: Nested-Git and path discipline
         run: |
           python scripts/repo_paths.py

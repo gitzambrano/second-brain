@@ -100,11 +100,47 @@ def audit_file(path: Path, result: CheckResult) -> None:
                     break
 
 
+SHIM_IMPORT = "from lib."
+
+
+def audit_shim(path: Path, result: CheckResult) -> None:
+    """A shim over a lib module with a CLI must forward that CLI.
+
+    ``scripts/<name>.py`` re-exports ``scripts/lib/<name>.py`` so the older
+    flat import path keeps working. When the lib module is also a command,
+    a shim that only re-exports turns ``python scripts/<name>.py`` into a
+    silent no-op that still exits 0 — which is exactly how a rebuilt map went
+    unwritten without anyone noticing.
+    """
+    source = path.read_text(encoding="utf-8-sig")
+    if SHIM_IMPORT not in source or len(source.splitlines()) > 12:
+        return
+    lib = SCRIPTS_DIR / "lib" / path.name
+    if not lib.is_file():
+        return
+    try:
+        lib_tree = ast.parse(lib.read_text(encoding="utf-8-sig"), filename=str(lib))
+    except (OSError, SyntaxError):
+        return
+    has_main = any(
+        isinstance(node, ast.FunctionDef) and node.name == "main"
+        for node in lib_tree.body
+    )
+    if has_main and "__main__" not in source:
+        result.error(
+            "SHIM_DROPS_CLI",
+            f"shim re-exports lib.{path.stem} but never runs its main(); "
+            "running the script does nothing and still exits 0",
+            path.relative_to(CODE_ROOT),
+        )
+
+
 def audit(paths: list[Path] | None = None) -> CheckResult:
     result = CheckResult("script-defaults")
     targets = paths or sorted(SCRIPTS_DIR.glob("*.py"))
     for path in targets:
         audit_file(path, result)
+        audit_shim(path, result)
     result.meta["scripts_scanned"] = len(targets)
     return result
 

@@ -184,3 +184,22 @@ def test_private_path_check_reads_links_not_prose():
     assert flagged('<a href="../../wiki/essays/segredo.md">x</a>')
     assert flagged('{"file": "wiki/essays/segredo.md"}')
     assert flagged('<img src="../output/html/x.png">')
+
+
+def test_check_rejects_a_site_whose_essays_are_missing(tmp_path):
+    """Regression: `--check` only looked for pages that must NOT be there.
+
+    `build_site.py --no-render` empties `site/essays`, so a site with every
+    authorized essay gone used to pass the gate and could be published.
+    """
+    site, env = build(tmp_path)
+    for page in (site / "essays").glob("*.html"):
+        page.unlink()
+
+    proc = subprocess.run(
+        [sys.executable, str(ROOT / "scripts/build_site.py"), "--check"],
+        cwd=ROOT, env=env, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    assert proc.returncode != 0, proc.stdout
+    assert "authorized essay without a page" in proc.stdout

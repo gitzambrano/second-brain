@@ -47,6 +47,15 @@ A figura acima é deliberadamente simples para permitir um teste de presença no
 
 A conclusão contém a frase sentinela **PIPELINE-SENTINEL-ALPHA** para verificar preservação semântica entre formatos.
 
+## Índice de Casos de Teste
+
+Um capítulo cujo título apenas *começa* com uma palavra de aparato. Ele existe
+para provar que o exportador não o confunde com o `## Sumário` gerado e apaga
+o seu título.
+
+I Tabela e código — estruturas de bloco
+II Figura — presença de imagem no HTML e no PDF
+
 ## Referências
 
 [1] Doe, J., *Synthetic Reference for Pipeline Qualification*, Example Technical Press, 2026. — Referência completamente fictícia usada apenas por esta fixture. [Link](https://example.com/source)

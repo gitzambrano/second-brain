@@ -31,7 +31,13 @@ from pathlib import Path
 
 from export_essay_html import PANDOC_FROM, TEMPLATE_PATH, prepare_for_pandoc
 from repo_paths import ASSETS_DIR, SITE_ROOT, SITE_SRC_DIR
-from site_common import collect_public, public_connections, sanitize_private_wikilinks
+from site_common import (
+    collect_public,
+    public_connections,
+    sanitize_private_wikilinks,
+    title_html,
+    title_plain,
+)
 
 IMAGE_RE = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
 REMOTE_RE = re.compile(r"^(https?://|data:)", re.I)
@@ -91,7 +97,8 @@ def pandoc(markdown: str, title: str, subtitle: str, author: str,
             f"--template={TEMPLATE_PATH}",
             "--highlight-style=pygments",
             "--mathjax=../assets/mathjax/tex-svg.js",
-            "-V", f"title={title}",
+            "-V", f"title={title_plain(title)}",
+            "-V", f"titlehtml={title_html(title)}",
             "-V", f"subtitle={subtitle}",
             "-V", f"author={author}",
             "-V", f"summary={summary}",
@@ -112,6 +119,21 @@ def asset_version(name: str) -> str:
     if not source.exists():
         return "0"
     return hashlib.sha256(source.read_bytes()).hexdigest()[:8]
+
+
+FAVICON_RE = re.compile(r'<link rel="icon" href="[^"]+">')
+
+
+def favicon_link() -> str:
+    """The Atlas icon, read from the index instead of copied.
+
+    The two surfaces are one site; a second literal would be a second thing to
+    keep in sync. Without any icon the browser asks for /favicon.ico on every
+    essay page and gets a 404, and the tab opens with no identity at all.
+    """
+    index = (SITE_SRC_DIR / "index.html").read_text(encoding="utf-8")
+    match = FAVICON_RE.search(index)
+    return match.group(0) if match else ""
 
 
 def site_chrome(essay, related) -> str:
@@ -137,7 +159,6 @@ def site_chrome(essay, related) -> str:
   <nav class="sb-nav">
     <a href="../index.html">Essays</a>
     <a href="../graph.html">Grafo</a>
-    <a href="../sphere.html">Globo</a>
     <button type="button" id="sbTheme" aria-label="Alternar tema" aria-pressed="false">◐</button>
   </nav>
 </header>
@@ -193,9 +214,10 @@ def render(slug: str, output: Path) -> None:
         'document.documentElement.dataset.theme=t'
         '})();</script>'
     )
-    page = page.replace(
-        "</head>", early_theme + f"<style>{theme}</style>\n</head>", 1
-    )
+    # O ícone do Atlas: sem ele o navegador pede /favicon.ico e leva 404 em
+    # toda página de essay — e a aba abre sem identidade nenhuma.
+    head = favicon_link() + early_theme + f"<style>{theme}</style>\n"
+    page = page.replace("</head>", head + "</head>", 1)
     page = page.replace("</body>", chrome + "</body>", 1)
 
     output.parent.mkdir(parents=True, exist_ok=True)

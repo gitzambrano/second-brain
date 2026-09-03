@@ -19,9 +19,19 @@ from repo_paths import ESSAYS_DIR, HTML_DIR, PDF_DIR
 from sanity_common import CheckResult, text_contains
 
 
+# Pandoc's smart punctuation renders the source's straight quotes as typographic
+# ones, so "Boltzmann's Work" in the Markdown becomes "Boltzmann’s Work" in both
+# exports. Folding them here is what keeps the two sides comparable; without it
+# every reference whose title carries an apostrophe was reported as missing.
+TYPOGRAPHIC = str.maketrans({
+    "’": "'", "‘": "'", "“": '"', "”": '"',
+    "′": "'", "″": '"', "…": "...",
+})
+
+
 def norm(text: str) -> str:
     """Normalize text across HTML/PDF extraction backends."""
-    decomposed = unicodedata.normalize("NFKD", text)
+    decomposed = unicodedata.normalize("NFKD", text.translate(TYPOGRAPHIC))
     without_marks = "".join(ch for ch in decomposed if not unicodedata.combining(ch))
     return re.sub(r"\s+", " ", without_marks).strip().casefold()
 
@@ -43,12 +53,20 @@ def export_heading(text: str) -> str:
 MATH_SPAN = re.compile(r"\$[^$]*\$|\\\((?:[^\\]|\\(?!\)))*\\\)")
 
 
-PUNCTUATION = re.compile(r"[()\[\]{}:,;.\-–—]")
+# `*` and `_` are Markdown emphasis in a source heading and are simply gone from
+# every rendered form, so they belong with the punctuation both sides drop —
+# otherwise a heading like "Rotor _Teetering_ Controlado" never matches.
+PUNCTUATION = re.compile(r"[()\[\]{}:,;.\-–—*_'\"]")
 
 
 def loose(text: str) -> str:
-    """Normalize and drop punctuation, so both sides compare on words alone."""
-    return norm(PUNCTUATION.sub(" ", text))
+    """Normalize and drop punctuation, so both sides compare on words alone.
+
+    Typographic punctuation is folded first: dropping the straight apostrophe
+    from the source while the rendered side still carried a curly one left the
+    two spellings of the same title looking different.
+    """
+    return norm(PUNCTUATION.sub(" ", text.translate(TYPOGRAPHIC)))
 
 
 def prose_fragments(text: str) -> list[str]:
@@ -81,6 +99,36 @@ def html_text(path: Path) -> tuple[str, int]:
         plain = re.sub(r"<script.*?</script>|<style.*?</style>", " ", raw, flags=re.S | re.I)
         plain = re.sub(r"<[^>]+>", " ", plain)
         return html_lib.unescape(plain), len(re.findall(r"<img\b", raw, re.I))
+
+
+TAG = re.compile(r"<[^>]+>")
+
+
+def html_headings(path: Path) -> list[str]:
+    """Every heading the exported page actually renders as a heading."""
+    raw = path.read_text(encoding="utf-8", errors="replace")
+    try:
+        from bs4 import BeautifulSoup, FeatureNotFound
+        try:
+            soup = BeautifulSoup(raw, "html5lib")
+        except FeatureNotFound:
+            soup = BeautifulSoup(raw, "html.parser")
+        return [h.get_text(" ", strip=True) for h in soup.find_all(["h1", "h2", "h3"])]
+    except ImportError:
+        found = re.findall(r"<h[123][^>]*>(.*?)</h[123]>", raw, re.S | re.I)
+        return [html_lib.unescape(TAG.sub(" ", h)) for h in found]
+
+
+def has_standalone_line(text: str, label: str) -> bool:
+    """Is `label` a line of its own, rather than a word inside a sentence?
+
+    A section heading is emitted on its own line by both exporters (the PDF
+    template tracks it into "C O N E X Õ E S"), so spaces are dropped before
+    comparing. Searching for the bare substring instead reported an essay whose
+    *summary* happened to mention the word.
+    """
+    target = norm(label).replace(" ", "")
+    return any(norm(line).replace(" ", "") == target for line in text.splitlines())
 
 
 def pdf_text(path: Path) -> tuple[str, int]:
@@ -138,7 +186,6 @@ def audit(slug: str | None = None) -> CheckResult:
             break
         htext, himages = html_text(hp)
         fp = source_fingerprint(source)
-        nh, npdf = norm(htext), norm(ptext)
         # Heading comparison ignores punctuation on both sides: the exporters
         # re-punctuate chapter kickers, and math spans leave stray separators.
         lh, lpdf = loose(htext), loose(ptext)
@@ -156,9 +203,12 @@ def audit(slug: str | None = None) -> CheckResult:
             if not text_contains(lpdf, loose(title)):
                 result.error("PDF_REFERENCE_MISSING", title, source.name)
         if fp["connections"]:
-            if norm("Conexões") in nh:
+            # The section must be absent as a SECTION. The word itself is
+            # ordinary Portuguese and may legitimately appear in the prose or
+            # in the summary printed on the cover.
+            if any(norm(h) == norm("Conexões") for h in html_headings(hp)):
                 result.error("HTML_CONNECTIONS_EXPORTED", "Conexões should not be exported", source.name)
-            if norm("Conexões") in npdf:
+            if has_standalone_line(ptext, "Conexões"):
                 result.error("PDF_CONNECTIONS_EXPORTED", "Conexões should not be exported", source.name)
         if himages < fp["images"]:
             result.error("HTML_IMAGE_COUNT", f"source {fp['images']}, HTML {himages}", source.name)
