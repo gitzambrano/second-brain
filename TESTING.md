@@ -32,7 +32,9 @@ O script `scripts/check_repo.py` é o ponto de entrada canônico para validar a 
 | `python scripts/check_repo.py --quick` | **Checagem rápida** (isolamento de git aninhado e disciplina de caminhos; ideal para pré-commit). |
 | `python scripts/check_repo.py --wiki` | Validação estendida da wiki (frescor temporal e conformidade de publicação). |
 | `python scripts/check_repo.py --exports` | Validação de exportações e paridade documental. |
-| `python scripts/check_repo.py --site` | Validação da sentinela de privacidade do site (conformidade de publicação e zero vazamento). |
+| `python scripts/check_repo.py --site` | Sentinela de privacidade, auditoria visual e orçamento de tamanho do site. |
+| `python scripts/check_repo.py --architecture` | Contratos estruturais: três Gits isolados, disciplina de caminhos e a cadeia `.agents/` → espelhos → adaptadores. |
+| `python -m pytest -q -m browser` | Auditoria visual em Chromium real: home, essay e os dois mapas, em claro, escuro e mobile. Pulada onde não há navegador. |
 
 > [!NOTE]
 > Em ambientes de CI ou clones novos sem a pasta `data/` populada, os grupos de teste que dependem de corpus real retornam status `SKIP` com elegância, sem falhar o build.

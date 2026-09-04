@@ -338,11 +338,14 @@ CI roda sem `data/` e sem `site/`, e nunca clona nem recebe credencial do repo p
 ```bash
 python scripts/check_repo.py
 python scripts/check_repo.py --quick
+python scripts/check_repo.py --architecture
 python scripts/check_script_defaults.py
 python -m pytest -q
 ```
 
-- `check_repo.py` sem argumentos executa o diagnóstico completo; `--wiki` e `--exports` restringem o escopo.
+- `check_repo.py` sem argumentos executa o diagnóstico completo; `--wiki`, `--exports`, `--site` e `--architecture` restringem o escopo.
+- `--architecture` reúne os contratos estruturais: os três Gits isolados, a disciplina de caminhos e a cadeia `.agents/` → espelhos → adaptadores (`check_agents.py`).
+- Os testes de navegador ficam atrás da marca `browser` e só rodam onde há Chromium: `python -m pytest -q -m browser`.
 - Todo script executável deve ter um default útil sem argumentos.
 - `/doctor` é diagnóstico read-only e nunca corrige/commita.
 - Clone sem essays, HTML ou PDF produz `SKIP` nos grupos aplicáveis.

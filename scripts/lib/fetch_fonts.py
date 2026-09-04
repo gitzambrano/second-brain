@@ -47,10 +47,23 @@ def _download(url, dest):
     dest.write_bytes(data)
 
 
-def ensure_local_fonts(output_dir):
+# O site tem outra necessidade: `--sans` começa em Inter, mas nada nunca a
+# servia, então a página inteira caía em Segoe UI/Roboto. O sintoma visível era
+# que pesos intermediários não existiam — 500, 550 e 600 renderizavam o mesmo
+# Semibold, e não havia como pedir um negrito mais leve. A Inter variável
+# resolve as duas coisas: a fonte que o desenho pressupõe, com o eixo de peso
+# contínuo que ele usa.
+SITE_CSS_URL = (
+    "https://fonts.googleapis.com/css2"
+    "?family=Inter:wght@100..900&display=swap"
+)
+
+
+def ensure_local_fonts(output_dir, css_url=None, dirname="_fonts"):
     """Retorna Path do fonts.css local (ou None se offline/falhou)."""
     output_dir = Path(output_dir)
-    font_dir = output_dir / "_fonts"
+    css_url = css_url or CSS_URL
+    font_dir = output_dir / dirname
     css_path = font_dir / "fonts.css"
 
     # Cache valido? css existe e todo woff2 referenciado existe (refs sao
@@ -62,7 +75,7 @@ def ensure_local_fonts(output_dir):
             return css_path
 
     try:
-        req = urllib.request.Request(CSS_URL, headers={"User-Agent": _UA})
+        req = urllib.request.Request(css_url, headers={"User-Agent": _UA})
         with urllib.request.urlopen(req, timeout=30) as r:
             css = r.read().decode("utf-8")
     except Exception as e:

@@ -27,7 +27,7 @@ Os scripts utilizam prefixos verbais padronizados que revelam imediatamente sua 
 
 | Script | Finalidade | Exemplo de Uso |
 | :--- | :--- | :--- |
-| **`check_repo.py`** | Portal unificado de qualidade do repositório (grupos: `--quick`, `--wiki`, `--exports`, `--site`, `--full`). | `python scripts/check_repo.py --quick` |
+| **`check_repo.py`** | Portal unificado de qualidade do repositório (grupos: `--quick`, `--wiki`, `--exports`, `--site`, `--architecture`, `--full`). | `python scripts/check_repo.py --quick` |
 | **`check_git_isolation.py`** | Valida a disciplina e o isolamento entre os três repositórios Git aninhados (`.`, `data/`, `site/`). | `python scripts/check_git_isolation.py` |
 | **`check_path_discipline.py`** | Garante que scripts e testes usem `repo_paths.py` e não caminhos hardcoded. | `python scripts/check_path_discipline.py` |
 | **`check_script_defaults.py`** | Audita se todos os scripts CLI em `scripts/` respeitam a regra de default sem argumentos. | `python scripts/check_script_defaults.py` |
@@ -44,7 +44,9 @@ Os scripts utilizam prefixos verbais padronizados que revelam imediatamente sua 
 | **`visibility.py`** | Leitor utilitário que relata a distribuição de visibilidade do corpus (público, privado, oculto). | `python scripts/visibility.py` |
 | **`build_site.py`** | Compila os essays autorizados para HTML e gera os índices e mapas interativos em `site/`. | `python scripts/build_site.py` |
 | **`check_site_privacy.py`** | **Sentinela estrita de privacidade**: garante que nenhum texto ou link não autorizado chegue a `site/`. | `python scripts/check_site_privacy.py` |
-| **`check_site_pages.py`** | Abre cada página do site construído num navegador real (celular e desktop) e audita overflow, imagens, âncoras, console e vazamento de Markdown. | `python scripts/check_site_pages.py` |
+| **`check_site_pages.py`** | Abre cada página do site construído num navegador real (celular e desktop) e audita overflow, imagens, âncoras, console e vazamento de Markdown, mais uma auditoria própria de `graph.html` e `sphere.html`. Sem navegador é **erro**; `--allow-skip-browser` degrada para SKIP em diagnóstico local. | `python scripts/check_site_pages.py` |
+| **`check_site_budget.py`** | Orçamento de tamanho por artefato público e do site inteiro. | `python scripts/check_site_budget.py` |
+| **`check_agents.py`** | Coerência da arquitetura de agentes: `.agents/` como fonte, espelhos `.claude/`, adaptadores `.codex/`, hook de sync e documentação. | `python scripts/check_agents.py` |
 | **`serve_site.py`** | Inicia servidor HTTP local leve para inspecionar e testar o Atlas gerado antes do deploy. | `python scripts/serve_site.py` |
 
 ### 3. Manutenção da Wiki e Conteúdo (`data/`)

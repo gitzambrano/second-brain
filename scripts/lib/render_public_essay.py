@@ -275,6 +275,17 @@ def render(slug: str, output: Path) -> None:
     page = pandoc(body, title, subtitle, author_date, summary, status)
 
     theme = (SITE_SRC_DIR / "essay-theme.css").read_text(encoding="utf-8")
+    # A Inter auto-hospedada, quando o build a baixou. As referências do cache
+    # são relativas ao próprio `fonts/`; aqui a folha é embutida na página do
+    # essay, cuja base é `essays/`, então o prefixo muda.
+    fonts_css = SITE_ROOT / "assets" / "fonts" / "fonts.css"
+    if fonts_css.is_file():
+        blocos = re.sub(
+            r"url\(([^)/][^)]*\.woff2)\)",
+            lambda m: f"url(../assets/fonts/{m.group(1)})",
+            fonts_css.read_text(encoding="utf-8"),
+        )
+        theme = blocos + "\n" + theme
     related = [by_slug[s] for s in public_connections(essay, allowed) if s in by_slug]
     chrome = site_chrome(essay, related)
 

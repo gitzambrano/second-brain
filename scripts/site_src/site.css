@@ -579,10 +579,13 @@ h1, h2, h3 {
 }
 .essay-grid.layout-list .essay-card:hover { background: var(--accent-soft); }
 /* Numa lista de 47 linhas o peso máximo do título vira ruído: cada linha
-   grita com a mesma força e nenhuma se lê. Semibold basta para hierarquia. */
+   grita com a mesma força e nenhuma se lê. Semibold ainda era forte demais
+   aqui — 550 é o meio-termo: continua negrito, para de gritar. O peso só é
+   real porque a Inter variável passou a ser auto-hospedada; com a fonte do
+   sistema, 500 a 600 caem todos no mesmo Semibold. */
 .essay-grid.layout-list .card-title {
   font-size: 16.5px;
-  font-weight: 600;
+  font-weight: 550;
   line-height: 1.32;
   letter-spacing: -0.014em;
 }

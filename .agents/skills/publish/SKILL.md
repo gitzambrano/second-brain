@@ -67,3 +67,18 @@ git -C site push
 - **Ausência de navegador é falha, não SKIP.** Publicar sem a auditoria visual é publicar às cegas.
 - **Git é isolado:** Esta skill faz commit e push **exclusivamente** no repositório `site/`. Nunca faça commit em `./` ou em `data/` dentro deste fluxo.
 - **Não altere visibilidade automaticamente:** Alterações de `visibility:` são decididas exclusivamente pelo Usuário.
+
+## Gate do lado do site
+
+O repositório `site/` tem portaria própria — `check_artifact.py`, sob o
+`.github/` de lá — executada pelo workflow antes do deploy: confere a allowlist contra as páginas
+presentes, recusa corpo de texto no `search-index.json`, procura caminho de
+`data/` ou caminho absoluto de máquina vazando, e aplica o orçamento de tamanho.
+É auto-suficiente — biblioteca padrão, sem acesso ao repositório privado — e
+existe porque um push manual chega ao ar pelo mesmo caminho que uma publicação
+legítima.
+
+**Pendência manual, fora do alcance de qualquer script:** ligar branch
+protection em `second-brain-site/main` exigindo esse workflow, para que só o
+fluxo validado atualize a branch. É configuração de repositório no GitHub e
+precisa ser feita pelo Usuário, uma vez.

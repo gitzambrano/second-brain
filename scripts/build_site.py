@@ -19,7 +19,6 @@ import hashlib
 import html
 import json
 import re
-import shutil
 import subprocess
 import sys
 import time
@@ -133,7 +132,40 @@ def clean(root: Path) -> None:
         _empty(root / name)
 
 
-def copy_frontend(root: Path) -> dict[str, str]:
+def ensure_site_fonts(root: Path) -> str:
+    """Auto-hospeda a Inter variável e devolve os blocos `@font-face`.
+
+    `--sans` do site sempre começou em Inter, mas nada nunca a servia: a página
+    caía em Segoe UI ou Roboto, onde o eixo de peso é discreto e 500, 550 e 600
+    renderizam exatamente o mesmo Semibold. Não havia como pedir um negrito
+    intermediário porque a fonte que o tem nunca chegava.
+
+    Sem rede o passo é pulado e o site volta ao comportamento anterior — a
+    fonte é melhoria de tipografia, não pré-requisito de build.
+    """
+    from fetch_fonts import SITE_CSS_URL, ensure_local_fonts
+
+    css_path = ensure_local_fonts(root / "assets", css_url=SITE_CSS_URL, dirname="fonts")
+    if css_path is None:
+        print("  fontes: SKIP (sem rede); o site usa a fonte do sistema")
+        return ""
+    return css_path.read_text(encoding="utf-8")
+
+
+def font_face_css(blocks: str, prefix: str) -> str:
+    """Reescreve `url(x.woff2)` para o caminho relativo de quem vai usar.
+
+    O `fonts.css` do cache guarda referências relativas a si mesmo. A folha do
+    catálogo é servida como `assets/site.css` (base: `assets/`), e a do essay é
+    embutida em `essays/<slug>.html` (base: `essays/`). Dois prefixos, mesmos
+    blocos.
+    """
+    if not blocks:
+        return ""
+    return re.sub(r"url\(([^)/][^)]*\.woff2)\)", lambda m: f"url({prefix}{m.group(1)})", blocks)
+
+
+def copy_frontend(root: Path, fonts: str = "") -> dict[str, str]:
     """Copy the frontend and return a content fingerprint per asset.
 
     A browser that has visited before will happily keep serving the previous
@@ -145,8 +177,14 @@ def copy_frontend(root: Path) -> dict[str, str]:
     fingerprints = {}
     for name in FRONTEND_ASSETS:
         source = SITE_SRC_DIR / name
-        shutil.copy2(source, assets / name)
-        fingerprints[name] = hashlib.sha256(source.read_bytes()).hexdigest()[:8]
+        payload = source.read_bytes()
+        if name == "site.css" and fonts:
+            merged = font_face_css(fonts, "fonts/") + "\n" + source.read_text(encoding="utf-8")
+            payload = merged.encode("utf-8")
+        (assets / name).write_bytes(payload)
+        # O fingerprint segue o conteúdo SERVIDO, não o do fonte: com a fonte
+        # embutida os dois deixam de ser o mesmo arquivo.
+        fingerprints[name] = hashlib.sha256(payload).hexdigest()[:8]
     return fingerprints
 
 
@@ -335,7 +373,8 @@ def build(root: Path, no_render: bool = False):
     catalogue = collect_all()
     essays = [e for e in catalogue if e.published]
     clean(root)
-    fingerprints = copy_frontend(root)
+    fonts = ensure_site_fonts(root)
+    fingerprints = copy_frontend(root, fonts)
     ensure_site_mathjax(root)
     minutes = write_data(root, catalogue)
     render_index(root, catalogue, minutes, fingerprints)
@@ -372,6 +411,8 @@ def build(root: Path, no_render: bool = False):
         (root / "404.html").write_text(
             version_assets(source.read_text(encoding="utf-8"), fingerprints),
             encoding="utf-8")
+    # `render_public_essay.py` lê `assets/fonts/fonts.css` direto do site já
+    # montado — por isso `ensure_site_fonts` roda antes daqui.
     render_essays(root, essays, no_render)
     return essays
 
