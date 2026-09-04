@@ -35,6 +35,11 @@ $endif$
   --rust-bright:#A84F3C;
   --accent:#4A8FA8;
   --amber:#967030;
+  /* No escuro a caixa de destaque deixa de ser cinza neutro e ganha um ouro
+     de baixíssima opacidade: separa a caixa da prosa sem virar bloco colorido.
+     No claro os dois tokens voltam a ser as superfícies neutras de sempre. */
+  --box-bg:rgba(176,139,79,.055);
+  --box-verdict-bg:rgba(176,139,79,.10);
   --max-width:700px;
 }
 [data-theme="light"]{
@@ -51,11 +56,17 @@ $endif$
   --rust-bright:#A04030;
   --accent:#35708A;
   --amber:#7A5A18;
+  --box-bg:var(--surface);
+  --box-verdict-bg:var(--surface2);
 }
 @media (min-width:901px){
-  /* Desktop: coluna larga (75% da tela) em AMBOS os temas */
+  /* Desktop: coluna larga, mas com teto. 75vw sozinho dava 2580px de linha
+     num monitor de 3440px — largura de planilha, não de leitura. A prosa para
+     em 1180px; figuras, tabelas e blocos de código continuam podendo usar a
+     largura antiga, que é onde ela servia para alguma coisa. */
   :root{
-    --max-width:75vw;
+    --wide-width:75vw;
+    --max-width:min(75vw,1180px);
   }
   /* Claro por padrão no desktop; data-theme="dark" devolve o editorial
      escuro para quem preferir. Playfair permanece em todos os temas */
@@ -73,6 +84,8 @@ $endif$
     --rust-bright:#A04030;
     --accent:#35708A;
     --amber:#7A5A18;
+    --box-bg:var(--surface);
+    --box-verdict-bg:var(--surface2);
   }
 }
 
@@ -199,6 +212,22 @@ body{
 /* Conteudo                                                            */
 /* ------------------------------------------------------------------ */
 .content{max-width:var(--max-width);margin:0 auto;padding:2.8rem 1.2rem 5rem;}
+
+/* Escape da coluna de prosa para o que é figura, e não frase. Só vale quando
+   a tela é larga o bastante para haver o que escapar: abaixo disso a coluna
+   já ocupa quase tudo e o breakout não teria para onde ir. */
+@media (min-width:1400px){
+  /* Só o TETO sobe. Nada de `width`: uma tabela estreita continua estreita e
+     uma figura continua no tamanho natural — o que muda é até onde elas podem
+     ir quando precisam. `margin-left:50%` + `translateX(-50%)` centraliza
+     seja qual for a largura resultante. */
+  .content > figure,
+  .content > table{
+    max-width:min(var(--wide-width),1500px);
+    margin-left:50%;
+    transform:translateX(-50%);
+  }
+}
 
 h1,h2,h3,h4,h5,h6{font-family:var(--font-display);color:var(--text-bright);line-height:1.25;}
 .content h1{display:none;} /* titulo vive no masthead */
@@ -422,7 +451,7 @@ li::marker{color:color-mix(in srgb,var(--gold-dim) 70%,var(--text-dim));}
   border-top:1px solid var(--border);
   border-right:1px solid var(--border);
   border-bottom:1px solid var(--border);
-  background:var(--surface);
+  background:var(--box-bg);
   overflow:hidden;
 }
 .box.experimento{--boxc:var(--rust);}
@@ -432,15 +461,16 @@ li::marker{color:color-mix(in srgb,var(--gold-dim) 70%,var(--text-dim));}
 .box.aviso{--boxc:var(--amber);}
 .box.nivel{--boxc:var(--accent);}
 .box.ideia{--boxc:var(--gold-dim);}
-/* generico: filete cinza discreto — sem cor de destaque */
-.box.generico{--boxc:var(--border);}
+/* generico: filete cinza discreto — sem cor de destaque. O rótulo, porém,
+   precisa continuar legível: em cinza de borda ele desaparecia no fundo. */
+.box.generico{--boxc:var(--border);--box-badge-c:var(--text-dim);}
 
 /* Badge: versalete espacejado sem retângulo preenchido */
 .box-badge{
   display:block;width:fit-content;
-  color:var(--boxc);
+  color:var(--box-badge-c,var(--boxc));
   font-family:'JetBrains Mono',Consolas,monospace;
-  font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;
+  font-size:.68rem;letter-spacing:.22em;text-transform:uppercase;
   padding:.55rem 1.3rem .1rem;
   font-variant:small-caps;
 }
@@ -455,7 +485,7 @@ li::marker{color:color-mix(in srgb,var(--gold-dim) 70%,var(--text-dim));}
 
 .box-verdict{
   margin-top:1.3rem;padding:1rem 1.3rem 1.05rem;
-  background:var(--surface2);
+  background:var(--box-verdict-bg);
   border-top:1px solid var(--border);
 }
 .box-verdict p{margin:0 0 .7rem;font-size:.92rem;color:var(--text-bright);}

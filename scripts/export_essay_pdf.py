@@ -69,33 +69,31 @@ Invariantes do pipeline (leia antes de editar):
     defeitos que so aparecem depois de diagramado.
 """
 
-import re
-import os
-import sys
-import yaml
-import subprocess
-import tempfile
 import argparse
+import re
+import subprocess
+import sys
 from pathlib import Path
-from unidecode import unidecode
-
-from check_wiki import heading_anchor
 
 import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
+import yaml
+from check_wiki import heading_anchor
 
 # Mesmo preprocessador do export HTML: converte blockquotes padrao do corpus
 # (caixas tipadas, cards, pull-quotes, rotulos) em fenced divs semanticos,
 # que o filtro scripts/pdf_boxes.lua mapeia para ambientes tcolorbox no LaTeX.
 from html_preprocess import transform_markdown
-
 from repo_paths import (
     CODE_ROOT,
     ESSAYS_DIR,
-    HANDOUTS_DIR,
     HANDOUT_OUTPUT_DIR,
-    OUTPUT_DIR as DATA_OUTPUT_DIR,
+    HANDOUTS_DIR,
     PDF_DIR,
 )
+from repo_paths import (
+    OUTPUT_DIR as DATA_OUTPUT_DIR,
+)
+from unidecode import unidecode
 
 ROOT_DIR = CODE_ROOT
 # Lua filter and other engine resources stay next to the scripts.
@@ -259,7 +257,7 @@ def convert_section_separators(body):
     return '\n'.join(out)
 
 
-from site_common import title_html, title_plain  # noqa: E402
+from site_common import title_plain  # noqa: E402
 
 
 def extract_title(body):
@@ -1382,8 +1380,8 @@ def list_essays():
                     title = line[2:].strip()
                     print(f"  {e.stem:<50s} {title}")
                     break
-    print(f"\nUsage: python export_essay_pdf.py <filename>")
-    print(f"       python export_essay_pdf.py --all")
+    print("\nUsage: python export_essay_pdf.py <filename>")
+    print("       python export_essay_pdf.py --all")
 
 
 def list_handouts():
@@ -1397,7 +1395,7 @@ def list_handouts():
                     title = line[2:].strip()
                     print(f"  {h.stem:<50s} {title}")
                     break
-    print(f"\nUsage: python export_essay_pdf.py <slug> --handout")
+    print("\nUsage: python export_essay_pdf.py <slug> --handout")
 
 
 def main():

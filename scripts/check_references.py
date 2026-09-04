@@ -36,12 +36,9 @@ from urllib.parse import urlparse
 
 import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
 from build_references import (
-    LINKED_RE,
     extract_referencias_section,
     normalize_url,
-    parse_reference_line,
 )
-
 from repo_paths import CODE_ROOT, WIKI_ROOT
 
 ROOT_DIR = CODE_ROOT

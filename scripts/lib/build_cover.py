@@ -12,11 +12,24 @@ Sai um PNG por tema. O fundo é opaco e igual ao da página, então a imagem
 assenta sem costura nenhuma e dispensa transparência — que só serviria para
 recortar as bordas anti-aliased dos nós.
 
-Sem Playwright instalado a função não é um erro: devolve `None` e o build
-mantém o PNG anterior. Assar a capa é passo de publicação, não pré-requisito
-para gerar o site.
+Sem navegador headless a função não é um erro: devolve um resultado com
+`status="skip"` e o build mantém o PNG anterior. Assar a capa é passo de
+publicação, não pré-requisito para gerar o site — e `build_site.py --no-render`,
+que existe para checagem estrutural e de privacidade, nem chega a chamá-la.
+
+Os quatro desfechos são distintos e ditos por extenso, porque "pulou" sem
+motivo é o que fazia um CI vermelho parecer um CI sem browser: pacote ausente,
+browser do Playwright não baixado (com Chrome do sistema servindo de reserva),
+`graph.html` ausente, e erro real de renderização — este último sobe, não é
+engolido.
 """
 from pathlib import Path
+
+from sanity_common import (
+    CHROMIUM_ABSENT,
+    PLAYWRIGHT_ABSENT,
+    resolve_chromium,
+)
 
 # Tem de bater com o fundo real das duas superfícies, senão a moldura opaca
 # aparece. Verificado no navegador: body e canvas pintam a mesma cor.
@@ -37,26 +50,57 @@ CORES = 192                   # paleta indexada, generosa: o degradê dos nós
 FOLGA = 0.03                  # respiro em volta do desenho, em fração do lado
 
 
+class CoverResult:
+    """Desfecho de uma tentativa de assar a capa.
+
+    `status` é "ok" ou "skip"; `reason` é um código estável para quem programa
+    em cima disto, e `detail` é a frase para o humano. `written` só tem
+    conteúdo quando `status == "ok"`.
+    """
+
+    __slots__ = ("status", "reason", "detail", "written")
+
+    def __init__(self, status, reason, detail, written=None):
+        self.status = status
+        self.reason = reason
+        self.detail = detail
+        self.written = written or []
+
+    @property
+    def ok(self):
+        return self.status == "ok"
+
+    def __iter__(self):
+        """Compatibilidade: `for nome, kb in resultado` continua valendo."""
+        return iter(self.written)
+
+    def __len__(self):
+        return len(self.written)
+
+    def __repr__(self):
+        return f"CoverResult({self.status!r}, {self.reason!r}, {self.detail!r})"
+
+
 def render(site_root, largura=LARGURA, altura=ALTURA, saida=SAIDA, espera=6000):
     """Grava assets/cover-<tema>.png a partir de site/graph.html.
 
-    Devolve a lista de (nome, KB) gravados, ou None se o navegador headless
-    não estiver disponível.
+    Devolve sempre um `CoverResult`. Erro real de renderização levanta.
     """
-    try:
-        from playwright.sync_api import sync_playwright
-    except ImportError:
-        return None
+    estado, executavel, texto = resolve_chromium()
+    if estado in (PLAYWRIGHT_ABSENT, CHROMIUM_ABSENT):
+        return CoverResult("skip", estado, texto)
+
+    from playwright.sync_api import sync_playwright
 
     origem = Path(site_root) / "graph.html"
     if not origem.is_file():
-        return None
+        return CoverResult("skip", "graph-absent", f"{origem} não existe ainda")
     destino = Path(site_root) / "assets"
     destino.mkdir(parents=True, exist_ok=True)
 
     escritos = []
     with sync_playwright() as p:
-        navegador = p.chromium.launch(headless=True)
+        navegador = p.chromium.launch(headless=True, executable_path=executavel)
         try:
             for tema, fundo in FUNDOS.items():
                 ctx = navegador.new_context(
@@ -89,7 +133,7 @@ def render(site_root, largura=LARGURA, altura=ALTURA, saida=SAIDA, espera=6000):
                 escritos.append((alvo.name, alvo.stat().st_size / 1024))
         finally:
             navegador.close()
-    return escritos
+    return CoverResult("ok", estado, texto, escritos)
 
 
 def _enxugar(caminho, saida, fundo):
@@ -129,10 +173,11 @@ def main():
     from repo_paths import SITE_ROOT
 
     resultado = render(SITE_ROOT)
-    if resultado is None:
-        print("cover: SKIP — Playwright indisponível ou graph.html ausente")
+    if not resultado.ok:
+        print(f"cover: SKIP ({resultado.reason}) — {resultado.detail}")
         return 0
-    for nome, kb in resultado:
+    print(f"cover: {resultado.detail}")
+    for nome, kb in resultado.written:
         print(f"  assets/{nome} ({kb:.0f} KB)")
     return 0
 

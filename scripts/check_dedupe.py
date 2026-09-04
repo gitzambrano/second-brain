@@ -28,7 +28,6 @@ import re
 import sys
 import unicodedata
 from collections import defaultdict
-from pathlib import Path
 
 import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
 from build_references import (
@@ -37,7 +36,6 @@ from build_references import (
     normalize_url,
 )
 from check_title import normalize as normalize_title
-
 from repo_paths import CODE_ROOT, DATA_ROOT, WIKI_ROOT
 
 ROOT_DIR = CODE_ROOT

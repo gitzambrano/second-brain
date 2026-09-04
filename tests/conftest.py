@@ -1,7 +1,13 @@
 from __future__ import annotations
-import os,shutil,subprocess,sys
+
+import os
+import shutil
+import subprocess
+import sys
 from pathlib import Path
+
 import pytest
+
 ROOT=Path(__file__).resolve().parents[1];SCRIPTS=ROOT/"scripts";FIXTURE=ROOT/"tests"/"fixtures"/"mini-brain"
 if str(SCRIPTS) not in sys.path: sys.path.insert(0, str(SCRIPTS))
 if str(SCRIPTS / "lib") not in sys.path: sys.path.insert(0, str(SCRIPTS / "lib"))

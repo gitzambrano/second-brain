@@ -29,9 +29,18 @@ python scripts/build_site.py
 # 3. Sentinela de privacidade (OBRIGATÓRIO)
 python scripts/check_site_privacy.py
 
-# 4. Como o leitor vê: abre cada página do site num navegador real
+# 4. Como o leitor vê: abre cada página do site num navegador real,
+#    incluindo graph.html e sphere.html (OBRIGATÓRIO)
 python scripts/check_site_pages.py
+
+# 5. Orçamento de tamanho dos artefatos públicos
+python scripts/check_site_budget.py
 ```
+
+Sem Chromium a auditoria visual **falha**, não pula: "não foi auditado" não
+pode passar por "passou". Instale com `python -m playwright install chromium`.
+`--allow-skip-browser` existe só para diagnóstico local e **não** vale neste
+fluxo.
 
 ### Regra da Sentinela de Privacidade
 
@@ -40,7 +49,7 @@ Se `check_site_privacy.py` reportar **qualquer erro bloqueante** (corpo de essay
 - **Não prossiga** para o commit/push no `site/`.
 - Reporte os erros exatos encontrados ao Usuário.
 
-### 5. Deploy no Git de `site/`
+### 6. Deploy no Git de `site/`
 
 Somente com a sentinela reportando `PASS`:
 
@@ -54,6 +63,7 @@ git -C site push
 ## Regras
 
 - **Nunca publique sem o gate:** `check_site_privacy.py` deve sempre passar antes de qualquer commit em `site/`.
-- `check_site_pages.py` é o gate visual: overflow horizontal, imagem quebrada, âncora morta, erro de console e Markdown vazando na página renderizada. Falha aqui não é vazamento de privacidade, mas também não se publica: reporte e corrija antes do deploy.
+- `check_site_pages.py` é o gate visual **obrigatório**: overflow horizontal, imagem quebrada, âncora morta, erro de console e Markdown vazando na página renderizada, mais uma auditoria própria de `graph.html` e `sphere.html` (canvas, dados, controles, tema, resize e interação). Falha aqui não é vazamento de privacidade, mas também não se publica: reporte e corrija antes do deploy.
+- **Ausência de navegador é falha, não SKIP.** Publicar sem a auditoria visual é publicar às cegas.
 - **Git é isolado:** Esta skill faz commit e push **exclusivamente** no repositório `site/`. Nunca faça commit em `./` ou em `data/` dentro deste fluxo.
 - **Não altere visibilidade automaticamente:** Alterações de `visibility:` são decididas exclusivamente pelo Usuário.

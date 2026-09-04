@@ -62,7 +62,7 @@
   function statusRank(card) {
     var s = (card.dataset.status || '').toLowerCase();
     if (s === 'finalizado') return 3;
-    if (s === 'revisao' || s === 'maduro') return 2;
+    if (s === 'revisao') return 2;
     if (s === 'draft') return 1;
     return 0;
   }

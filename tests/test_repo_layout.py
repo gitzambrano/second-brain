@@ -1,5 +1,8 @@
-import os,subprocess,sys
+import os
+import subprocess
+import sys
 from pathlib import Path
+
 ROOT=Path(__file__).resolve().parents[1]
 def test_default_data_and_site_are_nested():
     env=os.environ.copy();env.pop("SECOND_BRAIN_DATA_ROOT",None);env.pop("SECOND_BRAIN_SITE_ROOT",None)

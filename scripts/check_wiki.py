@@ -41,14 +41,12 @@ import re
 import sys
 from pathlib import Path
 
-import yaml
-
 import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
+import yaml
 
 # ---------------------------------------------------------------------------
 # Configuração de caminhos
 # ---------------------------------------------------------------------------
-
 from repo_paths import CODE_ROOT, OUTPUT_DIR, PLAN_DIR, WIKI_ROOT
 
 ROOT_DIR = CODE_ROOT
@@ -73,9 +71,10 @@ DIRS = {
 # ---------------------------------------------------------------------------
 
 VALID_TYPES = {"Ensaio", "White Paper", "Brainstorm", "Estudo", "Análise"}
-# `revisao` substituiu `maduro`; a grafia antiga continua válida para não
-# invalidar um essay que ainda não foi migrado.
-VALID_STATUS = {"draft", "revisao", "finalizado", "maduro"}
+# `revisao` substituiu `maduro`. A migração do corpus está feita, e a grafia
+# antiga saiu do vocabulário: manter duas palavras para o mesmo estado só
+# garante que metade dos scripts vá esquecer uma delas.
+VALID_STATUS = {"draft", "revisao", "finalizado"}
 MATURIDADES_VALIDAS = ("solta", "germinando", "madura", "absorvida")
 PLAN_SECOES = ["Tarefas", "Fontes para Ingerir", "Revisões", "Estudos", "Essays Futuros"]
 
@@ -238,8 +237,8 @@ def detect_english_paragraphs(content: str, exclude_referencias: bool = True):
 
     hits = []
     for para in body.split("\n\n"):
-        quote_lines = [l for l in para.splitlines() if l.strip()]
-        if quote_lines and all(l.strip().startswith(">") for l in quote_lines):
+        quote_lines = [ln for ln in para.splitlines() if ln.strip()]
+        if quote_lines and all(ln.strip().startswith(">") for ln in quote_lines):
             continue
         words = re.findall(r"[A-Za-zÀ-ÿ']+", para.lower())
         if len(words) < 12:
@@ -272,7 +271,7 @@ def detect_residual_symbols(lines_clean):
     """Retorna [(desc, [linenos])] para cada símbolo residual encontrado."""
     found = []
     for sym, desc in RESIDUAL_SYMS:
-        occurrences = [i + 1 for i, l in enumerate(lines_clean) if sym in l]
+        occurrences = [i + 1 for i, ln in enumerate(lines_clean) if sym in ln]
         if occurrences:
             found.append((desc, occurrences))
     return found
@@ -396,7 +395,7 @@ def check_essay(filepath: Path) -> dict:
         return {"name": name, "issues": issues}
 
     title = h1_match.group(1).strip()
-    h1_idx = next((i for i, l in enumerate(lines) if l.strip() == f"# {title}"), None)
+    h1_idx = next((i for i, ln in enumerate(lines) if ln.strip() == f"# {title}"), None)
 
     if h1_idx is not None:
         if h1_idx + 1 < len(lines) and lines[h1_idx + 1].strip() != "":
@@ -639,9 +638,9 @@ def check_essay(filepath: Path) -> dict:
 
     num_body = strip_fences(content).split("## Conexões")[0]
     seq_items = []  # (kind, line_no, text, num, tok, sub)
-    for ln_no, l in enumerate(num_body.splitlines(), 1):
-        m2 = re.match(r"^## (?!#)(.+)$", l)
-        m3 = re.match(r"^### (?!#)(.+)$", l)
+    for ln_no, ln in enumerate(num_body.splitlines(), 1):
+        m2 = re.match(r"^## (?!#)(.+)$", ln)
+        m3 = re.match(r"^### (?!#)(.+)$", ln)
         if m2:
             txt = m2.group(1).strip()
             if txt.lower() in ("sumário", "referências"):
@@ -846,9 +845,9 @@ def check_essay(filepath: Path) -> dict:
 
     body_for_bullets_clean = strip_fences(body_for_bullets)
     bullet_lines = [
-        (i + 1, l)
-        for i, l in enumerate(body_for_bullets_clean.splitlines())
-        if re.match(r"^\s*[-*]\s+\S", l)
+        (i + 1, ln)
+        for i, ln in enumerate(body_for_bullets_clean.splitlines())
+        if re.match(r"^\s*[-*]\s+\S", ln)
     ]
     if bullet_lines:
         add("WARNING", "BULLETS_IN_BODY",
@@ -1264,7 +1263,7 @@ def check_sources_manifest(essay_titles):
         manifest_content = load(manifest_path)
         entry_blocks = re.split(r"(?m)^## \[(\d{4}-\d{2}-\d{2})\]\s+(.+)$", manifest_content)
         for i in range(1, len(entry_blocks), 3):
-            date, filename, body = entry_blocks[i], entry_blocks[i + 1], entry_blocks[i + 2]
+            filename, body = entry_blocks[i + 1], entry_blocks[i + 2]
             tipo_m = re.search(r"(?m)^Tipo:\s*(.+?)\.?$", body)
             tags_m = re.search(r"(?m)^Tags:\s*(.+?)\.?$", body)
             pasta_m = re.search(r"(?m)^Pasta:\s*(.+?)\.?$", body)

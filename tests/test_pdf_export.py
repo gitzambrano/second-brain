@@ -1,5 +1,6 @@
 import pytest
-from conftest import run_script,legacy_script_available
+from conftest import legacy_script_available, run_script
+
 pytestmark=[pytest.mark.export,pytest.mark.pdf]
 def test_pdf_fixture_export_content_and_layout(installed_mini_brain):
     if not legacy_script_available("export_essay_pdf.py"): pytest.skip("exporter absent")

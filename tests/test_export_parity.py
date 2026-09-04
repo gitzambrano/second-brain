@@ -2,7 +2,6 @@ import sys
 from pathlib import Path
 
 import pytest
-
 from conftest import legacy_script_available, run_script
 
 ROOT = Path(__file__).resolve().parents[1]

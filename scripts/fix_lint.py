@@ -36,22 +36,22 @@ import sys
 from pathlib import Path
 
 import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
-# Primitivos de parsing de bibliografia continuam em check_references.py, que é
-# somente-leitura: são a base da validação. A REESCRITA vive aqui, porque este é
-# o único script que escreve em arquivo (ver docstring de check_references.py).
-from check_wiki import heading_anchor
 from check_references import (
     ANY_MD_LINK_RE,
     ITALIC_RE,
     TAIL_LINK_RE,
     UNDERSCORE_ITALIC_RE,
+    URL_PAT,
     citation_and_note,
     load,
     parse_entries,
-    URL_PAT,
     try_fix_quoted_title,
 )
 
+# Primitivos de parsing de bibliografia continuam em check_references.py, que é
+# somente-leitura: são a base da validação. A REESCRITA vive aqui, porque este é
+# o único script que escreve em arquivo (ver docstring de check_references.py).
+from check_wiki import heading_anchor
 from repo_paths import CODE_ROOT, DATA_ROOT, WIKI_ROOT
 
 ROOT_DIR = CODE_ROOT

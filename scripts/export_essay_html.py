@@ -46,10 +46,10 @@ Invariantes do pipeline (leia antes de editar):
     abra os arquivos e meca no navegador — o script so le o HTML.
 """
 
-import re
-import sys
-import subprocess
 import argparse
+import re
+import subprocess
+import sys
 from pathlib import Path
 
 import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
@@ -57,25 +57,24 @@ import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
 # Reuse the shared preparation logic from the PDF exporter.
 sys.path.insert(0, str(Path(__file__).parent))
 from export_essay_pdf import (
-    extract_frontmatter,
-    strip_conexoes_section,
+    AUTHOR,
     clean_residual_wikilinks,
     convert_heading_wikilinks,
+    extract_frontmatter,
     extract_title,
     resolve_image_paths,
-    AUTHOR,
+    strip_conexoes_section,
 )
-from html_preprocess import transform_markdown
-from site_common import title_html, title_plain
 from fetch_fonts import ensure_local_fonts
-
+from html_preprocess import transform_markdown
 from repo_paths import (
     CODE_ROOT,
     ESSAYS_DIR,
-    HANDOUTS_DIR,
     HANDOUT_OUTPUT_DIR,
+    HANDOUTS_DIR,
     HTML_DIR,
 )
+from site_common import title_html, title_plain
 
 ROOT_DIR = CODE_ROOT
 OUTPUT_DIR = HTML_DIR

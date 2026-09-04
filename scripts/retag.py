@@ -10,9 +10,8 @@ import re
 import sys
 from collections import Counter
 
-import yaml
-
 import console_encoding  # noqa: F401
+import yaml
 from repo_paths import WIKI_ROOT, relative_display
 
 PAGE_DIRS = [WIKI_ROOT / d for d in ("essays", "concepts", "entities", "insights")]

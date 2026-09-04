@@ -19,7 +19,6 @@ from pathlib import Path
 from repo_paths import ESSAYS_DIR, HTML_DIR, PDF_DIR
 from sanity_common import CheckResult, text_contains
 
-
 # Pandoc's smart punctuation renders the source's straight quotes as typographic
 # ones, so "Boltzmann's Work" in the Markdown becomes "Boltzmann’s Work" in both
 # exports. Folding them here is what keeps the two sides comparable; without it

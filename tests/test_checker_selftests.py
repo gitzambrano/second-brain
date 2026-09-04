@@ -5,7 +5,6 @@ from pathlib import Path
 
 import pymupdf as fitz
 import pytest
-
 from conftest import run_script
 
 

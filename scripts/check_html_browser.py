@@ -9,11 +9,15 @@ SKIP.
 from __future__ import annotations
 
 import argparse
-import shutil
 from pathlib import Path
 
 from repo_paths import HTML_DIR
-from sanity_common import CheckResult
+from sanity_common import (
+    CHROMIUM_ABSENT,
+    PLAYWRIGHT_ABSENT,
+    CheckResult,
+    resolve_chromium,
+)
 
 VIEWPORTS = ((390, 844, "mobile"), (1440, 900, "desktop"))
 
@@ -107,22 +111,19 @@ def audit(slug: str | None = None) -> CheckResult:
     if not files:
         result.skip("NO_HTML", f"no HTML exports in {HTML_DIR}")
         return result
-    try:
-        from playwright.sync_api import sync_playwright
-    except ImportError:
-        result.skip("PLAYWRIGHT_MISSING", "browser validation unavailable; install playwright")
+    estado, executable, detalhe = resolve_chromium()
+    if estado == PLAYWRIGHT_ABSENT:
+        result.skip("PLAYWRIGHT_MISSING", f"browser validation unavailable; {detalhe}")
         return result
+    if estado == CHROMIUM_ABSENT:
+        result.skip("CHROMIUM_MISSING", detalhe)
+        return result
+
+    from playwright.sync_api import sync_playwright
 
     # One browser for the whole audit. Launching Chromium per file cost more
     # than the checking did: 47 exports meant 47 cold starts.
     with sync_playwright() as p:
-        managed = Path(p.chromium.executable_path)
-        names = ("chromium", "chromium-browser", "google-chrome", "google-chrome-stable")
-        system = next((shutil.which(x) for x in names if shutil.which(x)), None)
-        executable = str(managed) if managed.exists() else system
-        if not executable:
-            result.skip("CHROMIUM_MISSING", "no Playwright-managed or system Chromium/Chrome found")
-            return result
         browser = p.chromium.launch(headless=True, executable_path=executable)
         try:
             for path in files:

@@ -42,11 +42,9 @@ import zlib
 from collections import defaultdict
 from pathlib import Path
 
-import yaml
-
 import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
-
 import visibility
+import yaml
 from repo_paths import CODE_ROOT, DATA_ROOT, GRAPH_DIR, WIKI_ROOT
 from site_common import title_plain
 
@@ -728,6 +726,7 @@ def _compress_image(p):
         return p.read_bytes(), _MIME_BY_EXT[".svg"]
     try:
         from io import BytesIO
+
         from PIL import Image
         img = Image.open(p)
         needs_alpha = False
@@ -894,7 +893,7 @@ def render_reader_fragments(essay_nodes):
     pandoc --standalone --template=essay_template.html por essay, extraindo
     masthead + content + footer (o chrome fixo e o JS do template ficam de
     fora; o leitor reimplementa o essencial no Shadow Root)."""
-    from export_essay_html import prepare_for_pandoc, TEMPLATE_PATH
+    from export_essay_html import TEMPLATE_PATH, prepare_for_pandoc
 
     payload = {}
     total = len(essay_nodes)
@@ -3490,7 +3489,7 @@ function renderTypeIndex() {
       // para dizer "ainda em obra", e 45 selos repetidos não diriam nada.
       const draft = n.status === "draft"
         ? `<span class="idx-draft" title="Rascunho">draft</span>`
-        : (n.status === "revisao" || n.status === "maduro")
+        : n.status === "revisao"
           ? `<span class="idx-review" title="Em revisão">em revisão</span>`
           : "";
       // `public` só existe no build da projeção pública (build_public_map.py).

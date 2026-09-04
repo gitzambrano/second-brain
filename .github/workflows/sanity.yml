@@ -17,17 +17,12 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install Python test dependencies
-        run: python -m pip install pytest ruff PyYAML PyMuPDF beautifulsoup4 html5lib playwright Unidecode
-      - name: Ruff maintained quality layer
-        run: >-
-          ruff check
-          scripts/repo_paths.py scripts/check_repo.py scripts/check_git_isolation.py
-          scripts/check_path_discipline.py scripts/build_site.py
-          scripts/check_site_privacy.py scripts/render_public_essay.py
-          scripts/lib/render_public_essay.py scripts/lib/build_public_map.py
-          scripts/sync_skills.py
-          tests/test_site_theme_contract.py tests/test_workflow_integrity.py
-          tests/test_docs_references.py tests/test_agent_sync_contract.py
+        run: python -m pip install -r requirements-ci.txt
+      # A árvore inteira, não uma lista de arquivos escolhidos a dedo. As
+      # exceções vivem em `[tool.ruff.lint.per-file-ignores]` do pyproject,
+      # nomeadas e justificadas.
+      - name: Ruff
+        run: ruff check .
       - name: Nested-Git and path discipline
         run: |
           python scripts/repo_paths.py
@@ -49,7 +44,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - run: python -m pip install pytest ruff PyYAML PyMuPDF beautifulsoup4 html5lib playwright Unidecode
+      - run: python -m pip install -r requirements-ci.txt
       - run: python -m pytest -q tests/test_wiki_checks.py
 
   html-export:
@@ -60,7 +55,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: sudo apt-get update && sudo apt-get install -y pandoc
-      - run: python -m pip install pytest ruff PyYAML PyMuPDF beautifulsoup4 html5lib playwright Unidecode
+      - run: python -m pip install -r requirements-ci.txt
       - run: python -m playwright install --with-deps chromium
       - run: python -m pytest -q -m html
 
@@ -72,5 +67,22 @@ jobs:
         with:
           python-version: '3.12'
       - run: sudo apt-get update && sudo apt-get install -y pandoc texlive-luatex texlive-latex-extra texlive-fonts-recommended lmodern
-      - run: python -m pip install pytest ruff PyYAML PyMuPDF beautifulsoup4 html5lib playwright Unidecode
+      - run: python -m pip install -r requirements-ci.txt
       - run: python -m pytest -q -m pdf
+
+  site-browser:
+    # A auditoria visual precisa de Chromium, e o job `core` não instala nenhum
+    # — foi essa mistura que deixava o CI vermelho por um motivo que não era o
+    # do teste. Aqui o navegador é o ponto: home clara, home escura, home
+    # mobile, essay nos três, e os dois mapas.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: sudo apt-get update && sudo apt-get install -y pandoc
+      - run: python -m pip install -r requirements-ci.txt
+      - run: python -m playwright install --with-deps chromium
+      - name: Build the fixture site and audit it in a real browser
+        run: python -m pytest -q -m browser

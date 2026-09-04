@@ -1,5 +1,8 @@
-import json,pytest
-from conftest import recursive_severities,run_script,legacy_script_available
+import json
+
+import pytest
+from conftest import legacy_script_available, recursive_severities, run_script
+
 pytestmark=pytest.mark.slow
 def test_synthetic_essay_has_no_blocking_wiki_issues(installed_mini_brain):
     if not legacy_script_available("check_wiki.py"):pytest.skip("checker absent")

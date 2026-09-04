@@ -13,9 +13,8 @@ import argparse
 import json
 import sys
 
-import pymupdf as fitz
-
 import console_encoding  # noqa: F401
+import pymupdf as fitz
 from repo_paths import PDF_DIR
 
 TOP_MM, BOTTOM_MM, LEFT_MM, RIGHT_MM = 17.0, 19.0, 19.0, 19.0

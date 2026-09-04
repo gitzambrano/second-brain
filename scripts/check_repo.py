@@ -109,12 +109,13 @@ def quick(result: CheckResult) -> None:
         result,
         parse_json_severity=True,
     )
-    # `.agents/` é fonte, `.claude/skills|agents/` é saída. O subagent `update`
-    # já roda isto no fechamento; aqui o contrato passa a valer também para
-    # quem chama o gate central direto, e um espelho editado à mão reprova.
-    run_command(
-        "agent mirror sync",
-        [sys.executable, str(SCRIPTS_DIR / "sync_skills.py"), "--check", "--quiet"],
+    # `.agents/` é fonte, `.claude/skills|agents/` e `.codex/agents/` são
+    # saída. O subagent `update` já roda o sync no fechamento; aqui o contrato
+    # inteiro (espelhos, adaptadores, hook, documentação) vale também para quem
+    # chama o gate central direto.
+    run_status_command(
+        "agent architecture",
+        [sys.executable, str(SCRIPTS_DIR / "check_agents.py"), "--json"],
         result,
     )
     run_command(
@@ -122,6 +123,30 @@ def quick(result: CheckResult) -> None:
         [sys.executable, str(SCRIPTS_DIR / "check_env.py"), "--core", "--json"],
         result,
         parse_json_severity=True,
+    )
+
+
+def architecture(result: CheckResult) -> None:
+    """Os contratos estruturais: três Gits isolados e a cadeia de agentes.
+
+    Reunidos num grupo só porque falham juntos: quem mexe na fonte de skills
+    costuma mexer no hook e na documentação na mesma sessão, e um deles ficar
+    para trás é exatamente o modo de falha que a arquitetura antiga produziu.
+    """
+    run_status_command(
+        "git isolation",
+        [sys.executable, str(SCRIPTS_DIR / "check_git_isolation.py"), "--json"],
+        result,
+    )
+    run_status_command(
+        "path discipline",
+        [sys.executable, str(SCRIPTS_DIR / "check_path_discipline.py"), "--json"],
+        result,
+    )
+    run_status_command(
+        "agent architecture",
+        [sys.executable, str(SCRIPTS_DIR / "check_agents.py"), "--json"],
+        result,
     )
 
 
@@ -176,16 +201,25 @@ def site(result: CheckResult) -> None:
     if not (SITE_ROOT / ".second-brain-site").exists():
         result.skip("NO_SITE", "site checkout not initialized; site privacy validation skipped")
         return
-    for name in ("check_site_privacy.py", "check_site_pages.py"):
+    # `check_site_pages.py` roda com `--allow-skip-browser` aqui: este é o
+    # diagnóstico do repositório, não o gate de publicação. Em `/publish` ele
+    # roda sem a flag, e ausência de navegador vira falha.
+    for name, extra in (
+        ("check_site_privacy.py", []),
+        ("check_site_pages.py", ["--allow-skip-browser"]),
+        ("check_site_budget.py", []),
+    ):
         path = SCRIPTS_DIR / name
         if path.exists():
-            run_status_command(name, [sys.executable, str(path), "--json"], result)
+            run_status_command(name, [sys.executable, str(path), "--json", *extra], result)
 
 
 def audit(mode: str) -> CheckResult:
     result = CheckResult("repository")
     if mode in {"quick", "full"}:
         quick(result)
+    if mode == "architecture":
+        architecture(result)
     if mode in {"wiki", "full"}:
         wiki(result)
     if mode in {"exports", "full"}:
@@ -203,6 +237,8 @@ def main() -> int:
     group.add_argument("--wiki", action="store_true", help="corpus checks only")
     group.add_argument("--exports", action="store_true", help="existing HTML/PDF checks only")
     group.add_argument("--site", action="store_true", help="site privacy checks only")
+    group.add_argument("--architecture", action="store_true",
+                       help="structural contracts only: nested Gits, paths, agent source/mirrors")
     group.add_argument("--full", action="store_true", help="all checks (also the no-argument default)")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--fail-on-warning", action="store_true")
@@ -211,6 +247,7 @@ def main() -> int:
             else "wiki" if args.wiki
             else "exports" if args.exports
             else "site" if args.site
+            else "architecture" if args.architecture
             else "full")
     result = audit(mode)
     result.print(args.json)

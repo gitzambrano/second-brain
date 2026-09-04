@@ -19,15 +19,13 @@ Flags:
     --save   grava o relatório em output/stats/stats-YYYY-MM-DD.md
 """
 
-import re
-import sys
 import argparse
 import datetime
-from pathlib import Path
+import re
+import sys
 from collections import Counter, defaultdict
 
 import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
-
 from repo_paths import CODE_ROOT, PLAN_DIR, STATS_DIR, WIKI_ROOT
 
 ROOT_DIR = CODE_ROOT
@@ -171,7 +169,7 @@ def collect_wikilinks(content):
         return []
     section = m.group(1)
     links = re.findall(r"\[\[([^\]|]+)(?:\|[^\]]+)?\]\]", section)
-    return [l.strip() for l in links]
+    return [ln.strip() for ln in links]
 
 
 def orphan_stats(essay_titles):

@@ -1,5 +1,8 @@
-import json,pytest
-from conftest import run_script,legacy_script_available
+import json
+
+import pytest
+from conftest import legacy_script_available, run_script
+
 pytestmark=[pytest.mark.export,pytest.mark.html]
 def test_html_fixture_export_and_validation(installed_mini_brain):
     if not legacy_script_available("export_essay_html.py"): pytest.skip("exporter absent")

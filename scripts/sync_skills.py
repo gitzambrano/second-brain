@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-sync_skills.py - Espelha .agents/skills/ e .agents/agents/ para
-.claude/skills/ e .claude/agents/. Fonte única é sempre .agents/ - os
-espelhos são gerados, nunca editados à mão.
+sync_skills.py - Espelha .agents/ nos formatos que cada harness lê. Fonte
+única é sempre .agents/ - as saídas são geradas, nunca editadas à mão.
 
 Lê:
     .agents/skills/**, .agents/agents/**
 
 Gera:
-    cópias idênticas nos destinos acima (remove espelho sem origem)
+    .claude/skills/, .claude/agents/  cópias idênticas (remove órfão)
+    .codex/agents/*.toml             adaptador do Codex, derivado do .md
 
 Uso:
     python scripts/sync_skills.py            # espelha e reporta o que mudou
@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import filecmp
+import re
 import shutil
 import sys
 from pathlib import Path
@@ -35,6 +36,79 @@ PAIRS = [
     (REPO_ROOT / ".agents" / "skills", REPO_ROOT / ".claude" / "skills"),
     (REPO_ROOT / ".agents" / "agents", REPO_ROOT / ".claude" / "agents"),
 ]
+
+AGENTS_DIR = REPO_ROOT / ".agents" / "agents"
+CODEX_DIR = REPO_ROOT / ".codex" / "agents"
+
+FRONTMATTER_RE = re.compile(r"^---\n(.*?)\n---\n(.*)$", re.DOTALL)
+KEY_RE = re.compile(r"^([A-Za-z_][\w-]*):\s*(.*)$")
+
+
+def _frontmatter(text: str) -> tuple[dict, str]:
+    """Frontmatter minimalista: `chave: valor`, com bloco dobrado (`>`).
+
+    Deliberadamente sem PyYAML: este script roda no hook `SessionStart` de toda
+    sessão, e uma dependência opcional ali vira sessão que abre com erro numa
+    máquina recém-clonada.
+    """
+    match = FRONTMATTER_RE.match(text)
+    if not match:
+        return {}, text
+    meta: dict[str, str] = {}
+    key = None
+    for line in match.group(1).splitlines():
+        header = KEY_RE.match(line)
+        if header:
+            key, value = header.group(1), header.group(2).strip()
+            meta[key] = "" if value in (">", "|", ">-", "|-") else value
+        elif key and line.strip():
+            meta[key] = (meta[key] + " " + line.strip()).strip()
+    return meta, match.group(2)
+
+
+def codex_toml(md_path: Path) -> str:
+    """O adaptador do Codex, derivado do agent canônico.
+
+    Outro formato, mesma fonte: o corpo do `.md` vira `developer_instructions`
+    e o frontmatter vira `name`/`description`. A aspa simples entra quando a
+    descrição já contém aspas duplas — TOML básico não escapa isso aqui.
+    """
+    meta, body = _frontmatter(md_path.read_text(encoding="utf-8"))
+    name = meta.get("name", md_path.stem)
+    description = " ".join(str(meta.get("description", "")).split())
+    quote = "'" if '"' in description else '"'
+    corpo = body.strip("\n").rstrip()
+    return (
+        'name = "' + name + '"\n'
+        + "description = " + quote + description + quote + "\n"
+        + 'developer_instructions = """\n' + corpo + '"""\n'
+    )
+
+
+def sync_codex(check_only: bool = False):
+    """Retorna (escritos, sobrando) como nomes de arquivo em CODEX_DIR."""
+    if not AGENTS_DIR.is_dir():
+        return [], []
+    esperados = {f"{p.stem}.toml": codex_toml(p) for p in sorted(AGENTS_DIR.glob("*.md"))}
+    atuais = {p.name for p in CODEX_DIR.glob("*.toml")} if CODEX_DIR.is_dir() else set()
+
+    escritos = sorted(
+        nome for nome, conteudo in esperados.items()
+        if nome not in atuais
+        or (CODEX_DIR / nome).read_text(encoding="utf-8") != conteudo
+    )
+    sobrando = sorted(atuais - set(esperados))
+
+    if check_only:
+        return escritos, sobrando
+
+    if escritos or sobrando:
+        CODEX_DIR.mkdir(parents=True, exist_ok=True)
+    for nome in escritos:
+        (CODEX_DIR / nome).write_text(esperados[nome], encoding="utf-8")
+    for nome in sobrando:
+        (CODEX_DIR / nome).unlink()
+    return escritos, sobrando
 
 
 def relative_files(root: Path) -> set[Path]:
@@ -85,6 +159,9 @@ def sync(check_only: bool = False):
     for source, dest in PAIRS:
         copied, removed = sync_pair(source, dest, check_only=check_only)
         results.append((source, dest, copied, removed))
+    escritos, sobrando = sync_codex(check_only=check_only)
+    results.append((AGENTS_DIR, CODEX_DIR,
+                    [Path(n) for n in escritos], [Path(n) for n in sobrando]))
     return results
 
 

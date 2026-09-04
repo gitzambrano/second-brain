@@ -29,6 +29,61 @@ def _safe_print(*args, **kwargs) -> None:
 SEVERITIES = ("ERROR", "WARNING", "INFO", "SKIP")
 
 
+# --- Navegador headless ------------------------------------------------------
+# Três checadores e o gerador de capa precisavam da mesma resposta: existe um
+# Chromium utilizável nesta máquina? Cada um tinha sua cópia da busca, e a do
+# build_cover não tinha nenhuma — só um `except ImportError`, que não cobre o
+# caso mais comum em CI, o de pacote instalado e browser não baixado.
+
+CHROMIUM_ABSENT = "chromium-absent"
+CHROMIUM_MANAGED = "chromium-managed"
+CHROMIUM_SYSTEM = "chromium-system"
+PLAYWRIGHT_ABSENT = "playwright-absent"
+
+
+def resolve_chromium():
+    """Descobre um Chromium utilizável. Retorna (estado, executável|None, texto).
+
+    Estados possíveis, nesta ordem de preferência:
+
+    - `PLAYWRIGHT_ABSENT`: o pacote `playwright` não está instalado;
+    - `CHROMIUM_MANAGED`: o browser que o `playwright install` baixou;
+    - `CHROMIUM_SYSTEM`: um Chromium/Chrome do sistema, quando o gerenciado
+      não foi baixado — é o caso de quem tem o navegador mas nunca rodou
+      `python -m playwright install chromium`;
+    - `CHROMIUM_ABSENT`: pacote presente, nenhum executável em lugar nenhum.
+
+    Nunca levanta: quem chama decide se a ausência é SKIP ou FAIL.
+    """
+    import importlib.util
+    import shutil
+
+    if importlib.util.find_spec("playwright") is None:
+        return PLAYWRIGHT_ABSENT, None, "pacote playwright não instalado"
+
+    from playwright.sync_api import sync_playwright
+
+    try:
+        with sync_playwright() as p:
+            managed = Path(p.chromium.executable_path)
+    except Exception as exc:  # driver quebrado, instalação parcial
+        return PLAYWRIGHT_ABSENT, None, f"playwright indisponível: {exc}"
+
+    if managed.exists():
+        return CHROMIUM_MANAGED, str(managed), f"chromium do playwright em {managed}"
+
+    names = ("chromium", "chromium-browser", "google-chrome", "google-chrome-stable")
+    system = next((shutil.which(x) for x in names if shutil.which(x)), None)
+    if system:
+        return CHROMIUM_SYSTEM, system, f"chromium do sistema em {system}"
+
+    return (
+        CHROMIUM_ABSENT,
+        None,
+        "playwright instalado mas sem browser; rode: python -m playwright install chromium",
+    )
+
+
 def text_contains(haystack_norm: str, needle_norm: str) -> bool:
     """Presence test tolerant of typographic letter-spacing.
 

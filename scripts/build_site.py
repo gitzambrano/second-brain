@@ -178,6 +178,11 @@ def write_data(root: Path, catalogue) -> dict[str, int]:
     essay contributes its body: `text` powers full-text search and exists solely
     for pages a reader can actually open.
     """
+    # O índice é um CATÁLOGO, não um corpus. A busca da capa filtra os cartões
+    # que já estão no DOM (`card.dataset.search`), então ninguém jamais baixou
+    # este arquivo — e ele carregava o texto integral de todos os essays, 2,2 MB
+    # servidos para nenhum leitor. Se um dia a busca virar full-text, o corpo
+    # volta aqui de propósito e com o gate de privacidade acompanhando.
     allowed = {e.slug for e in catalogue if e.published}
     body_text = {
         e.slug: plain_text(public_body_for_index(e, allowed))
@@ -199,7 +204,6 @@ def write_data(root: Path, catalogue) -> dict[str, int]:
         if essay.published:
             entry["minutes"] = reading_minutes(body_text[essay.slug])
             entry["url"] = f"essays/{essay.slug}.html"
-            entry["text"] = body_text[essay.slug]
         search.append(entry)
 
     def dump(name: str, data) -> None:
@@ -248,7 +252,7 @@ def render_index(root: Path, catalogue, minutes: dict[str, int] | None = None,
             badges.append('<span class="badge badge-private">Privado</span>')
         if essay.status == "draft":
             badges.append('<span class="badge badge-draft">Rascunho</span>')
-        elif essay.status in {"revisao", "maduro"}:
+        elif essay.status == "revisao":
             badges.append('<span class="badge badge-review">Em revisão</span>')
         badge_html = f'<div class="badges">{"".join(badges)}</div>' if badges else ""
 
@@ -343,16 +347,25 @@ def build(root: Path, no_render: bool = False):
     # O retrato da capa sai do graph.html recém-escrito, e por isso vem
     # depois dele. Sem navegador headless o passo é pulado e o PNG anterior
     # permanece: publicar não pode depender do Playwright estar instalado.
+    #
+    # `--no-render` não assa capa nenhuma. Esse modo existe para checagem
+    # estrutural e de privacidade — nos testes e na CI — e um build que serve
+    # para isso não pode exigir Chromium. Era o que deixava o job `core`
+    # vermelho numa máquina sem browser.
     # Importado aqui, e não no topo: `scripts/lib/` só entra no sys.path
     # quando `repo_paths` é carregado, e o topo deste arquivo roda antes disso.
-    import build_cover
-
-    assado = build_cover.render(root)
-    if assado is None:
-        print("  capa: SKIP (Playwright indisponível)")
+    if no_render:
+        print("  capa: pulada (--no-render é build lógico, sem navegador)")
     else:
-        for nome, kb in assado:
-            print(f"  assets/{nome} ({kb:.0f} KB)")
+        import build_cover
+
+        assado = build_cover.render(root)
+        if assado.ok:
+            print(f"  capa: {assado.detail}")
+            for nome, kb in assado.written:
+                print(f"  assets/{nome} ({kb:.0f} KB)")
+        else:
+            print(f"  capa: SKIP ({assado.reason}) — {assado.detail}")
 
     source = SITE_SRC_DIR / "404.html"
     if source.exists():

@@ -28,7 +28,6 @@ from collections import defaultdict
 from pathlib import Path
 
 import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
-
 from repo_paths import CODE_ROOT, DATA_ROOT, WIKI_ROOT
 
 ROOT_DIR = CODE_ROOT
@@ -137,7 +136,9 @@ def orphans(scopes=None):
             totais.append((title, node_type, path))
         elif not any(src_type == "essays" for _, src_type, _ in fontes):
             sem_essay.append((title, node_type, path))
-    ordena = lambda r: sorted(r, key=lambda x: (x[1], x[0]))
+    def ordena(r):
+        return sorted(r, key=lambda x: (x[1], x[0]))
+
     return ordena(totais), ordena(sem_essay)
 
 

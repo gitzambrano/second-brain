@@ -23,6 +23,9 @@
   --rust-bright:#a04030;
   --accent:#35708a;
   --amber:#7a5a18;
+  /* Claro: a caixa de destaque continua neutra. */
+  --box-bg:var(--surface);
+  --box-verdict-bg:var(--surface2);
 
   --sb-bg:#ffffff;
   --sb-surface:#ffffff;
@@ -50,6 +53,10 @@
   --rust-bright:#bd5a42;
   --accent:#5b95ac;
   --amber:#a77a2e;
+  /* Escuro: ouro do Atlas em opacidade mínima, o mesmo gesto do export
+     standalone, só com o gold do site (#c9a45c) em vez do #b08b4f. */
+  --box-bg:rgba(201,164,92,.055);
+  --box-verdict-bg:rgba(201,164,92,.10);
 
   --sb-bg:#090909;
   --sb-surface:#121212;

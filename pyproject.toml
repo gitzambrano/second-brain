@@ -6,6 +6,7 @@ markers = [
   "html: HTML export/browser tests",
   "pdf: PDF export/layout tests",
   "export: export pipeline tests",
+  "browser: real-browser visual audit (needs Chromium)",
 ]
 
 [tool.ruff]
@@ -15,3 +16,25 @@ exclude = ["scripts/vendor", "output", ".claude", ".codex"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
+
+# Ruff cobre a árvore inteira (`ruff check .` na CI). As exceções abaixo são
+# nominais e justificadas — não uma lista de arquivos que ninguém olha.
+#
+# Os dois renderizadores de mapa são Python que carrega JavaScript e CSS
+# inteiros como texto: quebrar essas linhas quebraria o payload, não o
+# arrumaria. Os checadores e testes compactos usam uma linha por asserção de
+# propósito, para caber a bateria inteira na tela; E701/E702 aqui é estilo
+# adotado, não descuido.
+[tool.ruff.lint.per-file-ignores]
+"scripts/build_graph.py" = ["E501"]
+"scripts/build_sphere.py" = ["E501"]
+"scripts/check_wiki.py" = ["E501"]
+"scripts/check_html_structure.py" = ["E701", "E702"]
+"scripts/export_essay_html.py" = ["E501"]
+"scripts/export_essay_pdf.py" = ["E501"]
+"tests/conftest.py" = ["E501", "E701", "E702"]
+"tests/test_wiki_checks.py" = ["E501", "E701", "E702"]
+"tests/test_legacy_feature_regressions.py" = ["E501", "E701", "E702"]
+"tests/test_pdf_export.py" = ["E501", "E701", "E702", "E741"]
+"tests/test_html_export.py" = ["E501", "E701", "E702"]
+"tests/test_repo_layout.py" = ["E501", "E701", "E702"]

@@ -32,7 +32,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from export_essay_html import PANDOC_FROM, TEMPLATE_PATH, prepare_for_pandoc
+from export_essay_html import PANDOC_FROM, TEMPLATE_PATH, body_has_math, prepare_for_pandoc
 from repo_paths import ASSETS_DIR, SITE_ROOT, SITE_SRC_DIR
 from site_common import (
     collect_public,
@@ -83,14 +83,84 @@ def rewrite_images(markdown: str, source: Path) -> str:
             digest = hashlib.sha256(payload).hexdigest()[:12]
             dest = destdir / f"{candidate.stem}-{digest}{candidate.suffix}"
         shutil.copy2(candidate, dest)
+        write_webp_sibling(dest)
         return f"![{alt}](../assets/media/{dest.name})"
 
     return IMAGE_RE.sub(replace, markdown)
 
 
+# Ganho mínimo para valer a pena guardar um segundo arquivo. Abaixo disto o
+# WebP só acrescenta bytes ao repositório sem acelerar nada para o leitor.
+WEBP_MIN_GAIN = 0.15
+WEBP_SOURCES = {".png", ".jpg", ".jpeg"}
+
+
+def write_webp_sibling(dest: Path) -> Path | None:
+    """Grava um WebP ao lado do original, quando compensa.
+
+    O PNG continua sendo o arquivo servido no `<img>`: é ele que garante figura
+    técnica sem perda e navegador antigo funcionando. O WebP entra como
+    `<source>` alternativo, que o navegador escolhe se souber ler — economia
+    sem trocar o formato de ninguém.
+    """
+    if dest.suffix.lower() not in WEBP_SOURCES:
+        return None
+    try:
+        from PIL import Image
+    except ImportError:
+        return None
+
+    alvo = dest.with_suffix(".webp")
+    try:
+        with Image.open(dest) as imagem:
+            # PNG de figura técnica é linha e texto: perda ali vira artefato em
+            # cima de eixo e legenda. JPEG já é fotográfico e já perdeu antes.
+            if dest.suffix.lower() == ".png":
+                imagem.save(alvo, "WEBP", lossless=True, method=6)
+            else:
+                imagem.convert("RGB").save(alvo, "WEBP", quality=82, method=6)
+    except Exception:
+        alvo.unlink(missing_ok=True)
+        return None
+
+    if alvo.stat().st_size > dest.stat().st_size * (1 - WEBP_MIN_GAIN):
+        alvo.unlink(missing_ok=True)
+        return None
+    return alvo
+
+
+IMG_TAG_RE = re.compile(r'<img\b[^>]*\bsrc="(\.\./assets/media/[^"]+)"[^>]*>')
+
+
+def wrap_pictures(html_text: str) -> str:
+    """Envolve cada `<img>` local num `<picture>` quando há WebP ao lado.
+
+    Sem `<picture>` o WebP gerado não serviria para nada: ninguém pediria por
+    ele. O `<img>` permanece intacto como fallback, então um navegador que não
+    conheça WebP — ou um WebP que não exista — continua vendo a mesma imagem.
+    """
+    def substitui(match: re.Match[str]) -> str:
+        src = match.group(1)
+        sibling = SITE_ROOT / "assets" / "media" / (Path(src).stem + ".webp")
+        if not sibling.is_file():
+            return match.group(0)
+        webp = src.rsplit(".", 1)[0] + ".webp"
+        return (
+            f'<picture><source srcset="{webp}" type="image/webp">'
+            f"{match.group(0)}</picture>"
+        )
+
+    return IMG_TAG_RE.sub(substitui, html_text)
+
+
 def pandoc(markdown: str, title: str, subtitle: str, author: str,
            summary: str, status: str) -> str:
-    """Run the export's own Pandoc invocation, minus the offline embedding."""
+    """Run the export's own Pandoc invocation, minus the offline embedding.
+
+    MathJax entra só em essay que tem fórmula. O export standalone já fazia
+    essa distinção; a projeção pública não, e mandava um renderizador
+    matemático de megabytes para quem foi ler um ensaio de filosofia.
+    """
     with tempfile.TemporaryDirectory() as tmp:
         source = Path(tmp) / "essay.md"
         source.write_text(markdown, encoding="utf-8")
@@ -99,7 +169,7 @@ def pandoc(markdown: str, title: str, subtitle: str, author: str,
             "--standalone",
             f"--template={TEMPLATE_PATH}",
             "--highlight-style=pygments",
-            "--mathjax=../assets/mathjax/tex-svg.js",
+            *(["--mathjax=../assets/mathjax/tex-svg.js"] if body_has_math(markdown) else []),
             "-V", f"title={title_plain(title)}",
             "-V", f"titlehtml={title_html(title)}",
             "-V", f"subtitle={subtitle}",
@@ -223,6 +293,7 @@ def render(slug: str, output: Path) -> None:
     head = favicon_link() + early_theme + f"<style>{theme}</style>\n"
     page = page.replace("</head>", head + "</head>", 1)
     page = page.replace("</body>", chrome + "</body>", 1)
+    page = wrap_pictures(page)
 
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(page, encoding="utf-8")

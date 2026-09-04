@@ -8,6 +8,7 @@ em vez de falhar por falta de termo de busca.
 import argparse
 import re
 import sys
+
 import console_encoding  # noqa: F401
 from repo_paths import WIKI_ROOT, relative_display
 

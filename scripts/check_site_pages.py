@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import argparse
 import http.server
-import shutil
 import socketserver
 import threading
 from functools import partial
@@ -28,14 +27,47 @@ from pathlib import Path
 
 import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
 from repo_paths import SITE_ROOT
-from sanity_common import CheckResult
+from sanity_common import (
+    CHROMIUM_ABSENT,
+    PLAYWRIGHT_ABSENT,
+    CheckResult,
+    resolve_chromium,
+)
 
 VIEWPORTS = ((390, 844, "mobile"), (1440, 900, "desktop"))
 
 # The two maps are one 700 KB page each, with a force simulation that never
-# settles inside a check's budget. They are audited by check_site_privacy.py
-# on content, not opened here.
-SKIP = {"graph.html", "sphere.html"}
+# settles inside a check's budget — so they get their own, lighter audit
+# (`MAP_PROBE`) instead of the prose probe. Skipping them entirely left the two
+# most JavaScript-heavy surfaces of the site unchecked by the only gate that
+# opens a real browser.
+MAPS = {"graph.html", "sphere.html"}
+
+# The map's own JS pins `--bg` inline on <html>; the page background must end
+# up matching the theme, which is exactly the defect that shipped to a phone.
+MAP_PROBE = r"""() => {
+  const canvas = document.querySelector('canvas#graph');
+  const rect = canvas ? canvas.getBoundingClientRect() : {width: 0, height: 0};
+  const root = document.documentElement;
+  return {
+    hasCanvas: !!canvas,
+    canvasWidth: Math.round(rect.width),
+    canvasHeight: Math.round(rect.height),
+    docWidth: root.scrollWidth,
+    innerWidth: window.innerWidth,
+    nodes: (typeof data === 'object' && data && data.nodes) ? data.nodes.length : 0,
+    theme: root.getAttribute('data-theme'),
+    inlineBg: root.style.getPropertyValue('--bg').trim(),
+    controls: {
+      panel: !!document.getElementById('panel'),
+      search: !!document.getElementById('search'),
+      index: !!document.getElementById('btn-index'),
+      legend: document.querySelectorAll('.legend-item[data-type]').length,
+      back: !!document.getElementById('sb-back'),
+      themeToggle: !!document.getElementById('sb-theme'),
+    },
+  };
+}"""
 
 PROBE = r"""() => {
   const content = document.querySelector('.content') || document.body;
@@ -155,35 +187,138 @@ def audit_page(page, url: str, path: Path, label: str, result: CheckResult,
         result.error("FAILED_REQUEST", f"{label}: {url}", name)
 
 
-def audit(name: str | None = None) -> CheckResult:
+def audit_map(page, url, path, label, result, console_errors, failed):
+    """Auditoria leve dos dois mapas: sobe, desenha, responde e troca de tema.
+
+    Não espera a simulação assentar — o que interessa é que a página
+    inicializa, tem canvas com área, tem os controles, não solta erro de
+    console e responde a interação e a resize. A dívida que isto paga: um
+    fundo escuro preso no tema claro chegou ao celular do leitor sem que
+    nenhum gate tivesse aberto `graph.html` uma vez sequer.
+    """
+    name = path.name
+    console_errors.clear()
+    failed.clear()
+    page.goto(url, wait_until="load")
+    page.wait_for_timeout(2500)
+
+    probe = page.evaluate(MAP_PROBE)
+
+    if not probe["hasCanvas"]:
+        result.error("MAP_NO_CANVAS", f"{label}: sem canvas#graph", name)
+        return
+    if probe["canvasWidth"] < 200 or probe["canvasHeight"] < 200:
+        result.error(
+            "MAP_CANVAS_COLLAPSED",
+            f"{label}: canvas {probe['canvasWidth']}x{probe['canvasHeight']}",
+            name,
+        )
+    if probe["nodes"] < 1:
+        result.error("MAP_NO_DATA", f"{label}: nenhum nó carregado", name)
+    if probe["docWidth"] > probe["innerWidth"] + 1:
+        result.error(
+            "HORIZONTAL_OVERFLOW",
+            f"{label}: {probe['docWidth']}px > {probe['innerWidth']}px",
+            name,
+        )
+
+    missing = [k for k, v in probe["controls"].items() if not v]
+    if missing:
+        result.error("MAP_CONTROL_MISSING", f"{label}: {', '.join(missing)}", name)
+
+    # O tema tem que mandar no fundo — e mandar mesmo quando existe um estilo
+    # salvo pelo painel Estilo. Esse era o defeito real: `applyStyle` grava
+    # `--bg` inline no <html>, inline vence a folha, e o mapa abria com fundo
+    # escuro e painéis claros. Sem semear o estilo fixado aqui, o gate passa
+    # num navegador limpo e o leitor com histórico continua vendo o bug.
+    chave = "sb-sphere-style-v1" if name.startswith("sphere") else "sb-graph-style-v1"
+    page.evaluate(
+        """k => {
+          try {
+            localStorage.setItem(k, JSON.stringify({colors: {background: '#1b1e21', edge: '#9aa0a8'}}));
+          } catch (e) {}
+        }""",
+        chave,
+    )
+    for theme, esperado in (("light", "#ffffff"), ("dark", "#090909")):
+        page.evaluate("t => { try { localStorage.setItem('sb-theme', t); } catch (e) {} }", theme)
+        page.reload(wait_until="load")
+        page.wait_for_timeout(1500)
+        depois = page.evaluate(MAP_PROBE)
+        if depois["theme"] != theme:
+            result.error("MAP_THEME_IGNORED", f"{label}: pediu {theme}, veio {depois['theme']}", name)
+        elif depois["inlineBg"].lower() != esperado:
+            result.error(
+                "MAP_BACKGROUND_STUCK",
+                f"{label}: tema {theme} com --bg {depois['inlineBg'] or '(vazio)'}",
+                name,
+            )
+
+    # Interação básica: um clique na legenda tem que desligar aquele tipo. O
+    # clique é despachado pelo DOM, não pelo mouse: no celular o painel abre
+    # recolhido e o Playwright recusaria o alvo por invisibilidade, o que
+    # testaria o painel em vez do handler.
+    alternou = page.evaluate(
+        """() => {
+          const el = document.querySelector('.legend-item[data-type="essay"]');
+          if (!el) return null;
+          const antes = el.classList.contains('disabled');
+          el.click();
+          return antes !== el.classList.contains('disabled');
+        }"""
+    )
+    if alternou is False:
+        result.error("MAP_LEGEND_INERT", f"{label}: clique na legenda não alternou", name)
+    elif alternou is None:
+        result.error("MAP_CONTROL_MISSING", f"{label}: legenda sem item de essay", name)
+
+    for message in console_errors:
+        if "favicon" in message.lower():
+            continue
+        result.error("CONSOLE_ERROR", f"{label}: {message[:160]}", name)
+    for url_falho in dict.fromkeys(failed):
+        if "favicon" in url_falho:
+            continue
+        result.error("FAILED_REQUEST", f"{label}: {url_falho}", name)
+
+
+def audit(name: str | None = None, allow_skip_browser: bool = False) -> CheckResult:
     result = CheckResult("site-pages")
 
     if not (SITE_ROOT / ".second-brain-site").exists():
         result.skip("NO_SITE", f"site checkout not initialized: {SITE_ROOT}")
         return result
 
-    pages = [p for p in sorted(SITE_ROOT.glob("*.html")) if p.name not in SKIP]
+    pages = [p for p in sorted(SITE_ROOT.glob("*.html")) if p.name not in MAPS]
     pages += sorted((SITE_ROOT / "essays").glob("*.html"))
+    maps = [SITE_ROOT / m for m in sorted(MAPS) if (SITE_ROOT / m).is_file()]
     if name:
         pages = [p for p in pages if p.name == name or p.stem == name]
-    if not pages:
+        maps = [p for p in maps if p.name == name or p.stem == name]
+    if not pages and not maps:
         result.skip("NO_PAGES", f"no pages to audit in {SITE_ROOT}")
         return result
 
-    try:
-        from playwright.sync_api import sync_playwright
-    except ImportError:
-        result.skip("PLAYWRIGHT_MISSING", "browser validation unavailable; install playwright")
+    # Este é o gate visual obrigatório de `/publish`. Ausência de navegador
+    # significa que a auditoria não aconteceu, e "não aconteceu" não pode
+    # passar por "passou": sem `--allow-skip-browser` isso é erro. A flag
+    # existe para diagnóstico local, onde pular é uma escolha consciente.
+    estado, executable, detalhe = resolve_chromium()
+    if estado in (PLAYWRIGHT_ABSENT, CHROMIUM_ABSENT):
+        code = "PLAYWRIGHT_MISSING" if estado == PLAYWRIGHT_ABSENT else "CHROMIUM_MISSING"
+        if allow_skip_browser:
+            result.skip(code, f"{detalhe} (pulado por --allow-skip-browser)")
+        else:
+            result.error(
+                code,
+                f"auditoria visual não executada: {detalhe}. "
+                f"Use --allow-skip-browser para pular conscientemente.",
+            )
         return result
 
+    from playwright.sync_api import sync_playwright
+
     with sync_playwright() as p:
-        managed = Path(p.chromium.executable_path)
-        names = ("chromium", "chromium-browser", "google-chrome", "google-chrome-stable")
-        system = next((shutil.which(x) for x in names if shutil.which(x)), None)
-        executable = str(managed) if managed.exists() else system
-        if not executable:
-            result.skip("CHROMIUM_MISSING", "no Playwright-managed or system Chromium/Chrome found")
-            return result
 
         browser = p.chromium.launch(headless=True, executable_path=executable)
         try:
@@ -205,11 +340,16 @@ def audit(name: str | None = None) -> CheckResult:
                         relative = path.relative_to(SITE_ROOT).as_posix()
                         audit_page(page, f"{base}/{relative}", path, label,
                                    result, console_errors, failed)
+                    for path in maps:
+                        relative = path.relative_to(SITE_ROOT).as_posix()
+                        audit_map(page, f"{base}/{relative}", path, label,
+                                  result, console_errors, failed)
                     context.close()
         finally:
             browser.close()
 
     result.meta["pages"] = len(pages)
+    result.meta["maps"] = len(maps)
     result.meta["viewports"] = len(VIEWPORTS)
     return result
 
@@ -219,8 +359,13 @@ def main() -> int:
     ap.add_argument("page", nargs="?", help="optional page name or stem; default audits all")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--fail-on-warning", action="store_true")
+    ap.add_argument(
+        "--allow-skip-browser",
+        action="store_true",
+        help="sem Chromium, reportar SKIP em vez de erro (diagnóstico local)",
+    )
     args = ap.parse_args()
-    result = audit(args.page)
+    result = audit(args.page, allow_skip_browser=args.allow_skip_browser)
     result.print(args.json)
     return result.exit_code(args.fail_on_warning)
 

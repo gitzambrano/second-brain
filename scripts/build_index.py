@@ -25,11 +25,9 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-import yaml
-
 import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
-
 import visibility
+import yaml
 from repo_paths import CODE_ROOT, DATA_ROOT, WIKI_ROOT
 
 ROOT_DIR = CODE_ROOT

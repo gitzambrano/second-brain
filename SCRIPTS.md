@@ -63,7 +63,7 @@ Os scripts utilizam prefixos verbais padronizados que revelam imediatamente sua 
 | **`check_gaps.py`** | Identifica lacunas léxicas, mecânicas e semânticas entre os nós da base. | `python scripts/check_gaps.py` |
 | **`check_title.py`** | Valida convenções tipográficas e ortográficas nos títulos de ensaios. | `python scripts/check_title.py` |
 | **`fix_lint.py`** | Aplica correções mecânicas automatizadas (remoção de tags redundantes, ordenação, etc.). | `python scripts/fix_lint.py` |
-| **`retag.py`** | Utilitário para renomear ou migrar tags em lote nos arquivos da wiki. | `python scripts/retag.py --from tagA --to tagB` |
+| **`retag.py`** | Utilitário para renomear ou migrar tags em lote nos arquivos da wiki. | `python scripts/retag.py tagA tagB` |
 | **`migrate_private_data.py`** | Utilitário para migração e reestruturação controlada do diretório de dados. | `python scripts/migrate_private_data.py` |
 
 ### 4. Exportações Standalone e Validação

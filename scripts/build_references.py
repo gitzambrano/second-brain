@@ -21,11 +21,9 @@ import json
 import re
 import sys
 import unicodedata
-from pathlib import Path
 from urllib.parse import urlparse
 
 import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
-
 from repo_paths import CODE_ROOT, DATA_ROOT, WIKI_ROOT
 
 ROOT_DIR = CODE_ROOT
