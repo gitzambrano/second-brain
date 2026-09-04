@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR"$if(status)$ data-status="$status$"$endif$>
+<html lang="pt-BR"$if(status)$ data-status="$status$"$endif$$if(minutes)$ data-minutes="$minutes$"$endif$>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -875,11 +875,26 @@ $body$
         // modo que o MESMO essay anunciava 81 min aqui e 73 no catalogo — e o
         // erro crescia justamente no essay tecnico, que e onde a formula pesa.
         // `cloneNode` para nao mexer no DOM que o leitor esta vendo.
-        var copia=content.cloneNode(true);
-        copia.querySelectorAll("mjx-container,.MathJax,math,script[type^='math/tex']")
-             .forEach(function(n){n.remove();});
-        var words=(copia.innerText||copia.textContent||"").trim().split(/\s+/).filter(Boolean).length;
-        var mins=Math.max(1,Math.round(words/220));
+        //
+        // O numero PRONTO chega do servidor em `data-minutes`, calculado por
+        // site_common.reading_minutes \u2014 a mesma funcao do catalogo, entao as
+        // duas superficies nunca divergem. Contar aqui era adivinhar duas
+        // vezes: media antes de o MathJax tipografar, com o LaTeX cru ainda no
+        // DOM como texto, e cada formula entrava como um punhado de palavras.
+        //
+        // A contagem local fica como plano B para um HTML antigo, gerado antes
+        // de o template passar a receber a variavel.
+        var servidor=parseInt(document.documentElement.getAttribute("data-minutes"),10);
+        var mins;
+        if(servidor>0){
+          mins=servidor;
+        }else{
+          var copia=content.cloneNode(true);
+          copia.querySelectorAll("mjx-container,.MathJax,math,script[type^='math/tex']")
+               .forEach(function(n){n.remove();});
+          var words=(copia.innerText||copia.textContent||"").trim().split(/\s+/).filter(Boolean).length;
+          mins=Math.max(1,Math.round(words/220));
+        }
         meta.textContent="~"+mins+" min de leitura \u00b7 "+h2s.length+" cap\u00edtulos";
       }
       by.parentNode.insertBefore(meta,by.nextSibling);

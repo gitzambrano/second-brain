@@ -36,7 +36,10 @@ from export_essay_html import PANDOC_FROM, TEMPLATE_PATH, body_has_math, prepare
 from repo_paths import ASSETS_DIR, SITE_ROOT, SITE_SRC_DIR
 from site_common import (
     collect_public,
+    plain_text,
+    public_body_for_index,
     public_connections,
+    reading_minutes,
     sanitize_private_wikilinks,
     title_html,
     title_plain,
@@ -154,7 +157,7 @@ def wrap_pictures(html_text: str) -> str:
 
 
 def pandoc(markdown: str, title: str, subtitle: str, author: str,
-           summary: str, status: str) -> str:
+           summary: str, status: str, minutes: int) -> str:
     """Run the export's own Pandoc invocation, minus the offline embedding.
 
     MathJax entra só em essay que tem fórmula. O export standalone já fazia
@@ -176,6 +179,11 @@ def pandoc(markdown: str, title: str, subtitle: str, author: str,
             "-V", f"author={author}",
             "-V", f"summary={summary}",
             *(["-V", f"status={status}"] if status else []),
+            # O tempo de leitura vai PRONTO para o template, e vem calculado
+            # sobre o MESMO texto que o catálogo mede — não sobre o markdown
+            # que o pandoc recebe. Medir aqui dava número parecido mas não
+            # igual, e o leitor via 76 na página e 73 no catálogo.
+            "-V", f"minutes={minutes}",
             "-f", PANDOC_FROM,
             "-t", "html5",
         ]
@@ -273,7 +281,8 @@ def render(slug: str, output: Path) -> None:
         staged.write_text(prepared, encoding="utf-8")
         body, title, subtitle, author_date, summary, status = prepare_for_pandoc(staged)
 
-    page = pandoc(body, title, subtitle, author_date, summary, status)
+    minutos = reading_minutes(plain_text(public_body_for_index(essay, allowed)))
+    page = pandoc(body, title, subtitle, author_date, summary, status, minutos)
 
     theme = (SITE_SRC_DIR / "essay-theme.css").read_text(encoding="utf-8")
     # A Inter auto-hospedada, quando o build a baixou. As referências do cache

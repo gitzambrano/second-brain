@@ -19,6 +19,48 @@ import visibility
 import yaml
 from repo_paths import ESSAYS_DIR
 
+# --- Tempo de leitura ------------------------------------------------------
+# Mora aqui, e não em `build_site.py`, porque três superfícies precisam do
+# MESMO número: o catálogo, a página pública do essay e o export standalone.
+# Enquanto cada uma tinha a sua conta, o mesmo essay anunciava 81 min numa e
+# 73 na outra — e a página ainda contava o LaTeX cru como palavra, porque
+# media antes de o MathJax tipografar.
+WORDS_PER_MINUTE = 220
+
+# A formula is read, not scanned word by word; counting `rac{a}{b}` as five
+# words turned a 30-minute essay into a 100-minute one.
+#
+# A ordem das alternativas é a correção do bug: matemática de DISPLAY
+# (`$$...$$` e `\[...\]`) precisa casar ANTES da inline. Com o padrão antigo
+# `\$[^$]{1,400}\$`, um bloco `$$...$$` nunca casava inteiro — a classe `[^$]`
+# barra o segundo cifrão —, então o motor casava `$<fórmula>$` e sobrava um
+# cifrão ÓRFÃO, que em seguida pareava com o cifrão de ABERTURA do bloco
+# seguinte. Toda a prosa entre duas fórmulas era engolida como se fosse
+# fórmula: um essay de 3195 palavras contava 665 e virava "3 min".
+#
+# A inline também não pode atravessar quebra de linha: fórmula inline vive numa
+# linha só, enquanto dois cifrões distantes quase sempre têm prosa — e parágrafo
+# — no meio. `[^$\n]` transforma esse caso em não-casamento, que apenas deixa um
+# cifrão solto na contagem, em vez de silenciar páginas inteiras.
+MATH_SPAN = re.compile(
+    r"\$\$[\s\S]{1,2000}?\$\$"       # display do corpus: $$ ... $$
+    r"|\\\[[\s\S]{1,2000}?\\\]"      # display alternativo: \[ ... \]
+    # Inline: `$x$`, numa linha só e sem espaço colado aos delimitadores. A
+    # borda sem espaço é o que separa fórmula de dinheiro: em "R$ 50.000 e R$
+    # 500.000" os dois cifrões são moeda, e sem essa guarda a prosa entre eles
+    # sumiria da contagem exatamente como sumia entre dois blocos de display.
+    r"|\$(?!\$)[^\s$](?:[^$\n]{0,397}[^\s$])?\$"
+)
+CODE_SPAN = re.compile(r"`[^`]{1,200}`")
+
+
+def reading_minutes(text: str) -> int:
+    """Rounded reading time over prose alone, never below one minute."""
+    prose = CODE_SPAN.sub(" ", MATH_SPAN.sub(" ", text))
+    return max(1, round(len(prose.split()) / WORDS_PER_MINUTE))
+
+
+
 FRONTMATTER_RE = re.compile(r"\A---\s*\n(.*?)\n---\s*\n", re.S)
 H1_RE = re.compile(r"(?m)^#\s+(.+?)\s*$")
 CONNECTIONS_RE = re.compile(r"(?ms)^##\s+Conex[õo]es\s*\n(.*?)(?=^##\s+|\Z)")

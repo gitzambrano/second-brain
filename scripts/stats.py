@@ -67,11 +67,35 @@ def load(path):
 
 
 def get_frontmatter_field(content, field):
-    """Extrator YAML-ish minúsculo, suficiente para listas de tags/sources e datas."""
-    m = re.search(rf"(?m)^{field}:\s*(.*)$", content)
+    """Extrator YAML-ish minúsculo, suficiente para listas de tags/sources e datas.
+
+    `[ \t]*` e não `\s*`: `\s` inclui a quebra de linha, então num campo escrito
+    em lista de bloco
+
+        tags:
+          - Engenharia
+          - Rotores
+
+    o padrão antigo pulava a linha vazia e capturava `- Engenharia` como se
+    fosse o valor inteiro. O resultado aparecia no relatório como uma tag
+    chamada literalmente "- Engenharia", e as outras sumiam da contagem.
+    """
+    m = re.search(rf"(?m)^{field}:[ \t]*(.*)$", content)
     if not m:
         return None
-    return m.group(1).strip()
+    valor = m.group(1).strip()
+    if valor:
+        return valor
+    # Valor vazio na mesma linha: é lista de bloco. Recolhe os itens indentados
+    # logo abaixo e devolve no formato de linha única, que é o que
+    # `parse_list_field` já sabe ler.
+    resto = content[m.end():].lstrip("\n").splitlines()
+    itens = []
+    for linha in resto:
+        if not linha.startswith((" ", "	")) or not linha.strip().startswith("- "):
+            break
+        itens.append(linha.strip()[2:].strip())
+    return ", ".join(itens) if itens else None
 
 
 def parse_list_field(raw):

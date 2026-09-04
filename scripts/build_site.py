@@ -29,11 +29,19 @@ from pathlib import Path
 import build_public_map
 from repo_paths import CODE_ROOT, OUTPUT_DIR, SITE_ROOT, SITE_SRC_DIR
 from site_common import (
+    CODE_SPAN,
+    MATH_SPAN,
+    WORDS_PER_MINUTE,
     collect_all,
     collect_public,
     plain_text,
     public_body_for_index,
+    reading_minutes,
 )
+
+# Reexportados por compatibilidade: o cálculo mudou de casa para `site_common`,
+# mas testes e leitores continuam procurando estes nomes aqui.
+__all__ = ["MATH_SPAN", "CODE_SPAN", "WORDS_PER_MINUTE", "reading_minutes"]
 
 GENERATED_ROOT_FILES = {
     "index.html", "graph.html", "sphere.html", "404.html",
@@ -215,41 +223,6 @@ def version_assets(html_text: str, fingerprints: dict[str, str]) -> str:
     for name, digest in fingerprints.items():
         html_text = html_text.replace(f"assets/{name}\"", f"assets/{name}?v={digest}\"")
     return html_text
-
-
-WORDS_PER_MINUTE = 220
-
-# A formula is read, not scanned word by word; counting `rac{a}{b}` as five
-# words turned a 30-minute essay into a 100-minute one.
-#
-# A ordem das alternativas é a correção do bug: matemática de DISPLAY
-# (`$$...$$` e `\[...\]`) precisa casar ANTES da inline. Com o padrão antigo
-# `\$[^$]{1,400}\$`, um bloco `$$...$$` nunca casava inteiro — a classe `[^$]`
-# barra o segundo cifrão —, então o motor casava `$<fórmula>$` e sobrava um
-# cifrão ÓRFÃO, que em seguida pareava com o cifrão de ABERTURA do bloco
-# seguinte. Toda a prosa entre duas fórmulas era engolida como se fosse
-# fórmula: um essay de 3195 palavras contava 665 e virava "3 min".
-#
-# A inline também não pode atravessar quebra de linha: fórmula inline vive numa
-# linha só, enquanto dois cifrões distantes quase sempre têm prosa — e parágrafo
-# — no meio. `[^$\n]` transforma esse caso em não-casamento, que apenas deixa um
-# cifrão solto na contagem, em vez de silenciar páginas inteiras.
-MATH_SPAN = re.compile(
-    r"\$\$[\s\S]{1,2000}?\$\$"       # display do corpus: $$ ... $$
-    r"|\\\[[\s\S]{1,2000}?\\\]"      # display alternativo: \[ ... \]
-    # Inline: `$x$`, numa linha só e sem espaço colado aos delimitadores. A
-    # borda sem espaço é o que separa fórmula de dinheiro: em "R$ 50.000 e R$
-    # 500.000" os dois cifrões são moeda, e sem essa guarda a prosa entre eles
-    # sumiria da contagem exatamente como sumia entre dois blocos de display.
-    r"|\$(?!\$)[^\s$](?:[^$\n]{0,397}[^\s$])?\$"
-)
-CODE_SPAN = re.compile(r"`[^`]{1,200}`")
-
-
-def reading_minutes(text: str) -> int:
-    """Rounded reading time over prose alone, never below one minute."""
-    prose = CODE_SPAN.sub(" ", MATH_SPAN.sub(" ", text))
-    return max(1, round(len(prose.split()) / WORDS_PER_MINUTE))
 
 
 def write_data(root: Path, catalogue) -> dict[str, int]:
