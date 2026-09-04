@@ -8,7 +8,8 @@
 
 🔗 **Atalhos rápidos:**
 
-- **[Atlas ao Vivo](https://gitzambrano.github.io/second-brain-site/)** — visualização pública (grafo e catálogo).
+- **[Atlas ao Vivo](https://gitzambrano.github.io/second-brain-site/)** — o site público do Second Brain: o ideário de essays, white papers e estudos, com o catálogo completo, o grafo de conexões entre essays, conceitos, entidades e referências, e o globo, que é o mesmo mapa numa esfera. O catálogo e os mapas cobrem a base inteira; o texto só abre para o que foi explicitamente autorizado.
+
 - **[`AGENTS.md`](./AGENTS.md)** — regras operacionais, routing e convenções de agentes.
 - **[`conventions/SKILL.md`](./.agents/skills/conventions/SKILL.md)** — especificação normativa de formato, estilo e frontmatter.
 - **[`TESTING.md`](./TESTING.md)** — suíte de testes, fixtures e quality gates do repositório.
