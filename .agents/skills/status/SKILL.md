@@ -26,7 +26,10 @@ Leia `wiki/status.md` e mostre o estado atual. Não edita nada, com uma única e
 2. Recalcule as **Pendências**:
    - itens em `raw/`;
    - itens `Status: Pendente` em cada seção de `plan/plano.md`;
-   - entradas de `wiki/sources/manifest.md` com `Verificação: não verificado`;
+   - entradas de `wiki/sources/manifest.md` com `Verificação: não verificado`,
+     exceto quando `Virou:` for `None`, `nenhum`, `nenhuma`, `-` ou `—`.
+     Esses valores registram uma decisão explícita de não converter a fonte e
+     não entram na pendência, mesmo sem verificação bibliográfica;
    - contradições ainda não resolvidas registradas na sessão.
 3. Atualize, a partir da conversa ou perguntando apenas quando necessário:
    - **Foco atual**;
