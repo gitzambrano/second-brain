@@ -316,6 +316,12 @@ h1, h2, h3 {
   background: var(--panel-2);
 }
 .segmented button {
+  /* Os quatro rótulos têm comprimentos diferentes ("Lista" contra "Compacto"),
+     e com largura pelo conteúdo os botões saíam de 55 a 88px — quatro caixas
+     de tamanhos diferentes lado a lado, no mesmo controle. O piso é o mais
+     largo dos quatro, então nenhum encolhe e todos ficam iguais. No celular
+     eles viram glifo (`.seg-full` some) e o piso é removido junto. */
+  min-width: 92px;
   padding: 6px 13px;
   border: 0;
   border-radius: 7px;
@@ -806,6 +812,7 @@ h1, h2, h3 {
   .searchbox kbd { display: none; }
   .tag-toggle { padding: 0 10px; gap: 5px; font-size: 12px; }
   .segmented { padding: 2px; }
+  .segmented button { min-width: 0; }
   .segmented button { padding: 6px 8px; }
   .seg-full { display: none; }
   .seg-icon { display: inline; font-size: 13px; line-height: 1; }
