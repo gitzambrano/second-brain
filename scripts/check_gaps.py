@@ -179,6 +179,21 @@ NOISE_TERMS = {
     "posição", "categoria", "estado",
 }
 
+# A capitalização no começo de uma frase não é sinal suficiente de entidade.
+# Profissões e conectivos aparecem em muitos essays, mas não pedem uma página.
+GENERIC_CAPITALIZED_TERMS = {
+    "engenheiro", "físico", "substituindo", "esses", "essas", "este",
+    "esta", "aquele", "aquela", "assim", "portanto", "entretanto",
+}
+
+
+def is_gap_candidate(term, kinds):
+    """Exige sinal semântico para termos extraídos só por capitalização."""
+    if kinds - {"nome-proprio"}:
+        return True
+    norm = normalize(term)
+    return norm not in GENERIC_CAPITALIZED_TERMS and len(term.split()) >= 2
+
 
 def normalize(term):
     """Forma de comparação de um termo: minúsculas, sem espaço nem pontuação nas bordas."""
@@ -298,7 +313,8 @@ def analyze_gap_candidates(sources, existing_pages, entity_surnames, page_prefix
     ranked = [
         (term, d)
         for term, d in stats.items()
-        if len(d["pages"]) >= MIN_PAGE_HITS or d["total"] >= MIN_TOTAL_HITS
+        if (len(d["pages"]) >= MIN_PAGE_HITS or d["total"] >= MIN_TOTAL_HITS)
+        and is_gap_candidate(term, d["kinds"])
     ]
     ranked.sort(key=lambda x: (len(x[1]["pages"]), x[1]["total"]), reverse=True)
     return ranked[:TOP_N]

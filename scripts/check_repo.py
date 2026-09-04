@@ -210,27 +210,29 @@ def exports(result: CheckResult) -> None:
             )
 
 
-def site(result: CheckResult) -> None:
+def site(result: CheckResult, visual: bool = False) -> None:
     if not corpus_has_essays():
         result.skip("SKELETON_NO_ESSAYS", "no essays present; site privacy validation skipped")
         return
     if not (SITE_ROOT / ".second-brain-site").exists():
         result.skip("NO_SITE", "site checkout not initialized; site privacy validation skipped")
         return
-    # `check_site_pages.py` roda com `--allow-skip-browser` aqui: este é o
-    # diagnóstico do repositório, não o gate de publicação. Em `/publish` ele
-    # roda sem a flag, e ausência de navegador vira falha.
-    for name, extra in (
+    # A auditoria visual abre todas as páginas em dois viewports e depende de
+    # MathJax. Ela é obrigatória na publicação, mas não pode tornar o
+    # diagnóstico normal imprevisível; aqui só roda sob pedido explícito.
+    checks = [
         ("check_site_privacy.py", []),
-        ("check_site_pages.py", ["--allow-skip-browser"]),
         ("check_site_budget.py", []),
-    ):
+    ]
+    if visual:
+        checks.insert(1, ("check_site_pages.py", ["--allow-skip-browser"]))
+    for name, extra in checks:
         path = SCRIPTS_DIR / name
         if path.exists():
             run_status_command(name, [sys.executable, str(path), "--json", *extra], result)
 
 
-def audit(mode: str) -> CheckResult:
+def audit(mode: str, visual: bool = False) -> CheckResult:
     result = CheckResult("repository")
     if mode in {"quick", "full"}:
         quick(result)
@@ -241,8 +243,9 @@ def audit(mode: str) -> CheckResult:
     if mode in {"exports", "full"}:
         exports(result)
     if mode in {"site", "full"}:
-        site(result)
+        site(result, visual=visual)
     result.meta["mode"] = mode
+    result.meta["visual"] = visual
     return result
 
 
@@ -256,6 +259,10 @@ def main() -> int:
     group.add_argument("--architecture", action="store_true",
                        help="structural contracts only: nested Gits, paths, agent source/mirrors")
     group.add_argument("--full", action="store_true", help="all checks (also the no-argument default)")
+    ap.add_argument(
+        "--visual", action="store_true",
+        help="incluir auditoria visual do site no modo full ou site",
+    )
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--fail-on-warning", action="store_true")
     args = ap.parse_args()
@@ -265,7 +272,7 @@ def main() -> int:
             else "site" if args.site
             else "architecture" if args.architecture
             else "full")
-    result = audit(mode)
+    result = audit(mode, visual=args.visual)
     result.print(args.json)
     return result.exit_code(args.fail_on_warning)
 

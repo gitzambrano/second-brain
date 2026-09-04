@@ -77,7 +77,8 @@ def save_file_content(path, content):
     # ...we always write plain utf-8, so this script never introduces a BOM
     # that wasn't already there. Injecting a BOM can break YAML frontmatter
     # parsers and Pandoc.
-    with open(path, "w", encoding="utf-8") as f:
+    content = content.replace("\r\n", "\n").replace("\r", "\n")
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
         f.write(content)
 
 

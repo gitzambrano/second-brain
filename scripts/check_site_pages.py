@@ -22,8 +22,10 @@ import argparse
 import http.server
 import socketserver
 import threading
+from dataclasses import dataclass
 from functools import partial
 from pathlib import Path
+from time import monotonic
 
 import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
 from repo_paths import SITE_ROOT
@@ -47,6 +49,27 @@ VIEWPORTS = ((390, 844, "mobile"), (1440, 900, "desktop"))
 # varredura barata de geometria na matriz inteira.
 GEOMETRY_MATRIX = (320, 360, 390, 768, 1024, 1440)
 GEOMETRY_PAGES = ("index.html", "404.html")
+
+
+@dataclass
+class AuditBudget:
+    """Orçamento único compartilhado por toda a auditoria visual."""
+
+    max_seconds: float
+    now: callable = monotonic
+
+    def __post_init__(self) -> None:
+        self.deadline = self.now() + max(0, self.max_seconds)
+
+    @property
+    def expired(self) -> bool:
+        return self.now() >= self.deadline
+
+    def timeout_ms(self, requested_ms: int) -> int:
+        remaining = int((self.deadline - self.now()) * 1000)
+        if remaining <= 0:
+            raise TimeoutError("orçamento total da auditoria esgotado")
+        return min(requested_ms, remaining)
 
 GEOMETRY_PROBE = r"""() => {
   const root = document.documentElement;
@@ -382,8 +405,14 @@ def audit_cover(page, base: str, result: CheckResult) -> None:
         )
 
 
-def audit(name: str | None = None, allow_skip_browser: bool = False) -> CheckResult:
+def audit(name: str | None = None, allow_skip_browser: bool = False,
+          max_seconds: float = 120) -> CheckResult:
     result = CheckResult("site-pages")
+    budget = AuditBudget(max_seconds=max_seconds)
+    result.meta["max_seconds"] = max_seconds
+    if budget.expired:
+        result.error("AUDIT_TIME_BUDGET_EXCEEDED", "orçamento visual esgotado antes de iniciar")
+        return result
 
     if not (SITE_ROOT / ".second-brain-site").exists():
         result.skip("NO_SITE", f"site checkout not initialized: {SITE_ROOT}")
@@ -437,13 +466,27 @@ def audit(name: str | None = None, allow_skip_browser: bool = False) -> CheckRes
                     page.on("response", lambda r: failed.append(f"{r.status} {r.url}")
                             if r.status >= 400 else None)
                     for path in pages:
+                        if budget.expired:
+                            result.error("AUDIT_TIME_BUDGET_EXCEEDED", "orçamento visual esgotado durante as páginas")
+                            break
+                        page.set_default_timeout(budget.timeout_ms(20_000))
                         relative = path.relative_to(SITE_ROOT).as_posix()
-                        audit_page(page, f"{base}/{relative}", path, label,
-                                   result, console_errors, failed)
+                        try:
+                            audit_page(page, f"{base}/{relative}", path, label,
+                                       result, console_errors, failed)
+                        except Exception as exc:  # a página falhou, não o processo inteiro
+                            result.error("PAGE_TIMEOUT", f"{label}: {exc}", path.name)
                     for path in maps:
+                        if budget.expired:
+                            result.error("AUDIT_TIME_BUDGET_EXCEEDED", "orçamento visual esgotado durante os mapas")
+                            break
+                        page.set_default_timeout(budget.timeout_ms(20_000))
                         relative = path.relative_to(SITE_ROOT).as_posix()
-                        audit_map(page, f"{base}/{relative}", path, label,
-                                  result, console_errors, failed)
+                        try:
+                            audit_map(page, f"{base}/{relative}", path, label,
+                                      result, console_errors, failed)
+                        except Exception as exc:
+                            result.error("PAGE_TIMEOUT", f"{label}: {exc}", path.name)
                     context.close()
 
                 # Passadas de escopo próprio, uma vez cada — não por viewport.
@@ -451,7 +494,7 @@ def audit(name: str | None = None, allow_skip_browser: bool = False) -> CheckRes
                 # própria capa: sem isso, `check_site_pages.py index.html` — a
                 # forma mais natural de investigar a capa — era justamente a que
                 # não a conferia.
-                if not name or name in ("index.html", "index"):
+                if not budget.expired and (not name or name in ("index.html", "index")):
                     contexto = browser.new_context(viewport={"width": 1440, "height": 900})
                     pagina = contexto.new_page()
                     try:
@@ -474,13 +517,16 @@ def main() -> int:
     ap.add_argument("page", nargs="?", help="optional page name or stem; default audits all")
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--fail-on-warning", action="store_true")
+    ap.add_argument("--max-seconds", type=float, default=120,
+                    help="orçamento total da auditoria visual (padrão: 120)")
     ap.add_argument(
         "--allow-skip-browser",
         action="store_true",
         help="sem Chromium, reportar SKIP em vez de erro (diagnóstico local)",
     )
     args = ap.parse_args()
-    result = audit(args.page, allow_skip_browser=args.allow_skip_browser)
+    result = audit(args.page, allow_skip_browser=args.allow_skip_browser,
+                   max_seconds=args.max_seconds)
     result.print(args.json)
     return result.exit_code(args.fail_on_warning)
 
