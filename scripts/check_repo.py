@@ -185,11 +185,14 @@ def wiki(result: CheckResult) -> None:
             run_status_command(script, [sys.executable, str(path), "--json"], result)
 
 
-def exports(result: CheckResult) -> None:
+def exports(result: CheckResult, visual: bool = False) -> None:
     if not any(HTML_DIR.glob("*.html")) if HTML_DIR.exists() else True:
         result.skip("NO_HTML_EXPORTS", "no HTML exports to validate")
     else:
-        for script in ("check_html_structure.py", "check_html_browser.py"):
+        scripts = ["check_html_structure.py"]
+        if visual:
+            scripts.append("check_html_browser.py")
+        for script in scripts:
             path = SCRIPTS_DIR / script
             if path.exists():
                 run_command(script, [sys.executable, str(path), "--json"], result, parse_json_severity=True)
@@ -241,7 +244,7 @@ def audit(mode: str, visual: bool = False) -> CheckResult:
     if mode in {"wiki", "full"}:
         wiki(result)
     if mode in {"exports", "full"}:
-        exports(result)
+        exports(result, visual=visual)
     if mode in {"site", "full"}:
         site(result, visual=visual)
     result.meta["mode"] = mode
