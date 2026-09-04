@@ -194,7 +194,7 @@ def asset_version(name: str) -> str:
     return hashlib.sha256(source.read_bytes()).hexdigest()[:8]
 
 
-FAVICON_RE = re.compile(r'<link rel="icon" href="[^"]+">')
+FAVICON_RE = re.compile(r'<link rel="(?:icon|apple-touch-icon)"[^>]*>')
 
 
 def favicon_link() -> str:
@@ -205,8 +205,9 @@ def favicon_link() -> str:
     essay page and gets a 404, and the tab opens with no identity at all.
     """
     index = (SITE_SRC_DIR / "index.html").read_text(encoding="utf-8")
-    match = FAVICON_RE.search(index)
-    return match.group(0) if match else ""
+    # A página do essay vive em `essays/`, um nível abaixo do índice: o mesmo
+    # literal de ícone só serve depois de subir um diretório.
+    return "".join(FAVICON_RE.findall(index)).replace('href="assets/', 'href="../assets/')
 
 
 def site_chrome(essay, related) -> str:

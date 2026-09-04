@@ -221,7 +221,7 @@ PUBLIC_CHROME = """
 """
 
 
-FAVICON_RE = re.compile(r'<link rel="icon" href="[^"]+">')
+FAVICON_RE = re.compile(r'<link rel="(?:icon|apple-touch-icon)"[^>]*>')
 
 
 def favicon_link() -> str:
@@ -232,8 +232,8 @@ def favicon_link() -> str:
     had. One literal, in `scripts/site_src/index.html`.
     """
     index = (SITE_SRC_DIR / "index.html").read_text(encoding="utf-8")
-    match = FAVICON_RE.search(index)
-    return match.group(0) if match else ""
+    # O mapa vive na raiz do site, como o índice: os caminhos valem sem ajuste.
+    return "".join(FAVICON_RE.findall(index))
 
 
 def with_public_chrome(html: str, current: str) -> str:

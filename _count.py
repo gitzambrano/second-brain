@@ -1,4 +1,3 @@
-import re
 
 path = 'data/wiki/sources/manifest.md'
 entries = []

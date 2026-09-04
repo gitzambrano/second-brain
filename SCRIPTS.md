@@ -46,6 +46,7 @@ Os scripts utilizam prefixos verbais padronizados que revelam imediatamente sua 
 | **`check_site_privacy.py`** | **Sentinela estrita de privacidade**: garante que nenhum texto ou link não autorizado chegue a `site/`. | `python scripts/check_site_privacy.py` |
 | **`check_site_pages.py`** | Abre cada página do site construído num navegador real (celular e desktop) e audita overflow, imagens, âncoras, console e vazamento de Markdown, mais uma auditoria própria de `graph.html` e `sphere.html`. Sem navegador é **erro**; `--allow-skip-browser` degrada para SKIP em diagnóstico local. | `python scripts/check_site_pages.py` |
 | **`check_site_budget.py`** | Orçamento de tamanho por artefato público e do site inteiro. | `python scripts/check_site_budget.py` |
+| **`build_favicons.py`** | Assa o ícone do Atlas a partir da arte-mestra em `site_src/brand/`: recorta o xadrez por croma, recolore a variante dourada, engrossa o traço nos tamanhos pequenos e grava PNG, apple-touch e `.ico`. | `python scripts/build_favicons.py` |
 | **`check_agents.py`** | Coerência da arquitetura de agentes: `.agents/` como fonte, espelhos `.claude/`, adaptadores `.codex/`, hook de sync e documentação. | `python scripts/check_agents.py` |
 | **`serve_site.py`** | Inicia servidor HTTP local leve para inspecionar e testar o Atlas gerado antes do deploy. | `python scripts/serve_site.py` |
 

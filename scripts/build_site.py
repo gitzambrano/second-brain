@@ -42,6 +42,21 @@ GENERATED_ROOT_FILES = {
 GENERATED_DIRS = {"essays", "assets"}
 FRONTEND_ASSETS = ("site.css", "theme.js", "site.js", "essay.js")
 
+# O ícone do Atlas, assado por `build_favicons.py` a partir da arte-mestra em
+# `site_src/brand/`. Copiado como está: são binários versionados, não gerados
+# no build — assar exige Pillow e a arte de 1024px, e nenhum dos dois deveria
+# ser pré-requisito para publicar.
+BRAND_ASSETS = (
+    "favicon.ico",
+    "icon-16.png",
+    "icon-32.png",
+    "icon-light-192.png",
+    "icon-dark-192.png",
+    "icon-light-512.png",
+    "icon-dark-512.png",
+    "apple-touch-icon.png",
+)
+
 # The essay template loads MathJax from a local asset so the reader never
 # depends on a third-party CDN (blocked on some mobile networks/ad-blockers,
 # which left equations as raw LaTeX). The source is the same single copy shared
@@ -185,6 +200,12 @@ def copy_frontend(root: Path, fonts: str = "") -> dict[str, str]:
         # O fingerprint segue o conteúdo SERVIDO, não o do fonte: com a fonte
         # embutida os dois deixam de ser o mesmo arquivo.
         fingerprints[name] = hashlib.sha256(payload).hexdigest()[:8]
+
+    brand = SITE_SRC_DIR / "brand"
+    for name in BRAND_ASSETS:
+        source = brand / name
+        if source.is_file():
+            (assets / name).write_bytes(source.read_bytes())
     return fingerprints
 
 
