@@ -178,12 +178,14 @@ PUBLIC_CHROME = """
   (function () {
     var updateMapStyle = function (theme) {
       try {
-        var current = document.querySelector('#sb-map-switch a[aria-current="page"]');
-        var styleKey = current && current.textContent.trim() === 'Globo'
-          ? 'sb-sphere-style-v1' : 'sb-graph-style-v1';
-        var saved = JSON.parse(localStorage.getItem(styleKey) || 'null');
-        var pinned = saved && saved.colors && saved.colors.background;
-        if (!pinned && typeof styleConfig !== 'undefined' && typeof applyStyle === 'function') {
+        // O tema manda no fundo, sempre. Antes um estilo salvo em
+        // `localStorage` (painel Estilo) fixava `colors.background`, e
+        // `applyStyle` grava esse valor como `--bg` INLINE no <html> — inline
+        // vence a regra `html[data-theme="light"]` deste mesmo bloco. O
+        // resultado era o mapa abrir com fundo escuro e painéis claros no
+        // tema claro, e o botão de tema só trocar a cor das letras. O resto do
+        // estilo salvo (cores de nó, raio, glow) continua valendo.
+        if (typeof styleConfig !== 'undefined' && typeof applyStyle === 'function') {
           styleConfig.colors.background = theme === 'light' ? '#ffffff' : '#090909';
           styleConfig.colors.edge = theme === 'light' ? '#8a99aa' : '#9aa0a8';
           applyStyle(styleConfig, { silent: true });

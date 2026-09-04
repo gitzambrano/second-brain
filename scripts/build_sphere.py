@@ -716,7 +716,7 @@ SPHERE_HTML_TEMPLATE = """<!DOCTYPE html>
   <div class="legend-item" data-type="concept"><span class="dot" style="background:var(--concept)"></span> Concept</div>
   <div class="legend-item" data-type="entity"><span class="dot" style="background:var(--entity)"></span> Entity</div>
   <div class="legend-item" data-type="insights"><span class="dot" style="background:var(--insight)"></span> Insight</div>
-  <div class="legend-item" data-type="reference"><span class="dot" style="background:var(--reference)"></span> Reference</div>
+  <div class="legend-item disabled" data-type="reference"><span class="dot" style="background:var(--reference)"></span> Reference</div>
 
   <button class="btn" id="btn-index">Índice</button>
   <button class="btn" id="btn-gaps">Gaps entre tags</button>
@@ -987,9 +987,11 @@ function aimAtFocus() {
 const nodeById = new Map(data.nodes.map(n => [n.id, n]));
 const endpoint = (v) => (typeof v === "object" ? v : nodeById.get(v));
 
-// Nenhum tipo começa oculto — mesma decisão do grafo plano: a bibliografia
-// faz parte do mapa. Desligar continua a um clique na legenda.
-const hiddenTypes = new Set();
+// A bibliografia começa DESLIGADA no globo: são centenas de nós de
+// referência pendurados num essay só, e na esfera eles formam uma casca que
+// esconde a malha de ideias que o mapa existe para mostrar. Ligar continua a
+// um clique na legenda (o grafo plano, mais esparso, abre com tudo aceso).
+const hiddenTypes = new Set(["reference"]);
 function isNodeVisible(n) { return !hiddenTypes.has(n.type); }
 
 function recomputeVisibleDegrees() {
