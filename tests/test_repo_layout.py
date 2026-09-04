@@ -31,13 +31,12 @@ ROOT_ALLOWLIST = {
 }
 
 
-def test_no_unexpected_tracked_files_at_root():
-    """Reprova rascunho de diagnóstico COMMITADO na raiz do engine.
+def tracked_root_entries():
+    """Tudo que o Git rastreia, como caminhos relativos à raiz. `None` sem Git.
 
-    Olha `git ls-files`, não o diretório de trabalho: o Usuário gera rascunho
-    local o tempo todo e um teste sobre o working tree ficaria vermelho por
-    ruído, treinando todo mundo a ignorá-lo. O defeito real é o arquivo que
-    entra no índice — foi assim que caminho de máquina local acabou publicado.
+    Lê o ÍNDICE, não o diretório de trabalho: rascunho local aparece o tempo
+    todo, e um teste sobre o working tree ficaria vermelho por ruído. O defeito
+    real é o rascunho COMMITADO.
     """
     try:
         p = subprocess.run(
@@ -47,17 +46,66 @@ def test_no_unexpected_tracked_files_at_root():
             text=True,
         )
     except (OSError, FileNotFoundError):
-        pytest.skip("git indisponível no PATH")
+        return None
     if p.returncode != 0:
-        pytest.skip("não é um repositório Git")
+        return None
+    return [entry for entry in p.stdout.split("\0") if entry]
+
+
+def test_no_unexpected_tracked_files_at_root():
+    """Reprova rascunho de diagnóstico COMMITADO na raiz do engine.
+
+    Olha `git ls-files`, não o diretório de trabalho: o Usuário gera rascunho
+    local o tempo todo e um teste sobre o working tree ficaria vermelho por
+    ruído, treinando todo mundo a ignorá-lo. O defeito real é o arquivo que
+    entra no índice — foi assim que caminho de máquina local acabou publicado.
+    """
+    tracked = tracked_root_entries()
+    if tracked is None:
+        pytest.skip("git indisponível ou fora de um repositório")
 
     # Profundidade 1: só o que está na raiz, sem varrer scripts/, tests/ etc.
-    root_files = {entry for entry in p.stdout.split("\0") if entry and "/" not in entry}
+    root_files = {entry for entry in tracked if "/" not in entry}
     unexpected = sorted(root_files - ROOT_ALLOWLIST)
     assert not unexpected, (
         "Arquivo versionado inesperado na raiz do engine: "
         + ", ".join(unexpected)
         + ".\nSe for rascunho ou saída de diagnóstico, rode `git rm --cached <arquivo>` e apague-o.\n"
         + "Se for parte legítima do framework, acrescente o nome a ROOT_ALLOWLIST em "
+        + "tests/test_repo_layout.py, no mesmo commit que o introduz."
+    )
+
+
+# Os únicos diretórios de topo que o engine versiona. `data/` e `site/` são
+# repositórios à parte, ignorados; `output/`, `wiki/`, `plan/` e `raw/` são
+# corpus e nunca entram aqui.
+ROOT_DIR_ALLOWLIST = {
+    ".agents",
+    ".claude",
+    ".codex",
+    ".github",
+    "scripts",
+    "tests",
+}
+
+
+def test_no_unexpected_tracked_directories_at_root():
+    """Um `git add -A` distraído levou `tmp/` inteiro para `main`.
+
+    Foram 81 arquivos — diffs, XHTML intermediário, PNG de revisão de
+    paginação, uns 17 MB — num repositório cujo contrato é justamente não
+    guardar corpus. O teste irmão, que confere arquivos soltos na raiz, não viu
+    nada: ele olha profundidade 1, e um diretório inteiro passa por baixo.
+    """
+    tracked = tracked_root_entries()
+    if tracked is None:
+        pytest.skip("git indisponível ou fora de um repositório")
+    directories = {name.split("/", 1)[0] for name in tracked if "/" in name}
+    unexpected = sorted(directories - ROOT_DIR_ALLOWLIST)
+    assert not unexpected, (
+        "Diretório versionado inesperado na raiz do engine: "
+        + ", ".join(unexpected)
+        + ".\nSe for rascunho, rode `git rm -r --cached <dir>` e acrescente o caminho ao .gitignore.\n"
+        + "Se for parte legítima do framework, acrescente o nome a ROOT_DIR_ALLOWLIST em "
         + "tests/test_repo_layout.py, no mesmo commit que o introduz."
     )
