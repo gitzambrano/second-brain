@@ -1,0 +1,19 @@
+============================= test session starts =============================
+platform win32 -- Python 3.11.9, pytest-8.4.2, pluggy-1.6.0 -- C:\Users\gusta\AppData\Local\Programs\Python\Python311\python.exe
+rootdir: C:\Users\gusta\OneDrive\08. SecondBrain
+configfile: pyproject.toml
+collecting ... collected 11 items
+
+tests/test_agent_sync_contract.py::test_every_source_file_has_a_mirror[skills-skills] PASSED [  9%]
+tests/test_agent_sync_contract.py::test_every_source_file_has_a_mirror[agents-agents] PASSED [ 18%]
+tests/test_agent_sync_contract.py::test_no_extra_file_survives_in_the_mirror[skills-skills] PASSED [ 27%]
+tests/test_agent_sync_contract.py::test_no_extra_file_survives_in_the_mirror[agents-agents] PASSED [ 36%]
+tests/test_agent_sync_contract.py::test_mirror_content_is_identical[skills-skills] PASSED [ 45%]
+tests/test_agent_sync_contract.py::test_mirror_content_is_identical[agents-agents] PASSED [ 54%]
+tests/test_agent_sync_contract.py::test_check_flag_detects_drift PASSED  [ 63%]
+tests/test_agent_sync_contract.py::test_mirrors_are_reproducible_from_the_source PASSED [ 72%]
+tests/test_agent_sync_contract.py::test_the_legacy_plugin_registration_is_gone PASSED [ 81%]
+tests/test_agent_sync_contract.py::test_docs_do_not_describe_the_abandoned_architecture PASSED [ 90%]
+tests/test_agent_sync_contract.py::test_settings_json_only_bootstraps_the_sync PASSED [100%]
+
+============================= 11 passed in 0.46s ==============================

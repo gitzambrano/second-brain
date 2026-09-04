@@ -27,12 +27,6 @@ def test_every_command_in_agents_md_has_a_skill():
     assert not referenced - available, sorted(referenced - available)
 
 
-def test_the_generated_mirrors_stay_absent():
-    """`.agents/` is the single editable tree; mirrors would drift."""
-    for mirror in (".claude/skills", ".claude/agents", ".codex/skills"):
-        assert not (ROOT / mirror).exists(), mirror
-
-
 def test_scripts_root_holds_commands_or_two_line_shims():
     """No implementation may drift back out of `scripts/lib/`.
 

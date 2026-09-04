@@ -25,13 +25,20 @@ jobs:
           scripts/check_path_discipline.py scripts/build_site.py
           scripts/check_site_privacy.py scripts/render_public_essay.py
           scripts/lib/render_public_essay.py scripts/lib/build_public_map.py
+          scripts/sync_skills.py
           tests/test_site_theme_contract.py tests/test_workflow_integrity.py
-          tests/test_docs_references.py
+          tests/test_docs_references.py tests/test_agent_sync_contract.py
       - name: Nested-Git and path discipline
         run: |
           python scripts/repo_paths.py
           python scripts/check_git_isolation.py
           python scripts/check_path_discipline.py
+      # Os espelhos .claude/ são derivados e gitignorados, então um clone novo
+      # não os tem. Gerá-los aqui é o mesmo bootstrap que o hook SessionStart
+      # faz na máquina do autor; o --check dentro de check_repo.py em seguida
+      # prova que .agents/ sozinho reproduz o espelho inteiro.
+      - name: Generate agent mirrors (.agents -> .claude)
+        run: python scripts/sync_skills.py --quiet
       - run: python scripts/check_repo.py --quick
       - run: python -m pytest -q -m "not html and not pdf and not slow"
 

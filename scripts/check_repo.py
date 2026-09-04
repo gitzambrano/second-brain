@@ -109,6 +109,14 @@ def quick(result: CheckResult) -> None:
         result,
         parse_json_severity=True,
     )
+    # `.agents/` é fonte, `.claude/skills|agents/` é saída. O subagent `update`
+    # já roda isto no fechamento; aqui o contrato passa a valer também para
+    # quem chama o gate central direto, e um espelho editado à mão reprova.
+    run_command(
+        "agent mirror sync",
+        [sys.executable, str(SCRIPTS_DIR / "sync_skills.py"), "--check", "--quiet"],
+        result,
+    )
     run_command(
         "core environment",
         [sys.executable, str(SCRIPTS_DIR / "check_env.py"), "--core", "--json"],

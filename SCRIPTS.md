@@ -32,6 +32,7 @@ Os scripts utilizam prefixos verbais padronizados que revelam imediatamente sua 
 | **`check_path_discipline.py`** | Garante que scripts e testes usem `repo_paths.py` e não caminhos hardcoded. | `python scripts/check_path_discipline.py` |
 | **`check_script_defaults.py`** | Audita se todos os scripts CLI em `scripts/` respeitam a regra de default sem argumentos. | `python scripts/check_script_defaults.py` |
 | **`check_skills.py`** | Valida sintaxe, consistência e contratos normativos de todas as skills em `.agents/skills/`. | `python scripts/check_skills.py` |
+| **`sync_skills.py`** | Espelha `.agents/skills/` e `.agents/agents/` em `.claude/`. `--check` detecta drift sem escrever; `--quiet` é o modo do hook `SessionStart`. | `python scripts/sync_skills.py` |
 | **`check_env.py`** | Diagnostica dependências do ambiente Python e ferramentas externas (Pandoc, LuaLaTeX, Playwright). | `python scripts/check_env.py` |
 
 ### 2. Publicação e Atlas Web (`site/`)

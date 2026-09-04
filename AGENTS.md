@@ -53,33 +53,52 @@ Detalhes de tipos de source, frontmatter, tags, links, referências, prosa, imag
 
 ### Fonte única para agentes
 
-`.agents/` é a única árvore editável de skills e subagents, e vale para todos os
-agentes. Não existem mirrors gerados: `.claude/skills/`, `.claude/agents/` e
-`.codex/skills/` não devem existir. `CLAUDE.md` é apenas um adaptador de uma linha
-que importa `@AGENTS.md`.
+`.agents/` é a única árvore **editável** de skills e subagents, e vale para todos
+os agentes. Fonte única não quer dizer cópia única: os espelhos existem porque
+cada harness lê de um lugar diferente. Quer dizer que só `.agents/` pode ser
+editado à mão.
 
-Não há passo de sincronização. Editou `.agents/`, terminou.
+```text
+.agents/                 fonte única editável
+    ↓ scripts/sync_skills.py
+.claude/skills/          espelho gerado
+.claude/agents/          espelho gerado
+.codex/agents/*.toml     adaptadores específicos do Codex
+```
 
-#### Registro no Claude Code
+`CLAUDE.md` é apenas um adaptador de uma linha que importa `@AGENTS.md`.
 
-Skills em `.agents/` não são descobertas sozinhas: o Claude Code só varre
-`.claude/skills/` e `.claude/agents/`, que aqui não existem por decisão de
-arquitetura. O registro é feito por um plugin local, sem duplicar arquivo:
+**Nunca edite `.claude/skills/` ou `.claude/agents/` à mão.** Qualquer conteúdo
+ali é saída de `sync_skills.py` e será sobrescrito ou removido na próxima
+sincronização. Mudou o comportamento de uma skill? Edite `.agents/` e rode o
+sync.
 
-| Arquivo | Papel |
+#### O sync
+
+```text
+SessionStart
+   ↓
+python scripts/sync_skills.py --quiet
+   ↓
+.claude/skills/ + .claude/agents/ atualizados
+```
+
+O hook `SessionStart` de `.claude/settings.json` existe só para esse bootstrap.
+`settings.json` é o único arquivo versionado dentro de `.claude/`; os espelhos
+são ignorados pelo Git, porque são derivados.
+
+| Comando | Papel |
 | --- | --- |
-| `.claude-plugin/plugin.json` | aponta `skills` para `./.agents/skills/` e `agents` para cada `.md` de `.agents/agents/` |
-| `.claude-plugin/marketplace.json` | declara o próprio repositório como marketplace `second-brain-local` |
-| `.claude/settings.json` | liga o plugin por `extraKnownMarketplaces` e `enabledPlugins` |
+| `python scripts/sync_skills.py` | espelha e relata o que mudou |
+| `python scripts/sync_skills.py --check` | não escreve; sai com 1 se houver drift |
+| `python scripts/sync_skills.py --quiet` | modo hook: só fala se algo mudou |
 
-O campo `skills` aceita diretório; `agents` exige caminho de arquivo `.md`, um
-por subagent. Todo caminho é relativo à raiz do plugin e precisa começar com
-`./`. Subagent novo em `.agents/agents/` só aparece depois de ser listado em
-`plugin.json`.
+`--check` é contrato de repositório: roda em `check_repo.py --quick`, no
+subagent `update` e em `tests/test_agent_sync_contract.py`. Um espelho que não
+possa ser reproduzido integralmente a partir de `.agents/` é falha, não aviso.
 
-Isso continua não sendo mirror: nenhum conteúdo é copiado e `.agents/` segue
-como fonte única. Mudança em `plugin.json` ou `settings.json` só vale na próxima
-sessão, porque skills são registradas na inicialização.
+Skill nova aparece no Claude Code na sessão seguinte ao sync, porque skills são
+registradas na inicialização.
 
 ## Skills Disponíveis
 
@@ -299,7 +318,7 @@ Vale para `.agents/skills/` e `.agents/agents/`.
 - Não registre histórico de mudança; o arquivo descreve o comportamento atual.
 - Reserve “nunca” e “sempre” para invariantes realmente bloqueantes.
 - Mudou o comportamento, atualize `description:` do frontmatter.
-- Editou `.agents/`, terminou: não há mirror para sincronizar. Valide com `python scripts/check_skills.py`.
+- Editou `.agents/`, rode `python scripts/sync_skills.py` para atualizar os espelhos. Valide com `python scripts/check_skills.py`.
 
 ## Ferramentas
 

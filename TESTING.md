@@ -47,10 +47,12 @@ O script `scripts/check_repo.py` é o ponto de entrada canônico para validar a 
   ```bash
   python scripts/check_skills.py
   ```
-- **Fonte única de agentes:** Garante que não existam árvores espelhadas não autorizadas (como `.claude/` ou `.codex/`):
+- **Contrato de sincronização de agentes:** `.agents/` é a fonte editável; `.claude/skills/` e `.claude/agents/` são espelhos gerados por `scripts/sync_skills.py`. O contrato exige paridade byte a byte, nenhum arquivo órfão no espelho e reprodutibilidade integral a partir da fonte:
   ```bash
-  python -m pytest tests/test_no_agent_mirrors.py
+  python scripts/sync_skills.py --check
+  python -m pytest tests/test_agent_sync_contract.py
   ```
+  Um espelho editado à mão é drift, e o `--check` reprova. Para consertar, edite `.agents/` e rode `python scripts/sync_skills.py`.
 
 ---
 

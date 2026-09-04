@@ -2,13 +2,14 @@ __pycache__/
 *.code-workspace
 .miktex/
 
-# .claude/skills/ e .claude/agents/ são espelhos gerados de .agents/ (scripts/sync_skills.py).
-# Apenas .claude/settings.json é versionado.
+# .claude/skills/ e .claude/agents/ são espelhos gerados de .agents/ por
+# scripts/sync_skills.py, e derivado não se versiona. O resto de .claude/ é
+# estado local do harness (settings.local.json, locks, worktrees). Só
+# settings.json entra no repositório, porque é o bootstrap do próprio sync.
+# Os adaptadores do Codex em .codex/agents/*.toml são versionados: são outro
+# formato, não cópia byte a byte, e não saem de sync_skills.py.
 .claude/*
 !.claude/settings.json
-.claude/settings.local.json
-.claude/scheduled_tasks.lock
-.claude/worktrees/
 
 # The two nested repositories are intentionally invisible to the outer engine Git.
 /data/

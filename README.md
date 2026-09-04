@@ -63,6 +63,18 @@ python scripts/bootstrap_repositories.py --create --init-git
 
 O engine é a **fonte única** (`.agents/`) de habilidades operacionais e editoriais consumidas por agentes de IA (Claude Code, Gemini, Antigravity, etc.).
 
+Fonte única significa fonte única **editável**, não cópia única. Cada harness lê de um lugar diferente, então os espelhos são gerados:
+
+```text
+.agents/                 fonte única editável
+    ↓ scripts/sync_skills.py
+.claude/skills/          espelho gerado
+.claude/agents/          espelho gerado
+.codex/agents/*.toml     adaptadores específicos do Codex
+```
+
+Nunca edite `.claude/skills/` ou `.claude/agents/` à mão: o conteúdo é sobrescrito no próximo sync. O hook `SessionStart` de `.claude/settings.json` roda `python scripts/sync_skills.py --quiet` na abertura da sessão, e `--check` reprova drift em `check_repo.py --quick` e nos testes.
+
 ### Catálogo de Skills por Fase
 
 | Fase                   | Skill           | Finalidade                                                                                                     |

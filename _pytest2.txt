@@ -1,0 +1,20 @@
+============================= test session starts =============================
+platform win32 -- Python 3.11.9, pytest-8.4.2, pluggy-1.6.0
+rootdir: C:\Users\gusta\OneDrive\08. SecondBrain
+configfile: pyproject.toml
+testpaths: tests
+collected 80 items
+
+tests\test_agent_sync_contract.py ...........                            [ 13%]
+tests\test_checker_selftests.py ....                                     [ 18%]
+tests\test_docs_references.py ...                                        [ 22%]
+tests\test_export_parity.py ......                                       [ 30%]
+tests\test_freshness.py ..                                               [ 32%]
+tests\test_hidden_cascade.py .......                                     [ 41%]
+tests\test_html_export.py .                                              [ 42%]
+tests\test_legacy_feature_regressions.py ........                        [ 52%]
+tests\test_pdf_export.py .                                               [ 53%]
+tests\test_repo_layout.py .                                              [ 55%]
+tests\test_repo_sanity.py ..                                             [ 57%]
+tests\test_script_defaults.py ..                                         [ 60%]
+tests\test_site_privacy.py ....
