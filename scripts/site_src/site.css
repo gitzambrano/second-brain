@@ -428,11 +428,13 @@ h1, h2, h3 {
   transition: border-color 0.18s var(--ease), background 0.18s var(--ease),
               transform 0.18s var(--ease), box-shadow 0.18s var(--ease);
 }
-/* O título do cartão pesava 700 na grade (default do <h3>) e 550 na lista.
-   450 unifica os dois num peso mais leve que o normal: com a Inter variável
-   auto-hospedada o eixo é contínuo, então este número é real e não arredonda
-   para o Semibold da fonte do sistema. */
-.card-title { margin: 0; font-weight: 450; }
+/* O título do cartão pesava 700 na grade (default do <h3>) e 550 na lista;
+   a regra passou para cá e vale nos dois modos. 500 é medium de verdade:
+   abaixo disso o título cai sob o peso normal do texto e, ao lado do masthead
+   serifado em 700, deixa de ler como "mais leve" e passa a ler como outra
+   família. O número só é real porque a Inter variável é auto-hospedada — com
+   a fonte do sistema, 450 a 600 arredondam todos para o mesmo Semibold. */
+.card-title { margin: 0; font-weight: 500; }
 .card-title a { text-decoration: none; color: inherit; }
 .card-title a::after {
   content: "";
