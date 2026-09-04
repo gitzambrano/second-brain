@@ -189,8 +189,13 @@ def test_the_globe_opens_with_the_bibliography_off(server):
             flat = browser.new_page()
             flat.goto(f"{base}/graph.html", wait_until="load")
             flat.wait_for_timeout(2000)
-            plano = flat.evaluate("() => [...hiddenTypes]")
-            assert plano == [], "o grafo plano deve abrir com todos os tipos acesos"
+            plano = flat.evaluate(
+                "() => ({hidden: [...hiddenTypes],"
+                " disabled: [...document.querySelectorAll('.legend-item.disabled')]"
+                "   .map(e => e.getAttribute('data-type'))})"
+            )
+            assert "reference" in plano["hidden"], "o grafo plano deve abrir com a bibliografia desligada"
+            assert "reference" in plano["disabled"], "legenda do grafo plano não mostra o tipo desligado"
         finally:
             browser.close()
 

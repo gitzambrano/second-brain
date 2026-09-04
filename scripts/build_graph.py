@@ -1511,7 +1511,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   <div class="legend-item" data-type="concept"><span class="dot" style="background:var(--concept)"></span> Concept</div>
   <div class="legend-item" data-type="entity"><span class="dot" style="background:var(--entity)"></span> Entity</div>
   <div class="legend-item" data-type="insights"><span class="dot" style="background:var(--insight)"></span> Insight</div>
-  <div class="legend-item" data-type="reference"><span class="dot" style="background:var(--reference)"></span> Reference</div>
+  <div class="legend-item disabled" data-type="reference"><span class="dot" style="background:var(--reference)"></span> Reference</div>
 
   <button class="btn" id="btn-index">Índice</button>
   <button class="btn" id="btn-gaps">Gaps entre tags</button>
@@ -1825,14 +1825,13 @@ const endpoint = (v) => (typeof v === "object" ? v : nodeById.get(v));
 // ~1100 nós a cada clique/arrasto/hover, a árvore descarta ramos inteiros
 // fora do raio de busca. Reconstruída a cada tick (a simulação move os nós),
 // mas isso é O(n log n) e desprezível perto do custo de desenhar.
-// Nenhum tipo começa oculto: a bibliografia faz parte do mapa, e escondê-la
-// por padrão dava a impressão de que o corpus não citava nada. Quem achar os
-// nós-folha demais desliga na legenda, que continua sendo um clique.
+// A bibliografia começa oculta por padrão (o mesmo comportamento do modo globo)
+// para não sobrecarregar a malha com centenas de nós-folha de referência.
 // Declarado AQUI, e não junto da legenda lá embaixo, porque rebuildQuadtree()
 // e draw() leem `hiddenTypes` durante a inicialização no topo do script — um
 // `const` mais abaixo estouraria em ReferenceError (temporal dead zone) e
 // mataria o script inteiro, deixando o grafo em branco.
-const hiddenTypes = new Set();
+const hiddenTypes = new Set(["reference"]);
 
 function isNodeVisible(n) {
   return !hiddenTypes.has(n.type);

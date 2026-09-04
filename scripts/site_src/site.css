@@ -448,7 +448,11 @@ h1, h2, h3 {
    serifado em 700, deixa de ler como "mais leve" e passa a ler como outra
    família. O número só é real porque a Inter variável é auto-hospedada — com
    a fonte do sistema, 450 a 600 arredondam todos para o mesmo Semibold. */
-.card-title { margin: 0; font-weight: 480; }
+.card-title {
+  margin: 0;
+  font-family: var(--serif);
+  font-weight: 490;
+}
 /* No escuro o mesmo número pesa mais. O título é branco puro sobre quase
    preto, e o contraste máximo faz o traço claro sangrar sobre o fundo — o
    olho lê como negrito o que no claro lê como medium. Compensar no peso é
