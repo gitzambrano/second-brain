@@ -611,6 +611,15 @@ mjx-container > mjx-assistive-mml{
 figure{margin:2.2rem 0;text-align:center;}
 figure img{max-width:100%;height:auto;border-radius:6px;border:1px solid var(--border);}
 figcaption{margin-top:.7rem;font-size:.84em;color:var(--text-dim);font-style:italic;}
+/* O Markdown do corpus preserva a legenda como o parágrafo em itálico logo
+   depois da imagem; `implicit_figures` fica desligado para não duplicar o alt
+   text. Trate esse par como uma figura visual sem exigir reescrever essays: a
+   imagem e sua legenda ficam centradas, mas somente nesse padrão estrito. */
+.content > p:has(> picture:only-child){text-align:center;margin-bottom:.55rem;}
+.content > p:has(> picture:only-child) img{display:block;margin-inline:auto;}
+.content > p:has(> picture:only-child) + p:has(> em:first-child){
+  text-align:center;font-size:.84em;color:var(--text-dim);margin-bottom:1.7rem;
+}
 /* Uma imagem solta num paragrafo e um bloco, nao uma palavra: como inline-block
    ela ainda somava o espaco em branco vizinho e estourava a coluna por alguns
    pixels. */
