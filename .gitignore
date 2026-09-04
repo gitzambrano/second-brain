@@ -50,3 +50,8 @@ Thumbs.db
 # local. A raiz do engine é allowlist: só entra arquivo listado no teste
 # tests/test_repo_layout.py, e nada com prefixo `_`.
 /_*
+
+# Rascunho de investigação (diffs, XHTML intermediário, PNG de revisão de
+# paginação). Já entrou em `main` uma vez por um `git add -A`: 81 arquivos e
+# alguns MB de PNG num repositório que não guarda corpus.
+/tmp/
