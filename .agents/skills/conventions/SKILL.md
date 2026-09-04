@@ -133,7 +133,11 @@ O site tem duas camadas:
 | Camada | Alcance | Conteúdo |
 | --- | --- | --- |
 | Catálogo e mapa | base inteira | título, resumo, tags, datas, status, conexões |
-| Texto | só `visibility: public` (ou legado `publish: true`) | corpo renderizado, busca full-text, link que abre |
+| Texto | só `visibility: public` (ou legado `publish: true`) | corpo renderizado e link que abre |
+
+A busca da capa filtra os cartões já renderizados por título, resumo e tags; o
+corpo não é indexado, nem para essay publicado. `search-index.json` é catálogo,
+não corpus — nenhum texto de essay sai nele.
 
 | `visibility:` | Resultado |
 | --- | --- |
@@ -150,7 +154,7 @@ Regras:
 
 - `visibility:` só se aplica a **essays**; nenhuma outra página tem o campo;
 - nenhuma skill de escrita, revisão ou organização define ou altera `visibility:` automaticamente — é decisão explícita do Usuário;
-- o corpo de uma página não autorizada nunca é renderizado, indexado ou linkado;
+- o corpo de uma página não autorizada nunca é renderizado nem linkado, e nenhum corpo — autorizado ou não — entra nos arquivos de dados do site;
 - nenhum caminho para dentro de `data/` pode aparecer na saída pública;
 - imagem só é copiada para o site se for referenciada por um essay publicado **e** estiver dentro de `DATA_ROOT/wiki/assets`;
 - um essay não publicado aparece no catálogo e no mapa com o selo **privado**, e em rascunho com **draft**.
@@ -213,7 +217,7 @@ Use os formatos canônicos de `## Regra de links — Obsidian é o leitor primá
 
 ## Dois tipos de essay
 
-- **Originais (`/import`)**: texto do autor preservado na ingestão; só recebem estrutura, links e metadados necessários. Edição substantiva posterior exige pedido explícito.
+- **Originais (`/import`)**: a prosa do autor é preservada na ingestão; o essay só recebe estrutura, links e metadados, na lista de transformações autorizadas de `/import`. Tradução não está nessa lista — exige decisão explícita do Usuário e fica registrada. Edição substantiva posterior também exige pedido explícito. O documento arquivado em `wiki/sources/` permanece intocado em qualquer cenário.
 - **Criados (`/essay`)**: texto novo, livremente iterável pelas skills editoriais.
 
 ## Formato de `## Referências` — padrão AIAA

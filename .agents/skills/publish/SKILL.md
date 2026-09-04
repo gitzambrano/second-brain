@@ -35,7 +35,22 @@ python scripts/check_site_pages.py
 
 # 5. Orçamento de tamanho dos artefatos públicos
 python scripts/check_site_budget.py
+
+# 6. Selo: roda os gates de novo e carimba a prova no artefato (OBRIGATÓRIO)
+python scripts/seal_publication.py
 ```
+
+O selo é o que liga os dois repositórios. Sem ele, o `site/` publicava qualquer
+coisa que chegasse na branch — o deploy podia ficar verde com a CI do engine
+vermelha, porque nenhum dos dois olhava para o outro. `seal_publication.py`
+roda os gates ele mesmo e só então grava, no `site-manifest.json`, quais
+passaram, o commit do engine e uma impressão do conteúdo publicado. A portaria
+do site recalcula essa impressão antes do deploy: publicação sem selo é
+recusada, e selar e editar depois invalida.
+
+Se `seal_publication.py` avisar que o engine tinha mudanças não commitadas,
+commite antes de publicar — senão o selo aponta para um commit que não contém o
+código que gerou o site.
 
 Sem Chromium a auditoria visual **falha**, não pula: "não foi auditado" não
 pode passar por "passou". Instale com `python -m playwright install chromium`.
@@ -49,7 +64,7 @@ Se `check_site_privacy.py` reportar **qualquer erro bloqueante** (corpo de essay
 - **Não prossiga** para o commit/push no `site/`.
 - Reporte os erros exatos encontrados ao Usuário.
 
-### 6. Deploy no Git de `site/`
+### 7. Deploy no Git de `site/`
 
 Somente com a sentinela reportando `PASS`:
 

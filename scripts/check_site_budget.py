@@ -29,7 +29,6 @@ BUDGETS_KB: list[tuple[str, int]] = [
     ("404.html", 32),
     ("graph.html", 1200),
     ("sphere.html", 900),
-    ("graph.json", 1600),
     # Catálogo, não corpus: sem o corpo dos essays isto fica na casa das
     # dezenas de KB. O teto está em 400 para acusar um corpo que volte.
     ("search-index.json", 400),

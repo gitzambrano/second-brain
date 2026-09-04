@@ -152,7 +152,8 @@ python scripts/check_html_browser.py         # Teste headless de renderização 
 O site público opera sob um modelo de **Atlas Aberto + Texto por Autorização**:
 
 - **Catálogo & Topologia:** O índice completo e os mapas interativos (Grafo 2D e Esfera 3D) mapeiam todo o universo conceitual — revelando como ensaios, conceitos, fontes e entidades se conectam.
-- **Corpo do Ensaio:** Apenas essays com `visibility: public` no frontmatter têm o corpo renderizado e indexado para busca. Ensaios em rascunho ou notas pessoais aparecem no catálogo e mapas marcados como **privados**, impedindo leitura indevida.
+- **Corpo do Ensaio:** Apenas essays com `visibility: public` no frontmatter têm o corpo renderizado e linkável. Ensaios em rascunho ou notas pessoais aparecem no catálogo e mapas marcados como **privados**, impedindo leitura indevida.
+- **Busca:** a busca da capa filtra os cartões já presentes na página por **título, resumo e tags** — nunca pelo corpo. O `search-index.json` é um catálogo, não um corpus: ele não carrega o texto de essay nenhum, nem dos publicados.
 
 ---
 

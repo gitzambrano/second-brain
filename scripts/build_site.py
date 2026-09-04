@@ -4,7 +4,8 @@ Compila o Jardim Digital público em SITE_ROOT a partir da allowlist de publica�
 
 O site é uma projeção de mão única. O catálogo e o mapa cobrem a base inteira;
 só um essay autorizado com ``visibility: public`` (ou o legado ``publish:
-true``) tem o texto renderizado, indexado para busca ou linkado. Nada mais do
+true``) tem o texto renderizado e linkado. A busca é de catálogo — filtra os
+cartões da capa por título, resumo e tags, nunca pelo corpo. Nada mais do
 repositório privado de dados é copiado, nunca.
 
 Default sem argumentos: reconstruir o site inteiro.
@@ -45,7 +46,7 @@ __all__ = ["MATH_SPAN", "CODE_SPAN", "WORDS_PER_MINUTE", "reading_minutes"]
 
 GENERATED_ROOT_FILES = {
     "index.html", "graph.html", "sphere.html", "404.html",
-    "graph.json", "search-index.json", "site-manifest.json",
+    "search-index.json", "site-manifest.json",
 }
 GENERATED_DIRS = {"essays", "assets"}
 FRONTEND_ASSETS = ("site.css", "theme.js", "site.js", "essay.js")
@@ -270,9 +271,10 @@ def version_assets(html_text: str, fingerprints: dict[str, str]) -> str:
 def write_data(root: Path, catalogue) -> dict[str, int]:
     """Write the machine files.
 
-    The catalogue lists every essay, because the index does. Only an authorized
-    essay contributes its body: `text` powers full-text search and exists solely
-    for pages a reader can actually open.
+    The catalogue lists every essay, because the index does. No essay
+    contributes its body — not even an authorized one. The body is read here
+    only to derive `minutes` (reading time) for the pages a reader can actually
+    open.
     """
     # O índice é um CATÁLOGO, não um corpus. A busca da capa filtra os cartões
     # que já estão no DOM (`card.dataset.search`), então ninguém jamais baixou
@@ -434,7 +436,26 @@ def build(root: Path, no_render: bool = False):
     clean(root)
     fonts = ensure_site_fonts(root)
     fingerprints = copy_frontend(root, fonts)
-    ensure_site_mathjax(root)
+    # MathJax ausente não é degradação aceitável quando há fórmula publicada:
+    # a página vai ao ar com LaTeX cru no lugar da equação, o que num white
+    # paper de rotores é o conteúdo principal virando ruído. Só é tolerável
+    # quando nenhum essay autorizado tem matemática — aí o arquivo nem seria
+    # baixado por ninguém.
+    if not ensure_site_mathjax(root) and not no_render:
+        from export_essay_html import body_has_math
+
+        com_formula = sorted(
+            e.slug for e in essays
+            if body_has_math(e.path.read_text(encoding="utf-8-sig"))
+        )
+        if com_formula:
+            raise SystemExit(
+                "MathJax local indisponível e "
+                f"{len(com_formula)} essay(s) publicado(s) têm fórmula "
+                f"({', '.join(com_formula[:3])}"
+                f"{'…' if len(com_formula) > 3 else ''}). Publicar agora "
+                "colocaria LaTeX cru no lugar das equações."
+            )
     minutes = write_data(root, catalogue)
     render_index(root, catalogue, minutes, fingerprints)
 
@@ -512,8 +533,13 @@ def check(root: Path) -> list[str]:
                 if entry.get("url"):
                     errors.append(f"unauthorized link in search index: {slug}")
 
-    # The map deliberately contains every node. What it must never contain is
-    # body text, a private path, or a way into anything outside the allowlist.
+    # O mapa contém todo nó de propósito. O que ele nunca pode conter é corpo de
+    # texto, caminho privado ou porta para fora da allowlist.
+    #
+    # `graph.json` não é mais publicado — o payload que o navegador lê está
+    # embutido nos mapas, e é ele que `check_site_privacy.audit_maps` infla e
+    # audita. Este bloco continua aqui como rede: se o arquivo reaparecer num
+    # deploy antigo ou por engano, ele volta a ser conferido em vez de passar.
     graph = root / "graph.json"
     if graph.exists():
         payload = json.loads(graph.read_text(encoding="utf-8"))

@@ -36,6 +36,48 @@ from sanity_common import (
 
 VIEWPORTS = ((390, 844, "mobile"), (1440, 900, "desktop"))
 
+# A auditoria completa (prosa, âncoras, imagens, console) roda nos dois
+# viewports acima, por página. Abrir 48 páginas em seis larguras triplicaria o
+# gate sem achar três vezes mais.
+#
+# Só que o risco de geometria não está espalhado: ele mora na CAPA, onde a
+# barra tem busca + temas + quatro botões de modo disputando a mesma linha, e
+# 320 e 360px ficavam sem cobertura nenhuma — justamente as larguras em que
+# essa barra tem menos espaço. Estas páginas, e só elas, passam por uma
+# varredura barata de geometria na matriz inteira.
+GEOMETRY_MATRIX = (320, 360, 390, 768, 1024, 1440)
+GEOMETRY_PAGES = ("index.html", "404.html")
+
+GEOMETRY_PROBE = r"""() => {
+  const root = document.documentElement;
+  const fora = [...document.querySelectorAll('body *')]
+    .filter(el => {
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && (r.right > window.innerWidth + 1 || r.left < -1);
+    })
+    .slice(0, 3)
+    .map(el => el.tagName.toLowerCase() + (el.className ? '.' + String(el.className).split(' ')[0] : ''));
+  return {docWidth: root.scrollWidth, innerWidth: window.innerWidth, fora};
+}"""
+
+# A capa do índice é `background-image` num <a> vazio, não um <img>. Por isso
+# `document.images` não a enxerga: o retrato podia sumir do site inteiro sem o
+# gate piscar. Aqui a URL é resolvida e baixada de verdade.
+COVER_PROBE = r"""async () => {
+  const el = document.querySelector('.cover-map');
+  if (!el) return {presente: false};
+  const bg = getComputedStyle(el).backgroundImage;
+  const m = /url\(["']?([^"')]+)["']?\)/.exec(bg);
+  if (!m) return {presente: true, url: null, bg};
+  try {
+    const r = await fetch(m[1], {cache: 'no-store'});
+    const b = await r.blob();
+    return {presente: true, url: m[1], status: r.status, bytes: b.size, tipo: b.type};
+  } catch (e) {
+    return {presente: true, url: m[1], erro: String(e)};
+  }
+}"""
+
 # The two maps are one 700 KB page each, with a force simulation that never
 # settles inside a check's budget — so they get their own, lighter audit
 # (`MAP_PROBE`) instead of the prose probe. Skipping them entirely left the two
@@ -282,6 +324,64 @@ def audit_map(page, url, path, label, result, console_errors, failed):
         result.error("FAILED_REQUEST", f"{label}: {url_falho}", name)
 
 
+def audit_geometry(page, base: str, result: CheckResult) -> int:
+    """Varre a capa e o 404 na matriz de larguras, só medindo geometria.
+
+    Barato de propósito: não espera MathJax, não lê prosa, não abre essay. O que
+    procura é a barra de ferramentas transbordando numa tela estreita — o único
+    defeito de layout que 320 e 360px produzem e 390 não.
+    """
+    conferidas = 0
+    for nome in GEOMETRY_PAGES:
+        if not (SITE_ROOT / nome).is_file():
+            continue
+        for largura in GEOMETRY_MATRIX:
+            page.set_viewport_size({"width": largura, "height": 800})
+            page.goto(f"{base}/{nome}", wait_until="load")
+            page.wait_for_timeout(350)
+            m = page.evaluate(GEOMETRY_PROBE)
+            conferidas += 1
+            if m["docWidth"] > m["innerWidth"] + 1:
+                culpados = ", ".join(m["fora"]) or "(elemento não identificado)"
+                result.error(
+                    "HORIZONTAL_OVERFLOW",
+                    f"{largura}px: {m['docWidth']}px > {m['innerWidth']}px — {culpados}",
+                    nome,
+                )
+    return conferidas
+
+
+def audit_cover(page, base: str, result: CheckResult) -> None:
+    """A capa do índice tem de existir e carregar de verdade."""
+    if not (SITE_ROOT / "index.html").is_file():
+        return
+    page.set_viewport_size({"width": 1440, "height": 900})
+    page.goto(f"{base}/index.html", wait_until="load")
+    page.wait_for_timeout(600)
+    capa = page.evaluate(COVER_PROBE)
+
+    if not capa.get("presente"):
+        result.error("COVER_MISSING", "index.html não tem .cover-map", "index.html")
+        return
+    if not capa.get("url"):
+        result.error("COVER_NO_IMAGE", f"sem background-image: {capa.get('bg')}", "index.html")
+        return
+    if capa.get("erro"):
+        result.error("COVER_UNREACHABLE", f"{capa['url']}: {capa['erro']}", "index.html")
+        return
+    if capa.get("status") != 200:
+        result.error("COVER_HTTP", f"{capa['url']} respondeu {capa.get('status')}", "index.html")
+        return
+    # Um PNG de capa real tem dezenas de KB. Um arquivo minúsculo aqui é
+    # placeholder, erro de escrita ou uma página de erro servida como imagem.
+    if capa.get("bytes", 0) < 8192:
+        result.error(
+            "COVER_TOO_SMALL",
+            f"{capa['url']}: {capa.get('bytes')} bytes — capa ausente ou truncada",
+            "index.html",
+        )
+
+
 def audit(name: str | None = None, allow_skip_browser: bool = False) -> CheckResult:
     result = CheckResult("site-pages")
 
@@ -345,12 +445,27 @@ def audit(name: str | None = None, allow_skip_browser: bool = False) -> CheckRes
                         audit_map(page, f"{base}/{relative}", path, label,
                                   result, console_errors, failed)
                     context.close()
+
+                # Passadas de escopo próprio, uma vez cada — não por viewport.
+                # Rodam na auditoria completa e também quando o alvo nomeado é a
+                # própria capa: sem isso, `check_site_pages.py index.html` — a
+                # forma mais natural de investigar a capa — era justamente a que
+                # não a conferia.
+                if not name or name in ("index.html", "index"):
+                    contexto = browser.new_context(viewport={"width": 1440, "height": 900})
+                    pagina = contexto.new_page()
+                    try:
+                        result.meta["geometry_checks"] = audit_geometry(pagina, base, result)
+                        audit_cover(pagina, base, result)
+                    finally:
+                        contexto.close()
         finally:
             browser.close()
 
     result.meta["pages"] = len(pages)
     result.meta["maps"] = len(maps)
     result.meta["viewports"] = len(VIEWPORTS)
+    result.meta["geometry_matrix"] = list(GEOMETRY_MATRIX)
     return result
 
 

@@ -137,15 +137,36 @@ def test_privacy_checker_accepts_the_generated_site(tmp_path):
     assert json.loads(proc.stdout)["status"] == "pass"
 
 
+def forge_map_payload(site, mutate):
+    """Reescreve o payload embutido do mapa, aplicando `mutate` aos nós.
+
+    O ataque tem de ser plantado onde o navegador lê. `graph.json` deixou de ser
+    publicado — os mapas carregam a carga comprimida em `id="sb-graph-data"` —,
+    então forjar o arquivo solto testaria um alvo que não chega a ninguém.
+    """
+    path = site / "graph.html"
+    text = path.read_text(encoding="utf-8")
+    match = EMBEDDED_PAYLOAD.search(text)
+    assert match, "graph.html carries no embedded payload"
+    payload = json.loads(zlib.decompress(base64.b64decode(match.group(1)), -15))
+    mutate(payload["nodes"])
+
+    cru = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    comp = zlib.compressobj(9, zlib.DEFLATED, -15)
+    encoded = base64.b64encode(comp.compress(cru) + comp.flush()).decode("ascii")
+    path.write_text(text.replace(match.group(1), encoded, 1), encoding="utf-8")
+
+
 def test_privacy_checker_rejects_a_forged_read_link(tmp_path):
     """The checker must actually fail when the map offers a way in."""
     site, env = build(tmp_path)
-    graph_path = site / "graph.json"
-    graph = json.loads(graph_path.read_text(encoding="utf-8"))
-    for node in graph["nodes"]:
-        if node["id"] == f"essay:{PRIVATE_SLUG}":
-            node["htmlFile"] = f"essays/{PRIVATE_SLUG}.html"
-    graph_path.write_text(json.dumps(graph, ensure_ascii=False), encoding="utf-8")
+
+    def abrir_o_privado(nodes):
+        for node in nodes:
+            if node["id"] == f"essay:{PRIVATE_SLUG}":
+                node["htmlFile"] = f"essays/{PRIVATE_SLUG}.html"
+
+    forge_map_payload(site, abrir_o_privado)
 
     proc = subprocess.run(
         [sys.executable, str(ROOT / "scripts/check_site_privacy.py"), "--json"],

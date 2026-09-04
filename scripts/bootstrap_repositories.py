@@ -14,6 +14,7 @@ import argparse
 import subprocess
 from pathlib import Path
 
+import visibility
 from repo_paths import CODE_ROOT, DATA_ROOT, SITE_ROOT
 
 DATA_DIRS = [
@@ -81,13 +82,19 @@ curated `manifest.md`, `map.md` and `resumos/` may be versioned.
 This repository must never be used as a GitHub Pages source.
 """
 
-SITE_README = """# Second Brain Site
+# O nível autorizado vem de `visibility.py`, a mesma fonte que o build consulta,
+# para que este README não possa voltar a descrever um contrato que já mudou —
+# foi exatamente assim que ele ficou preso em `publish: true`. Só o token é
+# derivável: o nome do campo e a grafia legada não são constantes lá.
+SITE_README = f"""# Second Brain Site
 
 PUBLIC generated Digital Garden.
 
 Everything committed here must be safe for public Internet access. Content is
-generated only by `../scripts/build_site.py` from essays whose frontmatter has
-the YAML boolean `publish: true`.
+generated only by `../scripts/build_site.py` from essays whose frontmatter says
+`visibility: {visibility.PUBLIC}`. The legacy boolean `publish: true` is still
+accepted as the old spelling of that same level. Any other value, and the
+absence of the field, means private: the body is never published.
 
 Do not copy files manually from the private data repository.
 """

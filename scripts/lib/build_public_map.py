@@ -373,12 +373,12 @@ def write(root: Path, nodes, edges, tag_gaps, isolated) -> list[tuple[str, float
     empty_reader = {"essays": {}, "mathjax": "", "css": ""}
     written = []
 
-    (root / "graph.json").write_text(
-        json.dumps(data_payload(nodes, edges, isolated),
-                   ensure_ascii=False, separators=(",", ":")),
-        encoding="utf-8",
-    )
-    written.append(("graph.json", (root / "graph.json").stat().st_size / 1024 / 1024))
+    # `graph.json` NÃO é publicado. Os dois mapas embutem o payload comprimido
+    # que o navegador de fato lê (`id="sb-graph-data"`), e a capa virou PNG —
+    # nada no site busca este arquivo. Publicá-lo era servir 883 KB para
+    # ninguém, e manter duas representações do mesmo grafo que podem divergir.
+    # A versão da wiki continua existindo: `build_graph.py` grava a sua em
+    # `output/graph/`, que é a lida por `/organize`.
 
     for name, renderer, current in (
         ("graph.html", build_graph.render_html, "graph"),

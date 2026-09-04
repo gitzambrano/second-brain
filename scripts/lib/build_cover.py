@@ -99,6 +99,22 @@ def render(site_root, largura=LARGURA, altura=ALTURA, saida=SAIDA, espera=6000):
     destino.mkdir(parents=True, exist_ok=True)
 
     escritos = []
+    # Falha de renderização NÃO derruba o build. O `clean()` do build já
+    # esvaziou o site quando este passo roda, então uma exceção aqui — um
+    # Chromium que morre no meio da captura, por exemplo — deixaria o site
+    # publicado vazio, sem essay nenhum, por causa de um enfeite de capa. O
+    # desfecho certo é o mesmo de não ter navegador: pular, dizer alto o motivo,
+    # e deixar a capa anterior no lugar. Quem recusa publicar uma capa ausente
+    # ou velha é o gate visual, que abre a página e confere a imagem.
+    try:
+        return _assar(sync_playwright, origem, destino, executavel, estado, texto,
+                      escritos, largura, altura, saida, espera)
+    except Exception as exc:  # noqa: BLE001 - ver acima: pular é melhor que abortar
+        return CoverResult("skip", "render-failed", f"falha ao renderizar a capa: {exc}")
+
+
+def _assar(sync_playwright, origem, destino, executavel, estado, texto,
+           escritos, largura, altura, saida, espera):
     with sync_playwright() as p:
         navegador = p.chromium.launch(headless=True, executable_path=executavel)
         try:

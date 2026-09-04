@@ -295,7 +295,7 @@ Pendência de curto prazo fica em `wiki/status.md`, não no plano.
 
 ### `update`
 
-Executa fechamento transacional: pre-flight, fixer, rebuild, post-flight e, somente com gates sem erro bloqueante, commit/push.
+Executa fechamento com portão (gated): pre-flight, fixer, rebuild, post-flight e, somente com gates sem erro bloqueante, os commits locais de `./` e `data/` primeiro e os pushes depois. Não é transacional — dois repositórios remotos não publicam atomicamente; o que o gate garante é que uma falha de push deixa os dois locais coerentes, e o relato diz qual repositório ficou para trás e com que comando empurrá-lo.
 
 Pode reconstruir índice, referências, grafo, sphere, stats, qmd e espelhos. Não decide conteúdo, não resolve contradições, não funde/deleta páginas e não escreve prosa.
 

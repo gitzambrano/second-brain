@@ -38,7 +38,10 @@ from site_common import collect_all, strip_public_body
 from unidecode import unidecode
 
 MAP_FILES = ("graph.html", "sphere.html")
-MACHINE_FILES = ("search-index.json", "graph.json", "site-manifest.json")
+# `graph.json` saiu daqui junto com a publicação: o payload que o navegador
+# lê está embutido nos mapas, e é ele que `audit_maps` infla e audita. Exigir
+# o arquivo solto reprovaria todo site correto.
+MACHINE_FILES = ("search-index.json", "site-manifest.json")
 SCANNED_SUFFIXES = {".html", ".json"}
 
 EMBEDDED_PAYLOAD = re.compile(r'id="sb-graph-data">([^<]*)<')

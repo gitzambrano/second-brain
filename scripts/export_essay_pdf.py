@@ -339,6 +339,8 @@ HEADER_TEX = r"""\usepackage{fancyhdr}
 \makeatletter
 \newif\ifsb@needbreak
 \newif\ifsb@skipnext
+\newif\ifsb@chapterneed
+\newif\ifsb@tightchapter
 % Ligada pelo Python imediatamente antes de um `###` colado num `##` (ou de
 % um `####` colado num `###`). O `\if@nobreak` do LaTeX deveria bastar, mas o
 % titlesec nao o mantem de forma confiavel, e um unico ponto de quebra entre
@@ -390,11 +392,14 @@ HEADER_TEX = r"""\usepackage{fancyhdr}
     \global\advance\sb@needlen by -\ht\tw@
     \global\advance\sb@needlen by -\dp\tw@
   \endgroup
+  \global\sb@chapterneedtrue
   \sbneedspace{\sb@needlen}%
+  \global\sb@chapterneedfalse
 }
 \newcommand{\sbneedspace}[1]{%
   \par
   \sb@needbreakfalse
+  \sb@tightchapterfalse
   \ifsb@skipnext\global\sb@skipnextfalse\@nobreaktrue\fi
   % `\if@nobreak` e verdadeiro so no ponto imediatamente posterior a um
   % titulo, e o `\everypar` do LaTeX o desliga no primeiro paragrafo. Tudo
@@ -415,7 +420,19 @@ HEADER_TEX = r"""\usepackage{fancyhdr}
     \ifdim\pagegoal<\maxdimen
       \dimen@ii=\pagegoal
       \advance\dimen@ii-\pagetotal
-      \ifdim\dimen@ii<\dimen@ \sb@needbreaktrue\fi
+      % A lista vertical de um display conserva 18pt de espaco inferior que
+      % ja pertence a mancha antes do proximo capitulo.
+      \advance\dimen@ii by 18pt
+      \ifdim\dimen@ii<\dimen@
+        % No limite de um display, compactar apenas o respiro ANTES do
+        % filete e manter a mancha dentro da margem inferior. A tolerancia
+        % corresponde exatamente ao respiro que \sbkicker retira abaixo.
+        \ifsb@chapterneed
+          \advance\dimen@ by -26pt
+          \ifdim\dimen@ii<\dimen@ \sb@needbreaktrue
+          \else \global\sb@tightchaptertrue \fi
+        \else \sb@needbreaktrue\fi
+      \fi
     \fi
   \fi
   \ifsb@needbreak\newpage\fi
@@ -822,8 +839,14 @@ luaotfload.add_fallback
       \everypar{}%
     \fi}}
 \makeatother
+\makeatletter
 \newcommand{\sbkicker}[1]{%
-  \vspace{2.2em}%
+  \ifsb@tightchapter
+    \vspace{0pt}%
+    \global\sb@tightchapterfalse
+  \else
+    \vspace{2.2em}%
+  \fi
   {\noindent\color{sbink}\rule{\linewidth}{0.7pt}}\par\nobreak
   \vspace{0.55em}%
   % Corpo \small (nao \footnotesize): um numeral solto — "I", "V" — em
@@ -838,6 +861,7 @@ luaotfload.add_fallback
   % `\everypar` o desliga sozinho no primeiro paragrafo do capitulo.
   \sbnobreak
 }
+\makeatother
 
 % Referencias com recuo pendente
 % Referencias com recuo pendente.

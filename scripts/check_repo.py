@@ -37,11 +37,27 @@ def run_status_command(name: str, cmd: list[str], result: CheckResult) -> None:
         else:
             result.warning("JSON_UNPARSEABLE", f"{name} --json did not return pure JSON")
         return
-    errors = payload.get("errors") or []
-    # check_freshness reports a warning *count*; the others report a list.
-    warnings = payload.get("warnings") or []
-    if isinstance(warnings, int):
-        warnings = [f"{warnings} freshness candidate(s)"] if warnings else []
+    # Os checadores não concordam no formato: alguns devolvem `errors`/`warnings`
+    # como LISTA de mensagens, outros como CONTAGEM, com o texto real em
+    # `issues`. Iterar uma contagem levanta `TypeError: 'int' object is not
+    # iterable` — e só quando havia erro de verdade, então o relatório do
+    # repositório quebrava exatamente no momento em que era útil. `warnings` já
+    # tinha essa defesa; `errors` não.
+    def normalize(campo: str, severidade: str) -> list[str]:
+        valor = payload.get(campo) or []
+        if not isinstance(valor, int):
+            return list(valor)
+        if not valor:
+            return []
+        detalhado = [
+            str(i.get("message") or i.get("code") or severidade)
+            for i in (payload.get("issues") or [])
+            if str(i.get("severity", "")).upper() == severidade
+        ]
+        return detalhado or [f"{valor} {severidade.lower()}(s)"]
+
+    errors = normalize("errors", "ERROR")
+    warnings = normalize("warnings", "WARNING")
     for message in errors:
         result.error("FRAMEWORK_ISSUE", f"{name}: {message}")
     for message in warnings:

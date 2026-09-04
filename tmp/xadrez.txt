@@ -1,0 +1,2359 @@
+Xadrez Computacional — do Brute-Force às
+            Redes Neurais
+
+
+         G u s tav o Z a m b r a n o · J u n h o d e 2 0 2 6
+
+
+                              Ensaio
+
+
+
+
+                   20 cap. · 98 min de leitura
+   “O xadrez é a Drosophila da inteligência artificial.”
+
+   Alexander Kronrod (1965)
+
+
+
+
+SUMÁRIO
+
+
+        Introdução: O Xadrez como Laboratório da Inteligência
+    I   Breve História dos Engines de Xadrez
+   II   O Espaço de Busca: A Maldição da Combinatória
+  III   Representação do Tabuleiro: Bitboards e Números Mágicos
+  IV    Minimax, Negamax e Poda Alfa-Beta
+   V    A Tabela de Transposição e as Tablebases
+  VI    Iterative Deepening e Aspiration Windows
+  VII   A Arte da Poda: Cortando o Impossível
+ VIII   Busca de Quiescência
+  IX    Static Exchange Evaluation (SEE)
+   X    Ordenação de Movimentos e Heurísticas de História
+  XI    Avaliação: Do Artesanato à Rede Neural
+  XII   NNUE no Zchezz: Arquitetura Completa
+ XIII   Quantização e Inferência Inteira
+ XIV    Treinamento: Auto-Jogo, QAT e Gerações
+  XV    AlphaZero e a Revolução do Reinforcement Learning
+ XVI    Otimizações de Performance e Busca Paralela
+XVII    O Xadrez no Navegador: WebAssembly
+XVIII   A Fronteira: Para Onde Vai o Xadrez Computacional?
+ XIX    O Que o Xadrez Ensina Sobre a Inteligência
+
+
+
+
+                                                                  2
+INTRODUÇÃO
+
+
+Introdução: O Xadrez como Laboratório da Inteligência
+O xadrez computacional não é apenas um ramo da programação de jogos. É o campo de batalha onde,
+por mais de setenta anos, as ideias mais profundas sobre busca, avaliação, aprendizado e representação
+do conhecimento foram testadas, refinadas e, por vezes, descartadas. De Alan Turing escrevendo o
+primeiro programa de xadrez em papel (1950) até o AlphaZero vencendo Stockfish com larga vantagem
+[1] em 2017 após cerca de nove horas de auto-aprendizado, o equivalente a aproximadamente 700
+mil partidas de jogo próprio, a história dos engines de xadrez é uma destilação da história da própria
+inteligência artificial.
+
+Este ensaio nasce de um propósito duplo. O primeiro é explicar, para qualquer leitor curioso mesmo
+sem formação técnica, os conceitos que sustentam sete décadas de avanço no xadrez computacional,
+do zero absoluto de 1950 até as redes neurais de hoje. O segundo é mais pessoal: o texto que se segue
+é, em boa medida, uma amostra do próprio caminho de aprendizado que este autor teve que percorrer,
+conceito por conceito, para entender como um motor de xadrez de verdade funciona por dentro, na
+tentativa de escrever o seu.
+
+Esse motor, batizado Zchezz [2] ao longo deste ensaio, nasceu de um objetivo declarado desde o início
+e nada modesto: escrever um engine que falasse o protocolo padrão da indústria (UCI, a interface que
+qualquer engine de xadrez usa para conversar com um software de análise ou torneio), compilável e
+testável lado a lado com qualquer adversário de referência, mas que também rodasse, sem instalação
+nenhuma, dentro de um navegador comum, jogável por qualquer pessoa com um duplo clique. A
+meta por trás disso era usar setenta anos de técnicas acumuladas, poda de busca, avaliação por rede
+neural, paralelismo, aprendizado por auto-jogo, para chegar a uma força de jogo capaz de derrotar
+o melhor jogador humano de xadrez vivo. Isso deixou de ser ficção científica há quase trinta anos,
+como o próximo capítulo conta, e é o pano de fundo que dá sentido a cada técnica descrita a seguir:
+nenhuma delas existe por elegância acadêmica, todas existem porque, sem elas, a máquina perde.
+
+A profundidade do xadrez reside não apenas na combinatória do tabuleiro, mas no fato de que cada
+decisão técnica, qual ramo cortar, como avaliar uma posição, quando parar de buscar, encapsula
+uma decisão epistemológica sobre o que significa “saber” que uma posição é boa. Quando um engine
+descarta um ramo sem examiná-lo (poda), ele está fazendo uma aposta indutiva no estilo de Hume:
+“o passado prediz o futuro”, posições que pareciam ruins em buscas rasas provavelmente são ruins
+em buscas profundas. Quando uma rede neural NNUE avalia uma posição sem calcular variantes,
+ela está exercendo algo análogo à intuição humana, um padrão reconhecido sem articulação lógica
+explícita, ecoando a distinção de Daniel Kahneman entre Sistema 1 (rápido, intuitivo) e Sistema 2
+(lento, deliberativo).
+
+Este ensaio traça a trajetória técnica completa: de um autômato mecânico de 1912 à enumeração bruta
+dos primeiros programas, da poda alfa-beta às funções de avaliação artesanais, destas às redes neurais
+
+
+                                                                                                     3
+NNUE, do Shannon Type A ao reinforcement learning puro. Tudo isso ilustrado pela implementação
+concreta do Zchezz: um engine escrito em C, compilável ao protocolo UCI e também executável inteira-
+mente dentro de um navegador via WebAssembly, com avaliação por rede neural NNUE customizada
+e Elo estimado próximo de 2900, o que o colocaria, em teoria, algumas centenas de pontos acima do
+melhor enxadrista humano da história.
+
+Como Ler Este Ensaio
+Cada capítulo é escrito em duas camadas. A primeira costuma abrir o capítulo sob o título A Intuição,
+e explica a ideia com um experimento mental ou uma analogia concreta, sem pressupor que você
+programe ou jogue xadrez; nos subcapítulos menores, ela aparece condensada na abertura. A segunda
+traz a implementação real, com as estruturas de dados, as fórmulas e os parâmetros exatos do Zchezz.
+
+Quem quer entender por que os engines funcionam pode ler apenas as camadas de intuição e sair com
+o argumento inteiro. Quem quer saber como eles funcionam continua na camada técnica. As duas
+contam a mesma história, em resoluções diferentes.
+
+A Fila de Moedas
+A maior parte das ideias de busca deste ensaio aparece, em miniatura, num jogo que não tem nada de
+xadrez e cabe numa linha.
+
+Quatro moedas estão numa fila, com estes valores, nesta ordem:
+
+
+                                             4   10   2   3
+
+Dois jogadores alternam. Na sua vez, você pega a moeda de uma das duas pontas da fila, nunca do
+meio. Quando as moedas acabam, ganha quem juntou mais dinheiro. É só isso.
+
+O jogo parece trivial, e a jogada óbvia é pegar a ponta maior. Você olha as pontas, vê o 4 de um lado e
+o 3 do outro, e pega o 4. É exatamente aí que está a lição: essa jogada perde.
+
+Se você pega o 4, sobra a fila 10 2 3, e as pontas que você entrega ao adversário são o 10 e o 3. Ele
+pega o 10, obviamente. Sobra 2 3, você pega o 3, ele fica com o 2. Placar final: você 7, ele 12.
+
+Agora pense duas jogadas à frente. Se você pega o 3, sobra a fila 4 10 2, e as pontas que você entrega
+são o 4 e o 2. Nenhuma das duas dá acesso ao 10. Seja qual for a escolha dele, o 10 fica descoberto para
+você na jogada seguinte. Ele pega o 4, você pega o 10, ele fica com o 2. Placar final: você 13, ele 6.
+
+Pegar a moeda menor ganha o jogo. Não porque o 3 valha mais que o 4, mas porque o que importa
+não é o que você leva agora e sim o que você deixa exposto. Um jogador que enxerga uma jogada à
+frente pega o 4 e perde. Um jogador que enxerga duas jogadas à frente pega o 3 e ganha.
+
+Toda a primeira metade deste ensaio é sobre como uma máquina faz esse raciocínio quando a fila não
+tem quatro moedas, mas 10120 posições possíveis. A fila de moedas vai reaparecer a cada capítulo de
+busca, sempre com estes mesmos quatro números, para que a ideia nova de cada seção possa ser vista
+primeiro em algo que cabe na cabeça.
+
+                                                                                                       4
+Glossário para Programadores
+A camada técnica deste ensaio é escrita para quem sabe programar mas não necessariamente joga
+xadrez. Alguns termos recorrentes:
+
+Termo                          Significado para o engine
+
+Posição                        O estado completo do tabuleiro — equivalente ao state de um programa.
+                               64 casas, até 32 peças, mais metadados (de quem é a vez, direitos de roque,
+                               etc.)
+Movimento (move)               Uma transição de estado: peça X sai da casa A e vai para casa B,
+                               possivelmente capturando uma peça adversária
+Peças e valores                Peão (1pt), Cavalo (3pt), Bispo (3pt), Torre (5pt), Dama (9pt), Rei (∞ —
+                               perder o rei é perder o jogo). Estes valores são a moeda da avaliação
+Captura                        Mover uma peça para uma casa ocupada por peça adversária,
+                               removendo-a do jogo
+Xeque                          Ameaça direta ao rei adversário — ele deve ser salvo no próximo lance
+Mate                           Xeque do qual o rei não pode escapar — fim do jogo
+En-passant                     Regra especial: um peão que avança 2 casas pode ser capturado “de
+                               passagem” pelo peão adversário, como se tivesse avançado apenas 1
+Roque (castling)               Movimento duplo especial: rei e torre trocam de posição
+                               simultaneamente, usado para proteger o rei
+Promoção                       Quando um peão alcança a última fila, é promovido a qualquer peça
+                               (quase sempre dama)
+Centipawn (cp)                 Unidade de avaliação: 100cp = 1 peão de vantagem. +300cp ≈ um cavalo a
+                               mais
+Elo                            Sistema de rating: humanos top ~2850, Stockfish ~3600, diferença de 200
+                               Elo ≈ 75% de vitórias
+Peão passado                   Peão sem nenhum peão adversário bloqueando seu caminho de promoção
+                               — extremamente valioso
+Nó (node)                      Cada posição individual visitada pela busca, um único ponto na árvore de
+                               jogo. Uma busca que “examinou 5 milhões de nós” avaliou 5 milhões de
+                               posições diferentes
+Folha (leaf)                   Um nó onde a busca para de se ramificar e devolve um valor, seja porque
+                               a profundidade combinada terminou, seja porque a posição está calma o
+                               bastante (ver Busca de Quiescência)
+Ply                            Um único lance de um único jogador (não um “lance completo” de xadrez,
+                               que envolve os dois). “Profundidade 20” quer dizer 20 plies, ou seja, 10
+                               lances de cada lado
+Profundidade (depth)           Quantos plies à frente o engine calcula nesta iteração
+
+
+
+                                                                                                          5
+Termo                              Significado para o engine
+
+Nodes/s (nps)                      Nós por segundo: quantas posições o engine consegue visitar e avaliar a
+                                   cada segundo. É o “quantos passos por minuto” da busca — um engine
+                                   moderno em hardware comum processa dezenas a centenas de milhões
+                                   de nós por segundo
+PV (Principal Variation)           A sequência de lances que o engine considera ótima — a “melhor linha”
+Nó PV / nó não-PV                  Um nó PV é um nó que ainda faz parte da “melhor linha” sendo
+                                   investigada, com uma janela alfa-beta larga porque sua pontuação exata
+                                   importa; a esmagadora maioria dos nós é não-PV, buscada com janela
+                                   estreita só para confirmar “isto é pior que o que já tenho”, sem se
+                                   importar com o valor exato
+Multi-PV                           Em vez de reportar só a melhor linha, o engine reporta as N melhores
+                                   linhas simultaneamente, cada uma com seu próprio score, para análise
+                                   humana comparativa
+Avaliação estática (static eval)   O placar que a rede de avaliação (capítulos XI a XIII) devolve olhando só a
+                                   posição atual, sem buscar nenhum lance à frente — a “opinião imediata”
+                                   da rede. No código, essa é a variável static_eval. Todo o capítulo VII
+                                   depende de comparar esse número, barato de calcular, contra o que a
+                                   busca, cara de calcular, provavelmente encontraria
+Quiet move                         Um lance que não captura peça nem dá xeque — o oposto de uma captura.
+                                   A maioria dos lances numa posição típica é quiet, e por isso boa parte das
+                                   técnicas de poda (capítulo VII) mira especificamente neles
+Cutoff (beta cutoff)               O momento em que a busca decide parar de examinar os lances restantes
+                                   de um nó porque já encontrou algo bom demais para o adversário
+                                   permitir — é o evento que a poda alfa-beta do capítulo IV existe para
+                                   provocar o quanto antes
+WDL (Win/Draw/Loss)                Um resultado ou uma probabilidade expressos como três números,
+                                   vitória/empate/derrota, em vez de um único placar em centipawns. Usado
+                                   tanto pelas tablebases (resultado exato, capítulo V) quanto como alvo de
+                                   treinamento da rede NNUE (probabilidade, capítulo XIV)
+MVV-LVA                            “Most Valuable Victim, Least Valuable Attacker” — heurística de
+                                   ordenação de capturas: capturar uma dama com um peão é examinado
+                                   antes de capturar um peão com uma dama, porque tende a ser a troca
+                                   mais favorável
+UCI                                Protocolo de comunicação texto entre engine e interface (como uma API
+                                   REST para xadrez)
+
+
+
+   Em termos de programação: um engine de xadrez é um sistema de busca em árvore de estados
+
+
+
+
+                                                                                                            6
+    com avaliação heurística das folhas, otimizado ao extremo para explorar 109 –1010 estados
+    por segundo em hardware comum.
+
+
+
+
+I
+
+
+Breve História dos Engines de Xadrez
+A Intuição
+Toda disciplina técnica tem seu marco simbólico: o momento em que a máquina deixa de ser curiosidade
+de laboratório e passa a ser ameaça real ao melhor humano vivo. No atletismo foi a barreira dos
+quatro minutos na milha, considerada fisiologicamente impossível até ser quebrada em 1954. Assim
+que alguém provou que dava, dezenas de outros corredores repetiram o feito em poucos anos, porque
+a barreira nunca tinha sido física, era só a crença coletiva de que existia. O xadrez computacional
+teve seu próprio quatro-minutos-de-milha, e a história deste capítulo é a de como, ao longo de mais
+de sete décadas, a distância entre “a máquina sabe mover as peças legalmente” e “a máquina vence
+o campeão do mundo” foi encolhendo, primeiro devagar, quase imperceptível década após década,
+depois de repente.
+
+Antes dos Computadores: O Autômato de Torres y Quevedo (1912)
+Antes de qualquer computador eletrônico existir, o engenheiro espanhol Leonardo Torres y Quevedo
+construiu El Ajedrecista [3], um autômato eletromecânico capaz de jogar sozinho, sem operador
+humano escondido (ao contrário do falso “Turco Mecânico” do século XVIII), o final de rei e torre
+contra rei. Apresentado publicamente em 1914, o dispositivo usava relés eletromagnéticos e um braço
+mecânico para mover suas peças e sensores para detectar a resposta do adversário. Seu algoritmo
+não era ótimo, às vezes precisava de mais lances que o necessário, mas dava mate de forma garantida
+contra qualquer defesa. É um marco frequentemente citado como o primeiro dispositivo de tomada de
+decisão automatizada da história, décadas antes da palavra “computador” significar o que significa
+hoje.
+
+Os Fundamentos Teóricos: Turing e Shannon (1948-1950)
+A teoria chegou antes do hardware conseguir realizá-la. Claude Shannon publicou em 1950 o paper
+que fundou o campo, propondo as estratégias Tipo A e Tipo B detalhadas no capítulo seguinte. Alan
+Turing, no mesmo período, escreveu à mão o algoritmo do “Turochamp”, um programa de xadrez
+completo demais para qualquer computador da época executar, e o testou fazendo ele mesmo, com
+papel e caneta, o papel do processador, aplicando cada regra manualmente contra um adversário
+humano. Nenhum dos dois tinha hardware capaz de rodar suas ideias em tempo real. O que os dois
+
+
+
+
+                                                                                                  7
+deixaram foi algo mais duradouro: a prova de que o problema podia ser formalizado, mesmo antes de
+poder ser resolvido.
+
+Os Primeiros Programas Reais: De Manchester ao MIT (1951-1967)
+Em 1951, o cientista alemão Dietrich Prinz [4] escreveu, no Ferranti Mark 1 da Universidade de
+Manchester, o primeiro programa de xadrez a rodar de fato num computador eletrônico. Suas ambições
+eram modestas por necessidade: o programa só resolvia problemas de mate em dois lances, não jogava
+uma partida inteira. Seis anos depois, em 1957, uma equipe da IBM liderada por Alex Bernstein
+escreveu o primeiro programa capaz de jogar uma partida completa do início ao fim, rodando no IBM
+704 e levando cerca de oito minutos para decidir cada lance.
+
+O salto seguinte veio de Richard Greenblatt no MIT, em 1967, com o Mac Hack VI [5]. Foi o primeiro
+programa a jogar sob condições de torneio humano, o primeiro a receber um rating oficial e o primeiro
+a vencer uma pessoa numa partida de torneio válido. Um detalhe curioso liga o Mac Hack diretamente
+a um capítulo posterior deste ensaio: foi também o primeiro programa de xadrez da história a usar
+uma tabela de transposição, a mesma técnica de cache que a seção V detalha na implementação do
+Zchezz, cinquenta e nove anos depois.
+
+Força Bruta Dedicada: Hardware Especializado (Anos 1970-1980)
+Durante os anos 1970 e 1980, ficou claro que software genérico rodando em processadores genéricos
+tinha um teto. A resposta de uma geração de pesquisadores foi construir hardware especializado,
+circuitos desenhados exclusivamente para gerar movimentos de xadrez e avaliar posições, muito mais
+rápido do que qualquer programa em software poderia fazer na mesma época. Belle [6], construída
+por Ken Thompson (o mesmo do sistema operacional Unix) e Joe Condon nos Bell Labs, tornou-se em
+1983 a primeira máquina de xadrez a atingir nível de mestre, com hardware dedicado ao gerador de
+movimentos e à tabela de transposição.
+
+A linhagem que viria a produzir o Deep Blue começou aqui: Belle influenciou diretamente o projeto
+ChipTest, que por sua vez evoluiu para Deep Thought [7] na Universidade Carnegie Mellon, sob Feng-
+hsiung Hsu e colegas. Em 1988, Deep Thought tornou-se a primeira máquina a derrotar um grande
+mestre humano, Bent Larsen, numa partida de torneio oficial. A distância entre “vencer amadores” e
+“vencer o topo da elite mundial” tinha, pela primeira vez, sido cruzada.
+
+Deep Blue e a Queda do Campeão do Mundo (1996-1997)
+A equipe da Carnegie Mellon foi contratada pela IBM, e Deep Thought foi rebatizado Deep Blue, um
+trocadilho com o apelido histórico da própria IBM (“Big Blue”). Em fevereiro de 1996, na primeira
+partida oficial contra o então campeão mundial Garry Kasparov, Deep Blue venceu um único jogo, a
+primeira vitória de uma máquina contra um campeão mundial reinante sob condições de torneio, mas
+Kasparov se recompôs e venceu o confronto geral por 4 a 2.
+
+O verdadeiro marco veio na revanche de maio de 1997, em Nova York. Uma versão substancialmente
+atualizada de Deep Blue, capaz de avaliar cerca de 200 milhões de posições por segundo usando
+
+
+                                                                                                   8
+hardware customizado, venceu o confronto por 3½ a 2½ [8], tornando-se a primeira máquina a derrotar
+um campeão mundial reinante numa disputa de várias partidas sob regras de torneio. Kasparov
+abandonou o sexto e decisivo jogo em menos de vinte lances. O quatro-minutos-de-milha do xadrez
+tinha sido quebrado, e, como no atletismo, uma vez quebrado nunca mais voltou a fechar: nenhuma
+máquina de nível competitivo perdeu de um humano de forma consistente desde então.
+
+A Democratização: Software em Hardware Comum (Anos 2000-2010)
+A década seguinte inverteu a lógica de Belle e Deep Blue. Em vez de hardware especializado caríssimo,
+engines escritos como software puro, rodando em processadores domésticos comuns, alcançaram
+e depois ultrapassaram largamente a força de qualquer máquina dedicada anterior, puramente por
+refinamento algorítmico: poda alfa-beta cada vez mais agressiva, funções de avaliação artesanais cada
+vez mais detalhadas (o assunto do capítulo XI), e o crescimento natural da capacidade de processamento
+previsto pela Lei de Moore. Engines como Rybka, e mais tarde o projeto de código aberto Stockfish,
+superaram os melhores humanos por margens tão grandes que confrontos diretos deixaram de ser
+interessantes como espetáculo: a partir de meados dos anos 2000, ninguém mais duvidava seriamente
+que o computador ganharia. A fronteira de interesse se deslocou para o xadrez “centaur” ou “freestyle”,
+equipes de humano e máquina jogando juntos, já que a competição pura entre um humano e um
+engine moderno deixou de ser disputa.
+
+A Virada Neural: AlphaZero e NNUE (2017-2018)
+O capítulo final dessa história, por enquanto, é a fusão entre a tradição de busca por força bruta e
+o aprendizado profundo. Em 2017, o AlphaZero [9] do DeepMind abandonou toda regra de xadrez
+escrita à mão e aprendeu a jogar do zero, por auto-jogo puro, superando o Stockfish da época. Em 2018,
+a arquitetura NNUE [10], originada no mundo do shogi, permitiu que os engines de poda alfa-beta
+tradicionais incorporassem avaliação por rede neural sem perder a velocidade bruta que sempre foi
+sua vantagem competitiva. Os capítulos XI a XV detalham essas duas rupturas em profundidade. O
+resultado, hoje, é um Stockfish com Elo estimado acima de 3600, algo como 700 a 800 pontos Elo acima
+do melhor jogador humano vivo, uma distância tão grande que uma vitória decisiva do computador
+deixou de ser notícia. É esse arsenal de setenta anos, poda alfa-beta, tabelas de transposição, avaliação
+neural incremental, treinamento por auto-jogo, paralelismo, que qualquer engine novo, incluindo o
+Zchezz descrito na camada técnica deste ensaio, precisa reunir e implementar corretamente só para
+chegar perto do que hoje é considerado “competitivo”. Os capítulos seguintes desmontam, peça por
+peça, cada uma dessas técnicas.
+
+
+
+
+                                                                                                       9
+II
+
+
+O Espaço de Busca: A Maldição da Combinatória
+A Intuição
+Na fila 4 10 2 3, existem exatamente duas jogadas possíveis na primeira rodada (pegar o 4 ou pegar o
+3), depois duas de novo na rodada seguinte, e assim por diante até a fila esvaziar. O total de sequências
+possíveis de jogo é pequeno o bastante para contar nos dedos: cada jogador escolhe entre duas pontas
+em cada uma das quatro rodadas, o que dá no máximo 16 caminhos diferentes do início ao fim. Uma
+criança resolve isso olhando todos eles.
+
+Agora estenda a fila. Com 8 moedas em vez de 4, o número de caminhos já passa de mil. Com
+40 moedas, ultrapassa qualquer quantidade que caiba na memória de um computador comum. A
+dificuldade não veio de nenhuma regra nova: as regras continuam as mesmas, pegar uma ponta, nunca
+o meio. O que mudou foi só o tamanho da fila, e o número de caminhos cresce multiplicando, não
+somando, a cada moeda adicionada.
+
+O xadrez é essa mesma fila, só que com uma quantidade de moedas absurda. A cada posição no
+tabuleiro existem em média cerca de 35 movimentos legais, e depois de cada um deles outros 35, e
+depois outros 35 de novo. Dez lances à frente, contando os dois jogadores, já são mais sequências
+possíveis do que segundos se passaram desde o Big Bang multiplicados várias vezes por si mesmos. A
+árvore de jogo inteira do xadrez chega perto de 10120 posições, um número tão maior que os átomos
+do universo observável que a diferença entre os dois já não cabe na intuição.
+
+O ponto central não é que o xadrez exija um raciocínio mais sofisticado que a fila de moedas. A lógica
+de “o que eu deixo exposto” é exatamente a mesma nos dois casos. O que muda é puramente a escala:
+o problema de jogar bem não é pensar de um jeito diferente, é pensar do mesmo jeito um número
+absurdo de vezes. Todo o resto deste ensaio, poda, cache, aprofundamento gradual, é sobre como fazer
+esse mesmo raciocínio simples sem ter que percorrer cada um dos 10120 caminhos. E é também sobre
+velocidade bruta: quanto mais posições por segundo (nodes/s, ou nps, o “quantos passos por minuto”
+de uma busca) um engine consegue examinar, mais fundo ele alcança dentro do mesmo relógio, mesmo
+sem nenhuma ideia nova sobre xadrez.
+
+O xadrez possui aproximadamente 1044 posições legais e uma árvore de jogo estimada em 10120 nós, o
+chamado número de Shannon. Cada um desses nós é uma posição específica visitada pela busca;
+quando a busca para de se ramificar num nó e devolve um valor, esse nó é chamado de folha. Para dar
+escala: o número de átomos no universo observável é cerca de 1080 . A árvore de jogo do xadrez é 1040
+vezes maior que o número de átomos no cosmos. Nenhum computador, nem todos os computadores
+do planeta operando em paralelo até a morte térmica do universo, poderá enumerar essa árvore.
+
+Claude Shannon, em seu paper seminal Programming a Computer for Playing Chess (1950) [11], propôs
+duas estratégias fundamentais:
+
+
+                                                                                                       10
+      • Tipo A (brute-force): explorar todas as ramificações até uma profundidade fixa. Simples, mas
+        exponencialmente cara. Para profundidade 𝑑 = 10 com fator de ramificação 𝑏 ≈ 35 (em cada
+        posição média, há ~35 movimentos legais): 3510 ≈ 2.7 × 1015 nós. Impraticável.
+      • Tipo B (seletivo): explorar apenas linhas “promissoras”. Mais humano, mas requer critérios de
+        seleção, e esses critérios são o verdadeiro problema. Como decidir o que é “promissor” sem já
+        ter a resposta? É o paradoxo da busca informada: para saber o que explorar, você precisa da
+        informação que só obteria explorando.
+
+A história dos engines é a história de como misturar essas duas abordagens, e o insight fundamental é
+que a resposta não é nem uma nem outra, mas uma combinação sofisticada onde a busca ampla é
+guiada por heurísticas inteligentes que descartam o irrelevante sem perder o essencial.
+
+
+
+
+III
+
+
+Representação do Tabuleiro: Bitboards e Números Mágicos
+A Intuição
+Imagine uma parede com 64 interruptores de luz, um para cada casa do tabuleiro, repetida uma vez
+para cada tipo de peça. Se alguém pergunta “onde estão os peões brancos?”, você não precisa andar
+casa por casa conferindo: basta olhar a parede inteira de uma vez e ver quais luzes estão acesas. É essa
+a ideia por trás de guardar o tabuleiro como uma sequência de 64 bits (um “bit” é só um interruptor:
+ligado ou desligado, 1 ou 0) em vez de uma lista de 64 casas percorridas uma a uma. Perguntas que
+pareceriam exigir uma varredura completa, como “quais peões estão dobrados na mesma coluna” ou
+“que casas a torre ameaça”, viram operações que comparam painéis inteiros de interruptores de uma
+tacada só, e o hardware moderno faz isso em frações de nanossegundo.
+
+O mesmo raciocínio explica os “números mágicos” usados para calcular rapidamente para onde uma
+torre ou um bispo pode se mover quando há peças no caminho bloqueando. Em vez de percorrer a
+linha até esbarrar num obstáculo, o programa multiplica o padrão de bloqueio por uma constante
+especial, escolhida de propósito para embaralhar os bits de um jeito que aponta direto para a resposta
+certa numa tabela pronta, como se existisse um índice de biblioteca que leva instantaneamente à
+prateleira certa, sem percorrer os corredores.
+
+Há ainda um segundo problema de velocidade: como saber, num piscar de olhos, se duas posições de
+tabuleiro já vistas antes são a mesma posição, sem comparar casa por casa? A resposta é dar a cada
+combinação de peça-e-casa um número secreto, sorteado uma única vez no começo. A “impressão
+digital” de uma posição inteira é a combinação desses números secretos (tecnicamente, um “ou
+exclusivo” bit a bit, mas pense nisso como uma mistura reversível: aplicar o mesmo número duas vezes
+desfaz o efeito da primeira vez). Mover uma peça só troca duas dessas contribuições, a da casa de saída
+e a da casa de chegada, então a impressão digital nova se calcula ajustando a antiga, sem refazer a
+
+
+                                                                                                     11
+soma inteira do zero. É esse truque, batizado de hashing de Zobrist, que deixa o programa reconhecer
+instantaneamente “já vi essa posição antes” mesmo depois de milhões de lances calculados.
+
+O texto a seguir detalha como o Zchezz implementa essa dupla representação, os números mágicos
+por trás dos ataques de peças deslizantes e o funcionamento exato do hash de Zobrist.
+
+Antes de buscar, o engine precisa representar o tabuleiro de forma que operações fundamentais
+(gerar movimentos, verificar ataques, atualizar posições) sejam extremamente rápidas. A escolha da
+representação é a decisão arquitetural mais consequente de um engine.
+
+Representação Dual: Mailbox + Bitboards
+O Zchezz mantém simultaneamente duas representações em sincronia perfeita:
+
+   1. Mailbox (uint8_t b[64]): um array plano onde cada índice é uma casa e o valor é a peça (ou
+      vazio). Permite lookup 𝑂(1) por casa: “que peça está em e4?” é uma única leitura de memória.
+   2. Bitboards (uint64_t bb[12], um por tipo de peça): cada bit representa uma casa. Operações
+      como “onde estão todos os peões brancos?” reduzem-se a uma única leitura de 64 bits. Operações
+      como “casas atacadas por todas as torres” são operações bitwise (AND, OR, XOR, SHIFT) que
+      executam em 1 ciclo de clock em hardware moderno.
+
+A razão para manter ambas é que cada uma é superior em contextos diferentes: o mailbox é ótimo
+para “que peça está aqui?”, enquanto os bitboards são ótimos para “onde estão todas as peças deste
+tipo?” e para gerar ataques em massa.
+
+Magic Bitboards
+Para peças deslizantes (torre, bispo, dama), os ataques dependem da ocupação do tabuleiro: peças no
+caminho bloqueiam. Calcular ataques de torre em tempo real requer percorrer as quatro direções até
+encontrar obstáculos (𝑂(𝑛) no pior caso). Com magic bitboards, esse cálculo é reduzido a 𝑂(1):
+
+   1. Isolar os bits de ocupação relevantes (as casas ao longo das linhas de ataque) via máscara AND
+   2. Multiplicar o resultado por um número mágico pré-computado: uma constante de 64 bits
+      cuidadosamente escolhida que, por propriedades de multiplicação modular, distribui os bits
+      relevantes nos bits mais significativos
+   3. Deslocar à direita para obter um índice em uma tabela pré-computada de ataques
+
+O resultado: o conjunto completo de ataques de uma torre em qualquer posição, com qualquer
+configuração de bloqueio, é obtido com uma multiplicação e um lookup em tabela. Encontrar
+esses “números mágicos” é em si um problema computacional fascinante, geralmente resolvido por
+busca aleatória com verificação exaustiva.
+
+Tabelas de Leaper
+Cavalos e reis têm ataques independentes da ocupação (não deslizam). O Zchezz usa tabelas pré-
+computadas de 64 entradas: knight_attacks[sq] e king_attacks[sq] contêm bitboards fixos com
+todas as casas atacadas a partir de cada casa.
+
+                                                                                                  12
+Zobrist Hashing
+Cada posição carrega um hash de Zobrist [13] atualizado incrementalmente. O método, inventado
+por Albert Zobrist em 1970, funciona assim:
+
+     1. Para cada combinação (peça, casa), (lado a mover), (direito de roque) e (coluna de en-passant),
+        atribuir um número aleatório de 64 bits
+     2. O hash de uma posição é o XOR de todos os números correspondentes às peças presentes, ao
+        lado a mover, aos direitos de roque ativos e ao status de en-passant
+
+A propriedade crucial: ao fazer um movimento, o hash é atualizado por XOR com os números da
+peça-origem, peça-destino (e peça capturada, se houver), 𝑂(1) por movimento, sem necessidade de
+recomputar do zero. O Zobrist hash é usado para:
+
+     • Indexar a tabela de transposição (cache de posições avaliadas)
+     • Detectar repetições de posição ao longo da partida
+     • Suportar livros de abertura no formato Polyglot (que usam Zobrist nativo)
+
+
+Make / Unmake: Pilha de Undo
+O Zchezz usa uma pilha explícita de undo (UndoFrame g_undo[512]) em vez de copy-make. Cada
+board_make empilha um snapshot completo de: direitos de roque, coluna de en-passant, halfmove
+clock, posições dos reis, e o hash pré-movimento. board_unmake desempilha e restaura o board array
+e bitboards in-place, com zero alocação de memória, zero tráfego de heap no caminho quente da
+busca.
+
+Todos os movimentos especiais são completamente suportados: en-passant, todos os quatro roques
+com verificação de legalidade, e promoção a dama/torre/bispo/cavalo. Cada caso especial é tratado
+corretamente tanto no gerador de movimentos quanto no caminho de atualização do acumulador
+NNUE.
+
+
+
+
+IV
+
+
+Minimax, Negamax e Poda Alfa-Beta
+A Intuição
+O raciocínio que decidiu a fila de moedas já era, sem nome, o algoritmo deste capítulo. Pegar o 3
+em vez do 4 exigiu simular o adversário: supor que ele, depois da sua jogada, também escolhe o que
+é melhor para ele, e só então julgar sua própria jogada pelo que sobra depois disso. Descartar o 4
+não veio de nenhuma tabela de valores, veio de assumir que o outro lado joga tão bem quanto você e
+trabalhar de trás para frente a partir dessa suposição. Formalizado e repetido em cada nível da árvore,
+
+
+
+                                                                                                    13
+isso é o minimax: alternar entre “eu escolho o melhor para mim” e “ele escolhe o pior para mim”,
+camada após camada, até a raiz.
+
+A poda alfa-beta entra quando você percebe que nem toda essa árvore precisa ser olhada até o fim para
+a conclusão se manter. Comece avaliando a jogada de pegar o 3. Sobra a fila 4 10 2 para o adversário,
+e as duas respostas dele levam ao mesmo lugar: se ele pega o 4, você pega o 10 e ele fica com o 2; se ele
+pega o 2, você pega o 10 e ele fica com o 4. Nos dois casos você termina com 13. Essa opção, portanto,
+garante 13, e esse número passa a ser o piso contra o qual tudo o mais será comparado.
+
+Agora avalie a outra jogada, pegar o 4. Sobra a fila 10 2 3, e a primeira resposta que você examina é a
+mais natural para ele: pegar o 10. A partir daí você fica com o 3 e ele com o 2, e seu total é 7. Neste
+ponto o cálculo pode parar. O adversário escolhe o que for pior para você, então o valor real desta
+jogada é no máximo 7, já que ele sempre pode escolher essa resposta. E 7 é pior que os 13 que você
+já tem garantidos. A outra resposta dele, pegar o 3, nunca chegará a ser examinada: seja qual for o
+resultado dela, não muda que ele tem a opção de 7 à disposição, e não muda que 13 continua sendo
+melhor.
+
+É essa a poda. Não se trata de adivinhar que um ramo é ruim, e sim de provar que ele já não pode
+competir, e parar exatamente no instante em que a prova fica pronta. Em quatro moedas o ganho é
+uma única jogada não examinada. No xadrez, onde cada nível da árvore multiplica por 35 o número
+de ramos, abandonar um ramo no segundo nível elimina não um caminho, mas todos os milhões que
+nasceriam dele. É essa multiplicação que torna a poda, e não a força bruta, o que separa um engine
+competitivo de um inviável.
+
+Nó, Folha e Ply: Vocabulário da Árvore
+Vale fixar três palavras antes de seguir, porque o resto do ensaio depende delas. Cada posição examinada
+pela busca, cada “estado” único da fila de moedas ou do tabuleiro, é um nó. A posição inicial é a
+raiz; cada jogada possível a partir dela cria um novo nó filho. Um ply é um único lance de um único
+jogador: na fila de moedas, você pegar o 3 é um ply, o adversário responder pegando o 4 é outro ply.
+Dois plies formam o que no xadrez comum se chama “um lance completo” (um lance das brancas e a
+resposta das pretas). Quando a busca decide não se ramificar mais a partir de um nó, seja porque a
+profundidade combinada terminou, seja por outro critério de parada (o capítulo VIII trata do caso mais
+importante), esse nó é chamado de folha, e é ali que a avaliação heurística entra em cena. “Buscar até
+profundidade 12” significa, portanto, seguir a árvore por 12 plies a partir da raiz antes de tratar os nós
+alcançados como folhas.
+
+O Algoritmo Minimax
+A formalização de John von Neumann (1928) [12] para jogos de soma zero de dois jogadores com
+informação perfeita é elegantemente direta: o jogador que maximiza escolhe o movimento com maior
+valor; o adversário escolhe o de menor valor. A árvore é avaliada recursivamente desde as folhas até a
+raiz.
+
+
+
+
+                                                                                                       14
+O custo computacional é 𝑂(𝑏 𝑑 ), onde 𝑏 ≈ 35 é o fator de ramificação médio no xadrez e 𝑑 é a
+profundidade de busca. Para 𝑑 = 12 (o mínimo competitivo), são 3512 ≈ 3.4 × 1018 nós, inviável sem
+poda.
+
+De Minimax a Negamax: a Mesma Ideia, Metade do Código
+O minimax clássico, tal como von Neumann o formalizou, precisa de duas funções espelhadas: uma
+que maximiza (para o jogador da vez) e outra que minimiza (para o adversário), cada uma chamando
+a outra recursivamente. É funcionalmente correto, mas duplica código: toda a lógica de “escolher o
+melhor filho” precisa existir duas vezes, uma vez ao contrário da outra, e qualquer correção de bug
+precisa ser feita nos dois lugares.
+
+O Negamax, formalizado nos anos 1970 e adotado por praticamente todo engine moderno, incluindo
+o Zchezz, explora uma simetria simples do xadrez: uma posição boa para as brancas é, pelo mesmo
+número, ruim para as pretas. Se a avaliação for sempre escrita “da perspectiva de quem tem a vez
+de jogar” em vez de “da perspectiva das brancas”, então tanto o jogador que maximiza quanto o que
+minimiza estão, na verdade, fazendo a mesma coisa: escolhendo o maior valor entre suas opções.
+A única diferença é que o valor que cada lado recebe do adversário precisa ser invertido de sinal
+antes de ser comparado, porque o que é bom para o oponente é ruim para mim. Daí a fórmula:
+score = −negamax(oponente).
+
+Um jeito concreto de sentir a diferença: no minimax clássico, avaliar a fila de moedas exigiria uma
+função melhorParaMim(fila) e outra melhorParaEle(fila), cada uma escrita e testada separada-
+mente. No negamax, existe só melhorParaQuemJoga(fila), e quando é a vez de calcular o que sobra
+para o adversário, o programa simplesmente chama essa mesma função de novo e nega o resultado,
+porque o que sobra de bom para ele é, do meu ponto de vista, ruim na mesma proporção. É a mesma
+matemática, reorganizada para que só uma função precise existir. Isso não muda uma única decisão
+que o algoritmo toma, é uma simplificação de engenharia, não uma ideia nova sobre xadrez, mas é a
+forma que praticamente todo engine competitivo usa hoje, porque metade do código significa metade
+das chances de bug.
+
+A Poda Alfa-Beta
+A poda alfa-beta [14] (analisada formalmente por Knuth & Moore, 1975) [15] é a otimização mais
+importante da história do xadrez computacional. Ela elimina ramos da árvore que não podem afetar
+o resultado final:
+
+    • Alpha (α): a melhor pontuação que o jogador que maximiza pode garantir até agora
+    • Beta (β): a melhor pontuação que o jogador que minimiza pode garantir até agora
+    • Se em qualquer nó a pontuação atinge β (o minimizador já tem uma alternativa melhor), a busca
+      é cortada: nenhum movimento restante precisa ser examinado
+
+Em ordem perfeita de movimentos (melhor primeiro), o custo cai de 𝑂(𝑏 𝑑 ) para 𝑂(𝑏 𝑑/2 ), efeti-
+vamente duplicando a profundidade alcançável com o mesmo orçamento computacional. Para
+𝑏 = 35: a redução é de 3512 para 356 ≈ 1.8 × 109 , um fator de 109 .
+
+                                                                                                 15
+PVS (Principal Variation Search)
+A evolução moderna da alfa-beta, e a técnica usada pelo Zchezz. A ideia é simples mas poderosa:
+
+    1. O primeiro movimento em cada nó (presumivelmente o melhor, pela ordenação) é buscado
+       com janela completa [𝛼, 𝛽]
+    2. Todos os subsequentes usam uma janela nula [𝛼, 𝛼 + 1]: uma aposta de que não serão
+       melhores que o primeiro
+    3. Se a aposta falha (o movimento é melhor), uma re-busca completa com janela [𝛼, 𝛽] é disparada
+       para obter a pontuação exata
+
+A economia vem do fato de que a maioria dos movimentos não é melhor que o primeiro (se a ordenação
+for boa), e a busca de janela nula é dramaticamente mais rápida. No Zchezz, nós PV (onde 𝛽 − 𝛼 > 1)
+recebem uma redução a menos no LMR, garantindo que a variação principal é buscada com precisão.
+
+
+
+
+V
+
+
+A Tabela de Transposição e as Tablebases
+A Intuição
+Volte à fila 4 10 2 3 e siga dois caminhos diferentes. No primeiro, você pega o 4 e o adversário responde
+pegando o 3; sobra a fila 10 2. No segundo, você pega o 3 e o adversário responde pegando o 4; sobra,
+de novo, a fila 10 2. As duas sequências de jogadas foram diferentes, a ordem das escolhas foi diferente,
+mas o estado em que o jogo se encontra depois delas é idêntico: mesmas moedas, mesma ordem,
+mesmo jogador na vez. Quem calculou o valor dessa posição pela primeira rota já sabe a resposta para
+a segunda, sem precisar refazer nenhuma conta.
+
+Isso é mais comum do que parece. Em qualquer jogo onde a ordem das jogadas pode se embaralhar
+sem mudar o resultado final, caminhos distintos convergem para a mesma situação, e resolvê-la duas
+vezes é desperdício puro. No xadrez isso tem até nome de abertura: 1.e4 e5 2.Cf3 e 1.Cf3 e5 2.e4 são
+sequências de lances diferentes que terminam exatamente na mesma posição no tabuleiro. Um engine
+que trata essas duas linhas como problemas separados está recalculando algo que já resolveu.
+
+A saída é guardar, para cada posição já avaliada, um identificador curto e a resposta encontrada, de
+modo que na próxima vez que aquela mesma posição aparecer, seja qual for o caminho que levou até
+ela, a resposta é lida de uma tabela em vez de recalculada. É essa tabela que o próximo bloco descreve:
+como identificar uma posição de forma compacta e confiável, e o que fazer quando duas posições
+competem pelo mesmo espaço nela.
+
+O xadrez é um grafo, não uma árvore. Muitas sequências de movimentos levam à mesma posição
+(por exemplo, 1.e4 e5 2.Nf3 = 1.Nf3 e5 2.e4). A tabela de transposição (TT) é um cache gigante que
+armazena posições já avaliadas, indexadas pelo hash de Zobrist.
+
+                                                                                                      16
+Implementação no Zchezz: Structure-of-Arrays
+A TT do Zchezz usa um layout Structure-of-Arrays (SoA) com arrays separados para hash, pontuação,
+depth+flag, geração, melhor movimento e avaliação estática. Este layout mantém o acesso a cada
+campo cache-friendly: quando a busca precisa verificar apenas a profundidade de milhares de entradas,
+os dados estão contíguos em memória.
+
+Plataforma                                 Entradas                             Memória
+
+Nativo                                     4M entradas                          ~112 MB
+WASM (browser)                             512K entradas                        ~14 MB
+
+
+
+
+Envelhecimento por Geração
+Cada chamada a search_best incrementa um contador de geração (TT_GEN). Entradas de iterações
+anteriores são marcadas como “stale”: seus movimentos ainda são usados para ordenação (o melhor
+movimento de ontem provavelmente ainda é bom hoje), mas suas pontuações não são usadas para
+cutoffs (a avaliação pode ter mudado com maior profundidade).
+
+Correção de Distância de Mate
+Pontuações de mate (acima de ±9000 centipawns) são armazenadas e lidas com um ajuste de ply.
+Sem isso, “mate em 5” encontrado na profundidade 8 seria confundido com “mate em 3” quando
+relido na profundidade 6. A correção garante que scores de mate são comparáveis corretamente entre
+profundidades diferentes.
+
+Funções da TT
+   1. Evitar re-avaliação de posições idênticas alcançadas por caminhos diferentes
+   2. Ordenar movimentos — o melhor movimento de uma busca anterior é tentado primeiro (o
+      move ordering mais valioso)
+   3. Detectar repetições — prevenindo loops infinitos via comparação de hashes
+   4. Armazenar avaliação estática — evitando recomputação da avaliação NNUE
+
+
+Tablebases: A Tabela de Transposição Perfeita
+A tabela de transposição descrita acima guarda respostas já calculadas nesta partida, e essas respostas
+podem estar erradas se a busca não foi fundo o bastante. Existe uma segunda espécie de cache que não
+tem essa limitação: em vez de guardar o que a busca descobriu, guarda o resultado matematicamente
+exato de toda posição possível com poucas peças no tabuleiro, calculado uma única vez, para sempre,
+offline, por retrocesso a partir de todo xeque-mate imaginável com aquele número de peças.
+
+É a mesma ideia da tabela de transposição, “não recalcule o que já se sabe”, levada ao limite: em vez
+de um cache que expira e é sobrescrito partida após partida, um cache permanente e completo, sem
+
+
+
+                                                                                                    17
+nenhum “provavelmente” nele. Consultar essa tabela não é uma estimativa forte, é a resposta de um
+oráculo: vitória em exatamente tantos lances, empate, ou derrota, sem exceção.
+
+O Zchezz suporta as Tablebases Syzygy [16] de 3 a 5 peças via a biblioteca Fathom. Durante a busca,
+o probing de WDL (Win/Draw/Loss) devolve o resultado exato de qualquer posição com até 5 peças
+no tabuleiro, cortando a busca imediatamente ali, e o probing de DTZ (Distance to Zeroing, a distância
+até o próximo lance que reinicia o contador de 50 movimentos) é usado na raiz para escolher, entre os
+lances vencedores, o que força a vitória mais rápida. Um empate de tablebase (WDL = 2) retorna 0
+centipawns imediatamente, sem deixar a avaliação NNUE, que nunca viu posições de tablebase durante
+o treino, tentar “corrigir” um resultado que já é matematicamente definitivo. O engine funciona de
+forma idêntica sem as tabelas instaladas, e builds WASM (para o navegador) as excluem por completo,
+já que o conjunto de 3 a 5 peças ocupa vários gigabytes em disco, inviável de embutir num arquivo
+HTML.
+
+
+
+
+VI
+
+
+Iterative Deepening e Aspiration Windows
+A Intuição
+Há duas formas de resolver a fila 4 10 2 3. Uma é sentar e calcular a árvore inteira até o final antes de
+mover um dedo. A outra é primeiro perguntar “qual das duas pontas é melhor olhando só essa jogada”,
+responder isso rápido, e depois refazer a pergunta olhando duas jogadas à frente, depois três, cada
+rodada usando mais tempo que a anterior. A segunda forma parece perder tempo repetindo trabalho,
+afinal a pergunta de uma jogada à frente já foi feita e descartada quando se chega à pergunta de duas.
+Mas ela tem duas vantagens que a primeira não tem.
+
+A primeira vantagem é que, se alguém interromper o cálculo no meio, você já tem uma resposta, a da
+última rodada completa, mesmo que não seja a mais refinada possível. Um relógio de xadrez corre o
+tempo todo, e um engine que só produz resposta ao terminar o cálculo completo pode simplesmente
+não ter nada a jogar quando o tempo acaba. A segunda vantagem é que a rodada rasa não é desperdício:
+ela diz por onde começar a olhar na rodada seguinte. Se pegar o 3 já parecia melhor com um lance de
+antecedência, vale a pena examinar essa opção primeiro, com mais cuidado, quando se aprofunda o
+cálculo, em vez de tratar as duas pontas como igualmente prováveis.
+
+Aspiration windows levam essa ideia adiante. Se a fila valia 13 pontos para você na rodada de ontem,
+é razoável começar a busca de hoje já supondo que o valor está perto disso, digamos entre 11 e 15,
+em vez de considerar de largada qualquer valor entre o pior e o melhor resultado possível do jogo
+inteiro. Essa suposição estreita o cálculo e o torna mais rápido. Só quando a resposta real cai fora da
+faixa suposta, para cima ou para baixo, é que a busca precisa ser refeita com uma janela mais larga, e
+mesmo assim a suposição inicial raramente está tão errada a ponto de isso acontecer com frequência.
+
+
+                                                                                                      18
+Iterative Deepening
+O engine não busca diretamente na profundidade final. Em vez disso, usa iterative deepening:
+começa na profundidade 1, completa a busca, e então aprofunda progressivamente.
+
+Parece desperdiçar trabalho (buscar profundidade 1, 2, 3… quando queremos profundidade 12). Mas na
+prática, o trabalho das iterações anteriores é quase inteiramente reutilizado via tabela de transposição:
+a iteração 𝑑 − 1 preenche a TT com movimentos e scores que tornam a iteração 𝑑 dramaticamente
+mais eficiente pela melhor ordenação de movimentos.
+
+Vantagens cruciais:
+
+    • Controle de tempo: se o orçamento de tempo acabar, o engine retorna o melhor resultado da
+      última iteração completada
+    • Melhor ordenação: cada iteração melhora a ordenação de movimentos para a próxima,
+      aproximando-se da “ordem perfeita” que maximiza a eficiência alfa-beta
+
+
+Aspiration Windows
+A partir da profundidade 3, o Zchezz abre cada iteração com uma janela assimétrica de ±25 centipawns
+ao redor da pontuação da iteração anterior. A aposta: a pontuação provavelmente não mudará
+drasticamente com um ply a mais.
+
+Se ocorre um fail-low (a pontuação real é menor que α) ou fail-high (maior que β), a meia-janela é
+dobrada a cada erro: 25 vira 50, depois 100, depois 200 e 400, e se a busca ainda assim falhar, o engine
+abandona a aposta e rebusca com janela completa (−∞, +∞) para garantir resultado correto. São, no
+pior caso, cinco re-buscas.
+
+Um exemplo numérico fecha a ideia. Suponha que a iteração anterior devolveu +12 centipawns; a
+busca nova abre com a janela [−13, +37] e retorna +80, um fail-high: o valor real caiu fora da faixa
+apostada. Na primeira expansão, a meia-janela dobra para 50 e a janela passa a [−13, +87]; a re-busca
+devolve +80 dentro dela, e o valor exato sai com uma única re-busca. O balanço compensa porque a
+passada inicial, de janela estreita, cortou barato a esmagadora maioria dos ramos, e mesmo a re-busca
+com janela de 50 ainda poda mais agressivamente que uma janela completa desde o início. Quando a
+aposta acerta, que é o caso típico, nenhuma re-busca acontece e a economia chega aos 30-40% dos nós;
+a escada inteira até a janela completa é rara, porque a avaliação raramente salta tanto de uma iteração
+para a seguinte.
+
+
+
+
+                                                                                                      19
+VII
+
+
+A Arte da Poda: Cortando o Impossível
+A Intuição
+Na fila de moedas, olhar duas jogadas à frente já bastou para descobrir que pegar o 3 ganha. Numa
+árvore de 10120 posições, olhar tudo até o fim é impossível, então o engine faz o que qualquer
+jogador cansado faz: aposta. Poda é isso, decidir não olhar um ramo porque a experiência diz que ele
+provavelmente não vale a pena, sabendo que “provavelmente” às vezes está errado. A pergunta que
+rege este capítulo não é “isso está certo?”, é “esse erro compensa o tempo economizado?”.
+
+Cada uma das técnicas a seguir é uma aposta diferente, e cada uma tem seu próprio exemplo concreto,
+no mesmo espírito da fila de moedas: um cenário pequeno o bastante para caber na cabeça, com
+números reais, mostrando exatamente que decisão a poda toma e por quê.
+
+Os engines modernos usam uma bateria de técnicas de poda que vão muito além da alfa-beta, todas
+catalogadas e discutidas em detalhe na Chess Programming Wiki [30], a enciclopédia colaborativa
+que serve de referência comum a este capítulo e aos dois seguintes. Cada técnica é uma aposta
+heurística: “este ramo provavelmente não contém a melhor jogada, então não vale a pena buscá-lo
+em profundidade total.” O risco de cada poda é cortar um ramo que continha a melhor jogada. A
+calibração dos parâmetros é feita por milhões de jogos de auto-avaliação, um processo que pode levar
+semanas em clusters de CPUs.
+
+Null Move Pruning (NMP)
+Ideia: se passar a vez ao adversário (não jogar nenhuma peça) e ele ainda não consegue melhorar a
+posição, então a posição é tão boa que não precisa de busca profunda.
+
+Exemplo concreto: imagine uma posição em que você está com uma torre a mais e o rei adversário
+exposto. Em vez de gastar tempo calculando qual dos seus 30 movimentos legais é o melhor, o engine
+faz uma pergunta mais rápida primeiro: “se eu simplesmente não jogasse nada agora, e desse a vez
+de graça ao adversário, ele conseguiria virar essa posição a seu favor?” Ele busca essa hipótese com
+profundidade reduzida. Se mesmo jogando de graça duas vezes seguidas o adversário não consegue
+sair do buraco, é praticamente certo que qualquer lance real seu, por pior que seja, mantém a vantagem,
+e o engine corta ali sem examinar os outros 29 movimentos em detalhe. É quase provocar o adversário:
+“façam o seu melhor sem que eu jogue, e ainda assim eu ganho”.
+
+Implementação: em nós não-PV, fora de xeque, com peças maiores disponíveis, e quando a avaliação
+estática ≥ 𝛽: o engine faz um “null move” (passa a vez) e busca com profundidade reduzida. A redução
+𝑅 é adaptativa (𝑅 = 2–4 conforme a profundidade).
+
+A base teórica remonta ao Null Move Heuristic de Donninger (1993): na grande maioria das posições
+de xadrez, ter o direito de jogar é uma vantagem (Zugzwang é raro). Se mesmo sem jogar a posição é
+boa, com certeza jogando será ao menos tão boa.
+
+                                                                                                    20
+Há um cenário em que essa aposta quebra por completo, e ele cabe num tabuleiro minúsculo. Posicione
+um final de rei e peão contra rei e peão, com os dois peões travados frente a frente e os dois reis em
+oposição, cada um vigiando o acesso ao peão inimigo. Nessa posição quem tem a vez perde: todo lance
+de rei disponível abre a passagem por onde o rei adversário caminha até o peão, e o lado que apenas
+esperou a jogada ocupa o terreno liberado. Ter a vez, aqui, não é vantagem alguma, é a sentença. Um
+engine que aplica null move pruning exatamente nesse cenário passa a vez de graça, vê o adversário
+progredir, conclui que a posição está ruim demais para merecer busca profunda e corta o ramo, quando
+a verdade é a oposta: era justamente o direito de mover que mantinha a posição defensável, e o corte
+descarta a variante em que o engine joga bem para confiar numa simulação em que ele abriu mão de
+jogar. É por isso que a guarda clássica da técnica, adotada no Zchezz, exige peças maiores no tabuleiro:
+em finais de poucas peças, sobretudo só com reis e peões, o zugzwang deixa de ser raridade estatística
+e vira o próprio tecido do jogo, e a poda nem chega a ser tentada.
+
+Reverse Futility Pruning (RFP)
+Ideia: se a avaliação estática está tão acima de beta que nenhum movimento razoável poderia mudar
+o resultado, corta imediatamente.
+
+Exemplo concreto: suponha profundidade restante 3 e beta = 500 (o adversário já garante em outro
+lugar uma posição equivalente a cinco peões de vantagem). A avaliação estática desta posição, sem
+buscar nada, já é 950. A margem de segurança para 3 plies restantes é 3 × 100 = 300 centipawns
+(o quanto a posição poderia, no pior caso razoável, piorar em três lances). Mesmo subtraindo essa
+margem inteira, 950 − 300 = 650, o resultado ainda supera os 500 que o adversário já tem garantido.
+Não há necessidade de gerar um único movimento: mesmo na hipótese pessimista, essa posição já
+venceria a comparação. É o oposto do futility pruning comum (a seguir): em vez de perguntar “mesmo
+no melhor caso, isso chega perto do que eu preciso?”, pergunta “mesmo no pior caso razoável, isso já
+não basta?”.
+
+Condições no Zchezz: nós não-PV, fora de xeque, profundidade 2–8. Margem = depth × 100
+centipawns, reduzida em 50cp se a posição está improving (melhorando em relação a 2 plies atrás).
+
+Futility Pruning
+Ideia: se a avaliação estática + uma margem generosa ainda não alcança alpha, movimentos quiet
+(não-capturas) não têm chance de serem bons.
+
+Exemplo concreto: profundidade restante 1, alpha = 300. A avaliação estática da posição é 100, e a
+margem generosa para profundidade 1 é 150. Somando o melhor cenário plausível, 100 + 150 = 250, o
+resultado ainda fica abaixo dos 300 necessários. Um movimento quiet, que por definição não muda o
+material imediatamente, não tem como fechar essa diferença numa única jogada silenciosa. O engine
+nem gera esses movimentos para busca completa: é como não entrar numa loja quando dá para ver,
+da vitrine, que nada ali chega perto do preço que você já fechou em outro lugar. Capturas continuam
+sendo examinadas normalmente, porque só elas podem mudar o material o suficiente para justificar a
+dúvida.
+
+
+
+                                                                                                     21
+Condições: nós não-PV, quiet moves, fora de xeque, profundidade 1–4. Margem = 150–600 centipawns
+conforme profundidade.
+
+Razoring
+Ideia: em profundidade 1, se a avaliação está muito abaixo de alpha, cai diretamente para a busca de
+quiescência com janela estreita: se capturas não salvam a posição, nada salvará.
+
+Exemplo concreto: profundidade restante 1, alpha = 200, avaliação estática = -400. A distância até
+alpha é de 600 centipawns, mais do que qualquer lance quiet isolado costuma render. Em vez de gerar e
+ordenar todos os movimentos legais só para provavelmente descartá-los um a um, o engine pula direto
+para conferir apenas as capturas e promoções pendentes (a busca de quiescência do capítulo VIII), que
+são o único tipo de lance capaz de recuperar tanto material de uma vez. Se nem essa checagem rápida
+encontra salvação, a posição realmente está perdida e o resultado é aceito sem mais gastos de tempo.
+
+ProbCut
+Ideia: uma busca rasa com margem larga decide se vale a pena uma busca profunda. É uma “aposta
+informada”: se uma busca de depth − 4 com 𝛽 + 200 centipawns ainda produz cutoff, a busca profunda
+quase certamente também produziria.
+
+Exemplo concreto: pense numa pesquisa de opinião antes de uma eleição. Em vez de esperar a
+apuração completa (a busca na profundidade cheia) para saber se um candidato vai passar de 50% dos
+votos, uma amostra pequena e rápida (a busca rasa) que já aponta 70% dá confiança suficiente para
+agir sem esperar o resultado final. O ProbCut faz o mesmo: busca só até depth-4, com uma barra mais
+alta que o normal (𝛽 + 200cp em vez de 𝛽), e se mesmo essa checagem rápida e exigente já supera a
+barra, a aposta é que a busca completa, mais lenta, chegaria à mesma conclusão, então o engine corta
+ali e economiza o resto do cálculo.
+
+Condições: nós não-PV, fora de xeque, profundidade ≥ 5, beta < 18000.
+
+Late Move Reductions (LMR)
+Ideia: movimentos ordenados tardiamente na lista (provavelmente ruins, pela heurística de ordenação)
+são buscados com profundidade reduzida. Se surpreenderem (excederem alpha), recebem re-busca
+completa.
+
+Exemplo concreto de cálculo: seja profundidade 10 e um movimento na posição 8 da lista ordenada
+(ou seja, sete outros já foram examinados antes dele). A fórmula dá ⌊ln(10) × ln(8)/1.5⌋ = ⌊2.303 ×
+2.079/1.5⌋ = ⌊3.19⌋ = 3. Em vez de buscar esse oitavo movimento na profundidade cheia 10 − 1 = 9, o
+engine olha primeiro na profundidade reduzida 9 − 3 = 6, uma passada rasa e barata. Só se essa olhada
+rasa mostrar algo surpreendentemente bom (excede alpha) é que o movimento ganha uma segunda
+chance, agora na profundidade completa. É a lógica de folhear rapidamente currículos que chegaram
+no fim de uma pilha já triada, parando para ler com cuidado só quando um deles chama atenção.
+
+Fórmula: redução = ⌊ln(depth) × ln(moveIdx)/1.5⌋, mínimo 1. Nós PV recebem 1 redução a menos.
+Aplicado a partir do 4º movimento legal quiet em profundidade ≥ 3.
+
+                                                                                                   22
+LMR é a técnica de poda com maior impacto no Elo dos engines modernos. Ela captura uma verdade
+profunda: na grande maioria dos nós, o primeiro ou segundo movimento é o melhor, e os movimentos
+5–30 são quase sempre irrelevantes.
+
+Late Move Pruning (LMP)
+Ideia: em profundidades rasas, movimentos tardios são simplesmente ignorados (nem buscados com
+profundidade reduzida). Mais agressivo que LMR.
+
+Exemplo concreto: numa posição em profundidade restante 2, fora de xeque, suponha um limite
+de 8 movimentos quiet para essa profundidade. Os sete primeiros movimentos quiet, já ordenados
+pela heurística de história (capítulo X), são buscados normalmente. A partir do oitavo, o engine nem
+sequer olha: assume, sem verificar, que um movimento tão mal ranqueado numa profundidade tão
+rasa não vale o tempo de nenhum tipo de busca, nem mesmo a reduzida do LMR. É a diferença entre
+folhear rapidamente um currículo (LMR) e simplesmente não abrir o envelope (LMP): a aposta é mais
+arriscada, mas em profundidades rasas, onde o custo de um erro é pequeno porque a iteração seguinte
+vai corrigir a jogada de qualquer forma, o risco compensa.
+
+Condições: fora de xeque, profundidade ≤ 3. Movimentos quiet além de um limite dependente da
+profundidade são descartados.
+
+Singular Extensions
+A Intuição: quase sempre o melhor lance e o segundo melhor ficam próximos, e examinar ambos com
+o mesmo cuidado seria desperdício. De vez em quando, porém, um lance é muito melhor que todos os
+outros, e é exatamente nesses casos que vale rebuscar nele mais fundo do que a profundidade nominal
+permite, porque ali costuma estar escondido o conteúdo real da posição. Pense num sacrifício de dama
+em h7 que força o mate em três lances. Numa olhada rasa a jogada parece péssima: o engine entrega o
+equivalente a nove peões de material e a avaliação superficial desabona o lance. Só uma busca mais
+funda revela que toda defesa termina em mate e que o sacrifício é forçado. Sem a extensão, o horizonte
+da busca pode esconder justamente o mate que justifica o sacrifício; com ela, o lance singular recebe a
+profundidade extra de que precisa para mostrar seu valor verdadeiro.
+
+Ideia: se um movimento é claramente o melhor (singular: significativamente melhor que todos os
+outros), merece uma extensão de profundidade extra para ser avaliado com maior precisão.
+
+Implementação: profundidade ≥ 7, TT hit com profundidade ≥ (atual −4). Para verificar se o
+movimento guardado na TT é mesmo singular, o engine rebusca a posição tentando todos os outros
+movimentos com uma janela de verificação: beta rebaixado para score − depth × 2. Em linguagem
+clara: se, mesmo com a barra dois graus de profundidade mais baixa, todos os outros movimentos
+falham baixo, nenhum concorrente chega perto da pontuação do movimento da TT, e a extensão era
+segura. Basta um único movimento chegar perto para o teste falhar e a busca seguir sem extensão.
+Passando no teste, o movimento singular recebe +1 de extensão.
+
+
+
+
+                                                                                                     23
+Check Extension
+A Intuição: durante um xeque, o lado atacado não escolhe entre lances bons e ruins, escolhe entre os
+poucos lances legais que salvam o rei, e isso muda a natureza da posição seguinte. Parar de buscar no
+meio dessa sequência seria avaliar um tabuleiro cuja parte essencial ainda não aconteceu; o ply extra
+deixa o xeque se resolver antes da avaliação.
+
+Xeques na profundidade 1 recebem extensão de +1 ply para evitar o efeito horizonte: o engine não
+deve parar de buscar no meio de uma sequência de xeques.
+
+IIR (Internal Iterative Reduction)
+Em profundidade ≥ 5, sem movimento da TT e fora de xeque, a profundidade é reduzida em 1 antes
+da geração de movimentos. A lógica: sem informação da TT, a ordenação de movimentos será ruim, e
+a busca seria ineficiente na profundidade completa.
+
+
+
+
+VIII
+
+
+Busca de Quiescência
+A Intuição
+Volte à fila de moedas, mas jogue de um jeito peculiar: pare de contar o dinheiro assim que pegar o
+10, sem esperar pelo lance seguinte do adversário. Nesse ponto do jogo você olharia para a mesa e
+pensaria que está com uma baita vantagem. O problema é que a contagem parou cedo demais, no
+meio do troco: o adversário ainda vai pegar sua parte, e o placar final é bem diferente do que parecia
+no instante em que você guardou o 10 no bolso. Parar de contar no momento errado engana até quem
+está calculando direito até ali.
+
+No xadrez, o equivalente é parar de buscar bem no meio de uma troca de peças: o engine captura
+uma peça valiosa, olha para a posição resultante, vê material a mais no tabuleiro e conclui que está
+ganhando, sem enxergar que na resposta seguinte a peça é recapturada e a vantagem desaparece ou
+vira prejuízo. Esse erro tem nome, efeito horizonte, porque o problema não é a lógica do engine, é
+o alcance da sua visão: ele simplesmente parou de olhar cedo demais, exatamente no ponto mais
+enganoso da sequência.
+
+A solução é uma regra simples de aplicar, difícil de formalizar com precisão: não pare de contar
+enquanto o troco ainda estiver no ar. Depois que a busca principal termina sua profundidade combinada,
+o engine continua olhando, mas só para capturas e promoções, ignorando o resto do tabuleiro, até que
+a posição fique “calma”, sem trocas pendentes que possam reverter o que parecia ganho. Essa extensão
+seletiva é a busca de quiescência, e é ela quem decide, tecnicamente, o que conta como “folha” na
+árvore de busca: uma folha não é simplesmente onde a profundidade combinada terminou, é onde a
+posição finalmente ficou calma.
+
+                                                                                                    24
+O truque é fazer isso sem reabrir a árvore inteira de novo, olhando só a fração de lances que ainda mexe
+com o material na mesa. O restante desta seção detalha os mecanismos que tornam essa continuação
+seletiva rápida o bastante para caber no orçamento de tempo de cada lance.
+
+A busca principal para em uma profundidade fixa. Mas parar no meio de uma troca de peças produz
+avaliações absurdas, o chamado efeito horizonte, identificado por Hans Berliner nos anos 1970. Se
+o engine para de buscar no exato momento em que acabou de capturar uma peça com a dama, a
+avaliação mostrará vantagem material, ignorando que o adversário está prestes a recapturar.
+
+A busca de quiescência (qsearch) continua além da profundidade zero, avaliando apenas capturas e
+promoções até que a posição esteja “calma” (quiescent). O Zchezz implementa:
+
+Stand-Pat Cutoff
+Antes de buscar qualquer captura, a avaliação estática é comparada com beta. Se static_eval ≥ 𝛽, a
+posição já é boa o suficiente; nenhuma captura precisa ser buscada. Este é o piso do qsearch: a posição
+nunca é pior que a avaliação estática, porque o jogador sempre pode escolher não capturar.
+
+Delta Pruning
+Capturas cujo ganho material máximo possível não pode alcançar alpha são descartadas globalmente.
+O delta global é o valor da dama + 50 centipawns (ou 2× valor da dama + 50 se um peão passado está
+na 7ª fila, podendo promover).
+
+Per-move delta pruning: individualmente, capturas onde stand_pat + valor_da_peça_capturada
++ 50 < alpha são descartadas; o ganho não é suficiente para mudar o resultado.
+
+
+SEE Pruning
+Capturas com SEE negativo (Static Exchange Evaluation; ver seção dedicada) são descartadas inteira-
+mente. Uma captura perdedora (por exemplo, dama captura peão defendido por cavalo) nunca vale a
+pena em qsearch.
+
+Pick-Best (Selection Sort)
+Em vez de ordenar todos os movimentos de captura antecipadamente, o qsearch usa selection sort:
+encontra o melhor, busca-o; se houver cutoff, os demais nunca são ordenados. Isso evita o custo de
+ordenar movimentos que serão podados antes de serem buscados.
+
+
+
+
+                                                                                                      25
+IX
+
+
+Static Exchange Evaluation (SEE)
+A Intuição
+Imagine uma casa do tabuleiro como um cruzamento movimentado, onde várias peças de ambos os
+lados podem entrar na briga em sequência: primeiro um peão captura ali, depois um cavalo adversário
+recaptura o peão, depois uma torre sua recaptura o cavalo, e assim por diante, cada lado jogando sua
+peça de menor valor disponível para continuar a troca. A pergunta que interessa não é quem captura
+primeiro, é quem sai no final com mais valor no bolso depois que a poeira baixa e ninguém mais quer
+continuar trocando.
+
+É como um leilão em cadeia: o primeiro lance parece um golpe de sorte, você levou a peça, mas se o que
+você usou para capturar vale mais do que aquilo que capturou, e ainda existe um segundo comprador
+dentro do cruzamento pronto para recapturar sua peça, o negócio pode terminar no vermelho. A Static
+Exchange Evaluation simula essa cadeia inteira, do primeiro golpe ao último, somando e subtraindo
+os valores de cada peça trocada, para responder de antemão se vale a pena começar a briga.
+
+O ponto contraintuitivo, e o que faz essa contabilidade valer a pena calcular, é que capturar primeiro
+nem sempre é lucro. Uma dama que captura um peão parece ganho na hora, mas se esse peão estava
+defendido por um cavalo, o resultado líquido da troca completa é perder uma dama por um peão,
+prejuízo enorme escondido atrás de um primeiro lance tentador. A SEE existe justamente para enxergar
+a cadeia inteira antes de qualquer lance ser jogado, não só o primeiro elo dela.
+
+Há ainda um detalhe sutil nessa contabilidade: peças que parecem fora da briga, escondidas atrás
+de outras na mesma linha ou diagonal, podem entrar em cena assim que as peças da frente saem do
+caminho (um pouco como um comprador que só aparece no leilão depois que os concorrentes da frente
+desistem). O restante da seção mostra como o Zchezz reconstrói essa cadeia completa de atacantes,
+incluindo os que só aparecem depois, usando as mesmas tabelas de ataque já descritas no capítulo de
+representação do tabuleiro.
+
+A SEE responde à pergunta: “se todas as peças que podem capturar nesta casa capturarem em sequência,
+quem ganha a troca?”
+
+O Zchezz implementa SEE usando as tabelas de ataque de magic bitboards diretamente. O board de
+atacantes é reconstruído via máscara de ocupação e atualizado incrementalmente conforme peças são
+“removidas” na sequência de capturas. Isso revela automaticamente atacantes descobertos (X-ray
+attacks): se uma torre está atrás de um bispo na mesma diagonal, remover o bispo revela a torre como
+atacante.
+
+Nada mostra o funcionamento melhor do que uma cadeia de trocas resolvida até o número final.
+Suponha uma dama branca capturando um peão preto em d5, o peão defendido por um cavalo preto,
+um bispo branco alinhado atrás da dama na mesma diagonal e uma torre preta alinhada atrás do
+
+
+                                                                                                    26
+cavalo na mesma coluna, esperando entrar em cena assim que o cavalo sair do caminho. Com valores
+redondos (peão 100, cavalo 300, bispo 300, dama 900), a sequência completa fica:
+
+Captura                      Efeito no saldo branco                    Saldo acumulado
+
+Dama × peão                  +100                                      +100
+Cavalo × dama                −900                                      −800
+Bispo × cavalo               +300                                      −500
+Torre × bispo                −300                                      −800
+
+
+
+O valor final da troca, para quem iniciou com a dama, é −800 centipawns, um prejuízo enorme. Note
+que os atacantes escondidos mudam a conta: sem a torre preta atrás do cavalo, a cadeia terminaria em
+−500; a reconstrução incremental dos atacantes é o que revela a torre e corrige a avaliação antes que o
+lance seja tentado. Uma SEE negativa desse tamanho é exatamente o caso que a busca de quiescência
+do capítulo VIII descarta sem nem buscar.
+
+O resultado é tanto rápido quanto exato: a pontuação minimax retrograde completa é computada em
+um scratch board temporário, sem alocação de memória. O nome descreve com precisão o algoritmo:
+a troca é avaliada de trás para frente, começando da última captura possível e caminhando de volta
+até a primeira, e em cada ponto o capturador só prossegue se o saldo parcial melhora a favor dele.
+No exemplo da tabela, do fim para o começo: depois de Torre × Bispo não existe captura branca que
+compense, e o saldo congela em −800; voltando um passo, a torre preta compara parar a troca (saldo
+−500) com continuar (−800) e prossegue, porque piorar a posição branca é o objetivo dela; voltando
+mais um passo, o cavalo compara deixar o branco em +100 com derrubá-lo para −500 e recaptura.
+Cada decisão de trás para frente assume que o adversário responderá do próprio melhor interesse, que
+é justamente a definição de um minimax, resolvido aqui em miniatura dentro de uma única casa do
+tabuleiro.
+
+A SEE é usada em múltiplos contextos:
+
+    • Ordenação de movimentos: capturas com SEE ≥ 0 são priorizadas sobre capturas perdedoras
+    • Pruning no qsearch: capturas com SEE < 0 são descartadas
+    • LMR: capturas perdedoras podem receber reduções adicionais
+
+
+
+
+                                                                                                     27
+X
+
+
+Ordenação de Movimentos e Heurísticas de História
+A Intuição
+Toda a eficiência da poda dos capítulos anteriores depende de uma condição que ainda não foi discutida:
+a ordem em que as opções são examinadas. Na fila de moedas, pegar o 3 primeiro revela imediatamente
+que o 10 fica protegido, e o resto do cálculo fica trivial; se você tivesse testado primeiro a jogada ruim,
+a de pegar o 4, ainda teria de calcular tudo de novo até achar a boa. No xadrez a mesma lógica se
+aplica em escala muito maior: se a primeira opção examinada em cada posição já é a melhor, o valor
+que ela estabelece permite descartar rapidamente todas as outras sem examiná-las a fundo; se a pior
+opção é examinada primeiro, nada é descartado cedo e o trabalho da poda praticamente desaparece.
+
+O problema é que descobrir qual é a melhor jogada exigiria, a rigor, já ter resolvido a posição, o que é
+exatamente o que a busca está tentando fazer. A saída é usar pistas indiretas, sinais que correlacionam
+com “essa jogada costuma ser boa” sem exigir cálculo completo: o que funcionou na última busca,
+o que costuma funcionar contra esse tipo de posição, o que funcionou há pouco tempo em situação
+parecida.
+
+Esse último sinal é o mais intuitivo dos três: se uma certa jogada resolveu bem um problema parecido
+há pouquíssimos lances, na mesma vizinhança da árvore de busca, vale a pena testá-la primeiro de
+novo antes de examinar as outras, porque a chance de ela funcionar de novo é bem maior que a
+média. É memória de curto prazo aplicada à busca: “essa jogada resolveu uma situação parecida agora
+há pouco, tente ela antes das outras”. Esse é o papel dos killer moves e das tabelas de história, que
+guardam não a jogada em si isolada, mas o padrão de que tipo de jogada tende a funcionar em que
+tipo de contexto.
+
+Quanto melhor esse palpite inicial, mais cedo os ramos ruins são cortados e mais fundo o engine
+consegue calcular no mesmo orçamento de tempo, o que explica por que tanto esforço de engenharia é
+dedicado a algo que, no fim, é só decidir em que ordem olhar as opções. O restante do capítulo detalha
+as tabelas exatas usadas pelo Zchezz para construir esse palpite, e uma técnica complementar que
+ataca o mesmo problema de outro ângulo: gerar os movimentos em ondas, em vez de todos de uma
+vez.
+
+A eficiência da poda alfa-beta depende criticamente da ordenação de movimentos: quanto mais
+cedo o melhor movimento é tentado, mais cedo os ramos ruins são cortados. A ordenação perfeita é
+impossível (requer resolver a posição), mas boas heurísticas se aproximam.
+
+Staged Move Generation
+Antes mesmo de ordenar os movimentos por score, existe uma decisão mais barata a tomar: será que
+é preciso gerar todos eles? Gerar cada movimento legal, um a um, checando se deixa o próprio rei em
+
+
+
+                                                                                                        28
+xeque, tem um custo real de CPU, e boa parte desse custo é jogado fora sempre que um cutoff beta
+acontece cedo, porque os movimentos gerados depois do cutoff nunca chegam a ser examinados.
+
+O Zchezz resolve isso gerando movimentos em estágios, na ordem: primeiro o movimento da tabela
+de transposição (se existir, é o candidato mais provável a causar cutoff imediato), depois as capturas,
+depois os movimentos quiet, e por último as capturas perdedoras (SEE negativo). Se o movimento da
+TT já causa cutoff sozinho, as capturas e os quiets nunca chegam a ser gerados. É a mesma lógica de
+só abrir a segunda gaveta de um armário depois de confirmar que o que você procura não estava na
+primeira: gerar sob demanda, por estágio, evita o trabalho de preencher e alocar uma lista inteira de
+movimentos que a poda vai descartar de qualquer forma. Introduzida na v3.10 do Zchezz, essa técnica
+sozinha rendeu um ganho medido de cerca de 21 pontos de Elo contra a versão anterior, um retorno
+considerável para uma mudança que não altera nenhuma decisão de busca, só a ordem e o momento
+em que o trabalho de gerar movimentos é feito.
+
+Tabela de Prioridades do Zchezz
+
+Prioridade         Score                      Tipo de Movimento
+
+2.000.000          TT / PV move                O melhor movimento da busca anterior
+1.700.000+         Promoções                   Promoção a dama tem prioridade máxima
+1.600.000+         Capturas                    SEE ≥ 0, ordenadas por MVV-LVA
+                   ganhadoras/neutras
+900.000            Killer move slot 0          Movimento que causou cutoff nesta mesma profundidade
+800.000            Killer move slot 1          Segundo killer
+780.000            Counter move                Melhor refutação do movimento anterior
+700.000+           Torre na 7ª fila            Heurística posicional
+600.000+           Ataques à zona do rei       Movimentos que atacam casas na Chebyshev ≤ 2 do rei
+                                               adversário
+200.000+           Quiet moves                 Score base + história + CMH
+100.000–200.000    Capturas perdedoras         SEE < 0 (últimas na lista)
+
+
+
+
+Killer Moves
+Dois slots por profundidade armazenam movimentos que causaram cutoffs beta em nós irmãos. A
+intuição: se jogar Cf3 causou cutoff em uma variante, provavelmente também é forte em variantes
+similares na mesma profundidade.
+
+Counter Move
+Uma tabela counter_move[64×64] armazena a melhor refutação para cada par (casa_origem, casa_des-
+tino) do movimento do adversário. Se o adversário jogou Bd5, qual é o melhor contra-ataque histórico?
+
+
+
+                                                                                                      29
+History Heuristics
+Três tabelas complementares são atualizadas em cada cutoff beta por um movimento quiet:
+
+     1. Main History (int32_t mv_history[64×64]): indexada pelo par (casa_origem, casa_destino).
+        Movimentos que causam cutoffs recebem bônus de depth2 ; movimentos tentados antes do cutoff
+        recebem penalty do mesmo valor.
+     2. Continuation History (CMH): duas tabelas int16_t cont_hist[3][64][64×64]
+           • Slot 0: condicionada na casa de destino do movimento no ply −1 (1-ply CMH)
+           • Slot 1: condicionada na casa de destino do movimento no ply −2 (2-ply CMH)
+       A CMH captura padrões de resposta: “quando o adversário joga para d5, movimentos que
+       saem de c3 são historicamente bons.”
+     3. Counter Move Table: descrita acima.
+
+As três tabelas contribuem aditivamente ao score de movimentos quiet. No início de cada nova busca,
+as tabelas são envelhecidas (divididas por 4) para prevenir saturação enquanto preservam a ordenação
+relativa.
+
+Improving Flag
+Antes de qualquer decisão de poda em nós fora de xeque, o engine computa uma flag improving:
+a avaliação estática atual é comparada com a de 2 plies atrás (armazenada em prev_static_eval[
+ply-2]). Se a posição está melhorando, as margens de poda são mais conservadoras (RFP margem
+reduzida em 50cp, LMP limites mais generosos); se está piorando, a poda é mais agressiva. Esse único
+flag aumenta significativamente a eficiência em middlegames posicionais.
+
+
+
+
+XI
+
+
+Avaliação: Do Artesanato à Rede Neural
+A Intuição
+Há duas formas bem diferentes de ensinar alguém a avaliar se uma posição de xadrez é boa. Uma é
+escrever um manual de regras explícitas: bispo vale três peões, peão dobrado é uma fraqueza, torre
+numa coluna aberta vale mais. É como ensinar culinária por receita escrita, com medidas exatas e
+passo a passo. A outra é deixar a pessoa jogar milhões de partidas e absorver, sem que ninguém precise
+verbalizar nada, que certos padrões tendem a dar certo e outros não. É como aprender a reconhecer o
+rosto de um amigo numa multidão: você acerta instantaneamente, mas seria incapaz de descrever em
+palavras exatamente qual traço usou para saber que era ele e não outra pessoa parecida.
+
+Durante décadas, os engines de xadrez usaram só a primeira abordagem: um catálogo enorme de
+regras escritas à mão, cada uma com um peso numérico ajustado por tentativa e erro. Funcionava
+
+                                                                                                    30
+bem, mas tinha um limite estrutural, não de esforço, e sim de natureza: existem padrões reais no
+xadrez, tão sutis quanto “esse sacrifício de peão vale a pena porque o rei adversário fica preso numa
+diagonal específica com dois bispos apontando para ele”, que nenhum enxadrista consegue reduzir a
+uma fórmula. O padrão existe e pode ser sentido, mas resiste a virar frase.
+
+A virada foi trocar a receita escrita por um sistema que aprende sozinho, olhando milhões de posições
+e seus resultados, até desenvolver a mesma espécie de reconhecimento instantâneo que humanos têm
+para rostos: uma rede neural. Ela não guarda uma lista de regras que alguém possa ler e explicar;
+guarda uma capacidade destilada de “isso aqui cheira a vantagem” que emergiu sozinha da exposição
+repetida. É o mesmo tipo de conhecimento tácito que se discute em outras áreas da cognição: sabemos
+mais do que conseguimos dizer.
+
+O restante do capítulo detalha essa transição, da função de avaliação artesanal ao surgimento da
+arquitetura NNUE que substituiu o catálogo de regras por essa forma de intuição treinada.
+
+A Função de Avaliação Clássica (Hand-Crafted)
+Até 2018, todos os engines top usavam funções de avaliação escritas à mão: milhares de linhas de
+código que somavam termos como:
+
+    • Material (peão=100, cavalo=320, bispo=330, torre=500, dama=900 centipawns)
+    • Estrutura de peões (peões isolados, dobrados, passados, cadeias, avanço)
+    • Segurança do rei (cobertura de peões, atacantes na zona do rei, casas abertas)
+    • Mobilidade (número de casas legalmente acessíveis por peça)
+    • Atividade das peças (centralização, postos avançados, torres em colunas abertas)
+    • Controle de casas-chave (centro, casas fracas no território inimigo)
+
+A Stockfish clássica tinha mais de 100 termos, cada um com pesos ajustados por Texel tuning
+(otimização por gradiente descendente sobre milhões de posições com resultado conhecido: vitória,
+empate ou derrota). O processo de otimização pode levar semanas e é essencialmente um problema de
+regressão logística massiva.
+
+O limite fundamental: nenhum engenheiro humano consegue codificar todos os padrões relevantes.
+Conceitos como “compensação posicional por peão sacrificado” ou “rei preso na diagonal h1–a8 com
+bispos oponentes” são reais e mensuráveis, mas impossíveis de capturar em termos explícitos. A
+avaliação artesanal é, em última instância, limitada pela capacidade humana de perceber e articular
+padrões, ecoando os qualia (experiências reais mas inexprimíveis).
+
+NNUE: Efficiently Updatable Neural Networks
+A revolução veio do shogi (xadrez japonês). Yu Nasu (2018) [10] propôs a arquitetura NNUE [17]:
+uma rede neural feed-forward com uma propriedade crucial (o acumulador da primeira camada pode
+ser atualizado incrementalmente a cada movimento, sem recomputar a rede inteira). Isso combina
+o poder representacional de uma rede neural com a velocidade necessária para avaliar milhões de
+posições por segundo. Como exatamente esse acumulador é organizado, o que ele guarda e quanto
+custa mantê-lo atualizado lance a lance é o assunto inteiro do capítulo seguinte.
+
+                                                                                                   31
+XII
+
+
+NNUE no Zchezz: Arquitetura Completa
+A Intuição
+Pense num caixa de supermercado eficiente. Um caixa ruim, a cada item novo que você põe na esteira,
+pega a calculadora e soma tudo de novo desde o primeiro item. Um caixa bom mantém um total
+corrente na cabeça e só soma o preço do item novo a esse total: o trabalho de somar os itens anteriores
+nunca é refeito. A diferença de velocidade entre os dois fica gigantesca quando o carrinho tem centenas
+de itens e o caixa precisa dar o total depois de cada item adicionado, não só no final.
+
+É exatamente esse o problema que a rede de avaliação de um engine enfrenta: a cada lance calculado
+numa busca (e são bilhões de lances hipotéticos testados por segundo), seria proibitivamente lento
+recalcular a avaliação da posição inteira do zero. A solução, batizada de NNUE (a sigla, em inglês, quer
+dizer algo como “rede neural eficientemente atualizável”), é manter um “total corrente” para a posição,
+chamado de acumulador: um conjunto de números que resume tudo o que a rede já processou sobre
+aquele tabuleiro. Quando uma peça se move, o programa não refaz a soma inteira, apenas remove a
+contribuição da peça que saiu e adiciona a contribuição da peça na nova casa, exatamente como o
+caixa que soma só o item novo.
+
+Essa atualização incremental é o que torna viável rodar uma rede neural de verdade, com centenas de
+conexões internas, dentro do laço mais quente do programa, aquele que se repete bilhões de vezes por
+segundo. Sem o acumulador, cada avaliação custaria caro demais para ser útil numa busca profunda;
+com ele, o custo de avaliar uma posição nova cai para quase nada, porque a maior parte da conta já
+estava pronta.
+
+A seção seguinte detalha a arquitetura exata dessa rede no Zchezz: quantas entradas ela tem, como
+o acumulador é organizado para as duas perspectivas do tabuleiro e como as camadas seguintes
+processam esse resumo até chegar a um número de avaliação.
+
+O Zchezz implementa uma rede NNUE com 799 features de entrada, duas camadas ocultas e saída
+escalar WDL (Win/Draw/Loss). A partir da versão NNU3, toda a inferência usa aritmética inteira
+de ponto fixo.
+
+Arquitetura em Termos Leigos: O Que São L1, L2, L3 e “Features”
+Antes de entrar nos números exatos, vale traduzir o vocabulário. Uma feature é simplesmente um
+fato de sim-ou-não sobre a posição: “há um cavalo branco em e4?”, “o rei preto já perdeu o direito
+de rocar?”. Sozinha, cada feature é burra, é só um bit ligado ou desligado. A inteligência da rede não
+mora em nenhuma feature individual, mora em como as camadas seguintes combinam centenas delas.
+
+Pense numa linha de montagem com três estações, cada uma processando o que a anterior entregou:
+
+
+
+
+                                                                                                     32
+   • L1 (799 → 256) é a primeira estação, e faz o trabalho mais pesado: pega as 799 features cruas
+     (“há isso”, “há aquilo”) e as combina em 256 números novos, cada um funcionando como um
+     “detector” de um padrão mais amplo que a rede descobriu sozinha durante o treino, coisas como
+     “há pressão no flanco do rei” ou “a estrutura de peões do lado da dama está comprometida”, sem
+     que ninguém tenha escrito essas regras à mão, nem sequer saiba nomeá-las com precisão. É a
+     estação que faz a maior parte do trabalho de reconhecimento de padrão, e por isso é também
+     a mais cara computacionalmente, e a única que precisa do truque do acumulador incremental
+     deste capítulo para não recalcular tudo a cada lance.
+   • L2 (256 → 64) pega esses 256 detectores de padrão e os combina de novo, numa segunda rodada,
+     produzindo 64 números que representam julgamentos de nível ainda mais alto, combinações
+     de combinações, o equivalente a passar de “isso parece um ataque no flanco do rei” mais “a
+     estrutura de peões está fraca” para um julgamento único que já pesa os dois fatores juntos.
+   • L3 (64 → 1) é a estação final: pega esses 64 julgamentos de alto nível e os funde num único
+     número, a avaliação da posição em centipawns. É literalmente um funil, de 799 fatos brutos
+     para 256 padrões, destes para 64 julgamentos, destes para 1 veredito.
+
+Cada seta entre estações (799→256, 256→64, 64→1) é uma camada, e o número de “detectores” que
+cada uma produz (256, depois 64, depois 1) é o que os capítulos seguintes chamam de largura da
+camada. Nenhuma dessas larguras foi escolhida por acaso: são um compromisso deliberado entre
+capacidade de representar padrões complexos e velocidade de cálculo, já que a rede inteira precisa
+rodar bilhões de vezes por segundo dentro da busca.
+
+Arquitetura
+
+  Input: 799 features
+    ├── 768    Half-Mirror (HM) bitboard encoding
+    │           12 tipos de peça × 64 casas, perspectiva do lado a mover
+    └──   31   Endgame features (computadas por posição)
+                 stm piece counts   ×6      (normalizadas)
+                 opp piece counts   ×6      (normalizadas)
+                 total material     ×1      (normalizado por 78)
+                 constant bias      ×1
+                 stm passed pawns   ×8      (por coluna, binários)
+                 opp passed pawns   ×8      (por coluna, binários)
+                 king-king distance ×1      (Chebyshev, normalizada por 7)
+
+
+  L1: int16[799 → 256]    bias int32[256]    + ClippedReLU(0, 255)   ← acumulador incremental (dual
+   ↪    POV)
+  L2: int8[256 → 64]     bias int32[64]       + ClippedReLU(0, 64)
+  L3: float32[64 → 1]    bias float32[1]      + Sigmoid → ×320 cp, clamped ±2000
+
+
+
+
+Half-Mirror (HM) Features: Explicando o Nome e a Ideia
+Antes dos detalhes de implementação, vale entender o problema que o Half-Mirror resolve. Imagine
+um comentarista esportivo que descreve toda partida de futebol dizendo “nós atacamos o gol da
+
+
+                                                                                                      33
+direita”, não importa qual seja a direção real em que seu time está jogando naquele momento. No
+primeiro tempo o time dele pode estar defendendo à esquerda e atacando à direita; depois do intervalo,
+os lados trocam, e fisicamente é o oposto, mas o comentarista continua narrando do mesmo jeito,
+“nós atacamos a direita”, porque ele descreve o jogo sempre da perspectiva do seu time, nunca em
+coordenadas absolutas do estádio.
+
+Uma rede neural de avaliação de xadrez enfrenta o mesmo problema. Se as posições fossem descritas
+em coordenadas absolutas do tabuleiro (“há um cavalo branco em e4”), a rede precisaria aprender dois
+conceitos separados e simétricos: como reconhecer um bom ataque quando joga de brancas, e como
+reconhecer o mesmo tipo de ataque, espelhado, quando joga de pretas. São essencialmente o mesmo
+padrão visto de dois lados, mas sem nenhum truque de representação a rede teria que aprender cada
+um do zero, dobrando o trabalho de treino e diluindo os dados disponíveis pela metade.
+
+O Half-Mirror resolve isso descrevendo cada peça do tabuleiro duas vezes simultaneamente, uma
+vez do ponto de vista de cada jogador, e espelhando verticalmente as coordenadas para o lado que não
+tem a vez. Um cavalo branco em e4, por exemplo, ativa uma feature no acumulador Branco dizendo
+“meu cavalo está em e4” e, ao mesmo tempo, uma feature no acumulador Preto dizendo “o cavalo do
+meu adversário está na casa espelhada verticalmente”, como se o tabuleiro tivesse sido virado de cabeça
+para baixo só para a leitura das pretas. O resultado é que cada acumulador sempre enxerga “minhas
+peças” e “peças do adversário” no mesmo referencial relativo, nunca em coordenadas absolutas de
+brancas e pretas, e a mesma rede, com os mesmos pesos, reconhece o mesmo padrão posicional não
+importa de qual lado do tabuleiro ele está acontecendo. É por isso que basta um único conjunto
+de pesos para os dois lados: o comentarista sempre narra “nós atacamos a direita”, e a rede sempre
+avalia “minhas peças fazem isso com as peças do adversário”.
+
+As 768 features HM são, portanto, uma codificação dual-perspective do mapa de peças. Para cada
+peça no tabuleiro, dois índices de feature são ativados simultaneamente (um no acumulador Branco e
+um no acumulador Preto) usando coordenadas de casa espelhadas verticalmente. Cada lado sempre vê
+suas peças como “amigas” sem necessidade de rotação da rede.
+
+Fórmula de indexação: color_offset × 64 + piece_type × 64 + square, onde o square é invertido
+verticalmente para a perspectiva do oponente.
+
+Dual Accumulator: Dois Totais Correntes ao Mesmo Tempo
+Se o Half-Mirror resolve o que cada lado enxerga, o Dual Accumulator resolve como manter isso pronto
+o tempo todo. Voltando à analogia do caixa de supermercado: agora imagine dois caixas trabalhando
+lado a lado na mesma esteira, cada um mantendo seu próprio total corrente, um somando os preços
+do ponto de vista de um cliente, o outro do ponto de vista do outro. Toda vez que um item passa
+pela esteira, os dois caixas atualizam seus totais ao mesmo tempo, mesmo que só um dos dois vá
+efetivamente cobrar o cliente no final daquela transação. Parece trabalho em dobro, mas garante que,
+seja qual for o caixa chamado a dar o total na próxima parada, o número já está pronto, sem fila de
+espera.
+
+
+
+
+                                                                                                     34
+É exatamente isso que o Zchezz faz com dois acumuladores independentes de 256 elementos int16_t,
+mantidos em paralelo: _acc_buf_w (perspectiva Brancas) e _acc_buf_b (perspectiva Pretas). Toda
+vez que uma peça se move, não importa de quem é a vez de jogar a seguir, ambos os acumuladores
+são atualizados em passos sincronizados, aplicando a mesma lógica incremental do capítulo anterior
+duas vezes, uma para cada perspectiva. No momento de avaliar a posição, o engine simplesmente lê o
+acumulador do lado que tem a vez de jogar agora, sem nenhuma cópia extra nem troca de perspectiva
+no meio do caminho: o número certo já estava esperando pronto, porque o outro acumulador também
+foi mantido atualizado o tempo todo, mesmo quando ninguém olhou para ele naquele lance específico.
+
+Accumulator Stack
+Os acumuladores são gerenciados como uma pilha de profundidade 512 (NN_ACC_DEPTH), espelhando
+a pilha de undo do tabuleiro. nnue_push copia o topo da pilha e aplica uma atualização incremental
+para o movimento sendo feito; nnue_pop simplesmente decrementa o ponteiro. Resultado: unmake é
+𝑂(1) (nenhuma recomputação necessária).
+
+Endgame Features: Contexto que o Bitboard Puro Não Vê
+As 768 features Half-Mirror descritas acima respondem só a uma pergunta por vez, “há esta peça nesta
+casa?”, e essa pergunta, sozinha, não enxerga fatos que dependem do tabuleiro inteiro ao mesmo tempo.
+Quantos peões cada lado ainda tem no total, se algum peão já rompeu a barreira do adversário e está
+livre para promover, quão perto ou longe os dois reis estão um do outro, nenhuma dessas perguntas
+tem resposta olhando uma casa isolada, todas exigem somar ou comparar informação espalhada pelo
+tabuleiro inteiro. É esse tipo de contexto agregado que as 31 features de endgame existem para fornecer
+explicitamente à rede, em vez de esperar que ela reconstrua essas contagens sozinha a partir de padrões
+de piece-square:
+
+    • Contagem de peças (6 tipos × 2 lados): normalizadas pelo máximo teórico (8 peões, 2 cava-
+      los/bispos/torres, 1 dama)
+    • Material total: soma de todos os valores de peças, normalizada por 78 (máximo possível)
+    • Peões passados: flags binários por coluna, computados com ray check forward (um peão é
+      passado se nenhum peão oponente bloqueia ou guarda qualquer casa no caminho de promoção
+      nas colunas adjacentes)
+    • Distância rei-rei: distância de Chebyshev (max de diferenças de fila e coluna), normalizada
+      para [0, 1]
+    • Bias constante: feature sempre = 1
+
+
+O Efeito Colateral: Por Que Essas Features Não Cabem no Truque do Acumulador
+Há um preço a pagar por esse contexto, e vale deixá-lo explícito porque ele expõe um limite real da
+técnica descrita no capítulo XII. O que torna as 768 features Half-Mirror tão baratas de manter é que
+cada uma delas é local e binária: uma peça se move, exatamente duas features mudam de valor (a
+da casa de saída desliga, a da casa de chegada liga), e o acumulador só precisa somar e subtrair essas
+
+
+
+                                                                                                    35
+duas linhas, nunca recalcular nada mais. É um delta de tamanho fixo, sempre pequeno, não importa
+quantas peças existam no tabuleiro.
+
+As 31 features de endgame não têm essa propriedade. “Quantos peões brancos restam” não é local
+a uma casa, é uma soma sobre o tabuleiro inteiro, e teoricamente precisaria ser recalculada de novo
+sempre que qualquer peão de qualquer lado sair ou entrar. A “distância entre os reis” depende da
+posição dos dois reis simultaneamente, então mesmo um lance que não toca em nenhum peão pode
+mudar essa feature, se for o rei que se moveu. Se essas 31 features fossem tratadas com o mesmo
+truque ingênuo de soma incremental linha a linha das 768 HM, qualquer erro de sincronização (uma
+feature que devia ter mudado e não mudou) corromperia silenciosamente a avaliação sem nenhum
+erro de programa visível.
+
+A solução do Zchezz é um meio-termo: em vez de decompor essas 31 features em deltas incrementais
+linha a linha como as 768 HM, elas são recalculadas por inteiro sempre que o topo da pilha de
+acumuladores muda, e o resultado, um vetor de 31 números, é “dobrado” (folded) num único delta
+pré-computado por slot da pilha (_ext_buf), que depois é somado ao acumulador HM de uma vez só,
+sem exigir nenhum scan adicional do tabuleiro no momento da avaliação em si. É incremental no
+sentido de que o custo é pago uma vez por lance, não uma vez por avaliação, mas não tem a mesma
+elegância de “somar só a linha que mudou” que as features HM têm.
+
+Como Outros Engines Evitam Esse Problema: King Buckets e Redes por Fase
+O Zchezz resolve a tensão entre “contexto agregado” e “atualização barata” adicionando um bloco de
+features separado. Outra família de soluções, adotada por engines como o próprio Stockfish, ataca o
+mesmo problema por um caminho diferente, sem precisar de nenhuma feature de endgame explícita.
+
+A primeira dessas soluções é o king bucket. Em vez de um único conjunto de pesos compartilhado por
+toda posição de rei possível, o espaço de casas onde o rei pode estar é dividido em grupos, os “buckets”,
+e cada bucket recebe sua própria fatia de pesos dentro da camada L1. Na prática isso significa que
+a rede aprende, por exemplo, um “significado” diferente para um cavalo em f5 dependendo de se o
+rei aliado está no bucket do flanco do rei ou no bucket do flanco da dama, porque o mesmo cavalo
+em f5 protege ou ataca coisas completamente diferentes em cada cenário. É uma forma de dar à rede,
+implicitamente, exatamente o tipo de contexto posicional relativo ao rei que as features de endgame do
+Zchezz fornecem de forma explícita, mas sem quebrar a propriedade “cada lance muda só um punhado
+fixo de features”: um cavalo se movendo continua ativando e desativando duas features simples, só
+que dentro do bucket certo.
+
+A segunda solução é usar mais de uma rede neural inteira, escolhida conforme a fase do jogo.
+Como as prioridades posicionais mudam radicalmente entre a abertura, com os dois reis ainda no
+centro relativo e material cheio no tabuleiro, e o final, com poucas peças e reis ativos, forçar uma
+única rede a aprender as duas fases ao mesmo tempo desperdiça capacidade. Engines modernos
+frequentemente treinam múltiplas sub-redes e escolhem qual usar (ou como misturar mais de uma)
+com base na contagem de material da posição atual, uma rede afinada para posições desequilibradas e
+táticas, outra para posições balanceadas e mais posicionais, cada uma especializada em vez de uma
+
+
+                                                                                                      36
+só tentando servir a tudo. É, em espírito, a mesma ideia dos buckets, mas aplicada à rede inteira em
+vez de só à camada de entrada: em vez de uma feature explícita dizendo “estamos em final”, a própria
+escolha de qual rede rodar já carrega essa informação.
+
+
+
+
+XIII
+
+
+Quantização e Inferência Inteira
+A Intuição
+Para erguer uma parede de tijolos, ninguém mede cada tijolo com um micrômetro de precisão industrial:
+uma fita métrica comum já garante uma parede reta e sólida, e o trabalho fica muito mais rápido
+porque a ferramenta grosseira é mais fácil de manusear que a fina. O mesmo raciocínio vale para
+dinheiro no dia a dia: preços são arredondados para o centavo, não para frações de centavo, porque a
+precisão extra não muda nenhuma decisão de compra e só atrapalharia o troco. Trocar uma régua fina
+demais por uma mais grossa, de propósito, quando a diferença não importa para o resultado final, é a
+ideia central deste capítulo.
+
+Os números que uma rede neural manipula internamente são, por padrão, de precisão altíssima (o
+tipo “float32” mencionado no capítulo anterior guarda dezenas de casas decimais de precisão). Só que
+processadores comuns calculam com números inteiros muito mais rápido do que com esses números
+de alta precisão, porque a aritmética inteira é mais simples de fazer em massa. A quantização é o
+processo de pegar os pesos e os cálculos internos da rede e arredondá-los, de propósito, para inteiros
+mais grosseiros, aceitando uma pequena perda de exatidão em troca de um ganho grande de velocidade,
+porque essa perda quase nunca muda qual das duas jogadas a rede prefere.
+
+Há uma armadilha nessa troca, porém: se a rede for treinada assumindo precisão total e só depois
+for arredondada de surpresa, o arredondamento pode estragar o que ela aprendeu, como alguém que
+estudou de forma solta para descrever ideias com as próprias palavras (uma prova dissertativa) e
+de repente é avaliado só por marcar a alternativa certa entre quatro opções (uma prova de múltipla
+escolha): o conhecimento pode não estar organizado do jeito que o novo formato de resposta exige.
+Por isso a rede aprende, desde o treinamento, já sabendo que vai ser arredondada no final, como um
+aluno que estuda diretamente no formato da prova que vai enfrentar, técnica que o capítulo seguinte
+chama de treinamento com reconhecimento de quantização.
+
+A partir daqui o texto detalha os números exatos dessa conversão: as escalas usadas para transformar
+pesos de ponto flutuante em inteiros, o tamanho de cada tipo de número ao longo das camadas e o
+formato de arquivo que guarda os pesos já quantizados.
+
+Escalas de Quantização
+Todos os pesos e ativações são convertidos de float32 para inteiros de ponto fixo usando duas escalas,
+QA e QB, que devem coincidir exatamente entre o script de treinamento, o conversor e o engine C:
+
+                                                                                                   37
+Parâmetro          Valor                           Significado
+
+QA                 255                             Escala L1: float [−128.5, +128.5] → int16
+                                                   [−32767, +32767]
+QB                 64                              Escala L2/L3: float [−1.984, +1.984] → int8 [−127, +127]
+SHIFT              8                               Right-shift após acumulação L1 (≈ log2 (QA))
+OUT_SCALE          320/(𝑄𝐵 × 𝑄𝐵) ≈ 0.078           Conversão final para centipawns
+
+
+
+
+L1 (pesos int16)
+Cada peso em L1 é multiplicado por QA e arredondado para int16_t. O bias L1 é escalado por QA
+em int32_t. Como cada feature de entrada é binária (0 ou 1) e há no máximo 32 peças ativas, o valor
+máximo do acumulador antes do ClippedReLU é 32 × 32767 = 1.048.544, que cabe em int32_t. Após
+ClippedReLU, a saída é clamped para [0, 255], cabendo em uint8_t.
+
+L2 (pesos int8)
+Cada peso L2 é multiplicado por QB e arredondado para int8_t. O bias L2 é pré-escalado por
+𝑄𝐴 × 𝑄𝐵 = 16320 em int32_t. O dot product L2 acumula uint8_t ativações × int8_t pesos em
+int32_t, depois right-shift por SHIFT (8) para trazer a escala de volta a QB antes do ClippedReLU.
+Saída clamped para [0, 64].
+
+L3 (float32)
+Pesos L3 são quantizados em int8_t (escala QB) no arquivo NNU3, mas o dot product final L3W ·
+relu2 usa os pesos inteiros escalados de volta para float para o escalar final. O bias é mantido como
+float32 (esse dot product 64→1 não é gargalo, e evitar uma conversão extra mantém o caminho de
+saída simples e exato).
+
+Forward Pass Completo (Inteiro)
+
+  1.    acc1   = L1B + L1W_T × features                (int32, escala QA)
+  2.    relu1 = clamp(acc1, 0, 255)                     (uint8, escala QA)
+  3.    acc2   = L2B + L2W_T × relu1                    (int32, escala QA×QB)
+  4.    acc2   = acc2 >> SHIFT                           (int32, escala QB)
+  5.    relu2 = clamp(acc2, 0, QB)                       (uint8, escala QB)
+  6.    raw    = L3B + (L3W · relu2) × OUT_SCALE        (float32, WDL logit)
+  7.    cp     = clamp(raw × 320, −2000, +2000)          (centipawns, STM-relative)
+
+
+
+A sigmoid está embutida no target de treinamento (labels WDL em [0, 1]). A saída da rede é um
+logit cru, escalado diretamente para centipawns sem nenhuma função transcendental no caminho
+quente de avaliação.
+
+
+
+
+                                                                                                         38
+Throughput
+A inferência inteira dá um ganho de ~2× sobre float32 em hardware AVX2: 16 elementos int16_t
+cabem num registrador de 256 bits versus 8 elementos float32.
+
+Formato NNU3
+
+  Offset   Size    Content
+  ──────────────────────────────────────────────────────────
+  0         4 B    Magic: "NNU3"
+  4         4 B    Epoch (uint32, little-endian)
+  8        20 B    5 × uint32 dims: [799, 256, 256, 64, 64]
+  28       16 B    4 × float32 scales: [QA=255, QB=64, SHIFT=8, OUT_SCALE≈0.078]
+  44        …      L1W_T     int16[799×256]   pesos × QA, transpostos
+                   L1B       int32[256]       bias × QA
+                   L2W_T     int8[256×64]     pesos × QB, transpostos
+                   L2B       int32[64]         bias × QA×QB
+                   L3W       int8[64]          pesos × QB
+                   L3B       float32[1]       bias (float)
+
+
+
+Tamanho total: ~426 KB (versus ~860 KB do formato float32 NNU2, redução de 50%).
+
+
+
+
+XIV
+
+
+Treinamento: Auto-Jogo, QAT e Gerações
+A Intuição
+Uma criança que só treina xadrez contra si mesma parece condenada a repetir os próprios erros para
+sempre: se ela não sabe que um lance é ruim, quem vai avisar? A resposta é que o placar avisa. Cada
+partida termina em vitória, empate ou derrota, e esse resultado volta como corretivo para os lances que
+levaram até ali. A geração seguinte de “criança” começa já sabendo evitar o que perdeu partidas antes,
+e por ser um pouco melhor, produz partidas um pouco mais informativas para a geração seguinte
+àquela. É um professor que não sabe nada de xadrez no início, mas nunca para de dar prova e corrigir
+a prova, e a cada rodada o gabarito fica mais afiado porque quem está aplicando a prova também está
+mais forte.
+
+O detalhe que costuma passar despercebido é o que exatamente vira “gabarito”. Seria natural rotular
+cada posição com uma pontuação, tipo “essa posição vale +1,5 peões”, mas o Zchezz rotula com uma
+probabilidade: qual a chance de vitória, de empate, de derrota a partir dali. A diferença importa porque
++1,5 quer dizer coisas diferentes em contextos diferentes: numa posição calma e sólida, uma vantagem
+de peão e meio costuma converter em vitória; numa posição caótica cheia de peças penduradas, o
+
+
+
+                                                                                                     39
+mesmo +1,5 pode desmoronar em três lances. Treinar com chance de vitória em vez de pontuação bruta
+obriga o sistema a aprender essa diferença de contexto, em vez de tratar todo +1,5 como equivalente.
+
+Há ainda um cuidado prático nesse ciclo: nem toda posição de uma partida serve de exemplo. Posições
+no meio de uma troca de peças em andamento são instáveis, o valor delas muda lance a lance conforme
+a troca se resolve, e usá-las como rótulo é como tirar a régua no meio do movimento. Só posições
+“paradas”, sem capturas pendentes, entram no treino, para que o número fixado seja um retrato fiel e
+não um instantâneo borrado.
+
+Geração de Dados por Auto-Jogo
+Os engines modernos geram seus próprios dados de treinamento pelo ciclo:
+
+   1. Auto-jogo (self-play): o engine joga contra si mesmo, gerando milhões de posições com
+      avaliações
+   2. Filtragem: apenas posições “quiet” (sem capturas pendentes) são usadas; posições táticas
+      produzem labels ruidosos
+   3. Iteração: redes mais fortes geram dados melhores, que treinam redes ainda mais fortes
+
+
+O Label: WDL (Win/Draw/Loss)
+Em vez de treinar com a avaliação em centipawns (um número contínuo cuja escala é arbitrária),
+engines modernos treinam com probabilidades WDL (a probabilidade de vitória, empate e derrota
+daquela posição). Isso captura melhor a incerteza posicional e produz avaliações mais calibradas: +1.5
+em uma posição tática volátil tem significado diferente de +1.5 em um endgame estável.
+
+Gerações Iterativas do Zchezz
+O treinamento do Zchezz seguiu um processo iterativo:
+
+Primeira geração:
+
+    • Dataset do Lichess [18] (partidas humanas)
+    • Dataset do Ethereal (auto-jogo de engine)
+    • Dataset de posições quiet
+    • Auto-jogo de versões antigas com avaliação tradicional (hand-crafted)
+
+Gerações subsequentes (4 iterações):
+
+    • Cada geração treinada em auto-jogo da geração anterior
+    • Posições de endgame geradas artificialmente para reforçar padrões finais
+    • Cada geração descobre padrões que a anterior não via
+    • Convergência quando o ganho cai abaixo de ~5 Elo por geração
+
+
+
+
+                                                                                                   40
+Quantization-Aware Training (QAT)
+A pós-quantização padrão (quantizar depois de treinar) degrada a acurácia porque a rede float32 foi
+livre para usar valores fora da faixa representável por inteiros. O QAT [19] simula a quantização
+durante o treinamento, permitindo que a rede aprenda a operar dentro das restrições inteiras.
+
+ClippedReLU
+O ReLU padrão é substituído por ClippedReLU(clip=1.0):
+
+  ClippedReLU(x) = clamp(x, 0.0, 1.0)
+
+
+
+Durante o treinamento, a saída fica em [0, 1.0] (float). No engine, 1.0 mapeia exatamente para 𝑄𝐴 = 255,
+dando uma bijeção limpa entre a faixa float de treinamento e a faixa uint8 de inferência, sem artefatos
+de arredondamento na fronteira.
+
+Fake-Quantization com Straight-Through Estimator (STE)
+Em cada forward pass, os pesos são temporariamente snapped para o valor inteiro representável
+mais próximo e depois divididos de volta para float, simulando o arredondamento que ocorrerá no
+deployment:
+
+  limit = 32767 / QA                              # ≈ 128.5
+  x_clamped = clamp(w, −limit, +limit)
+  x_quantized = round(x_clamped × QA) / QA        # snapped para grid inteiro
+
+
+Para o backward pass, gradientes fluem pelo arredondamento como se fosse uma identidade: o
+Straight-Through Estimator [20] (STE, Bengio et al. 2013). Isso permite que o otimizador empurre
+pesos em direção a melhores valores no grid inteiro sem perder o sinal de gradiente.
+
+Hard Weight Clamping
+Após cada passo do otimizador, todos os pesos são hard-clamped para sua faixa float representável:
+
+  lim1 = 32767 / QA     # ≈ 128.5   — L1 weight max
+  lim2 = 127     / QB   # ≈ 1.984   — L2/L3 weight max
+
+
+Sem isso, o momentum do Adam [21] (otimizador baseado em gradiente descendente estocástico)
+pode carregar pesos para fora do clamp no próximo passo, desperdiçando gradiente em valores que
+serão sempre clipped.
+
+Schedule de Treinamento
+O QAT usa warm-up para transicionar suavemente:
+
+
+
+
+                                                                                                     41
+Épocas        Estado                    O que é quantizado
+
+0–14          float32 (warm-up)         Nada (ClippedReLU estabiliza)
+15–39         QAT-L1                    Pesos/bias L1 + ativação L1
+40+           QAT-ALL                   L1 (int16) + L2/L3 (int8) + todas ativações
+
+
+
+
+XV
+
+
+AlphaZero e a Revolução do Reinforcement Learning
+A Intuição
+Imagine chegar numa cidade desconhecida com fome e sem guia. Uma estratégia é anotar os restau-
+rantes que já foram bons e voltar sempre a eles; outra é sair testando lugares novos a esmo. As duas
+isoladas são ruins: só repetir o conhecido nunca descobre o melhor restaurante da cidade, só testar
+novidade desperdiça noites boas em apostas malfeitas. A estratégia que funciona é um meio-termo que
+se ajusta sozinho: visitar principalmente os lugares que já se mostraram bons, mas reservar uma fração
+das noites para testar algo novo, e deixar essa fração encolher à medida que a certeza sobre os bons
+lugares aumenta. É essencialmente isso que o MCTS faz numa árvore de xadrez: em vez de examinar
+cada ramo com o mesmo cuidado, ele sorteia caminhos preferindo os que já renderam bons resultados
+nas simulações anteriores, e investiga mais fundo justamente onde a aposta está compensando.
+
+Essa é a segunda ruptura do AlphaZero, depois de já ter abandonado toda regra de xadrez escrita à mão
+por um humano. Ele não examina metodicamente cada lance possível como faz um motor tradicional;
+ele joga milhares de partidas simuladas internamente, guiado por uma intuição (a rede neural) sobre
+quais restaurantes valem a pena visitar, e deixa a estatística dessas visitas apontar o melhor lance.
+
+O resultado curioso é que essa arquitetura e a arquitetura tradicional turbinada por redes neurais leves,
+que examina cada ramo de forma quase exaustiva mas descarta cedo o que não presta, chegam à força
+de jogo quase idêntica. São dois caminhos opostos, sortear-e-confiar contra examinar-tudo-e-podar,
+convergindo para o mesmo teto de desempenho. Isso sugere que não existe um único jeito “certo” de
+pensar bem sob restrição de tempo: existem famílias de estratégias diferentes que exploram a mesma
+vantagem, a de não gastar atenção igual em tudo, por rotas distintas.
+
+O AlphaZero (Silver et al., DeepMind, 2018) [9] abandonou completamente a função de avaliação
+artesanal e a busca alfa-beta. Em seu lugar:
+
+      • Rede neural profunda (ResNet com ~80 blocos residuais, ~20 milhões de parâmetros) que
+        avalia posições e sugere movimentos simultaneamente (uma policy head, probabilidade de cada
+        movimento, e uma value head, probabilidade de vitória)
+
+
+                                                                                                      42
+    • Monte Carlo Tree Search (MCTS) [22] guiada pela rede em vez de alfa-beta (a árvore é
+      explorada proporcionalmente à probabilidade da policy head)
+    • Treinamento por reinforcement learning puro: nenhum conhecimento humano além das
+      regras do jogo
+
+Em 4 horas de auto-jogo em TPUs, AlphaZero atingiu nível sobre-humano. Em 9 horas, derrotou
+Stockfish 28-0 com 72 empates (embora as condições do match tenham sido criticadas: Stockfish jogou
+sem livro de abertura e com configuração de tempo subótima).
+
+O Debate: MCTS + Deep NN vs. Alpha-Beta + NNUE
+A competição moderna revela uma verdade sutil: ambas as abordagens convergem em força. A
+Stockfish com NNUE (alfa-beta + rede neural rasa) e o Leela Chess Zero (MCTS + rede neural profunda)
+estão separadas por menos de 30 Elo nos rankings atuais, uma diferença que flutua entre versões.
+
+A diferença é arquitetural, não fundamental:
+
+Dimensão              Stockfish NNUE                  Leela Chess Zero (Lc0)
+
+Busca                 Alpha-Beta + PVS                Monte Carlo Tree Search
+Avaliação             NNUE (3 camadas, ~400KB)        ResNet profunda (~100 camadas, ~100MB)
+Posições/segundo      ~100M (CPU)                     ~40K (GPU)
+Nós por decisão       Milhões                         Milhares
+Hardware              CPU (AVX2/NEON)                 GPU (CUDA/ROCm)
+Estilo de jogo        Tático, preciso, calculista     Posicional, criativo, “humano”
+
+
+
+
+A Lição Profunda
+O xadrez humano (com suas aberturas nomeadas, princípios estratégicos e sabedoria acumulada
+em séculos) é um subconjunto das possibilidades. AlphaZero redescobriu e transcendeu a teoria
+humana por pura otimização. Algumas das partidas mais admiradas de AlphaZero envolvem sacrifícios
+posicionais que nenhum grandmaster humano teria concebido, não por falta de habilidade, mas por
+falta de confiança em posições que não podem ser calculadas até o fim.
+
+Isso conecta-se diretamente ao debate sobre Consciência em LLMs: a maestria de AlphaZero é com-
+preensão ou mera otimização? O engine “entende” xadrez ou apenas executa padrões estatísticos em
+escala? Daniel Dennett argumentaria que não há distinção significativa: compreensão é o compor-
+tamento competente, não um ingrediente extra “por cima”. John Searle, pelo argumento do Quarto
+Chinês, insistiria que execução de regras sem entendimento genuíno não é cognição real.
+
+
+
+
+                                                                                                 43
+XVI
+
+
+Otimizações de Performance e Busca Paralela
+A Intuição
+Um motor de xadrez que pensa duas vezes mais rápido que outro, com a mesma inteligência, ganha
+partidas simplesmente porque no mesmo relógio ele enxerga mais lances à frente, e vale lembrar da
+fila de moedas: quem enxerga uma jogada à frente pega o 4 e perde, quem enxerga duas pega o 3 e
+ganha. Velocidade não é um luxo de engenharia, é a diferença entre ver e não ver a armadilha. Por
+isso boa parte do trabalho de otimizar um engine não mexe em nenhuma ideia nova sobre xadrez:
+mexe em fazer a mesma ideia rodar mais depressa, para que o tempo de raciocínio disponível compre
+mais profundidade, ou mais nós por segundo, o que dá no mesmo.
+
+Uma das formas mais diretas de ganhar velocidade é parar de fazer uma conta de cada vez e passar a
+fazer várias simultaneamente. É como uma linha de caixas de supermercado: se cada caixa atende
+um cliente por vez, o fluxo é limitado pelo número de caixas; abrir dezesseis caixas ao mesmo tempo
+processa dezesseis clientes no tempo que uma levaria para processar um. O processador tem instruções
+especiais que fazem exatamente isso com números: em vez de somar dois valores de cada vez, ele
+soma dezesseis pares de uma tacada só, dentro do mesmo ciclo de relógio. Multiplicado por milhões de
+posições avaliadas por segundo, esse tipo de paralelismo interno é o que separa um engine mediano
+de um engine de ponta.
+
+Outro truque explora uma folga natural do sistema: se boa parte dos números que entram numa conta
+já é zero, não há necessidade de somar zero a nada, basta pular essa entrada. Reconhecer e aproveitar
+esse vazio, em vez de processá-lo como se fosse dado relevante, é outra forma de fazer mais com o
+mesmo hardware.
+
+Há ainda um paralelismo de nível mais alto, que não mexe em bits dentro de um único núcleo, mexe em
+quantos núcleos do processador estão trabalhando ao mesmo tempo na mesma pergunta. É como uma
+equipe de investigadores dividindo pistas sobre o mesmo caso em vez de um detetive sozinho: cada
+um puxa um fio ligeiramente diferente da mesma investigação, compartilha o que descobre com os
+outros, e a equipe inteira chega à resposta mais rápido do que qualquer um sozinho chegaria, mesmo
+que cada investigador individual não seja mais inteligente que o detetive solitário.
+
+AVX2 Int16 Accumulation
+Em uma frase: é a fila de caixas do início do capítulo traduzida em silício, dezesseis somas acontecendo
+no mesmo ciclo de relógio.
+
+A atualização do acumulador L1 usa _mm256_add_epi16 para processar 16 elementos int16_t por
+registrador (o dobro do throughput de _mm256_add_ps com float32). O valor máximo seguro do
+acumulador é 32 × 32767 = 1.048.544, bem dentro de int32_t.
+
+
+
+                                                                                                      44
+Transposed L2 Weights
+A intuição: guardar a matriz exatamente na ordem em que o cálculo vai lê-la transforma o laço interno
+numa caminhada reta pela memória, que o compilador consegue converter em instruções vetoriais.
+
+A matriz de pesos L2 é armazenada em ordem [in × out] para que o loop de produto externo
+mantenha acc2[64] quente em registradores enquanto itera sequencialmente sobre relu1[256]. GCC
+-O3 auto-vetoriza com AVX/SSE no nativo e Emscripten com -msimd128 no WASM.
+
+
+Sparsity Skip
+Em uma frase: somar zero não soma nada, e o ReLU da camada anterior garante muitos zeros à
+disposição. No forward pass, a camada L2 curto-circuita qualquer entrada onde relu1[i] == 0,
+explorando a esparsidade natural pós-ReLU da primeira camada oculta.
+
+Lazy SMP: Busca Paralela em Múltiplas Threads
+A equipe de investigadores da intuição acima tem nome técnico: Lazy SMP (Symmetric
+Multi-Processing “preguiçoso”). Em vez de dividir a árvore de busca em pedaços cuidadosamente co-
+ordenados entre threads, o que exigiria comunicação constante e complexa, cada thread simplesmente
+busca a mesma árvore inteira, de forma quase idêntica às outras, mas com pequenas perturbações:
+profundidades ligeiramente escalonadas entre as threads, e uma sequência de números aleatórios
+diferente para desempate em posições equivalentes.
+
+O truque que faz isso funcionar sem coordenação explícita é que todas as threads compartilham a
+mesma tabela de transposição do capítulo V. Uma thread que, por acaso de sua trajetória ligeiramente
+diferente, encontra uma linha forte mais cedo, grava isso na TT compartilhada, e todas as outras
+threads se beneficiam dessa descoberta na próxima vez que passarem por aquela posição, mesmo
+sem nenhuma mensagem explícita ter sido trocada entre elas. É “preguiçoso” justamente porque não
+há sincronização cuidadosa nem divisão explícita de trabalho, só várias buscas quase-redundantes
+cochichando entre si através de uma memória compartilhada. No Zchezz, 4 threads tipicamente
+adicionam cerca de 30 pontos de Elo sobre uma única thread, um ganho considerável para uma técnica
+sem nenhuma ideia nova sobre avaliação ou poda, só mais gente pensando ao mesmo tempo sobre o
+mesmo problema.
+
+
+
+
+XVII
+
+
+O Xadrez no Navegador: WebAssembly
+A Intuição
+A maioria dos programas modernos depende de uma cadeia de coisas alheias: uma instalação, um
+servidor remoto que responde às chamadas, uma conexão de internet estável. A promessa de rodar o
+
+
+                                                                                                   45
+engine inteiro dentro de um único arquivo HTML é a promessa oposta: tudo o que o programa precisa
+para funcionar, o código, os pesos da rede neural treinada, os desenhos das peças, vai empacotado
+dentro desse mesmo arquivo. Abrir com duplo-clique basta. Não há instalação, não há servidor do
+outro lado da linha, não há sequer necessidade de estar conectado à internet depois de baixar o arquivo
+uma vez.
+
+A ideia central aqui não é de desempenho, é de autocontenção: um objeto fechado que carrega tudo
+de que precisa dentro de si, como uma casa autossuficiente com poço próprio e painel solar em vez
+de depender da rede elétrica e do encanamento da cidade. Isso é possível porque o código do engine,
+originalmente escrito em C, pode ser compilado para um formato que o navegador executa quase na
+velocidade nativa, e tudo o que normalmente seria carregado de fora (o binário, os pesos treinados, as
+imagens das peças) é convertido em texto e colado diretamente dentro do próprio arquivo HTML. O
+resultado é um único arquivo que se basta.
+
+O Zchezz [2] compila para WebAssembly via Emscripten, produzindo um arquivo HTML comple-
+tamente self-contained que funciona offline (basta abrir com duplo-clique em qualquer browser
+moderno). O código-fonte completo do engine está disponível no repositório do projeto.
+
+Bundle Self-Contained
+O bundler (bundle.py) lê o WASM binário, o arquivo de pesos NNUE, e o JS worker, codifica tudo
+em base64, e injeta diretamente no HTML como constantes inline. Peças SVG do estilo Merida são
+extraídas de python-chess e injetadas para funcionar sem requisição de rede. O resultado: um único
+arquivo HTML com zero dependências externas.
+
+Funcionalidades
+Painel de jogo:
+
+    • Seleção de lado (Brancas/Pretas) a qualquer momento
+    • Profundidade configurável (d5 a d15)
+    • Move log em notação SAN com navegação por clique
+    • Animação suave de peças
+    • Detecção de aberturas (ECO) em tempo real (Ruy Lopez, Defesa Siciliana, Gambito da Dama
+      Declinado, e muitas outras)
+    • Suporte a livro de abertura Polyglot (formato de arquivo .bin)
+    • Efeitos sonoros para movimentos, capturas, xeques e fim de jogo
+
+Painel de análise:
+
+    • Análise contínua com barra de avaliação animada
+    • Variação principal exibida com score
+    • Gráfico de avaliação ao longo da partida com navegação por clique
+    • Blunder check automático: anotação completa de erros, imprecisões e blunders
+    • Import/export de FEN e PGN
+
+
+
+                                                                                                     46
+Personalização:
+
+    • 4 estilos de peça (Outline, Solid, Letters, Merida SVG)
+    • 6 temas de cor (Classic, Green, Blue, Coral, Walnut, Night)
+
+
+Multi-PV: Mais de Uma Resposta ao Mesmo Tempo
+Até aqui, a busca inteira foi descrita como uma máquina de produzir um melhor lance. Isso é ótimo
+para jogar, mas insuficiente para analisar: um jogador humano estudando uma posição depois da
+partida não quer só “jogue Cf3”, quer entender por que Cf3 é melhor que as alternativas, e o que
+aconteceria se tivesse jogado a segunda ou terceira melhor opção.
+
+O Multi-PV resolve isso rodando, essencialmente, N buscas com um ajuste simples: depois de encontrar
+a melhor linha, ela é temporariamente excluída da lista de candidatos e a busca é refeita para encontrar
+a segunda melhor, e assim por diante até completar N linhas. É como pedir a um consultor não “qual é
+a melhor decisão”, mas “me dê as três melhores decisões, classificadas, com a diferença de valor entre
+elas”. O Zchezz reporta até 5 linhas principais simultâneas no modo de análise do navegador, cada
+uma com seu próprio score em centipawns, permitindo comparar visualmente o quanto a segunda
+opção fica atrás da primeira, informação que uma busca de linha única simplesmente descarta.
+
+Contempt Factor
+O Zchezz implementa um contempt factor de 15 centipawns: quando uma posição é repetida pela
+primeira vez (ainda não é empate legal), o engine retorna +15cp da perspectiva do lado que repetiu,
+em vez de 0. Isso penaliza a repetição em posições vencedoras enquanto ainda aceita empate quando
+genuinamente perdendo. Repetição de 3 tempos e a regra dos 50 movimentos sempre retornam 0
+exato.
+
+
+
+
+XVIII
+
+
+A Fronteira: Para Onde Vai o Xadrez Computacional?
+A Intuição
+Fora das ilhas de certeza absoluta que as tablebases do capítulo V representam, o resto do jogo segue
+sendo terreno de estimativa cada vez melhor, não de certeza. Uma das fronteiras já foi cruzada por
+completo pelo Zchezz, somar mão de obra: em vez de um único processador pensando sozinho, várias
+threads pensam em paralelo sobre a mesma posição, como a equipe de investigadores do capítulo
+anterior. A fronteira mais incerta hoje não é de execução, é arquitetural.
+
+As redes que hoje avaliam posições de xadrez são desenhadas para captar padrões locais no tabuleiro;
+existe uma família de redes mais recente, usada com sucesso em tradução e geração de texto, capaz de
+relacionar qualquer parte de uma entrada com qualquer outra parte diretamente, sem essa limitação
+
+                                                                                                     47
+de vizinhança. Se essa arquitetura consegue ou não ser adaptada ao ritmo de um engine de xadrez,
+que precisa reavaliar a posição centenas de milhões de vezes por segundo, é uma pergunta em aberto,
+sem resposta ainda.
+
+Transformers no Xadrez?
+O futuro pode trazer arquiteturas Transformer ao xadrez, modelos de atenção que capturam relações de
+longo alcance entre peças sem a localidade forçada de CNNs. O Leela Chess Zero [23] já experimenta
+com redes mais profundas, mas o custo computacional por posição ainda é ordens de grandeza maior
+que o da NNUE. A pergunta aberta: Transformers podem ser tornados incrementalmente atualizáveis
+como NNUE, da mesma forma que o acumulador dual do capítulo XII torna a NNUE atual barata o
+bastante para rodar bilhões de vezes por segundo?
+
+Próximos Passos do Zchezz
+O roadmap deste ensaio precisou de uma correção em relação a versões anteriores: staged move
+generation, busca multi-thread via Lazy SMP, Multi-PV e probing de tablebases, que em algum
+momento apareceram aqui como “próximos passos”, já estão todos implementados e descritos em seus
+capítulos correspondentes (X, XVI, XVII e V, respectivamente). O roadmap real e atual é mais modesto:
+
+    • Estrutura de rede NNUE melhorada: explorar arquiteturas maiores ou features adicionais
+      que capturem padrões posicionais ainda não codificados nas 799 features atuais
+    • Suporte a ponder: permitir que o engine continue pensando no tempo do adversário, usando a
+      variação principal esperada como palpite de qual será o próximo lance real
+
+É um roadmap propositalmente menos ambicioso que os anteriores, porque o essencial, o arsenal
+de setenta anos resumido no capítulo I, já está todo implementado. O que resta é refinamento, não
+fundação.
+
+
+
+
+XIX
+
+
+O Que o Xadrez Ensina Sobre a Inteligência
+A Intuição
+Há uma pergunta simples que qualquer pessoa consegue formular sobre um engine de xadrez, mesmo
+sem saber programar ou jogar: quando essa máquina vence um grande mestre, ela entendeu o que
+estava fazendo, ou só executou passos? A pergunta parece boba até se notar que não há como testá-la
+de fora. Toda evidência disponível, o lance jogado, a vitória, o comentário gerado, é comportamento
+observável; nada dela é acesso direto ao que se passa “por dentro” da máquina enquanto ela decide.
+
+Esse é exatamente o ponto onde duas respostas filosóficas antigas se encontram, agora com um caso
+concreto e mensurável para testar. Uma delas diz que a pergunta “entendeu de verdade, ou só imitou
+
+
+                                                                                                  48
+entendimento?” não faz sentido: se o comportamento é indistinguível de compreensão competente
+em toda situação possível, chamar isso de “mera imitação” não está descrevendo nada a mais sobre o
+mundo, é só um desconforto verbal. A outra resposta diz o oposto: é perfeitamente possível seguir
+regras com perfeição e não entender nada do que se está fazendo, do mesmo jeito que alguém pode
+traduzir um texto símbolo por símbolo, seguindo um manual, sem entender uma palavra do idioma
+original.
+
+O motor de xadrez é um caso particularmente afiado dessa disputa porque, ao contrário de um humano,
+ele não tem como alegar introspecção nem instinto: sabe-se exatamente que dentro dele há pesos
+numéricos e operações aritméticas, e ainda assim ele produz o comportamento mais associado a
+“inteligência” que a cultura conhece, o de vencer o melhor jogador humano vivo. Fica a pergunta em
+aberto, sem veredito ainda: o que muda, se algo muda, quando se sabe exatamente como a caixa por
+dentro funciona?
+
+Antes das lições, vale explicitar uma nota de humildade estatística que o resto do capítulo pressupõe.
+Afirmar que um engine é mais forte que outro engine, ou mais forte que um humano, nunca é um fato
+observado diretamente: é uma inferência sobre uma amostra de partidas, sujeita aos mesmos erros de
+qualquer teste estatístico. O erro tipo I declara força onde havia apenas sorte, o falso positivo que
+coroa uma versão nova por uma sequência vencedora dentro do ruído; o erro tipo II enterra um ganho
+real que a amostra era pequena demais para revelar. É o tema de Validação Estocástica de Dinâmica de
+Voo, aplicado lá ao voo de rotores, mas idêntico aqui: toda comparação de força carrega esses dois
+riscos, e por isso engines sérios são julgados em milhares de partidas, com margens de erro explícitas,
+antes de qualquer veredito.
+
+A trajetória do xadrez computacional destila lições profundas sobre a natureza da cognição:
+
+1. Busca e Avaliação São Complementares, Não Rivais
+Os engines mais fortes combinam ambas. AlphaZero usa MCTS (busca) + rede neural profunda
+(avaliação). Stockfish NNUE usa alfa-beta (busca) + NNUE (avaliação). Nenhuma abordagem pura
+domina: busca sem avaliação é cega; avaliação sem busca é ingênua. Isso ecoa a máxima de Kant:
+“conceitos sem intuições são vazios; intuições sem conceitos são cegas.”
+
+2. O Conhecimento Artesanal Tem Limites
+Décadas de ajuste manual de funções de avaliação foram superadas por horas de auto-aprendizado. Os
+padrões que a rede descobre são reais (eles predizem resultados com precisão sobre-humana), mas não
+são articuláveis em linguagem humana. A rede “sabe” que uma posição é boa sem poder explicar
+por quê, ecoando o problema dos qualia: experiências reais mas inacessíveis à introspecção verbal.
+
+Isso conecta-se ao debate sobre a epistemologia: existe conhecimento genuíno que não pode ser
+articulado? O conhecimento tácito de Michael Polanyi [24] (“sabemos mais do que podemos dizer”)
+encontra na rede NNUE um exemplo quantificável: a rede demonstravelmente sabe coisas que nenhuma
+descrição explícita captura.
+
+
+
+
+                                                                                                    49
+3. A Otimização Não É Compreensão — Ou É?
+Como visto no fecho do capítulo XV, Daniel Dennett [25] sustenta que não há distinção significativa
+entre otimizar perfeitamente e compreender: sua posição é funcionalista, para ele compreensão é
+propriedade do comportamento, não de um substrato misterioso. John Searle [26] responde pelo
+Quarto Chinês: sintaxe executada à perfeição segue sem semântica. O xadrez acrescenta a essa disputa
+uma dobra que o caso geral não tinha: o operador imaginado por Searle seguia um manual escrito
+por alguém, enquanto os pesos de uma rede NNUE não têm autor nenhum, foram destilados por
+otimização cega a partir de milhões de partidas e ainda assim capturam regularidades que nenhum
+autor conhecia. A objeção formulada para manuais escritos precisa agora explicar o que faz uma
+tabela de consulta produzida por gradiente descendente.
+
+O xadrez é, de certa forma, um teste empírico para essa disputa filosófica. E a resposta provisória
+que os engines oferecem é perturbadora: a distinção pode não importar. Se compreensão sem compor-
+tamento é vazia, e comportamento sem compreensão é indistinguível, então a pergunta “ele entende
+ou só calcula?” pode ser do tipo que nenhuma evidência externa decide. Na imagem que Gödel e
+Turing deixaram, existem perguntas que um sistema formal não consegue responder sobre si mesmo;
+levada como analogia, e não como consequência lógica, essa lição sugere que talvez nenhum sistema,
+humano ou artificial, consiga decidir de dentro se a própria competência constitui compreensão.
+
+Esse arco, aberto na introdução, fecha com Daniel Kahneman. A divisão entre Sistema 1 e Sistema
+2 descreve as duas metades de um engine moderno: a rede NNUE é o Sistema 1, rápido, heurístico,
+treinado por exposição massiva, devolvendo impressões instantâneas sobre posições que jamais
+calculou; a busca alfa-beta é o Sistema 2, lento, deliberado, exaustivo, verificando passo a passo as
+consequências de cada lance. Nenhuma das duas basta sozinha, e a força do engine vem da coreografia
+entre elas, a intuição propondo e a deliberação auditando. Essa mesma coreografia é o território de
+ChatGPTs e Zumbis Filosóficos, que pergunta o que resta de compreensão quando o comportamento
+fluente surge sem deliberação, e de Neo-chauvinismo da Cognição Antropocêntrica, que recusa medir
+inteligência apenas pela régua do que humanos fazem devagar e verbalmente.
+
+4. Compressão É Inteligência?
+Há uma quarta lição, mais técnica que as anteriores, escondida num número que já apareceu duas
+vezes neste ensaio sem chamar atenção para si: os pesos treinados da rede NNUE do Zchezz, depois de
+quantizados, ocupam cerca de 426 kilobytes (capítulo XIII). Nesse punhado de kilobytes está codificado,
+de forma implícita, o equivalente a séculos de teoria de aberturas, milhões de partidas de auto-jogo e
+padrões posicionais que nenhum manual humano jamais catalogou por completo. É um fato estranho
+de se admitir: o “conhecimento de xadrez de elite” de uma máquina de força sobre-humana cabe,
+compactado, num arquivo menor que uma única foto de celular.
+
+Essa estranheza tem um nome técnico e uma tradição teórica por trás. Em 1948, Claude Shannon
+publicou A Mathematical Theory of Communication [27], fundando a teoria da informação e definindo
+entropia como a medida de quanta incerteza, ou “surpresa esperada”, existe numa fonte de dados.
+Um texto redundante, previsível, comprime bem, porque a maior parte dele pode ser reconstruída
+
+
+                                                                                                    50
+a partir de pouca informação nova; um texto genuinamente aleatório não comprime nada, porque
+cada símbolo carrega surpresa total. Duas décadas depois, Andrei Kolmogorov formalizou uma ideia
+irmã, a complexidade de Kolmogorov [28]: a complexidade “real” de qualquer dado é o tamanho
+do menor programa capaz de reproduzi-lo. Um milhão de dígitos de π parece aleatório à primeira
+vista, mas tem complexidade de Kolmogorov baixíssima, porque um programa curto o gera por inteiro;
+um milhão de dígitos genuinamente aleatórios não tem atalho, o menor programa que os reproduz é,
+essencialmente, copiá-los um a um.
+
+A ponte entre essas duas ideias e a palavra “inteligência” foi proposta com todas as letras pelo
+pesquisador Marcus Hutter, que desde 2006 financia o Prêmio Hutter [29], uma recompensa em
+dinheiro para quem conseguir comprimir um trecho de um gigabyte da Wikipédia em inglês para
+o menor tamanho possível. A aposta por trás do prêmio, hoje amplamente aceita, é que comprimir
+bem um texto exige, implicitamente, entender o que o texto descreve: gramática, fatos, causalidade,
+o modelo de mundo que gerou aquelas palavras. Um compressor genérico, que só procura padrões
+estatísticos superficiais, perde para um compressor que efetivamente captura a estrutura do que está
+sendo dito. Reduzir “inteligência” a “tamanho de arquivo comprimido” soa como fazer batota filosófica,
+esvaziar um conceito rico numa métrica pobre, mas a intuição por trás resiste: só é possível prever
+bem, e portanto comprimir bem, aquilo que se compreende bem.
+
+Vista por essa lente, a rede NNUE do Zchezz é literalmente um exercício de compressão. O conjunto de
+treino contém milhões de posições rotuladas com seu resultado provável; a rede, forçada a caber em 256
+neurônios na primeira camada e depois 64 na segunda, não tem espaço para memorizar cada posição
+individualmente, ela é obrigada a descobrir regularidades, padrões que se repetem entre posições
+superficialmente diferentes, e comprimir esse conhecimento num punhado de pesos numéricos. Um
+peão passado apoiado, um rei exposto numa certa configuração de bispos, esses padrões não estão
+listados em lugar nenhum dentro dos 426 kilobytes: eles emergem como a forma mais compacta que a
+rede encontrou de prever corretamente o resultado de milhões de partidas. Nesse sentido preciso, a
+rede não guarda xadrez, ela guarda uma compressão de xadrez, e a qualidade dessa compressão, medida
+em capacidade de prever resultados corretamente com o menor número de parâmetros possível, é
+exatamente o que separa uma rede fraca de uma rede forte.
+
+Isso devolve a disputa entre Dennett e Searle a um terreno mais concreto. Se compressão e compreensão
+são, na prática, a mesma coisa medida de ângulos diferentes, então perguntar “a rede comprime bem,
+ou ela entende?” pode ser uma falsa dicotomia, as duas frases descrevendo o mesmo fenômeno em
+vocabulários diferentes. Mas a pergunta não morre fácil: um dicionário de compressão sem-perdas, por
+mais eficiente que seja, ainda parece a Searle uma tabela de lookup sofisticada, não um entendimento.
+A diferença entre “comprimir dados sobre o mundo” e “compreender o mundo” pode ser, no fim, uma
+diferença de grau e não de tipo, ou pode ser exatamente a linha que separa sintaxe de semântica que o
+Quarto Chinês tenta desenhar. O xadrez computacional não resolve essa disputa. Mas, ao produzir
+um objeto real de 426 kilobytes que joga xadrez em nível sobre-humano sem que ninguém consiga
+apontar, dentro dele, onde mora cada padrão que ele sabe, o xadrez computacional torna a disputa
+mensurável de um jeito que nenhum argumento puramente filosófico consegue igualar.
+
+
+
+                                                                                                    51
+REFERÊNCIAS
+[1] Stockfish. — Engine open-source mais forte do mundo. Link ↗
+
+[2] Zambrano, G. — Zchezz, GitHub repository. — Repositório do engine descrito na camada técnica deste ensaio.
+     Link ↗
+
+[3] El Ajedrecista, Wikipedia, The Free Encyclopedia. — Autômato eletromecânico de Torres y Quevedo (1912), a
+     primeira máquina capaz de jogar um final de xadrez (rei e torre contra rei) de forma inteiramente autônoma.
+     Link ↗
+
+[4] Chess (Dietrich Prinz), Wikipedia, The Free Encyclopedia. — Primeiro programa de xadrez executado num
+     computador eletrônico real, Ferranti Mark 1, Manchester, 1951. Link ↗
+
+[5] Mac Hack, Wikipedia, The Free Encyclopedia. — Programa de Richard Greenblatt (MIT, 1967), primeiro a
+     jogar sob condições de torneio humano e a receber um rating oficial. Link ↗
+
+[6] Belle (chess machine), Wikipedia, The Free Encyclopedia. — Máquina de hardware dedicado de Ken Thompson
+     e Joe Condon, primeira a atingir nível de mestre (1983). Link ↗
+
+[7] Deep Thought (chess computer), Wikipedia, The Free Encyclopedia. — Precursora direta do Deep Blue;
+     primeira máquina a vencer um grande mestre, Bent Larsen, em torneio oficial (1988). Link ↗
+
+[8] Deep Blue versus Garry Kasparov, Wikipedia, The Free Encyclopedia. — Cobertura completa dos jogos das
+     partidas de 1996 e 1997. Link ↗
+
+[9] Silver, D. et al., A General Reinforcement Learning Algorithm that Masters Chess, Shogi, and Go through
+     Self-Play, Science, Vol. 362, No. 6419, 2018, pp. 1140–1144. Link ↗
+
+[10] Nasu, Y. — NNUE: Efficiently Updatable Neural Network based Evaluation Functions for Computer Shogi
+     (2018). Link ↗
+
+[11] Shannon, C. E. — Programming a Computer for Playing Chess (1950). O paper que fundou o campo. Link ↗
+
+[12] Minimax Theorem, Wikipedia, The Free Encyclopedia. Link ↗
+
+[13] Zobrist Hashing, Wikipedia, The Free Encyclopedia. Link ↗
+
+[14] Alpha-Beta Pruning, Wikipedia, The Free Encyclopedia. Link ↗
+
+[15] Knuth, D. E. & Moore, R. W. — An Analysis of Alpha-Beta Pruning. Artificial Intelligence 6(4), 293–326, 1975.
+     Link ↗
+
+[16] Syzygy Tablebases. — Endgames resolvidos até 7 peças. Link ↗
+
+[17] NNUE, Wikipedia, The Free Encyclopedia. Link ↗
+
+[18] Lichess. — Plataforma open-source de xadrez. Link ↗
+
+[19] Quantization-Aware Training (arXiv). Link ↗
+
+[20] Straight-Through Estimator (arXiv). Link ↗
+
+[21] Kingma, D. P., e Ba, J. (2014). Adam: A Method for Stochastic Optimization. arXiv. Link ↗
+
+[22] Monte Carlo Tree Search, Wikipedia, The Free Encyclopedia. Link ↗
+
+[23] Leela Chess Zero (Lc0). — Engine neural network open-source. Link ↗
+
+                                                                                                               52
+[24] Polanyi, M. — The Tacit Dimension. University of Chicago Press, 1966. Link ↗
+
+[25] Dennett, D. C. — Consciousness Explained. Little, Brown and Company, 1991. Link ↗
+
+[26] Searle, J. R. — Minds, Brains, and Programs. Behavioral and Brain Sciences, 3(3), 417–424, 1980. Link ↗
+
+[27] Shannon, C. E. — A Mathematical Theory of Communication. The Bell System Technical Journal, 27(3),
+     379–423, 1948. Link ↗
+
+[28] Kolmogorov Complexity, Wikipedia, The Free Encyclopedia. Link ↗
+
+[29] Hutter Prize, Wikipedia, The Free Encyclopedia. — Prêmio criado por Marcus Hutter em 2006 para
+     compressão de texto, motivado pela tese de que compressão e inteligência são a mesma capacidade. Link ↗
+
+[30] Chess Programming Wiki. — Enciclopédia colaborativa de programação de xadrez, referência canônica das
+     técnicas de poda, extensão, quiescência e ordenação de movimentos descritas neste ensaio. Link ↗
+
+
+
+
+                                                                                                               53
+
