@@ -41,3 +41,12 @@ Thumbs.db
 
 # Migration handoff package (local only)
 /second-brain-new-framework.zip
+
+# Saída de teste com --basetemp (capturas do job site-browser).
+/artifacts/
+
+# Rascunho de diagnóstico na raiz (_count.py, _pytest2.txt e afins). Já foram
+# commitados em main uma vez, um deles carregando caminho C:\Users\ da máquina
+# local. A raiz do engine é allowlist: só entra arquivo listado no teste
+# tests/test_repo_layout.py, e nada com prefixo `_`.
+/_*

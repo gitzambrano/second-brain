@@ -136,9 +136,16 @@ h1, h2, h3 {
   font-size: 11px;
   font-weight: 800;
 }
-/* A marca dentro do chip. Ela já tem respiro próprio no PNG, então aqui só
-   precisa caber sem encostar na borda. */
-.brand-mark img { width: 20px; height: 20px; display: block; }
+/* A marca vive como background, e não como <img>, porque o tema do site é um
+   `data-theme` no <html> — não o `prefers-color-scheme` do sistema. Com
+   background, trocar a arte por tema é uma linha de CSS; com <img> exigiria
+   dois elementos e JS. Ela já tem respiro próprio no PNG. */
+.brand-mark {
+  background: url("icon-32.png") center / 20px 20px no-repeat, var(--accent-soft);
+}
+:root[data-theme="dark"] .brand-mark {
+  background-image: url("icon-32-dark.png");
+}
 
 .topnav {
   display: flex;
@@ -429,12 +436,18 @@ h1, h2, h3 {
               transform 0.18s var(--ease), box-shadow 0.18s var(--ease);
 }
 /* O título do cartão pesava 700 na grade (default do <h3>) e 550 na lista;
-   a regra passou para cá e vale nos dois modos. 500 é medium de verdade:
+   a regra passou para cá e vale nos dois modos. 480 fica logo abaixo do
+   medium, mas ainda acima do texto corrido:
    abaixo disso o título cai sob o peso normal do texto e, ao lado do masthead
    serifado em 700, deixa de ler como "mais leve" e passa a ler como outra
    família. O número só é real porque a Inter variável é auto-hospedada — com
    a fonte do sistema, 450 a 600 arredondam todos para o mesmo Semibold. */
-.card-title { margin: 0; font-weight: 500; }
+.card-title { margin: 0; font-weight: 480; }
+/* No escuro o mesmo número pesa mais. O título é branco puro sobre quase
+   preto, e o contraste máximo faz o traço claro sangrar sobre o fundo — o
+   olho lê como negrito o que no claro lê como medium. Compensar no peso é
+   mais honesto que baixar o contraste do texto. */
+:root[data-theme="dark"] .card-title { font-weight: 400; }
 .card-title a { text-decoration: none; color: inherit; }
 .card-title a::after {
   content: "";

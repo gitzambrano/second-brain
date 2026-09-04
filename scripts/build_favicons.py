@@ -28,7 +28,7 @@ Lê:
 Gera (em scripts/site_src/brand/, versionados; o build copia para o site):
     icon-light-512.png  icon-dark-512.png     — a marca cheia, transparente
     icon-light-180.png                        — apple-touch, com fundo opaco
-    icon-32.png  icon-16.png                  — traço engrossado
+    icon-32.png  icon-32-dark.png  icon-16.png — traço engrossado
     favicon.ico                               — 16/32/48 num arquivo
 
 Default sem argumentos: regerar tudo.
@@ -161,6 +161,11 @@ def build(quiet: bool = False) -> list[tuple[str, int]]:
     grosso = _thicken(azul)
     grava("icon-32.png", _square(grosso, 32, padding=0.03))
     grava("icon-16.png", _square(grosso, 16, padding=0.0))
+    # O chip do cabeçalho troca de marca junto com o tema, e o tema do site é
+    # um `data-theme` no <html> — não o `prefers-color-scheme` do sistema. Por
+    # isso a variante escura precisa existir como arquivo próprio: a troca é
+    # feita por CSS, não pelo `media` de um <link>.
+    grava("icon-32-dark.png", _square(_thicken(dourado), 32, padding=0.03))
 
     ico = _square(grosso, 48, padding=0.03)
     ico.save(BRAND_DIR / "favicon.ico", sizes=[(16, 16), (32, 32), (48, 48)])

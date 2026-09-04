@@ -869,8 +869,17 @@ $body$
         meta.className+=" cover-draft";
         meta.textContent="Rascunho";
       }else{
-        var words=(content.innerText||"").trim().split(/\s+/).length;
-        var mins=Math.max(1,Math.round(words/200));
+        // A conta tem que bater com a do catalogo (build_site.reading_minutes):
+        // mesma velocidade, 220 ppm, e matematica fora da contagem. Antes eram
+        // 200 ppm E o texto renderizado das formulas entrava como palavra, de
+        // modo que o MESMO essay anunciava 81 min aqui e 73 no catalogo — e o
+        // erro crescia justamente no essay tecnico, que e onde a formula pesa.
+        // `cloneNode` para nao mexer no DOM que o leitor esta vendo.
+        var copia=content.cloneNode(true);
+        copia.querySelectorAll("mjx-container,.MathJax,math,script[type^='math/tex']")
+             .forEach(function(n){n.remove();});
+        var words=(copia.innerText||copia.textContent||"").trim().split(/\s+/).filter(Boolean).length;
+        var mins=Math.max(1,Math.round(words/220));
         meta.textContent="~"+mins+" min de leitura \u00b7 "+h2s.length+" cap\u00edtulos";
       }
       by.parentNode.insertBefore(meta,by.nextSibling);

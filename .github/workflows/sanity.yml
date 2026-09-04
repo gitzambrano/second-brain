@@ -35,7 +35,10 @@ jobs:
       - name: Generate agent mirrors (.agents -> .claude)
         run: python scripts/sync_skills.py --quiet
       - run: python scripts/check_repo.py --quick
-      - run: python -m pytest -q -m "not html and not pdf and not slow"
+      # `browser` também fica de fora: o job não instala Chromium nem Pandoc, e
+      # a auditoria visual tem job próprio (`site-browser`). Sem esta exclusão
+      # os testes de browser rodavam aqui e falhavam por falta de Pandoc.
+      - run: python -m pytest -q -m "not html and not pdf and not slow and not browser"
 
   corpus-fixture:
     runs-on: ubuntu-latest
@@ -84,5 +87,18 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y pandoc
       - run: python -m pip install -r requirements-ci.txt
       - run: python -m playwright install --with-deps chromium
+      # `--basetemp` fixa onde o pytest escreve, senão as capturas ficam num
+      # `/tmp/pytest-of-runner/pytest-N/` que o upload não sabe encontrar.
       - name: Build the fixture site and audit it in a real browser
-        run: python -m pytest -q -m browser
+        run: python -m pytest -q -m browser --basetemp=artifacts/pytest
+      # As capturas são o que serve para olhar quando uma regressão visual
+      # aparece — `if: always()` porque é justamente no job vermelho que elas
+      # importam.
+      - name: Upload the screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-screenshots
+          path: artifacts/pytest/screenshots/*.png
+          if-no-files-found: warn
+          retention-days: 14

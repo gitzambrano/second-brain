@@ -50,6 +50,7 @@ BRAND_ASSETS = (
     "favicon.ico",
     "icon-16.png",
     "icon-32.png",
+    "icon-32-dark.png",
     "icon-light-192.png",
     "icon-dark-192.png",
     "icon-light-512.png",
@@ -220,7 +221,28 @@ WORDS_PER_MINUTE = 220
 
 # A formula is read, not scanned word by word; counting `rac{a}{b}` as five
 # words turned a 30-minute essay into a 100-minute one.
-MATH_SPAN = re.compile(r"\$[^$]{1,400}\$|\\\[[\s\S]{1,2000}?\\\]")
+#
+# A ordem das alternativas é a correção do bug: matemática de DISPLAY
+# (`$$...$$` e `\[...\]`) precisa casar ANTES da inline. Com o padrão antigo
+# `\$[^$]{1,400}\$`, um bloco `$$...$$` nunca casava inteiro — a classe `[^$]`
+# barra o segundo cifrão —, então o motor casava `$<fórmula>$` e sobrava um
+# cifrão ÓRFÃO, que em seguida pareava com o cifrão de ABERTURA do bloco
+# seguinte. Toda a prosa entre duas fórmulas era engolida como se fosse
+# fórmula: um essay de 3195 palavras contava 665 e virava "3 min".
+#
+# A inline também não pode atravessar quebra de linha: fórmula inline vive numa
+# linha só, enquanto dois cifrões distantes quase sempre têm prosa — e parágrafo
+# — no meio. `[^$\n]` transforma esse caso em não-casamento, que apenas deixa um
+# cifrão solto na contagem, em vez de silenciar páginas inteiras.
+MATH_SPAN = re.compile(
+    r"\$\$[\s\S]{1,2000}?\$\$"       # display do corpus: $$ ... $$
+    r"|\\\[[\s\S]{1,2000}?\\\]"      # display alternativo: \[ ... \]
+    # Inline: `$x$`, numa linha só e sem espaço colado aos delimitadores. A
+    # borda sem espaço é o que separa fórmula de dinheiro: em "R$ 50.000 e R$
+    # 500.000" os dois cifrões são moeda, e sem essa guarda a prosa entre eles
+    # sumiria da contagem exatamente como sumia entre dois blocos de display.
+    r"|\$(?!\$)[^\s$](?:[^$\n]{0,397}[^\s$])?\$"
+)
 CODE_SPAN = re.compile(r"`[^`]{1,200}`")
 
 

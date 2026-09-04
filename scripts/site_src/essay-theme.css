@@ -118,8 +118,16 @@ body{padding-top:56px;}
   border-radius:8px;color:var(--sb-primary);background:var(--sb-primary-soft);
   font-size:10px;font-weight:800;
 }
-/* A marca dentro do chip, no mesmo gesto do cabeçalho do catálogo. */
-.sb-mark img{width:18px;height:18px;display:block;}
+/* A marca dentro do chip, no mesmo gesto do cabeçalho do catálogo. Aqui a
+   folha é EMBUTIDA na página do essay, cuja base é `essays/`, então o caminho
+   sobe um nível — ao contrário do site.css, que é servido de dentro de
+   `assets/`. */
+.sb-mark{
+  background:url("../assets/icon-32.png") center / 18px 18px no-repeat, var(--sb-primary-soft);
+}
+:root[data-theme="dark"] .sb-mark{
+  background-image:url("../assets/icon-32-dark.png");
+}
 .sb-nav{display:flex;align-items:center;gap:16px;}
 .sb-nav a{color:var(--sb-muted) !important;font-size:13px;text-decoration:none !important;}
 .sb-nav a:hover{color:var(--sb-primary) !important;}

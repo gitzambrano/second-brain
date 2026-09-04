@@ -34,7 +34,7 @@ O script `scripts/check_repo.py` é o ponto de entrada canônico para validar a 
 | `python scripts/check_repo.py --exports` | Validação de exportações e paridade documental. |
 | `python scripts/check_repo.py --site` | Sentinela de privacidade, auditoria visual e orçamento de tamanho do site. |
 | `python scripts/check_repo.py --architecture` | Contratos estruturais: três Gits isolados, disciplina de caminhos e a cadeia `.agents/` → espelhos → adaptadores. |
-| `python -m pytest -q -m browser` | Auditoria visual em Chromium real: home, essay e os dois mapas, em claro, escuro e mobile. Pulada onde não há navegador. |
+| `python -m pytest -q -m browser` | Auditoria visual em Chromium real: home, essay e os dois mapas, em claro, escuro e mobile. Exige Chromium **e Pandoc**; pulada onde não há navegador. |
 
 > [!NOTE]
 > Em ambientes de CI ou clones novos sem a pasta `data/` populada, os grupos de teste que dependem de corpus real retornam status `SKIP` com elegância, sem falhar o build.
@@ -78,14 +78,20 @@ O teste automatizado **`tests/test_site_privacy.py`** atua como sentinela:
 
 ### Execução Rápida
 ```bash
-python -m pytest -q
+python -m pytest -q -m "not html and not pdf and not slow and not browser"
 ```
+
+Este é exatamente o comando do job `core` da CI. `python -m pytest -q` puro deixou
+de ser rápido — e nem sempre passa — porque o marcador `browser` roda a auditoria
+visual em Chromium real e exige navegador **e Pandoc** instalados. Rode a suíte
+sem marcador só quando tiver o ambiente completo.
 
 ### Execução Seletiva por Marcadores
 ```bash
 python -m pytest -m "not slow"   # Pula verificações demoradas de renderização
 python -m pytest -m html         # Valida exports e visualização HTML
 python -m pytest -m pdf          # Valida exportação e layout PDF
+python -m pytest -m browser      # Auditoria visual em Chromium real (job site-browser)
 ```
 
 ---
@@ -95,7 +101,8 @@ python -m pytest -m pdf          # Valida exportação e layout PDF
 | Ferramenta | Necessária Para | Instalação / Verificação |
 | :--- | :--- | :--- |
 | **PyYAML & pytest** | Suíte básica do engine | `pip install pyyaml pytest` |
-| **Playwright (Chromium)** | Testes visuais de HTML | `python -m playwright install chromium` |
+| **Playwright (Chromium)** | Testes visuais de HTML e testes `browser` | `python -m playwright install chromium` |
+| **Pandoc** | Exportação HTML e testes `browser` — o site da auditoria visual é construído com Pandoc | Binário de sistema no PATH |
 | **Pandoc & LuaLaTeX** | Testes de exportação em PDF | Binários de sistema instalados no PATH |
 
 ---

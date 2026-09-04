@@ -238,6 +238,18 @@ GRAPH_STYLE_MOBILE_OVERRIDES = {
     # aqui parece ter sido ligar glow no celular em vez de desligar.
     "glow": "leve",
     "starfield": False,
+    # Física um passo mais calma no celular. A tela é pequena e o dedo é um
+    # ponteiro grosso: o mesmo grafo que no desktop assenta rápido, aqui fica
+    # escorregando debaixo do toque. Mais atrito e menos força fazem a malha
+    # parar antes e mexer menos quando o leitor arrasta.
+    #
+    # Os três são o valor de GRAPH_STYLE acima, deslocado 10%:
+    #   atrito     0.70 → 0.77   (mais alto = perde velocidade mais rápido)
+    #   elástica   3.5  → 3.15   (arestas puxam menos)
+    #   repulsão   2.5  → 2.25   (nós se empurram menos)
+    "friction": 0.77,
+    "linkStrength": 3.15,
+    "chargeStrength": 2.25,
 }
 
 

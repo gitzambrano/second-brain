@@ -231,12 +231,56 @@ def prepare_for_pandoc(filepath):
     return body, title, subtitle, author_date, summary, status
 
 
-MATH_PATTERN = re.compile(r'(?<!\\)\$[^\s$][^$]*\$|\\\[.*?\\\]|\\\(.*?\\\)', re.DOTALL)
+# Detecção de matemática em dois níveis, porque os delimitadores do TeX não têm
+# todos o mesmo poder de prova.
+#
+# NÍVEL 1 — display (`$$...$$`, `\[...\]`). Prosa não produz esses pares por
+# acidente: quem escreve `$$` está escrevendo fórmula. Valem sozinhos.
+DISPLAY_MATH_RE = re.compile(r'(?<!\\)\$\$.+?\$\$|\\\[.*?\\\]', re.DOTALL)
+
+# NÍVEL 2 — inline (`$...$`, `\(...\)`). Aqui o delimitador é ambíguo e o padrão
+# antigo casava prosa comum, ligando o MathJax em ensaio sem uma fórmula sequer:
+#
+#   - cifrão de dinheiro. "entre $2 e $100" tem dois cifrões na mesma linha, e o
+#     trecho entre eles ("2 e ") virava "fórmula";
+#   - parêntese escapado dentro de URL. O Pandoc/Obsidian escreve
+#     `.../wiki/Second_brain_\(software\)`, e `\(software\)` é indistinguível de
+#     matemática inline se só se olhar o delimitador.
+#
+# O conteúdo é `[^$\n]*`: fórmula inline não atravessa linha, e essa restrição
+# sozinha já impede que dois cifrões de parágrafos diferentes se emparelhem.
+INLINE_MATH_RE = re.compile(r'(?<!\\)\$([^\s$][^$\n]*)\$|\\\(([^\n]*?)\\\)')
+
+# O que promove um trecho inline a fórmula: marcação TeX explícita — comando de
+# barra invertida (`\alpha`, `\frac`, `\text`), expoente, ou chaves de
+# agrupamento. Nada disso sobrevive em prosa em português.
+TEX_MARKUP_RE = re.compile(r'\\[A-Za-z]|[\^{}]')
+
+# Escape de segurança para a matemática pobre em marcação: o símbolo solto do
+# tipo `$C$`, `$x$` ou `$T'$`, que é fórmula legítima sem nenhum comando TeX.
+# O limite de dois caracteres e a proibição de espaço são o que separam `$C$` de
+# `$2 e $` (quatro caracteres, com espaço) e de `\(software\)` (oito letras).
+BARE_SYMBOL_RE = re.compile(r"[A-Za-z0-9]{1,2}['\u2032]?")
 
 
 def body_has_math(body):
-    """Heurística: o corpo do essay tem alguma fórmula $...$ / \[...\]?"""
-    return bool(MATH_PATTERN.search(body))
+    """O corpo do essay tem fórmula de verdade — e não cifrão de dinheiro?
+
+    Vale para o export standalone e para o site público (render_public_essay.py
+    importa daqui), e a resposta decide se o MathJax entra no HTML. Um falso
+    positivo custa ~1 MB de `tex-svg.js` num ensaio sem uma única fórmula; um
+    falso negativo deixa o leitor de ensaio técnico com LaTeX cru na tela. Por
+    isso o teste aceita display sem discussão e cobra marcação do inline.
+    """
+    if DISPLAY_MATH_RE.search(body):
+        return True
+    for match in INLINE_MATH_RE.finditer(body):
+        conteudo = match.group(1) if match.group(1) is not None else match.group(2)
+        if not conteudo:
+            continue
+        if TEX_MARKUP_RE.search(conteudo) or BARE_SYMBOL_RE.fullmatch(conteudo):
+            return True
+    return False
 
 
 def export_essay(filepath, output_dir=None, source_dir=None):
