@@ -129,7 +129,7 @@ Não amplie o escopo silenciosamente.
 
 Após mudanças:
 
-- atualize `updated:`;
+- atualize `updated:` apenas se a prosa do corpo mudou; ajuste mecânico não conta;
 - rode o fechamento mecânico de essay único em `conventions/SKILL.md`;
 - se referências mudaram, rode `python scripts/build_references.py`;
 - se summary/tags mudaram, rode `python scripts/build_index.py`;

@@ -148,12 +148,54 @@ def _empty(directory: Path) -> None:
             _unlink(child)
 
 
+# O que legitimamente vive no checkout do site sem ser produto do build. Tudo
+# o mais na raiz é removido: limpar só a lista do que sabemos gerar deixava
+# sobreviver o que não sabemos — um `old-page.html` de um build antigo, um
+# `backup.pdf` largado ali, o `debug.json` de uma investigação. Cada um desses
+# seria publicado em todo deploy seguinte, indefinidamente, porque nada nunca
+# olhava para eles.
+SITE_ADMIN_FILES = {
+    ".gitignore",
+    ".nojekyll",          # impede o Jekyll do Pages de comer pasta com underscore
+    ".second-brain-site",  # marcador que autoriza escrever aqui
+    "README.md",
+}
+SITE_ADMIN_DIRS = {".git", ".github"}
+
+
+def _keep_covers(root: Path) -> dict[str, bytes]:
+    """Guarda os PNG de capa antes da limpeza, para poder devolvê-los.
+
+    Assar a capa exige navegador headless, e o build tem de funcionar sem um.
+    A saída sem navegador é manter a capa anterior — o que só é possível se ela
+    sobreviver ao `clean()`, que esvazia `assets/` inteiro.
+    """
+    assets = root / "assets"
+    if not assets.is_dir():
+        return {}
+    return {p.name: p.read_bytes() for p in assets.glob("cover-*.png")}
+
+
 def clean(root: Path) -> None:
+    """Esvazia o site, preservando só o que não é produto do build.
+
+    Allowlist, e não blacklist: arquivo desconhecido na raiz é lixo de build
+    anterior até prova em contrário, e o custo de errar para o lado de apagar é
+    um rebuild — enquanto o custo de errar para o outro lado é publicar.
+    """
     require_site_root(root)
-    for name in GENERATED_ROOT_FILES:
-        _unlink(root / name)
-    for name in GENERATED_DIRS:
-        _empty(root / name)
+    for path in sorted(root.iterdir(), key=lambda p: len(p.parts), reverse=True):
+        if path.is_dir():
+            if path.name in SITE_ADMIN_DIRS:
+                continue
+            _empty(path)
+            if path.name not in GENERATED_DIRS:
+                try:
+                    path.rmdir()
+                except OSError:
+                    pass
+        elif path.name not in SITE_ADMIN_FILES:
+            _unlink(path)
 
 
 def ensure_site_fonts(root: Path) -> str:
@@ -388,6 +430,7 @@ def render_essays(root: Path, essays, no_render: bool = False) -> None:
 def build(root: Path, no_render: bool = False):
     catalogue = collect_all()
     essays = [e for e in catalogue if e.published]
+    capas_antigas = _keep_covers(root)
     clean(root)
     fonts = ensure_site_fonts(root)
     fingerprints = copy_frontend(root, fonts)
@@ -400,8 +443,11 @@ def build(root: Path, no_render: bool = False):
     build_public_map.write(root, nodes, edges, tag_gaps, isolated)
 
     # O retrato da capa sai do graph.html recém-escrito, e por isso vem
-    # depois dele. Sem navegador headless o passo é pulado e o PNG anterior
-    # permanece: publicar não pode depender do Playwright estar instalado.
+    # depois dele. Sem navegador headless o passo é pulado e o PNG anterior é
+    # devolvido ao lugar: publicar não pode depender do Playwright estar
+    # instalado. O `clean()` acima já esvaziou `assets/`, então "o anterior
+    # permanece" só é verdade porque ele foi guardado antes — era uma promessa
+    # falsa enquanto ninguém guardava nada.
     #
     # `--no-render` não assa capa nenhuma. Esse modo existe para checagem
     # estrutural e de privacidade — nos testes e na CI — e um build que serve
@@ -420,7 +466,12 @@ def build(root: Path, no_render: bool = False):
             for nome, kb in assado.written:
                 print(f"  assets/{nome} ({kb:.0f} KB)")
         else:
-            print(f"  capa: SKIP ({assado.reason}) — {assado.detail}")
+            devolvidas = 0
+            for nome, dados in capas_antigas.items():
+                (root / "assets" / nome).write_bytes(dados)
+                devolvidas += 1
+            recado = f" ({devolvidas} capa(s) anterior(es) devolvida(s))" if devolvidas else ""
+            print(f"  capa: SKIP ({assado.reason}) — {assado.detail}{recado}")
 
     source = SITE_SRC_DIR / "404.html"
     if source.exists():

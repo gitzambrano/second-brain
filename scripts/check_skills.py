@@ -18,12 +18,31 @@ import yaml
 from repo_paths import CODE_ROOT, SCRIPTS_DIR, SKILLS_DIR, SUBAGENTS_DIR
 from sanity_common import CheckResult
 
-TOP_LEVEL_PATH_WORDS = {"wiki", "raw", "plan", "scripts", "output", "agents", "claude", "codex", "mnt", "tmp"}
+TOP_LEVEL_PATH_WORDS = {
+    "wiki", "raw", "plan", "scripts", "output", "agents", "claude", "codex",
+    "mnt", "tmp", "data", "home", "usr", "var", "etc",
+}
 WEB_TOOLS = {"WebFetch", "WebSearch"}
+# Família mecânica: skills que, por `conventions/SKILL.md`, não alteram texto de
+# essay e portanto não podem instruir mudança de `updated:`.
+MECHANICAL_SKILLS = {"organize", "connect", "linkify", "proofread", "polish", "sweep"}
 SCRIPT_REF_RE = re.compile(r"scripts/([A-Za-z0-9_.-]+\.(?:py|sh|bat|lua|html))")
 SLASH_REF_RE = re.compile(r"(?<![/\w.])/(?:[a-z][a-z0-9-]*)")
 PY_COMMAND_RE = re.compile(r"python(?:3)?\s+scripts/([A-Za-z0-9_.-]+\.py)([^\n`]*)")
 FLAG_RE = re.compile(r"(?<!\w)(--[a-zA-Z0-9][a-zA-Z0-9-]*)")
+FENCE_RE = re.compile(r"```.*?```", re.S)
+# Um `/nome` só é comando quando o contexto o apresenta como tal: entre crases,
+# no início da linha (com marcador de lista/citação/heading opcional) ou dentro
+# de uma linha de tabela. Em prosa corrida ele é ambíguo demais para diagnosticar.
+LINE_START_PREFIX_RE = re.compile(r"^[\s>*+\-–—#]*(?:\d+[.)]\s*)?$")
+UPDATED_MENTION_RE = re.compile(r"`?\bupdated\b`?\s*:?", re.IGNORECASE)
+UPDATED_MUTATION_VERB_RE = re.compile(
+    r"\b(atualiz(?:e|em|ar|a|ada|ado)|alter(?:e|em|ar|a)|mex(?:a|am|er)|toqu(?:e|em)|tocar"
+    r"|troqu(?:e|em)|trocar|marqu(?:e|em)|marcar|ajust(?:e|em|ar)|defin(?:a|am|ir)"
+    r"|coloqu(?:e|em)|colocar|escrev(?:a|am|er)|preench(?:a|am|er)|renov(?:e|em|ar))\b",
+    re.IGNORECASE,
+)
+UPDATED_NEGATION_RE = re.compile(r"\b(n[ãa]o|nunca|jamais|nem|nenhum|nenhuma|nenhuns|sem)\b", re.IGNORECASE)
 
 
 def split_frontmatter(text: str) -> tuple[dict, str]:
@@ -109,6 +128,46 @@ def consecutive_duplicate_paragraphs(body: str) -> list[str]:
     return [b for a, b in zip(normalized, normalized[1:]) if len(b) >= 80 and a == b]
 
 
+def strip_fences(body: str) -> str:
+    return FENCE_RE.sub(" ", body)
+
+
+def updated_mutation_instructions(body: str) -> list[str]:
+    """Trechos que MANDAM alterar `updated:`.
+
+    Critério, desenhado para não acusar a própria citação da regra: um trecho só
+    conta quando (a) menciona `updated`, (b) traz um verbo de mudança e (c) não
+    tem negação antes desse verbo. Assim ``não altere `updated:` `` e ``nenhum
+    passo altera `updated:` `` passam, e ``atualize `updated:` `` é acusado.
+    Blocos de código saem antes porque template de frontmatter não é instrução.
+    """
+    found: list[str] = []
+    for line in strip_fences(body).splitlines():
+        for segment in re.split(r"[;.]\s|\s—\s", line):
+            if not UPDATED_MENTION_RE.search(segment):
+                continue
+            verb = UPDATED_MUTATION_VERB_RE.search(segment)
+            if not verb:
+                continue
+            if UPDATED_NEGATION_RE.search(segment[: verb.start()]):
+                continue
+            found.append(segment.strip())
+    return found
+
+
+def looks_like_command(body: str, match: re.Match[str]) -> bool:
+    """`/nome` apresentado como comando, não como caminho de arquivo."""
+    if body[match.end():match.end() + 1] == "/":
+        return False
+    line_start = body.rfind("\\n", 0, match.start()) + 1
+    prefix = body[line_start:match.start()]
+    if prefix.endswith("`"):
+        return True
+    if prefix.lstrip().startswith("|"):
+        return True
+    return bool(LINE_START_PREFIX_RE.match(prefix))
+
+
 def audit() -> CheckResult:
     result = CheckResult("skills")
     skill_files = sorted(SKILLS_DIR.glob("*/SKILL.md")) if SKILLS_DIR.exists() else []
@@ -151,13 +210,24 @@ def audit() -> CheckResult:
             if not (SCRIPTS_DIR / script).exists():
                 result.error("SCRIPT_NOT_FOUND", f"referenced scripts/{script} does not exist", rel)
 
+        if path.name == "SKILL.md" and path.parent.name in MECHANICAL_SKILLS:
+            for segment in dict.fromkeys(updated_mutation_instructions(body)):
+                result.error(
+                    "UPDATED_FIELD_MUTATION",
+                    f"skill mecânica instrui alterar `updated:`: {segment[:120]}",
+                    rel,
+                )
+
         for match in SLASH_REF_RE.finditer(body):
             ref = match.group(0)[1:]
             if ref in TOP_LEVEL_PATH_WORDS or ref in skill_names or ref in agents:
                 continue
-            # Unknown /fragments are too ambiguous to diagnose reliably:
-            # paths, examples and prose commonly contain them. Known skills
-            # are validated elsewhere by name/path and documentation coverage.
+            if looks_like_command(body, match):
+                result.error(
+                    "UNKNOWN_SKILL_COMMAND",
+                    f"/{ref} is referenced as a command but matches no skill or subagent",
+                    rel,
+                )
 
         for cmd in PY_COMMAND_RE.finditer(body):
             script, tail = cmd.group(1), cmd.group(2)

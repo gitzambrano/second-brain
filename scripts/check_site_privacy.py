@@ -15,7 +15,12 @@ acima é legível por qualquer pessoa.
 
 Os mapas embutem os dados como base64 deflacionado dentro do HTML, então este
 checador infla essa carga e inspeciona os nós de verdade, em vez de procurar
-texto com grep.
+texto com grep. Cada nó é validado contra a allowlist de
+`build_public_map.assert_public_schema`: chave fora do schema reprova.
+
+O corpo de cada essay privado é varrido inteiro, em n-gramas deslizantes, contra
+todos os arquivos publicados — ver `audit_bodies` para o tamanho da janela e o
+desconto do que já é público.
 
 Default sem argumentos: auditar SITE_ROOT e reportar PASS/FAIL.
 """
@@ -27,17 +32,28 @@ import json
 import re
 import zlib
 
+from build_public_map import assert_public_schema
 from repo_paths import SITE_ROOT
-from site_common import collect_all
+from site_common import collect_all, strip_public_body
+from unidecode import unidecode
 
 MAP_FILES = ("graph.html", "sphere.html")
 MACHINE_FILES = ("search-index.json", "graph.json", "site-manifest.json")
 SCANNED_SUFFIXES = {".html", ".json"}
 
-# Fields that would carry body content or point back at the private repository.
-FORBIDDEN_NODE_FIELDS = ("file", "body", "text", "path")
-
 EMBEDDED_PAYLOAD = re.compile(r'id="sb-graph-data">([^<]*)<')
+
+# --- Varredura de corpo -----------------------------------------------------
+FINGERPRINT_WORDS = 12
+WORD_RE = re.compile(r"[a-z0-9]+")
+REFERENCES_RE = re.compile(r"(?ms)^##\s+Refer[êe]ncias\s*\n.*?(?=^##\s+|\Z)")
+# URL não é prosa. Um endereço citado no corpo de um essay privado aparece,
+# legitimamente, no nó de referência que o mapa publica — e depois de
+# normalizado (`https ocw mit edu courses 16 346 astrodynamics fall 2008`) ele
+# vira uma sequência longa de "palavras" que casa perfeitamente. Duas citações
+# assim acusavam vazamento no artefato que as publica de propósito. O texto do
+# link continua sendo prosa e continua sendo comparado; só o alvo sai.
+URL_RE = re.compile(r"<?https?://[^\s<>)\]\"']+>?")
 
 # A generated link or metadata value must never point into the private
 # repository. Prose may legitimately *mention* these paths — several essays are
@@ -76,9 +92,10 @@ def audit_nodes(nodes, allowed: set[str], where: str) -> list[str]:
         if url and not url.startswith(("http://", "https://")):
             errors.append(f"{where}: non-external url: {node_id} -> {url}")
 
-        for field in FORBIDDEN_NODE_FIELDS:
-            if node.get(field):
-                errors.append(f"{where}: private field '{field}' on node {node_id}")
+    # Allowlist, não blacklist: qualquer chave fora de `PUBLIC_NODE_FIELDS`
+    # reprova, mesmo uma que ninguém previu. Uma lista de campos proibidos só
+    # pega o vazamento que já foi imaginado.
+    errors.extend(f"{where}: {e}" for e in assert_public_schema(nodes))
     return errors
 
 
@@ -138,34 +155,108 @@ def audit_pages(allowed: set[str]) -> list[str]:
     return errors
 
 
+def normalize_words(text: str) -> list[str]:
+    """Reduz o texto à sequência de palavras que sobrevive a uma reformatação.
+
+    Um vazamento não chega ao site idêntico ao arquivo: passa por markdown,
+    escape de HTML, JSON, quebra de linha diferente, aspas curvas, e às vezes
+    perde o acento. Comparar texto cru erraria por qualquer uma dessas coisas,
+    então caixa, acento e pontuação são descartados e só a sequência de palavras
+    é comparada.
+    """
+    return WORD_RE.findall(unidecode(text).lower())
+
+
+def fingerprints(words: list[str]) -> set[str]:
+    """Todas as janelas de `FINGERPRINT_WORDS` palavras, deslizando de uma em uma."""
+    return {
+        " ".join(words[i:i + FINGERPRINT_WORDS])
+        for i in range(len(words) - FINGERPRINT_WORDS + 1)
+    }
+
+
+def private_prose(essay) -> str:
+    """O corpo de um essay privado, menos o que é publicado de propósito.
+
+    `strip_public_body` tira H1, byline, `## Sumário` e `## Conexões`. Faltam
+    duas coisas, e as duas pelo mesmo motivo — são públicas por decisão do
+    Usuário, não vazamento:
+
+    - `## Referências`: os nós de referência do mapa carregam a citação AIAA
+      inteira, então toda citação longa de um essay privado acusaria vazamento
+      no artefato que a publica de propósito;
+    - **URL**: o endereço citado no corpo é o mesmo que vai para o nó de
+      referência, e normalizado (`https ocw mit edu courses 16 346
+      astrodynamics`) ele vira uma sequência longa de palavras que casa
+      perfeitamente. O TEXTO do link continua sendo prosa e continua comparado;
+      só o alvo sai.
+    """
+    return URL_RE.sub(" ", REFERENCES_RE.sub("", strip_public_body(essay.body)))
+
+
 def audit_bodies() -> list[str]:
-    """No unpublished essay's prose may appear anywhere in the output."""
+    """No unpublished essay's prose may appear anywhere in the output.
+
+    A versão anterior sorteava UMA janela de 12 palavras por essay privado,
+    começando na palavra 60, 200 ou 400. Um parágrafo vazado em qualquer outro
+    ponto do texto passava intacto — a checagem provava quase nada. Aqui o corpo
+    privado inteiro é impresso em n-gramas deslizantes e todos são procurados em
+    todo arquivo publicado.
+
+    As duas escolhas que decidem se o portão é útil ou só barulhento:
+
+    1. **Tamanho da janela.** 12 palavras, dentro da faixa 8–15. Com 8, prosa de
+       ligação em português ("de modo que o que estava em jogo não era mais")
+       colide por acaso entre dois textos do mesmo autor sobre o mesmo assunto —
+       e é exatamente esse o corpus aqui. Com 15, um parágrafo curto vazado
+       inteiro pode não chegar ao comprimento mínimo e escapa. 12 é longo o
+       bastante para que a coincidência exija plágio de si mesmo.
+    2. **Desconto do que já é público.** Um essay privado compartilha trechos
+       legítimos com um público: citação, título de obra, definição técnica,
+       parágrafo reaproveitado. Todo n-grama que também ocorre no corpo de algum
+       essay PÚBLICO é removido da impressão digital antes da busca — se aquele
+       texto já está publicado por decisão do Usuário, encontrá-lo no site não é
+       vazamento. O que sobra é prosa que só existe no privado, e aí qualquer
+       acerto é vazamento de verdade.
+
+    Custo: o conjunto de n-gramas privados é montado uma vez e a busca é
+    associativa (`in set`), então o tempo é linear no tamanho do site, não no
+    produto n-gramas × arquivos.
+    """
+    essays = collect_all()
+    private = [e for e in essays if not e.published]
+    if not private:
+        return []
+
+    public_grams: set[str] = set()
+    for essay in essays:
+        if essay.published:
+            public_grams |= fingerprints(normalize_words(private_prose(essay)))
+
+    # n-grama -> slug do essay privado que o contém. O primeiro dono basta: o
+    # relatório aponta um vazamento, e o Usuário abre o arquivo.
+    private_grams: dict[str, str] = {}
+    for essay in private:
+        for gram in fingerprints(normalize_words(private_prose(essay))) - public_grams:
+            private_grams.setdefault(gram, essay.slug)
+    if not private_grams:
+        return []
+
     errors: list[str] = []
-    unpublished = [e for e in collect_all() if not e.published]
-    if not unpublished:
-        return errors
-
-    probes = []
-    for essay in unpublished:
-        # Skip the frontmatter-derived lines and take a distinctive sentence.
-        words = [w for w in " ".join(essay.body.split()).split(" ") if w]
-        for start in (60, 200, 400):
-            window = " ".join(words[start:start + 12])
-            if len(window) > 60:
-                probes.append((essay.slug, window))
-                break
-
-    blobs = []
+    reported: set[tuple[str, str]] = set()
     for path in sorted(SITE_ROOT.rglob("*")):
-        if path.is_file() and path.suffix.lower() in SCANNED_SUFFIXES:
-            blobs.append((path.relative_to(SITE_ROOT), path.read_text(
-                encoding="utf-8", errors="replace")))
-
-    for slug, probe in probes:
-        for rel, text in blobs:
-            if probe in text:
-                errors.append(f"body text of unpublished essay '{slug}' found in {rel}")
-                break
+        if not path.is_file() or path.suffix.lower() not in SCANNED_SUFFIXES:
+            continue
+        rel = path.relative_to(SITE_ROOT).as_posix()
+        words = normalize_words(path.read_text(encoding="utf-8", errors="replace"))
+        for i in range(len(words) - FINGERPRINT_WORDS + 1):
+            gram = " ".join(words[i:i + FINGERPRINT_WORDS])
+            slug = private_grams.get(gram)
+            if slug is None or (slug, rel) in reported:
+                continue
+            reported.add((slug, rel))
+            errors.append(
+                f"body text of unpublished essay '{slug}' found in {rel}: \"{gram}\"")
     return errors
 
 

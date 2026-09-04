@@ -4,7 +4,8 @@ description: >
   Audita e corrige a camada mecânica da wiki: estrutura, metadados,
   links internos, referências, índice, sources, tags, plano, insights
   e artefatos derivados. Aceita corpus inteiro ou um essay específico.
-  Não reescreve prosa nem argumento.
+  Não reescreve prosa nem argumento. No modo corpus inteiro, o fechamento
+  chama o subagent `update`, que faz commit e push em `./` e em `data/`.
 allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion WebFetch WebSearch
 ---
 # Organize
@@ -94,7 +95,7 @@ Peça decisão quando houver ambiguidade de tipo, fusão, renomeação conceitua
 
 ### 5. Fechamento do corpus
 
-Chame o subagent `update` de `.agents/agents/update.md`.
+O subagent `update` de `.agents/agents/update.md` regenera derivados e, se os gates passarem, faz **commit e push** em `./` e em `data/`. Confirme com o Usuário antes de chamá-lo; é o único passo de `/organize` com efeito remoto.
 
 Use o resultado de stats e `output/graph/graph.json` no resumo. Páginas `isolated` e `tag_gaps` entram em atenção e podem encaminhar para `/connect`.
 

@@ -39,7 +39,7 @@ Resuma os tipos de correção. Não liste cada substituição salvo se o Usuári
 
 Feche com o `## Fechamento padrão de essay único` de `conventions/SKILL.md`.
 
-Atualize `updated:`. Correção pequena não precisa de log; passada extensa pode registrar:
+Não altere `updated:`; a regra vive em `conventions/SKILL.md`. Correção pequena não precisa de log; passada extensa pode registrar:
 
 ```markdown
 ## [YYYY-MM-DD] proofread | Título do Essay

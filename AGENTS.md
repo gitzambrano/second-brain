@@ -143,7 +143,7 @@ Tag de modo:
 
 | Skill    | Comando       | Modo   | Quando usar                                                                       |
 | -------- | ------------- | ------ | --------------------------------------------------------------------------------- |
-| Organize | `/organize` | ambos  | Metadados, estrutura e formatação mecânica                                     |
+| Organize | `/organize` | ambos  | Metadados, estrutura e formatação mecânica; o fechamento de corpus chama `update`, que commita e faz push |
 | Sweep    | `/sweep`    | ambos  | `/organize` → `/continuity` → `/proofread` → `/polish` → `/linkify` |
 | Gaps     | `/gaps`     | ambos  | Identificar lacunas mecânicas, léxicas e semânticas; read-only                 |
 | Connect  | `/connect`  | ambos  | Agir sobre candidatos de`/gaps`                                                 |

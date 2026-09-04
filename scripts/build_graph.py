@@ -3106,7 +3106,7 @@ function ensureMathJaxInjected() {
   document.head.appendChild(s); // executa inline, sincrono ao inserir
 }
 
-// Pandoc emite matematica como \(..\) / \[..\] envolvidos em
+// Pandoc emite matematica como \\(..\\) / \\[..\\] envolvidos em
 // <span class="math">. Sem nenhum, nao ha o que tipografar e o MathJax nem
 // precisa entrar na pagina.
 function fragmentHasMath(html) {
@@ -3183,22 +3183,22 @@ function enhanceReaderDom() {
   // numeros usam contador local; subtitulos (h3) nunca recebem.
   const h2s = content.querySelectorAll("h2:not(#sumário):not(#referências)");
   const selfNum = Array.prototype.some.call(h2s,
-    (h) => /^\s*(?:(?:se[çc][aã]o|cap[íi]tulo|parte)\s+)?(?:\d+|[IVXLC]+)[.\s—–:-]/i.test(h.textContent));
+    (h) => /^\\s*(?:(?:se[çc][aã]o|cap[íi]tulo|parte)\\s+)?(?:\\d+|[IVXLC]+)[.\\s—–:-]/i.test(h.textContent));
   if (selfNum) {
     content.classList.add("self-numbered");
     const toc = readerRoot.querySelector("#sumário + ul,#sumário + ol");
     if (toc) toc.classList.add("sb-toc-plain");
   }
-  const SECTION_RE = /^\s*(?:(?:se[çc][aã]o|cap[íi]tulo|parte)\s*)?(?:\d+|[IVXLC]+)?\s*[.:\-—–]?\s*(introdu[çc][aã]o|conclus[aã]o|resumo(?:\s+executivo)?|pref[áa]cio|pr[óo]logo|ep[íi]logo|posf[áa]cio|p[óo]s-?escrito|agradecimentos|ap[êe]ndice|anexos?)\b/i;
+  const SECTION_RE = /^\\s*(?:(?:se[çc][aã]o|cap[íi]tulo|parte)\\s*)?(?:\\d+|[IVXLC]+)?\\s*[.:\\-—–]?\\s*(introdu[çc][aã]o|conclus[aã]o|resumo(?:\\s+executivo)?|pref[áa]cio|pr[óo]logo|ep[íi]logo|posf[áa]cio|p[óo]s-?escrito|agradecimentos|ap[êe]ndice|anexos?)\b/i;
   // Espelha o template: esconde o prefixo de numeração à esquerda do título
   // e devolve o número para o kicker. O prefixo pode ter rótulo ("Seção 9 —",
-  // "Capítulo II:") — ele some inteiro. O lookahead (?!\d) evita partir
+  // "Capítulo II:") — ele some inteiro. O lookahead (?!\\d) evita partir
   // número de subseção ("2.3 Título").
   function stripSelfNumber(h) {
     let n = h.firstChild;
     while (n && n.nodeType !== 3) n = n.nextSibling;
     if (!n) return null;
-    const m = /^\s*((?:(?:se[çc][aã]o|cap[íi]tulo|parte)\s+)?((?:\d+|[IVXLC]+))(?:[.\s—–:-]+))(?!\d)([\s\S]*)$/i.exec(n.data);
+    const m = /^\\s*((?:(?:se[çc][aã]o|cap[íi]tulo|parte)\\s+)?((?:\\d+|[IVXLC]+))(?:[.\\s—–:-]+))(?!\\d)([\\s\\S]*)$/i.exec(n.data);
     if (!m) return null;
     const span = document.createElement("span");
     span.className = "sb-selfnum";
@@ -3249,7 +3249,7 @@ function enhanceReaderDom() {
         meta.classList.add("cover-draft");
         meta.textContent = "Rascunho";
       } else {
-        const words = (content.innerText || "").trim().split(/\s+/).length;
+        const words = (content.innerText || "").trim().split(/\\s+/).length;
         const mins = Math.max(1, Math.round(words / 200));
         meta.textContent = "~" + mins + " min de leitura · " + h2s.length + " capítulos";
       }
@@ -3338,7 +3338,7 @@ document.addEventListener("keydown", (e) => {
 
 // Deep-link: MySecondBrain.html#read=<slug> abre direto no essay.
 (function () {
-  const m = location.hash.match(/^#read=([^\s]+)$/);
+  const m = location.hash.match(/^#read=([^\\s]+)$/);
   if (!m) return;
   requestAnimationFrame(() => openReader(decodeURIComponent(m[1])));
 })();
@@ -3347,7 +3347,7 @@ document.addEventListener("keydown", (e) => {
 // entre deep-links) NÃO recarrega o documento — sem este listener, colar um
 // link novo num hash diferente de nada mudaria a tela.
 window.addEventListener("hashchange", () => {
-  const m = location.hash.match(/^#read=([^\s]+)$/);
+  const m = location.hash.match(/^#read=([^\\s]+)$/);
   if (m) openReader(decodeURIComponent(m[1]));
 });
 
@@ -4178,8 +4178,8 @@ function drawForSvgExport(simple) {
   // pra 6 casas decimais elimina a notação científica sem qualquer perda visual
   // perceptível, e cobre não só o valor do corte do círculo como qualquer outro
   // número minúsculo que apareça por motivo semelhante em qualquer lugar do SVG.
-  svgString = svgString.replace(/-?\d*\.?\d+e[+-]\d+/gi, (numStr) => {
-    const rounded = Number(numStr).toFixed(6).replace(/\.?0+$/, "");
+  svgString = svgString.replace(/-?\\d*\\.?\\d+e[+-]\\d+/gi, (numStr) => {
+    const rounded = Number(numStr).toFixed(6).replace(/\\.?0+$/, "");
     return rounded === "" || rounded === "-" ? "0" : rounded;
   });
 

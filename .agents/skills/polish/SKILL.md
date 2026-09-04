@@ -40,7 +40,7 @@ Resuma categorias de ajustes em vez de listar cada troca, salvo se o Usuário pe
 
 Feche com o `## Fechamento padrão de essay único` de `conventions/SKILL.md`.
 
-Atualize `updated:`. Logue apenas quando a passada for extensa:
+Não altere `updated:`; a regra vive em `conventions/SKILL.md`. Logue apenas quando a passada for extensa:
 
 ```markdown
 ## [YYYY-MM-DD] polish | Título do Essay

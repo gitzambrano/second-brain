@@ -65,7 +65,6 @@ Regras de decisão:
 ## 4. Fechar
 
 Se algo mudou:
-- atualize `updated:`;
 - rode o `## Fechamento padrão de essay único` de `conventions/SKILL.md`;
 - se `## Referências` mudou, rode `python scripts/build_references.py`.
 
@@ -81,4 +80,5 @@ N links adicionados, M corrigidos.
 - Não reescreva prosa; isso é `/polish`.
 - Não modifique wikilinks internos.
 - Não adicione link apenas para atingir contagem.
+- Não altere `updated:`; a regra vive em `conventions/SKILL.md`.
 - Respeite a regra de status de `conventions/SKILL.md`.

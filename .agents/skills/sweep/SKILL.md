@@ -70,7 +70,7 @@ Execute na ordem para cada essay do escopo, um por vez (não paralelize).
 
    Não exponha cada correção individual durante a execução — acumule e apresente só ao final.
 8. **Fechamento**: sweep mexe em muita prosa de uma vez, então feche a sessão com os artefatos derivados em dia.
-   - **[script]** Ofereça o subagent `update` (`.agents/agents/update.md`) — cuida de índice, referências, grafo, stats, qmd e sync de skills/agents numa sessão à parte, sem custo do agente principal.
+   - **[script]** Ofereça o subagent `update` (`.agents/agents/update.md`) — cuida de índice, referências, grafo, stats e qmd numa sessão à parte, e faz commit e push em `./` e em `data/`. Diga isso ao oferecer; só chame com o aceite do Usuário.
    - Ofereça `/status update`, depois `/review`, `/expand`, `/chapter` ou `/connect` como próximos passos.
 
 ## Log
@@ -93,7 +93,7 @@ Formato: X auto-corrigidos, Y issues restantes. Continuidade: Z reportados.
 Português: W correções. Estilo: V correções. Links: U adicionados.
 ```
 
-Atualize `updated:` no frontmatter de cada essay tocado.
+Nenhum passo do sweep altera `updated:`; a regra vive em `conventions/SKILL.md`.
 
 ## Convenções
 

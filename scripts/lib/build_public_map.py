@@ -12,9 +12,11 @@ O que atravessa para o mapa público:
     layout, todas as conexões e a URL externa de uma entrada de bibliografia.
 
 O que nunca atravessa:
-    o corpo de qualquer página, o caminho `file` para dentro do repositório
-    privado, e link de leitura para qualquer coisa que não seja um essay
-    autorizado. Um nó não publicado está no mapa e não abre.
+    tudo o mais. O nó público é montado do zero a partir da allowlist
+    `PUBLIC_NODE_FIELDS`, então o corpo de qualquer página, o caminho `file`
+    para dentro do repositório privado e qualquer campo futuro ficam de fora por
+    omissão, não por lista de proibidos. Link de leitura só existe para essay
+    autorizado: um nó não publicado está no mapa e não abre.
 
 Um site estático não esconde o que serve: título e resumo aqui são públicos.
 Essa é a troca deliberada — o catálogo é público, o texto não.
@@ -26,6 +28,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 from pathlib import Path
 
 import build_graph
@@ -33,8 +36,50 @@ import build_sphere
 from repo_paths import SITE_ROOT, SITE_SRC_DIR
 from site_common import collect_public
 
-# Node fields that would leak content or point back at the private repository.
-FORBIDDEN_NODE_FIELDS = ("file", "body", "text", "path")
+# --- Schema do nó público ---------------------------------------------------
+# Antes daqui existia uma BLACKLIST: copiava-se o nó inteiro e removia-se
+# `file`, `body`, `text`, `path`. O defeito é estrutural, não de conteúdo da
+# lista: no dia em que `build_graph.py` acrescentar `notes`, `sourcePath` ou
+# `privateSummary` ao nó, o campo novo é publicado sozinho, sem ninguém decidir
+# nada. A arquitetura promete o contrário — privado por omissão —, então o nó
+# público é montado do zero, campo a campo, a partir da allowlist abaixo.
+#
+# Campo novo no grafo passa a ser privado por padrão: ele simplesmente não é
+# copiado, e só entra no site quando alguém o acrescenta a esta tupla.
+#
+# A lista foi levantada contra o que os renderizadores realmente consomem —
+# os acessos `n.<campo>` / `d.<campo>` no JS de `build_graph.py` e
+# `build_sphere.py`. Tirar qualquer um destes quebra o mapa:
+#
+#   id/title/type      identidade, rótulo e cor do nó, e as pontas das arestas
+#   subtype/maturidade agrupamento de insight e de referência na legenda
+#   tags/summary/status painel de Índice: filtro por tag, resumo expansível,
+#                       selo de rascunho
+#   degree             métrica de raio e filtro por grau
+#   sizeBytes/sizeLines modo de raio alternativo ("densidade") do painel Estilo
+#   x0/y0              layout do grafo 2D
+#   ux/uy/uz           layout da esfera
+PASSTHROUGH_NODE_FIELDS = (
+    "id", "title", "type", "subtype", "maturidade", "tags", "summary", "status",
+    "degree", "sizeBytes", "sizeLines", "x0", "y0", "ux", "uy", "uz",
+)
+
+# Estes três não são copiados: são decididos aqui, em `sanitize`. `htmlFile` e
+# `url` são exatamente os dois campos que podem ABRIR alguma coisa, e por isso
+# nunca herdam o valor da wiki — que aponta para `../../wiki/...` e para o HTML
+# local em `output/html/`.
+DERIVED_NODE_FIELDS = ("htmlFile", "url", "public")
+
+PUBLIC_NODE_FIELDS = PASSTHROUGH_NODE_FIELDS + DERIVED_NODE_FIELDS
+
+# Presentes em TODO nó público. `summary`, `status` e `maturidade` ficam de
+# fora porque só existem em parte do corpus (resumo é de essay; maturidade é de
+# insight; um nó de referência não tem nenhum dos três), e exigi-los
+# transformaria a validação em ruído.
+REQUIRED_NODE_FIELDS = (
+    "id", "title", "type", "tags", "degree", "sizeBytes", "sizeLines",
+    "x0", "y0", "ux", "uy", "uz", "htmlFile", "url", "public",
+)
 
 # Summaries are published for essays only; the renderer shows no others.
 SUMMARY_TYPES = {"essay"}
@@ -57,6 +102,39 @@ def essay_slug(node_id: str) -> str:
     return slug if kind == "essay" else ""
 
 
+def assert_public_schema(nodes) -> list[str]:
+    """Reprova qualquer nó com chave fora do schema, ou sem chave obrigatória.
+
+    Existe para ser chamada de fora — pela sentinela `check_site_privacy.py`,
+    sobre o `graph.json` e sobre a carga embutida nos mapas, que é o que o
+    navegador de fato recebe. Sem ela a allowlist protegeria só o caminho feliz:
+    quem editasse `graph.json` depois do build passaria pelo portão.
+    """
+    errors: list[str] = []
+    allowed = set(PUBLIC_NODE_FIELDS)
+    for node in nodes:
+        node_id = node.get("id", "<no id>")
+        for field in sorted(set(node) - allowed):
+            errors.append(f"field outside the public schema on node {node_id}: {field!r}")
+        for field in REQUIRED_NODE_FIELDS:
+            if field not in node:
+                errors.append(f"required field missing on node {node_id}: {field!r}")
+    return errors
+
+
+def dropped_fields(nodes) -> list[str]:
+    """Campos do grafo que a allowlist deixou de fora, para o build anunciar.
+
+    Silêncio aqui seria a mesma armadilha da blacklist ao contrário: um campo
+    novo e legítimo sumiria do mapa sem nenhum sinal, e o defeito só apareceria
+    como um painel vazio no site publicado.
+    """
+    seen: set[str] = set()
+    for node in nodes:
+        seen.update(set(node) - set(PUBLIC_NODE_FIELDS))
+    return sorted(seen)
+
+
 def sanitize(nodes, published: set[str]):
     """Return public copies of the wiki nodes, in place of the private ones."""
     public_nodes = []
@@ -64,9 +142,10 @@ def sanitize(nodes, published: set[str]):
         slug = essay_slug(node["id"])
         is_public = bool(slug) and slug in published
 
-        clean = dict(node)
-        for field in FORBIDDEN_NODE_FIELDS:
-            clean.pop(field, None)
+        # Allowlist: o nó público nasce vazio e só recebe o que está declarado.
+        # `if field in node` preserva a ausência legítima — um nó de referência
+        # não tem `status`, e inventar `None` só encheria o payload.
+        clean = {field: node[field] for field in PASSTHROUGH_NODE_FIELDS if field in node}
 
         # A read link exists only for an authorized essay.
         clean["htmlFile"] = f"essays/{slug}.html" if is_public else None
@@ -76,8 +155,9 @@ def sanitize(nodes, published: set[str]):
             clean.pop("summary", None)
         if node["type"] == "reference":
             clean["title"] = clean_citation(node["title"])
-        else:
             # Only a bibliography entry keeps an outbound URL.
+            clean["url"] = node.get("url")
+        else:
             clean["url"] = None
 
         public_nodes.append(clean)
@@ -259,6 +339,19 @@ def build(width: int = 1900, height: int = 1200):
 
     published = {e.slug for e in collect_public()}
     public_nodes = sanitize(nodes, published)
+
+    unknown = dropped_fields(nodes)
+    if unknown:
+        print("public map: campos do grafo fora da allowlist, não publicados: "
+              + ", ".join(unknown), file=sys.stderr)
+
+    # Falha fechada: se a montagem deixar escapar chave fora do schema, o build
+    # para aqui em vez de gravar o mapa e deixar o vazamento para a sentinela
+    # encontrar depois — ou não encontrar.
+    schema_errors = assert_public_schema(public_nodes)
+    if schema_errors:
+        raise ValueError("public map schema violated:\n  " + "\n  ".join(schema_errors))
+
     return public_nodes, edges, tag_gaps, isolated
 
 

@@ -40,7 +40,7 @@ Funde duas páginas do mesmo tipo em uma só. Simples: lê as duas, junta o cont
    Fundidos N links reapontados.
    ```
 
-9. Ofereça `/organize` ao final — confirma que nenhum link ficou órfão e que a formatação da sobrevivente está correta.
+9. Ofereça `/organize` ao final — confirma que nenhum link ficou órfão e que a formatação da sobrevivente está correta. Diga ao oferecer que o fechamento de `/organize` pode fazer commit e push em `./` e em `data/`.
 
 ## Regras
 

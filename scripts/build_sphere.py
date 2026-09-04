@@ -1899,7 +1899,7 @@ function enhanceReaderDom() {
   const SECTION_RE = /^\\s*(?:(?:se[çc][aã]o|cap[íi]tulo|parte)\\s*)?(?:\\d+|[IVXLC]+)?\\s*[.:\\-—–]?\\s*(introdu[çc][aã]o|conclus[aã]o|resumo(?:\\s+executivo)?|pref[áa]cio|pr[óo]logo|ep[íi]logo|posf[áa]cio|p[óo]s-?escrito|agradecimentos|ap[êe]ndice|anexos?)\\b/i;
   // Espelha o template: esconde o prefixo de numeração à esquerda do título
   // e devolve o número para o kicker. O prefixo pode ter rótulo ("Seção 9 —",
-  // "Capítulo II:") — ele some inteiro. O lookahead (?!\d) evita partir
+  // "Capítulo II:") — ele some inteiro. O lookahead (?!\\d) evita partir
   // número de subseção ("2.3 Título").
   function stripSelfNumber(h) {
     let n = h.firstChild;
