@@ -67,6 +67,10 @@ output/**
 .obsidian/workspace*
 .obsidian/cache/
 
+# Harness-local state in the data repository.
+.agents/*
+.claude/*
+
 # OS/Python/editor.
 .DS_Store
 Thumbs.db
