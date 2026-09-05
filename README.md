@@ -51,9 +51,7 @@ Assim, Git versiona o **conhecimento** e a **configuração reproduzível** do v
 ```bash
 git clone https://github.com/gitzambrano/second-brain-engine.git second-brain
 cd second-brain
-
-# Dependências essenciais do engine
-python -m pip install pyyaml pytest
+python -m pip install -r requirements-ci.txt
 ```
 
 ### 2. Preparar `data/` e `site/`
@@ -81,9 +79,11 @@ No Obsidian, escolha **Open folder as vault** e abra a pasta `data/`. A edição
 ### 4. Validar a instalação
 
 ```bash
-python scripts/check_repo.py --quick   # validação rápida de ambiente e integridade
-python -m pytest -q                    # executa a suíte de testes
+python scripts/check_repo.py --quick
+python -m pytest -q -m "not html and not pdf and not slow and not browser"
 ```
+
+Esse é o núcleo da CI e não exige Pandoc, LuaLaTeX ou Chromium. Essas dependências só são necessárias para exportação e testes visuais; consulte **[`TESTING.md`](./TESTING.md)**.
 
 ---
 
