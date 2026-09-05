@@ -1,11 +1,15 @@
 ---
 name: conventions
 description: >
-  Referência normativa de estrutura, estilo e formatação da wiki:
-  localização de conteúdo, frontmatter, tags, tipos de source, status,
-  byline, Sumário/Referências/Conexões, links, prosa, imagens, nomes,
-  Obsidian, conversão de fontes e contradições. Não executa fluxo próprio;
-  as skills que escrevem ou editam conteúdo consultam este arquivo.
+  Fonte normativa de estrutura, frontmatter, tags, sources, links, referências,
+  prosa, imagens e regras editoriais da wiki. Use como referência pelas skills
+  que leem ou alteram conteúdo; não executa um workflow próprio.
+metadata:
+  second-brain-role: "normative-reference"
+  second-brain-mode: "read"
+  second-brain-scope: "repository"
+  second-brain-approval: "none"
+  second-brain-closure: "none"
 allowed-tools: Read WebFetch WebSearch
 ---
 # Conventions

@@ -1,9 +1,15 @@
 ---
 name: insight
 description: >
-  Captura, desenvolve, lista e promove insights em wiki/insights/.
-  Um insight é uma ideia única ainda sem essay-pai. Comandos: add,
-  develop, list e promote.
+  Captura, desenvolve, lista e promove ideias em wiki/insights/. Use para uma
+  ideia ainda sem essay-pai; promoção encaminha para /essay, /expand ou /chapter
+  conforme o destino.
+metadata:
+  second-brain-role: "knowledge-capture"
+  second-brain-mode: "mixed"
+  second-brain-scope: "insight"
+  second-brain-approval: "conditional"
+  second-brain-closure: "page"
 allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion
 ---
 # Insight

@@ -1,11 +1,16 @@
 ---
 name: study
 description: >
-  Conduz uma sessão de estudo: lê fontes, compara argumentos, faz
-  perguntas socráticas e conecta o tema ao que já existe na wiki.
-  Pode encaminhar o resultado para /insight, /digest, /absorb, /essay
-  ou /plan.
-allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch AskUserQuestion
+  Conduz estudo ativo com fontes externas, comparação crítica e perguntas
+  socráticas. Use quando o objetivo é compreender ou formar posição; /scout faz
+  apenas curadoria, e persistência fica com /insight, /digest ou /essay.
+metadata:
+  second-brain-role: "research"
+  second-brain-mode: "read"
+  second-brain-scope: "conversation-and-web"
+  second-brain-approval: "none"
+  second-brain-closure: "none"
+allowed-tools: Bash Read Glob Grep WebSearch WebFetch AskUserQuestion
 ---
 # Study
 

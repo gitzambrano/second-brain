@@ -1,9 +1,15 @@
 ---
 name: outline
 description: >
-  Gera e itera o esqueleto de um essay antes da prosa: tese, tipo,
-  domínio, capítulos, papel argumentativo e bullets. Salva em
-  plan/drafts/ e é pré-condição de /essay, exceto /import.
+  Estrutura tese, tipo, domínio, capítulos e papel argumentativo antes da prosa.
+  Use para preparar um essay novo em plan/drafts/; /essay consome o outline
+  aprovado ou implicitamente resolvido.
+metadata:
+  second-brain-role: "planner"
+  second-brain-mode: "write"
+  second-brain-scope: "draft"
+  second-brain-approval: "conditional"
+  second-brain-closure: "draft"
 allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch AskUserQuestion
 ---
 # Outline

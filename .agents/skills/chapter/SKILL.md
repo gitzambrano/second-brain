@@ -1,68 +1,77 @@
 ---
 name: chapter
 description: >
-  Adiciona, move, funde ou divide um capítulo/seção dentro de um essay
-  já existente, ou cria uma página nova de conceito/entidade ligada a
-  ele. Use quando o Usuário disser "adiciona um capítulo sobre X",
-  "junta essas duas seções", "divide esse capítulo em dois", "move
-  essa seção para depois da 3", "cria uma página de conceito para Y", ou
-  quiser mudanças estruturais no essay em vez de mudança de conteúdo
-  dentro de seções já existentes.
-allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion
+  Cria, move, funde, divide ou renomeia seções de um essay e escreve o conteúdo
+  necessário para a nova estrutura. Use quando a mudança envolve H2/H3 ou a
+  ordem do argumento; para conteúdo dentro de seção existente, use /expand.
+metadata:
+  second-brain-role: "structure-editor"
+  second-brain-mode: "write"
+  second-brain-scope: "essay"
+  second-brain-approval: "conditional"
+  second-brain-closure: "single-essay"
+allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch AskUserQuestion
 ---
 # Chapter
 
-Trabalha a **estrutura** de um essay: capítulos/seções que entram, saem, se movem, se fundem, se dividem, ou uma página nova de conceito/entidade que passa a ser referenciada por ele. Diferente de `/expand`, que lida com o conteúdo dentro de uma seção já existente.
+Edita **a estrutura** de um essay. Esta skill é dona do trabalho quando a mudança cria, remove, move, funde, divide ou renomeia seções. Ela não devolve o conteúdo de uma seção nova para `/expand`.
 
-## Regra de abertura
+## Abertura
 
-Leia o essay inteiro antes de mover uma única linha. Reorganização é cara de desfazer se sair errada — mais um motivo para não trabalhar só a partir do trecho apontado.
+Leia o essay inteiro antes da primeira edição. Determine o papel da seção afetada na cadeia argumentativa e confira `## Sumário`, referências e conexões que possam depender da estrutura.
 
-## Adicionar um capítulo/seção nova
+## Mudança pedida diretamente
 
-1. Depois de ler o essay inteiro, decida a posição: onde a seção nova prepara o terreno para a seguinte e continua o que veio antes.
-2. Crie a seção com heading `##`, escreva o conteúdo seguindo o `## Estilo de prosa` de `conventions/SKILL.md`.
-3. Adicione a nova seção ao `## Sumário` com o link correspondente.
-4. Se a seção nova introduz um conceito/entidade que merece página própria, crie em `wiki/concepts/` ou `wiki/entities/` e linke em `## Conexões` — `tags:` reusa o vocabulário controlado (mesma checagem em `wiki/index.json` descrita em `## Criar página de conceito/entidade` abaixo).
+Se o Usuário já definiu a operação e o destino, execute exatamente esse brief. Para seção nova:
 
-## Criar página de conceito/entidade
+1. determine a posição coerente com o que vem antes e depois;
+2. pesquise fatos, equações, normas ou referências necessários com `WebSearch`/`WebFetch`;
+3. escreva a seção completa segundo `conventions/SKILL.md`;
+4. atualize `## Sumário`;
+5. releia as transições adjacentes e ajuste apenas o necessário para a nova ordem.
 
-1. Verifique primeiro se já não existe uma página equivalente: `python scripts/check_title.py "Título Candidato"` cobre essays, concepts, entities e insights de uma vez (exato e fuzzy) — não duplique.
-2. Crie o arquivo na subpasta certa, com frontmatter simples e conteúdo denso o bastante para justificar a página própria. O campo `tags:` segue `## Reuso de vocabulário controlado` em `conventions/SKILL.md`.
-3. Linke a partir do essay em `## Conexões`, e a partir da página nova de volta para o essay.
+Se faltar detalhe operacional, derive o brief do contexto. Pergunte somente quando houver mais de uma direção substantiva plausível.
 
-## Mover, fundir, ou dividir seções
+## Estrutura proposta pelo agente
 
-Dois modos, dependendo de quem decide a estrutura final:
+Se o Usuário pedir que o agente decida como reorganizar o essay:
 
-- **Pontual**: o Usuário já sabe o que quer mover/fundir/dividir. Execute exatamente o pedido, depois releia o essay inteiro para checar que as transições na nova ordem ainda fazem sentido — uma seção que antes abria referenciando a anterior pode precisar de ajuste na frase de abertura.
-- **Geral**: o Usuário pede para você decidir a melhor estrutura. Proponha um esboço novo de seções, em ordem, e espere aprovação antes de mover texto de fato.
+1. leia o documento inteiro;
+2. proponha a nova sequência de seções e o papel de cada mudança;
+3. espere aprovação antes de mover, fundir ou apagar texto;
+4. depois da aprovação, aplique o plano sem ampliar o escopo.
 
-Depois de qualquer reorganização, atualize `## Sumário` para refletir a nova ordem e os novos títulos.
+## Concept ou entity associado
 
-## Depois
+Quando uma seção introduzir um concept/entity que merece página própria:
 
-Feche com o `## Fechamento padrão de essay único` de `conventions/SKILL.md`.
-
-Atualize `updated:` no frontmatter. Se a mudança foi de peso (nova seção, reorganização geral, página nova criada), log:
-
+```bash
+python scripts/check_title.py "Título Candidato"
 ```
+
+Crie a página somente se ela tiver valor independente. Use a pasta e o frontmatter de `conventions/SKILL.md` e registre a relação em `## Conexões` nos dois sentidos quando fizer sentido.
+
+## Fechamento
+
+Depois de qualquer mudança estrutural:
+
+- atualize `## Sumário`;
+- use o `## Fechamento padrão de essay único` de `conventions/SKILL.md`;
+- atualize `updated:` porque a estrutura do corpo mudou;
+- regenere referências/índice apenas quando os campos correspondentes mudarem.
+
+Para mudança relevante, registre:
+
+```markdown
 ## [YYYY-MM-DD] chapter | Título do Essay
 Resumo da mudança estrutural.
 ```
 
-Se existir handout para este essay e a reorganização mudou a tese ou o caminho argumentativo, avise o Usuário e ofereça regenerá-lo (`/handout`).
+Se houver handout e a reorganização alterar a tese ou o caminho argumentativo, informe que ele deve ser regenerado e ofereça `/handout`.
 
-## Convenções
+## Limites
 
-Formato de wikilink e link de seção: `## Regra de links` em `conventions/SKILL.md`. Heading nunca leva link markdown dentro, senão a seção fica inalcançável por qualquer link.
-
-Segue a regra de status (batch vs específico) de `## Status de essay` em `conventions/SKILL.md`.
-
-Texto novo segue `## Estilo de prosa` em `conventions/SKILL.md`. Não invente conteúdo para preencher uma seção nova sem ter material — se o pedido for só "cria um capítulo sobre X" sem mais direção, trate como um pedido de `/expand` primeiro (perguntar o que deve entrar), e só então estruture aqui.
-
-## Skills relacionadas
-
-- `/expand` — conteúdo dentro de uma seção, não a estrutura
-- `/connect` — cria concept/entity como stub mínimo por lacuna do grafo; `/chapter` cria com desenvolvimento completo a partir do essay
-- `/continuity`, `/linkify`, `/outline`
+- Não usa `/expand` como etapa intermediária de uma seção nova.
+- Não reorganiza estrutura proposta pelo agente sem aprovação.
+- Não inventa fatos ou referências; pesquise quando o conteúdo novo exigir evidência.
+- Segue estrutura, prosa, links e status de `conventions/SKILL.md`.

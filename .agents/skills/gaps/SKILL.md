@@ -1,9 +1,15 @@
 ---
 name: gaps
 description: >
-  Identifica lacunas mecânicas, léxicas e semânticas entre essays,
-  concepts, entities e insights. Aceita corpus, página, pasta ou tema.
-  É read-only; /connect age sobre os candidatos encontrados.
+  Identifica lacunas mecânicas, léxicas e semânticas sem editar. Use em corpus,
+  página, pasta ou tema para produzir candidatos que /connect pode corrigir ou
+  transformar em conexões.
+metadata:
+  second-brain-role: "graph-auditor"
+  second-brain-mode: "read"
+  second-brain-scope: "graph"
+  second-brain-approval: "none"
+  second-brain-closure: "none"
 allowed-tools: Bash Read Glob Grep
 ---
 # Gaps

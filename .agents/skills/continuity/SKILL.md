@@ -1,11 +1,15 @@
 ---
 name: continuity
 description: >
-  Audita a coerência estrutural de um essay do início ao fim: conceitos
-  usados antes de serem explicados, saltos abruptos entre seções, tese
-  sustentada de forma consistente entre capítulos, ou conclusão que não
-  fecha o argumento aberto na introdução. É o componente estrutural do
-  peer review: /review invoca esta skill e reutiliza seus achados.
+  Audita a progressão estrutural de um essay sem editar. Use para detectar
+  conceitos antecipados, saltos entre seções, tese inconsistente ou conclusão
+  que não fecha o argumento; /review reutiliza estes achados.
+metadata:
+  second-brain-role: "structure-auditor"
+  second-brain-mode: "read"
+  second-brain-scope: "essay"
+  second-brain-approval: "none"
+  second-brain-closure: "none"
 allowed-tools: Bash Read Grep
 ---
 # Continuity

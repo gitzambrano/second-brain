@@ -1,47 +1,38 @@
 ---
 name: status
 description: >
-  Mantém wiki/status.md, o snapshot do estado atual da wiki: foco corrente,
-  perguntas em aberto, decisões recentes fechadas, e pendências (raw/,
-  plan/, sources sem manifest). É o que conecta uma sessão à próxima —
-  use "/status" para ver o estado atual no início de uma sessão, e
-  "/status update" para atualizá-lo ao fechar uma sessão com trabalho
-  substancial. Use também quando o Usuário perguntar "onde eu parei",
-  "o que falta fazer", ou "atualiza o status".
+  Lê ou atualiza wiki/status.md, o snapshot entre sessões. Use para “onde parei?”
+  e para registrar foco, perguntas, decisões recentes e pendências recalculadas
+  de raw/, plano, sources não verificados e contradições abertas.
+metadata:
+  second-brain-role: "session-state"
+  second-brain-mode: "mixed"
+  second-brain-scope: "status"
+  second-brain-approval: "none"
+  second-brain-closure: "status"
 allowed-tools: Bash Read Write Edit Glob AskUserQuestion
 ---
 # Status
 
-`wiki/status.md` é um snapshot vivo, não um log cronológico. Cada seção é sobrescrita no lugar; `wiki/log.md` continua append-only.
+`wiki/status.md` é um snapshot vivo. `wiki/log.md` é o histórico append-only.
 
-## Comandos
+## `/status`
 
-### `/status`
+Leia e mostre o estado atual. Não edite. Se o arquivo ainda não existir, crie o template canônico e informe que foi inicializado.
 
-Leia `wiki/status.md` e mostre o estado atual. Não edita nada, com uma única exceção: se o arquivo ainda não existir, crie-o com o template abaixo e avise que é a primeira inicialização.
-
-### `/status update`
+## `/status update`
 
 1. Releia `wiki/status.md`.
-2. Recalcule as **Pendências**:
+2. Recalcule **Pendências**:
    - itens em `raw/`;
    - itens `Status: Pendente` em cada seção de `plan/plano.md`;
-   - entradas de `wiki/sources/manifest.md` com `Verificação: não verificado`,
-     exceto quando `Virou:` for `None`, `nenhum`, `nenhuma`, `-` ou `—`.
-     Esses valores registram uma decisão explícita de não converter a fonte e
-     não entram na pendência, mesmo sem verificação bibliográfica;
-   - contradições ainda não resolvidas registradas na sessão.
-3. Atualize, a partir da conversa ou perguntando apenas quando necessário:
-   - **Foco atual**;
-   - **Perguntas em aberto**;
-   - **Decisões recentes**.
-4. Reescreva `wiki/status.md` inteiro com `Atualizado:` na data atual.
-5. Se a sessão editou muitas páginas, ofereça o subagent `update` — ele regenera derivados e faz commit e push em `./` e em `data/`.
-6. Não registre `/status update` em `wiki/log.md`.
+   - entries de `wiki/sources/manifest.md` com `Verificação: não verificado`, exceto fontes cuja decisão explícita de não converter esteja registrada em `Virou:` como `None`, `nenhum`, `nenhuma`, `-` ou `—`;
+   - contradições ainda abertas na sessão.
+3. Atualize **Foco atual**, **Perguntas em aberto** e **Decisões recentes** com base no trabalho efetivamente realizado. Pergunte somente quando faltar informação necessária.
+4. Reescreva o snapshot inteiro e atualize `Atualizado:`.
+5. Não escreva entrada de log para `/status update`.
 
-Decisões recentes pertencem ao status enquanto forem úteis entre sessões. Regras permanentes de estrutura/estilo só entram em `conventions/SKILL.md` quando representam o comportamento normativo atual; não mantenha histórico de decisões lá.
-
-## Template
+Template:
 
 ```markdown
 # Status
@@ -49,7 +40,7 @@ Decisões recentes pertencem ao status enquanto forem úteis entre sessões. Reg
 Atualizado: YYYY-MM-DD
 
 ## Foco atual
-- [projeto/essay/tema] — [estado em uma frase] — próxima ação: [...]
+- [projeto/essay/tema] — [estado] — próxima ação: [...]
 
 ## Perguntas em aberto
 - [pergunta] (desde YYYY-MM-DD)
@@ -59,20 +50,16 @@ Atualizado: YYYY-MM-DD
 
 ## Pendências
 - raw/: N item(ns) aguardando triagem
-- plan/plano.md: N tarefa(s), N fonte(s) para ingerir, N revisão(ões), N estudo(s), N essay(s) futuro(s) pendente(s)
+- plan/plano.md: N tarefa(s), N fonte(s), N revisão(ões), N estudo(s), N essay(s) futuro(s) pendente(s)
 - sources com Verificação: não verificado: N
 ```
 
-Seção sem conteúdo real recebe `- (nenhuma)`.
+Se uma seção não tiver conteúdo real, use `- (nenhuma)`.
 
-## Quando outras skills devem tocar `/status`
+## Relação com outras skills
 
-Após trabalho substancial em `/essay`, `/import`, `/digest`, `/absorb`, `/organize`, `/sweep`, `/study` ou `/plan work`, ofereça `/status update`.
+Após trabalho substancial em `/essay`, `/import`, `/digest`, `/absorb`, `/organize`, `/sweep`, `/study` ou `/plan work`, ofereça `/status update`; não rode automaticamente.
 
-Não rode automaticamente sem avisar.
+Se a sessão alterou muitas páginas, pode oferecer `update` separadamente para derivados/Git. O remoto continua sujeito à autorização própria do `update`.
 
-## Skills relacionadas
-
-- `/plan` — pendências de longo prazo
-- `/organize` — saúde estrutural e de sources
-- `conventions` — somente regras normativas atuais
+Regras permanentes pertencem a `conventions/SKILL.md`; `status.md` guarda apenas estado útil entre sessões.

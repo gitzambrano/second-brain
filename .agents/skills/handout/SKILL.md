@@ -1,28 +1,27 @@
 ---
 name: handout
 description: >
-  Gera um handout de uma página para um essay existente, em
-  wiki/handouts/: linha de tese, 3 a 5 conclusões em prosa, e link de
-  volta para o essay completo. Use quando o Usuário disser "gera um
-  handout desse essay", "resume isso numa página para eu mandar pro
-  fulano", ou quiser uma versão executiva rápida de um essay para
-  alguém que não vai ler o texto inteiro.
+  Gera uma versão curta, de cerca de uma página, a partir de um essay existente.
+  Use quando o Usuário pedir handout/resumo executivo; mantém a fonte canônica em
+  wiki/handouts/ e copia o derivado para output/handouts/.
+metadata:
+  second-brain-role: "derivative-author"
+  second-brain-mode: "write"
+  second-brain-scope: "handout"
+  second-brain-approval: "none"
+  second-brain-closure: "artifact"
 allowed-tools: Bash Read Write Edit Glob AskUserQuestion
 ---
 # Handout
 
-Gera `wiki/handouts/<slug-do-essay>.md`: uma versão curta do essay para compartilhamento.
+Gera `wiki/handouts/<slug>.md` a partir de um essay existente. Só roda sob pedido explícito.
 
-## Quando usar
+## Conteúdo
 
-Somente sob pedido explícito. Outras skills podem oferecer `/handout`, mas não executá-lo automaticamente.
-
-## Passo a passo
-
-1. Leia o essay completo.
+1. Leia o essay inteiro.
 2. Escreva uma frase com a tese central.
 3. Extraia 3 a 5 conclusões principais em prosa curta.
-4. Monte:
+4. Use o template:
 
 ```markdown
 ---
@@ -37,43 +36,32 @@ updated: YYYY-MM-DD
 
 <Uma frase com a tese central.>
 
-<Conclusão 1 em prosa curta.>
+<Conclusão 1.>
 
-<Conclusão 2 em prosa curta.>
+<Conclusão 2.>
 
-<Conclusão 3 a 5, conforme necessário.>
+<Conclusão 3 a 5.>
 
 Leia o essay completo: [<Título do Essay>](../essays/<slug>.md)
 ```
 
 `tags:` copia as do essay. `sources:` fica vazio porque o handout não introduz fonte nova.
 
-5. Não inclua `## Sumário`, `## Referências` nem `## Conexões`.
-6. Se já existir handout, regenere o mesmo arquivo e atualize `updated:`.
-7. Não atualize `wiki/index.*` nem `wiki/log.md`.
+Não inclua `## Sumário`, `## Referências` nem `## Conexões`.
 
-## Handout como output
+Se o handout já existir, regenere o mesmo arquivo e atualize `updated:`.
 
-`wiki/handouts/<slug>.md` é a fonte de trabalho do handout dentro da wiki; como o restante de `wiki/`, não depende de versionamento Git.
+## Fonte e output
 
-Depois de gerar ou atualizar:
+- `wiki/handouts/<slug>.md` é a fonte canônica do handout;
+- copie o resultado para `output/handouts/<slug>.md` como artefato derivado;
+- não atualize `wiki/index.*` nem `wiki/log.md`.
 
-1. copie para `output/handouts/<slug>.md`;
-2. pergunte se o Usuário quer PDF e/ou HTML:
+PDF/HTML só sob pedido explícito:
 
 ```bash
 python scripts/export_essay_pdf.py <slug> --handout --output output/handouts
 python scripts/export_essay_html.py <slug> --handout --output output/handouts
 ```
 
-3. Não gere PDF/HTML automaticamente.
-
-## Depois
-
-Informe os caminhos em `wiki/handouts/` e `output/handouts/`. Ofereça também exportar o essay completo via `/pdf` ou `/html`.
-
-## Skills relacionadas
-
-- `/essay`
-- `/expand`, `/chapter`, `/proofread`, `/polish`
-- `/pdf`, `/html`
+Informe os caminhos gerados. Outras skills podem oferecer `/handout`, mas não devem executá-lo automaticamente.

@@ -1,10 +1,15 @@
 ---
 name: essay
 description: >
-  Escreve um essay, white paper ou estudo novo a partir de um esboço
-  aprovado em plan/drafts/. Use para autoria original. Se não houver
-  esboço, acione /outline primeiro. Texto pronto do próprio autor é
-  /import; fonte de terceiros é /digest.
+  Escreve um essay, white paper ou estudo novo a partir de outline aprovado em
+  plan/drafts/. Use para autoria original; se não houver outline, acione
+  /outline. Texto autoral pronto é /import; fonte de terceiro é /digest.
+metadata:
+  second-brain-role: "author"
+  second-brain-mode: "write"
+  second-brain-scope: "essay"
+  second-brain-approval: "conditional"
+  second-brain-closure: "single-essay"
 allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch AskUserQuestion
 ---
 # Essay

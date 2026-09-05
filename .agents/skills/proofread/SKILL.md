@@ -1,11 +1,15 @@
 ---
 name: proofread
 description: >
-  Passada de revisão de português num essay: gramática, ortografia,
-  concordância, pontuação, consistência terminológica. Use quando o
-  Usuário disser "corrige o português", "dá uma geral na gramática",
-  "revisa a ortografia", ou quiser uma passada só de língua, sem mudar
-  conteúdo ou argumento.
+  Corrige português, pontuação e consistência terminológica sem mudar argumento
+  ou registro. Use para revisão linguística de um essay; melhoria de estilo
+  pertence a /polish.
+metadata:
+  second-brain-role: "language-editor"
+  second-brain-mode: "write"
+  second-brain-scope: "essay"
+  second-brain-approval: "none"
+  second-brain-closure: "single-essay"
 allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion
 ---
 # Proofread

@@ -1,8 +1,15 @@
 ---
 name: html
 description: >
-  Exporta um ou todos os essays para HTML standalone via
-  scripts/export_essay_html.py e valida o artefato antes de declará-lo pronto.
+  Exporta um ou todos os essays/handouts para HTML standalone e valida estrutura
+  e navegador. Use quando o Usuário pedir HTML; não declare o artefato validado
+  se algum checker bloquear.
+metadata:
+  second-brain-role: "exporter"
+  second-brain-mode: "write"
+  second-brain-scope: "html-output"
+  second-brain-approval: "none"
+  second-brain-closure: "artifact"
 allowed-tools: Bash Read Glob
 ---
 # HTML

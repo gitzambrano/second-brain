@@ -1,10 +1,15 @@
 ---
 name: synthesize
 description: >
-  Faz síntese read-only do conhecimento já existente na wiki: usa qmd
-  e leitura de páginas relevantes para identificar convergências,
-  tensões, padrões, pontes entre domínios e ideias emergentes. Propõe
-  candidatos, mas nunca cria ou edita páginas automaticamente.
+  Procura padrões emergentes entre páginas já existentes sem editar nem pesquisar
+  a web. Use para convergências, tensões, pontes entre domínios e hipóteses que
+  surgem da combinação de múltiplas páginas.
+metadata:
+  second-brain-role: "knowledge-synthesis"
+  second-brain-mode: "read"
+  second-brain-scope: "wiki"
+  second-brain-approval: "none"
+  second-brain-closure: "none"
 allowed-tools: Bash Read Glob Grep AskUserQuestion
 ---
 # Synthesize

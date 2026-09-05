@@ -1,9 +1,15 @@
 ---
 name: linkify
 description: >
-  Adiciona e valida links externos no corpo de um essay e corrige
-  referências bibliográficas que exigem pesquisa. Não reescreve prosa
-  nem altera wikilinks internos.
+  Adiciona e valida links externos e referências bibliográficas de um essay sem
+  alterar argumento nem wikilinks internos. Use para cobertura de fontes,
+  destinos quebrados e metadados bibliográficos que exigem verificação.
+metadata:
+  second-brain-role: "citation-editor"
+  second-brain-mode: "write"
+  second-brain-scope: "essay"
+  second-brain-approval: "none"
+  second-brain-closure: "single-essay"
 allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch
 ---
 # Linkify

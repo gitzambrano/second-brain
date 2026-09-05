@@ -1,107 +1,81 @@
 ---
 name: sweep
 description: >
-  Orquestra a bateria completa de revisão num essay ou no corpus inteiro:
-  /organize (passada mecânica) → /continuity → /proofread → /polish →
-  /linkify, e produz um relatório consolidado. Aceita escopo corpus
-  inteiro (/sweep) ou essay único (/sweep <slug>) — a lógica é idêntica,
-  só o conjunto de arquivos processados muda. Use quando o Usuário disser
-  "corrige todos os essays", "faz uma revisão geral", "passa o pente fino
-  na wiki inteira", "passa o pente fino nesse essay", ou quiser a bateria
-  completa de correções sem invocar cada skill manualmente. É um
-  orquestrador: chama outros skills, não duplica a lógica deles.
+  Orquestra revisão completa de um essay ou do corpus: manutenção mecânica,
+  continuidade, português, estilo e links. Use para pente-fino amplo; corrige
+  automaticamente o inequívoco e acumula decisões editoriais para o relatório.
+metadata:
+  second-brain-role: "review-orchestrator"
+  second-brain-mode: "mixed"
+  second-brain-scope: "essay-or-corpus"
+  second-brain-approval: "conditional"
+  second-brain-closure: "multi-essay"
 allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch AskUserQuestion
 ---
-
 # Sweep
 
-**[ambos]** Roda `/organize` (mecânico) → `/continuity` → `/proofread` → `/polish` → `/linkify` (leitura, cada um) em qualquer escopo, e consolida num único relatório. **Orquestrador**: a lógica de cada correção vive no skill correspondente, não aqui.
+Orquestra, nessa ordem, `/organize <slug>` → `/continuity` → `/proofread` → `/polish` → `/linkify`.
 
-## É / não é
-
-- **É**: pente fino completo de um essay ou de todos, cobrindo formatação, continuidade, português, estilo e links.
-- **Não é**: `/organize` sozinho (saúde da wiki — índice, manifesto, órfãos; rode antes para decidir se vale um sweep). Não é `/review` (validade argumentativa e profundidade).
+A lógica de cada dimensão vive na skill correspondente. `/sweep` controla ordem, escopo, decisões e relatório.
 
 ## Escopo
 
-```
-/sweep              → corpus inteiro: todos os essays em wiki/essays/
-/sweep <slug>       → um essay específico
-```
-
-Mesma lógica nos dois casos, muda só o conjunto de arquivos. Argumento ambíguo (ex: `/sweep física` casando dois essays) → pergunte antes.
-
-## Regras de status
-
-Ver `conventions/SKILL.md`:
-
-- **Corpus inteiro**: pula `finalizado`/`revisao`, sem perguntar nem avisar durante a execução. Informa quantos foram pulados no resumo final.
-- **Essay específico**: executa normalmente mesmo se `finalizado`/`revisao`. Ao final, se estava `finalizado`, avisa: "Este essay estava marcado como finalizado; executei porque você pediu diretamente."
-
-## Passo a passo
-
-Execute na ordem para cada essay do escopo, um por vez (não paralelize).
-
-1. **Aviso de escala** (corpus inteiro, mais de 5 essays): avise antes de começar — "são N essays, vou levar um tempo" — e ofereça processar em lotes.
-2. **[script] `/organize <slug>`** (escopo essay único, sem as checagens de corpus). Corpus inteiro do sweep = `/organize <slug>` em sequência para cada essay; **nunca** chame `/organize` sem argumento aqui, repetiria as checagens de corpus por essay. Aplique fixes automáticos sem interação. Acumule issues restantes no relatório do essay.
-3. **[leitura] `/continuity`**. Problema grave (contradição com a tese, conclusão que não fecha o argumento): reporte e pergunte se corrige agora ou depois; **pause só este essay**, continue os demais do batch. Achado estrutural menor (transição fraca, termo antecipado): registre no relatório sem interromper.
-4. **[leitura] `/proofread`** — passada de português. Aplique direto.
-5. **[leitura] `/polish`** — passada de estilo (bullets, travessões, elegância). Aplique direto.
-6. **[leitura] `/linkify`** — checagem e adição de links externos. Aplique direto.
-7. **Relatório consolidado**, ao final de todos os essays do escopo:
-
-   ```
-   ## Sweep — [N essay(s) processado(s)]
-
-   ### Resumo
-   - Essays processados: N
-   - Essays pulados por status (finalizado/revisao): K
-   - Issues de formato resolvidos automaticamente: X
-   - Issues de formato restantes (não-automáticos): Y
-   - Problemas de continuidade reportados: Z
-   - Correções de português: W
-   - Correções de estilo: V
-   - Links adicionados/corrigidos: U
-
-   ### Por essay
-   **[Título]** (essays/slug.md)
-   - [resumo do que foi corrigido ou reportado]
-   ```
-
-   Não exponha cada correção individual durante a execução — acumule e apresente só ao final.
-8. **Fechamento**: sweep mexe em muita prosa de uma vez, então feche a sessão com os artefatos derivados em dia.
-   - **[script]** Ofereça o subagent `update` (`.agents/agents/update.md`) — cuida de índice, referências, grafo, stats e qmd numa sessão à parte, e faz commit e push em `./` e em `data/`. Diga isso ao oferecer; só chame com o aceite do Usuário.
-   - Ofereça `/status update`, depois `/review`, `/expand`, `/chapter` ou `/connect` como próximos passos.
-
-## Log
-
-Uma entrada consolidada em `wiki/log.md`:
-
-**Corpus inteiro:**
-
-```
-## [YYYY-MM-DD] sweep | N essays revisados
-Formato: X auto-corrigidos, Y issues restantes. Continuidade: Z reportados.
-Português: W correções. Estilo: V correções. Links: U adicionados. K pulados por status.
+```text
+/sweep          → todos os essays elegíveis
+/sweep <slug>   → essay específico
 ```
 
-**Essay único:**
+No corpus, siga a regra de status de `conventions/SKILL.md`: pule `revisao` e `finalizado`. Em essay nomeado, processe mesmo nesses estados e informe isso no resumo final.
 
+## Execução
+
+Processe um essay por vez.
+
+1. Rode `/organize <slug>` para fixes mecânicos locais.
+2. Rode `/continuity` e reutilize seus achados.
+3. Para achado estrutural **inequívoco** que não muda tese nem exige escolha editorial, aplique a correção estrutural correspondente dentro do fluxo e registre-a.
+4. Quando a correção exigir decidir tese, ordem argumentativa controversa, remoção de conteúdo ou interpretação entre alternativas, **não pare o batch**: marque o item como `decisão necessária` e continue o restante do essay e do corpus.
+5. Rode `/proofread` e aplique as correções de língua.
+6. Rode `/polish` e aplique as correções de estilo.
+7. Rode `/linkify` e aplique links/referências que puderem ser verificados sem decisão editorial.
+
+Não faça prompts de escala, estimativas de duração ou oferta de lotes. O escopo já foi definido pelo comando.
+
+## Relatório
+
+Entregue um único relatório consolidado:
+
+```markdown
+## Sweep — N essay(s)
+
+### Resumo
+- processados: N
+- pulados por status: K
+- fixes mecânicos: X
+- continuidade corrigida: Y
+- decisões editoriais pendentes: Z
+- correções de português: W
+- correções de estilo: V
+- links/referências: U
+
+### Decisões necessárias
+- [essay] — [localização] — [decisão]
+
+### Por essay
+- [Título] — [resumo curto]
 ```
-## [YYYY-MM-DD] sweep | [Título do Essay]
-Formato: X auto-corrigidos, Y issues restantes. Continuidade: Z reportados.
-Português: W correções. Estilo: V correções. Links: U adicionados.
-```
 
-Nenhum passo do sweep altera `updated:`; a regra vive em `conventions/SKILL.md`.
+Não exponha cada microcorreção durante a execução.
 
-## Convenções
+## Fechamento
 
-Prosa segue `## Estilo de prosa` em `conventions/SKILL.md`.
+Registre uma entrada consolidada em `wiki/log.md` quando houver mudanças. Nenhuma etapa de `/sweep` altera `updated:` por revisão mecânica, linguística ou estilística; uma correção estrutural/substantiva aplicada no passo 3 segue a regra de data da skill que efetivamente mudou o corpo.
 
-## Skills relacionadas
+Depois do batch, ofereça o subagent `update` **somente** para regenerar derivados e executar commit/push após autorização explícita do Usuário. Ofereça `/status update` quando o trabalho for substancial.
 
-- `/organize` — passada mecânica, chamada no Passo 2
-- `/continuity`, `/proofread`, `/polish`, `/linkify` — Passos 3–6
-- `/review` — validade argumentativa; complementar, não substituto
-- `/stats`, `/connect`
+## Limites
+
+- Não duplica checklists das skills chamadas.
+- Não bloqueia o corpus por uma decisão editorial de um único essay.
+- Não escolhe silenciosamente entre alternativas substantivas.
+- `/review` continua sendo a auditoria crítica profunda de argumento e evidência.

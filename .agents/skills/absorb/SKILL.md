@@ -1,14 +1,15 @@
 ---
 name: absorb
 description: >
-  Enriquece essays, conceitos ou entidades já existentes usando uma
-  fonte já processada (importada, resumida via digest, ou apenas
-  arquivada em wiki/sources/) — só quando pedido explicitamente pelo
-  Usuário. Use quando o Usuário disser "usa essa fonte para enriquecer
-  o essay sobre X", "atualiza o conceito Y com o que tá nesse paper",
-  ou apontar para uma fonte já em wiki/sources/ pedindo que ela seja
-  incorporada ao conteúdo da wiki, em vez de só resumida (isso é
-  /digest) ou virar um essay próprio (isso é /essay ou /import).
+  Incorpora uma fonte já processada a essays, concepts ou entities existentes.
+  Use quando o Usuário pedir explicitamente que conteúdo arquivado em
+  wiki/sources/ enriqueça páginas da wiki; para apenas resumir, use /digest.
+metadata:
+  second-brain-role: "source-integrator"
+  second-brain-mode: "write"
+  second-brain-scope: "wiki-pages"
+  second-brain-approval: "conditional"
+  second-brain-closure: "multi-page"
 allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion
 ---
 # Absorb

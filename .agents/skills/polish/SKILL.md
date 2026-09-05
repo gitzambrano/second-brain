@@ -1,9 +1,15 @@
 ---
 name: polish
 description: >
-  Passada de estilo de prosa num essay: clareza, concisão, tom, ritmo,
-  naturalidade e adesão às regras de prosa da wiki. Use quando o Usuário
-  pedir melhoria de estilo sem mudar conteúdo ou argumento.
+  Melhora clareza, concisão, tom e naturalidade sem mudar conteúdo ou argumento.
+  Use para revisão de estilo; as regras normativas de prosa vivem em
+  conventions/SKILL.md e devem prevalecer sobre heurísticas desta passada.
+metadata:
+  second-brain-role: "style-editor"
+  second-brain-mode: "write"
+  second-brain-scope: "essay"
+  second-brain-approval: "none"
+  second-brain-closure: "single-essay"
 allowed-tools: Bash Read Write Edit Glob Grep
 ---
 # Polish

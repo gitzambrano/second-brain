@@ -1,17 +1,15 @@
 ---
 name: merge
 description: >
-  Funde duas páginas do mesmo tipo (dois essays, dois concepts, duas
-  entities, ou dois insights) numa só. Uma vira a sobrevivente, a
-  outra é absorvida e apagada; todo wikilink que apontava para a
-  absorvida passa a apontar para a sobrevivente. Levanta backlinks e
-  plano de fusão antes de escrever, confirma o conjunto inteiro, aplica
-  reaponte e remoção numa unidade só e termina com `check_wiki.py`
-  limpo. Sem reescrita de prosa. Use quando o Usuário disser "funde esses
-  dois essays", "esses dois concepts são a mesma coisa, junta",
-  "duplicou, junta os dois", ou `check_dedupe.py`/`/organize` tiver
-  sinalizado um par quase-duplicata e o Usuário confirmar que é
-  fusão.
+  Funde duas páginas do mesmo tipo, reaponta backlinks e remove a página
+  absorvida. Use para duplicatas confirmadas; exige aprovação explícita do plano
+  completo antes da primeira escrita.
+metadata:
+  second-brain-role: "destructive-maintenance"
+  second-brain-mode: "write"
+  second-brain-scope: "pages"
+  second-brain-approval: "before-write"
+  second-brain-closure: "multi-page"
 allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion
 ---
 # Merge

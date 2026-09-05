@@ -1,12 +1,15 @@
 ---
 name: delete
 description: >
-  Apaga um essay, concept, entity ou insight. Levanta a página e todos os
-  backlinks antes de escrever, confirma o conjunto inteiro com o Usuário, e
-  então repara os links e remove o arquivo numa unidade só, terminando com
-  `check_wiki.py` limpo. Use quando o Usuário disser "apaga esse essay",
-  "deleta esse concept", "remove essa entity", "não preciso mais dessa nota",
-  ou quiser tirar uma página da wiki de vez.
+  Remove uma página da wiki depois de levantar backlinks e consequências. Use
+  para apagar essay, concept, entity ou insight; exige confirmação explícita do
+  plano completo antes da primeira escrita.
+metadata:
+  second-brain-role: "destructive-maintenance"
+  second-brain-mode: "write"
+  second-brain-scope: "page"
+  second-brain-approval: "before-write"
+  second-brain-closure: "multi-page"
 allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion
 ---
 # Delete

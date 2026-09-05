@@ -1,85 +1,63 @@
 ---
 name: query
 description: >
-  Responde perguntas usando a base de conhecimento centrada em essays.
-  Use quando o Usuário fizer uma pergunta sobre seus essays, quiser
-  explorar conexões entre temas, disser "o que eu já escrevi sobre X",
-  "resume meu ensaio sobre Y", ou quiser buscar na wiki.
-allowed-tools: Bash Read Write Edit Glob Grep
+  Responde perguntas usando somente o conhecimento registrado na wiki. Use para
+  localizar, resumir, comparar ou cruzar essays e páginas relacionadas; para
+  pesquisa externa use /study, e para síntese emergente use /synthesize.
+metadata:
+  second-brain-role: "knowledge-query"
+  second-brain-mode: "read"
+  second-brain-scope: "wiki"
+  second-brain-approval: "none"
+  second-brain-closure: "none"
+allowed-tools: Bash Read Glob Grep
 ---
-
 # Query
 
-Responde perguntas buscando e sintetizando conhecimento da wiki. **Essays são a unidade primária de resposta** — conceitos e entidades existem para aprofundar, não para substituir os essays.
+Busca e sintetiza o conhecimento que já está registrado. **É read-only.**
 
-## Estratégia de busca
+## Busca
 
-### 1. Comece pelo índice
-
-Leia `wiki/index.json` (ou `wiki/index.md` para navegação humana) — contém **apenas essays**, com `summary` e `tags` por entrada, sem agrupamento por categoria (a classificação temática vem só de `tags`). Identifique os essays mais relevantes para a pergunta.
-
-### 2. Busque no conteúdo, não só nos títulos do index
-
-Prefira busca semântica — acha o essay certo mesmo quando a pergunta usa vocabulário diferente do texto (ver `## Ferramentas` no AGENTS.md):
+1. Comece por `wiki/index.json` para identificar essays relevantes por título, summary e tags.
+2. Busque o conteúdo com:
 
 ```bash
 qmd query "termos da busca"
 ```
 
-Sem qmd disponível ou indexado (`qmd status` falha, ou a collection `secondbrain` não aparece), caia para busca literal, sem perguntar:
+Se qmd não estiver disponível ou a collection `secondbrain` não existir, use:
 
 ```bash
 python scripts/find_text.py "termos da busca" --ignore-case
 ```
 
-Devolve só os trechos relevantes (com contexto) de cada arquivo, em vez de forçar `Read` no essay inteiro para descobrir se ele é relevante. Ajuste `--scope` se a pergunta também exigir olhar `handouts`, e `--regex` para termos com variação de grafia (ex: `"auto.?poiese"`).
+3. Leia integralmente os essays que realmente sustentam a resposta.
+4. Siga `## Conexões` para concepts/entities relevantes quando isso acrescentar contexto.
+5. Consulte `wiki/sources/` apenas quando a informação necessária não estiver coberta pelas páginas processadas.
 
-### 3. Leia os essays relevantes e aprofunde via Conexões
+Prefira responder a partir da página processada porque ela já expressa o conhecimento incorporado à wiki; não presuma que ela esteja traduzida ou que reproduza integralmente a fonte original.
 
-Leia os essays identificados. Siga os `[[wikilinks]]` da seção `## Conexões` de cada um para puxar contexto de conceitos e entidades relacionados. Leia o suficiente para responder bem, sem ler a wiki inteira.
+## Resposta
 
-### 4. Consulte o acervo original só como último recurso
+Adapte a forma à pergunta: resposta direta, comparação, narrativa ou catálogo. Cite as páginas de origem com wikilinks no formato de `conventions/SKILL.md` e não atribua à wiki uma afirmação que ela não sustenta.
 
-`wiki/sources/` guarda os **arquivos originais** (PDFs, DOCX, HTML) que geraram os essays — não são páginas de resumo, e a maioria não é markdown, então `qmd` (que só indexa `wiki/**/*.md`) não os cobre. Se os essays não cobrirem algo que você sabe que está na fonte, `python scripts/find_text.py "termo" --scope sources` localiza o arquivo certo sem abrir cada um (pode ainda exigir extração de PDF/DOCX depois de achar). Prefira sempre responder a partir do essay já processado — ele já vem sintetizado, traduzido e cruzado.
+Se a resposta exigir informação nova da web, pare de tratar o pedido como `/query` e encaminhe para `/study` ou `/scout` conforme o objetivo.
 
-## Sintetizar a resposta
+## Persistência
 
-### Formato
+`/query` nunca cria nem edita páginas e não escreve em `wiki/log.md`.
 
-Combine com o tipo de pergunta:
-- **Factual** → resposta direta com citação
-- **Comparação** → tabela ou comparação estruturada
-- **Exploração** → narrativa com conceitos linkados
-- **Lista/catálogo** → lista com descrições breves
+Se o Usuário pedir para salvar algo que surgiu na resposta:
 
-### Citações
+- ideia curta ou ponte → `/insight add`;
+- tese nova → `/outline` e depois `/essay`;
+- mudança em essay existente → `/expand` ou `/chapter`.
 
-Cite sempre o essay de origem via wikilink, no formato de `## Regra de links` em `conventions/SKILL.md`.
+A skill de destino é responsável por validação, frontmatter, log e derivados.
 
+## Limites
 
-> Segundo [[mente-aumentada|Mente Aumentada]], o padrão LLM Wiki resolve o problema clássico do second brain fazendo a manutenção da malha de conexões automática. Isso se conecta ao que [[autopoiese-consciencia-e-os-limites-do-vivo|Autopoiese, Consciência e os Limites do Vivo]] discute sobre sistemas que se auto-mantêm.
-
-### Ofereça salvar respostas valiosas
-
-Se a resposta gerar algo que vale a pena guardar — uma síntese nova, uma conexão que não estava explícita — ofereça:
-
-> "Essa síntese pode valer a pena guardar. Quer que eu salve como um novo essay, ou como um insight curto?"
-
-Antes de criar a página nova (essay ou insight), rode `python scripts/check_title.py "Título Proposto"` — evita nascer um quase-duplicado de algo que já existe com outra grafia.
-
-- **Se for profunda o bastante para ser um essay**: siga o fluxo completo de `/essay` (frontmatter, byline, Sumário, mínimo 10 links externos, Referências, Conexões) e salve em `wiki/essays/`.
-- **Se for mais curta — uma síntese, uma ponte entre coisas que já existem na wiki, ou uma ideia nova que a pergunta provocou**: isso não é `/query` salvando direto — é `/insight add`. Passe a ideia para lá; não existe mais uma pasta/tipo separado para comparações.
-- Em ambos os casos: se for essay, preencha `summary:` no frontmatter e rode `python scripts/build_index.py` para regenerar `wiki/index.json`/`wiki/index.md`; registre em `wiki/log.md`:
-  ```
-  ## [YYYY-MM-DD] query | Resumo da pergunta
-  ```
-
-## Convenções
-
-- **Cite sempre.** Toda afirmação factual deve linkar o essay de onde veio.
-- Use `[[wikilinks]]` para toda referência interna. Nunca caminhos de arquivo crus.
-
-## Skills relacionadas
-
-- `/insight` — quando a resposta revela uma síntese curta demais para virar essay
-- `/import`, `/digest`, `/absorb`, `/essay`, `/organize`
+- Sem pesquisa web.
+- Sem escrita na wiki.
+- Sem criação direta de essay/insight.
+- `/synthesize` procura conhecimento emergente; `/query` responde à pergunta dada.

@@ -1,10 +1,15 @@
 ---
 name: review
 description: >
-  Faz peer review crítico de um essay: força da tese, lógica, validade
-  física/matemática, profundidade, citações, gaps e oportunidades de
-  enriquecimento. Invoca /continuity para coerência estrutural e só
-  edita após aprovação explícita de um plano de modificação.
+  Faz peer review crítico de tese, lógica, validade física/matemática,
+  profundidade e evidência. Use para auditoria substantiva de um essay; só edita
+  depois de aprovação explícita do plano de modificação.
+metadata:
+  second-brain-role: "content-auditor"
+  second-brain-mode: "mixed"
+  second-brain-scope: "essay"
+  second-brain-approval: "before-write"
+  second-brain-closure: "single-essay"
 allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch AskUserQuestion
 ---
 # Review

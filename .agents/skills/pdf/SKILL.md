@@ -1,8 +1,15 @@
 ---
 name: pdf
 description: >
-  Exporta um ou todos os essays para PDF via Pandoc + LuaLaTeX e valida
-  conteúdo e layout antes de declarar o artefato pronto.
+  Exporta um ou todos os essays/handouts para PDF e valida conteúdo e layout.
+  Use quando o Usuário pedir PDF; falha de checker ou de Pandoc/LuaLaTeX impede
+  declarar o artefato validado.
+metadata:
+  second-brain-role: "exporter"
+  second-brain-mode: "write"
+  second-brain-scope: "pdf-output"
+  second-brain-approval: "none"
+  second-brain-closure: "artifact"
 allowed-tools: Bash Read Glob
 ---
 # PDF

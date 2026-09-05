@@ -1,23 +1,10 @@
 #!/usr/bin/env python3
-"""
-Checador único de coerência da arquitetura de agentes.
+"""Audita a arquitetura canônica de agentes.
 
-`.agents/` é a fonte editável; `.claude/skills|agents/` são espelhos byte a byte
-e `.codex/agents/*.toml` são adaptadores derivados. Antes disto a verificação
-estava espalhada — parte em `check_skills.py`, parte no subagent `update`, parte
-em teste — e a documentação chegou a afirmar o oposto do que o repositório fazia.
-Aqui está a resposta única: fonte, espelhos, adaptadores, hooks e documentação
-contam a mesma história?
-
-Verifica:
-    1. `.agents/` existe e tem skills e agents
-    2. espelhos `.claude/` idênticos à fonte, sem órfãos
-    3. adaptadores `.codex/` derivados do mesmo `.md`, sem órfãos
-    4. `.claude/settings.json` roda o sync no `SessionStart`
-    5. o plugin legado `.claude-plugin/` não voltou
-    6. a documentação não descreve a arquitetura abandonada
-
-Default sem argumentos: auditar o repositório.
+Contrato atual: `.agents/` é a fonte editável; `.claude/skills|agents/` são
+mirrors byte a byte; `.codex/agents/*.toml` são adapters derivados; o hook
+`SessionStart` executa o sync. A auditoria verifica que fonte, derivados, hook e
+documentação representam esse mesmo contrato.
 """
 from __future__ import annotations
 
@@ -27,13 +14,11 @@ import json
 import re
 from pathlib import Path
 
-import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
+import console_encoding  # noqa: F401
 from repo_paths import CODE_ROOT
 from sanity_common import CheckResult
 from sync_skills import PAIRS, sync_codex
 
-# Frases e nomes que descreviam a descoberta por plugin local, abandonada. Se
-# reaparecerem num .md, alguém está lendo instrução que não vale mais.
 OBSOLETE_TERMS = (
     "claude-plugin",
     "extraKnownMarketplaces",
@@ -66,7 +51,6 @@ def audit() -> CheckResult:
     result.meta["skills"] = len(skills)
     result.meta["agents"] = len(agents)
 
-    # 2. Espelhos do Claude.
     for source, dest in PAIRS:
         rel = dest.relative_to(CODE_ROOT).as_posix()
         if not dest.is_dir():
@@ -81,14 +65,12 @@ def audit() -> CheckResult:
             if not filecmp.cmp(source / shared, dest / shared, shallow=False):
                 result.error("MIRROR_DRIFT", f"{rel}: {shared.as_posix()} difere da fonte")
 
-    # 3. Adaptadores do Codex.
     escritos, sobrando = sync_codex(check_only=True)
     for nome in escritos:
         result.error("CODEX_STALE", f".codex/agents/{nome} não corresponde ao .agents/agents/*.md")
     for nome in sobrando:
         result.error("CODEX_ORPHAN", f".codex/agents/{nome} não tem agent de origem")
 
-    # 4. O hook que faz o bootstrap.
     settings_path = CODE_ROOT / ".claude" / "settings.json"
     if not settings_path.is_file():
         result.error("NO_SETTINGS", ".claude/settings.json ausente: o sync não roda sozinho")
@@ -108,11 +90,9 @@ def audit() -> CheckResult:
             if term in raw.lower():
                 result.error("SETTINGS_LEGACY", f"settings.json ainda cita {term!r}")
 
-    # 5. O plugin legado.
     if (CODE_ROOT / ".claude-plugin").exists():
-        result.error("LEGACY_PLUGIN", ".claude-plugin/ voltou; a descoberta por plugin foi abandonada")
+        result.error("LEGACY_PLUGIN", ".claude-plugin/ não pertence à arquitetura atual")
 
-    # 6. Documentação.
     docs = sorted(list(CODE_ROOT.glob("*.md")) + list(CODE_ROOT.glob(".agents/**/*.md")))
     for doc in docs:
         text = doc.read_text(encoding="utf-8")
@@ -120,7 +100,7 @@ def audit() -> CheckResult:
             if re.search(re.escape(term), text, re.IGNORECASE):
                 result.error(
                     "DOC_LEGACY",
-                    f"{doc.relative_to(CODE_ROOT).as_posix()} descreve a arquitetura antiga: {term!r}",
+                    f"{doc.relative_to(CODE_ROOT).as_posix()} descreve arquitetura fora do contrato atual: {term!r}",
                 )
 
     return result

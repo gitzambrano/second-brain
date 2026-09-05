@@ -1,10 +1,15 @@
 ---
 name: scout
 description: >
-  Pesquisa a web e sugere fontes candidatas a ingerir — a partir de um
-  item de plan/plano.md, de uma ideia/source existente ou de um tema
-  livre. Nunca ingere sozinho: apenas propõe uma lista curada para o
-  Usuário escolher.
+  Pesquisa e cura fontes candidatas sem ingerir. Use para montar shortlist de
+  papers, livros, documentação ou fontes primárias; /study lê e confronta o
+  conteúdo, e /digest arquiva uma fonte escolhida.
+metadata:
+  second-brain-role: "source-curator"
+  second-brain-mode: "mixed"
+  second-brain-scope: "web-and-plan"
+  second-brain-approval: "conditional"
+  second-brain-closure: "none"
 allowed-tools: WebSearch WebFetch Read Write Edit Glob
 ---
 # Scout

@@ -1,33 +1,48 @@
 ---
 name: organize
 description: >
-  Audita e corrige a camada mecânica da wiki: estrutura, metadados,
-  links internos, referências, índice, sources, tags, plano, insights
-  e artefatos derivados. Aceita corpus inteiro ou um essay específico.
-  Não reescreve prosa nem argumento. No modo corpus inteiro, o fechamento
-  chama o subagent `update`, que faz commit e push em `./` e em `data/`.
+  Audita e corrige estrutura, metadados, links internos, referências e derivados
+  sem reescrever argumento. Use em um essay ou no corpus; commit/push só ocorre
+  se o Usuário autorizar explicitamente o subagent update.
+metadata:
+  second-brain-role: "maintenance-orchestrator"
+  second-brain-mode: "mixed"
+  second-brain-scope: "essay-or-corpus"
+  second-brain-approval: "before-remote"
+  second-brain-closure: "mechanical"
 allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion WebFetch WebSearch
 ---
 # Organize
 
-**[ambos]** Manutenção mecânica e de metadados. Regras editoriais e formato canônico vivem em `conventions/SKILL.md`.
+Manutenção mecânica e de metadados. Estrutura, estilo e formato canônico vivem em `conventions/SKILL.md`.
 
-Não reescreva prosa ou argumento. Para isso use `/sweep` ou `/review`.
+Não reescreva argumento ou prosa substantiva. Para isso use `/sweep`, `/review`, `/expand` ou `/chapter`.
 
-## Modos
+## Escopo
 
 ```text
 /organize          → corpus inteiro
-/organize <slug>   → apenas o essay nomeado
+/organize <slug>   → essay específico
 ```
 
-Use o modo de essay único quando o Usuário pedir uma auditoria completa daquele arquivo. Skills editoriais já executam o fechamento mecânico básico por conta própria.
+## Essay específico
+
+1. Resolva o slug; pergunte somente se houver ambiguidade real.
+2. Execute:
+
+```bash
+python scripts/check_wiki.py <slug> --json
+python scripts/check_references.py --file <slug> --json
+python scripts/fix_lint.py <slug>
+```
+
+3. Aplique correções mecânicas inequívocas e reporte o que exigir julgamento.
+4. Não rode auditorias globais de órfãos, manifesto, plano, insights, grafo ou stats.
+5. Regenere `build_references.py` somente se referências mudarem e `build_index.py` somente se campos do índice mudarem.
 
 ## Corpus inteiro
 
-### 1. Gerar baseline e aplicar fixes mecânicos
-
-Execute nesta ordem:
+### Baseline e fixer
 
 ```bash
 python scripts/build_index.py
@@ -39,11 +54,9 @@ python scripts/build_index.py
 python scripts/build_references.py
 ```
 
-Guarde os relatórios anteriores ao fixer para explicar o que foi corrigido. `fix_lint.py` pode atuar em qualquer `status:` porque não altera argumento.
+Preserve o baseline anterior ao fixer para explicar o que mudou.
 
-### 2. Auditar saúde estrutural
-
-Execute:
+### Saúde estrutural
 
 ```bash
 python scripts/find_backlinks.py --orphans
@@ -51,84 +64,38 @@ python scripts/check_gaps.py --tags-only
 python scripts/check_dedupe.py
 ```
 
-Interprete assim:
+Interprete os achados sem transformar heurística em decisão editorial:
 
-- **Órfão total:** atenção; proponha destino, fusão ou remoção, mas não decida sozinho.
-- **Página sem essay-pai, mas citada por outra página:** informativo; não é defeito por si só.
-- **Tag rasa:** sinal de cobertura, não correção automática. Ofereça `/plan add` ou `/scout`.
-- **Quase-duplicata:** nunca fundir/deletar automaticamente. Mostre os pares e peça decisão.
+- órfão total → proponha destino/fusão/remoção;
+- tag rasa → sinal de cobertura, não correção automática;
+- quase-duplicata → proponha `/merge`, nunca funda sozinho;
+- link externo quebrado → encaminhe para `/linkify`;
+- referência incerta → verifique a fonte antes de editar.
 
-Para consolidação de tag aprovada:
+### Sources, plano e insights
 
-```bash
-python scripts/retag.py "tag-antiga" "tag-nova" --dry-run
-python scripts/retag.py "tag-antiga" "tag-nova"
-python scripts/build_index.py
-```
+Confira manifesto/mapa, tipo e subpasta de source, vocabulário de tags, estrutura de `plan/plano.md`, `wiki/log.md` append-only e maturidade/conexões de insights.
 
-### 3. Auditar sources, mapa, plano e insights
+Aplique diretamente apenas correções inequívocas. Ambiguidade de tipo, fusão, renomeação conceitual, órfão sem destino ou contradição exige decisão do Usuário.
 
-Verifique:
+`FM_NO_SUMMARY` e suficiência bibliográfica são achados editoriais: reporte, não escreva summary nem invente referência dentro de `/organize`.
 
-- todo arquivo em `wiki/sources/**` tem entrada no manifesto e vice-versa;
-- `Tipo:` e subpasta obedecem `conventions/SKILL.md`;
-- `Ensaio Completo Importado` aponta para essay existente;
-- `Tags:` usa o vocabulário controlado;
-- `wiki/sources/map.md` cobre todas as fontes processadas;
-- estrutura canônica de pastas existe;
-- `wiki/log.md` permanece append-only;
-- `plan/plano.md` mantém as 5 seções e status válidos;
-- insights têm `maturidade:` válida e conexões coerentes.
+## Fechamento e remoto
 
-Aplique diretamente apenas correções inequívocas: pasta canônica ausente, path de source claramente errado, tag faltante inferível, typo evidente de wikilink, estrutura mecânica.
+`/organize` pode deixar derivados locais em dia, mas **não faz push por conta própria**.
 
-Peça decisão quando houver ambiguidade de tipo, fusão, renomeação conceitual, órfão sem destino ou contradição entre fontes.
+No corpus, depois do relatório, ofereça o subagent `.agents/agents/update.md`. Só execute `update` após autorização explícita; ele valida, reconstrói derivados, commita e faz push em `./` e `data/`.
 
-### 4. Tratar achados que exigem conteúdo ou fonte
+## Relatório
 
-- `FM_NO_SUMMARY`: liste nominalmente; não escreva summary dentro de `/organize`.
-- `FM_LONG_SUMMARY`: reporte.
-- Bibliografia ausente/rasa: reporte; suficiência é julgamento editorial.
-- Wikilink morto com alvo óbvio: corrija. Sem alvo claro: pergunte.
-- Link externo quebrado: encaminhe para `/linkify`.
-- Referência com título/autor/container incerto (`EMPTY_REFERENCIAS`, `REF_BOLD_AUTHOR`, `REF_TITLE_IS_AUTHOR`, `REF_MISSING_TITLE` e equivalentes): verifique a fonte com `WebFetch`/`WebSearch` antes de editar. Não complete de memória.
+Agrupe em:
 
-### 5. Fechamento do corpus
+- corrigido automaticamente;
+- crítico — decisão necessária;
+- atenção;
+- informativo.
 
-O subagent `update` de `.agents/agents/update.md` regenera derivados e, se os gates passarem, faz **commit e push** em `./` e em `data/`. Confirme com o Usuário antes de chamá-lo; é o único passo de `/organize` com efeito remoto.
-
-Use o resultado de stats e `output/graph/graph.json` no resumo. Páginas `isolated` e `tag_gaps` entram em atenção e podem encaminhar para `/connect`.
-
-Exports são opcionais e só rodam sob pedido explícito.
-
-### 6. Relatório
-
-Nunca cole JSON bruto. Apresente:
-
-- **Corrigido automaticamente**
-- **Crítico — precisa de decisão**
-- **Atenção — vale revisar**
-- **Informativo**
-
-Liste caminhos/códigos apenas quando ajudam o Usuário a agir. Inclua nominalmente os essays com `FM_NO_SUMMARY`.
-
-## Essay único (`/organize <slug>`)
-
-1. Resolva o slug; pergunte apenas se houver ambiguidade real.
-2. Execute:
-
-```bash
-python scripts/check_wiki.py <slug> --json
-python scripts/check_references.py --file <slug> --json
-python scripts/fix_lint.py <slug>
-```
-
-3. Aplique fixes mecânicos e reporte o restante.
-4. Não rode auditorias de corpus: órfãos globais, manifesto, plano, insights, grafo ou stats.
-5. Se referências mudaram, rode `python scripts/build_references.py`.
-6. Se `summary` ou tags mudaram, rode `python scripts/build_index.py`.
-
-Reporte também que as checagens de corpus foram puladas.
+Não cole JSON bruto. Liste nominalmente arquivos quando isso for necessário para agir.
 
 ## Log
 
@@ -138,11 +105,4 @@ Quando houver mudança:
 ## [YYYY-MM-DD] organize | Resumo
 ```
 
-Para essay único, use o título do essay.
-
-## Limites
-
-- Formatação mecânica pode ser corrigida automaticamente.
-- Decisão editorial exige o Usuário.
-- Contradições seguem `## Regra de contradição entre fontes` em `conventions/SKILL.md`.
-- `/organize` não substitui `/sweep`, `/review`, `/gaps` ou `/linkify`.
+Não altere `updated:` por manutenção mecânica.

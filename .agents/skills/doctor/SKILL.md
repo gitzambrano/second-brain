@@ -1,9 +1,15 @@
 ---
 name: doctor
 description: >
-  Diagnóstico read-only do repositório, skills, corpus e exports. Executa
-  scripts/check_repo.py sem argumentos (full) e reporta PASS/WARN/FAIL/SKIP.
-  Nunca corrige, edita, commita ou faz push.
+  Executa o diagnóstico read-only completo do repositório com check_repo.py.
+  Use para verificar saúde de arquitetura, skills, corpus, exports e ambiente sem
+  corrigir, editar, commitar ou fazer push.
+metadata:
+  second-brain-role: "diagnostic"
+  second-brain-mode: "read"
+  second-brain-scope: "repository"
+  second-brain-approval: "none"
+  second-brain-closure: "none"
 allowed-tools: Bash Read
 ---
 # Doctor

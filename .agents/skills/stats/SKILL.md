@@ -1,17 +1,20 @@
 ---
 name: stats
 description: >
-  Dashboard read-only de saúde da wiki: contagem de essays por tag/
-  tipo, conceitos/entidades órfãos, sources sem entrada no
-  manifesto ou na subpasta errada, sinais de travessão/formatação,
-  contagem de handouts, itens do plano por seção, insights por
-  maturidade. Pode também gerar o grafo visual de conexões. Use para
-  obter um retrato rápido de saúde sem rodar o lint completo.
+  Mostra métricas agregadas de saúde da wiki sem corrigir conteúdo. Use para um
+  retrato rápido de corpus, tags, órfãos, sources, plano e insights; só grava
+  snapshot quando o Usuário pedir explicitamente.
+metadata:
+  second-brain-role: "diagnostic"
+  second-brain-mode: "mixed"
+  second-brain-scope: "corpus"
+  second-brain-approval: "conditional"
+  second-brain-closure: "none"
 allowed-tools: Bash Read
 ---
 # Stats
 
-Dashboard **read-only**. Só relata; `/organize` e `/sweep` corrigem.
+Dashboard de diagnóstico. Não corrige a wiki; a única escrita permitida é o snapshot solicitado explicitamente com `--save`.
 
 ## Passo a passo
 

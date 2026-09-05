@@ -1,10 +1,15 @@
 ---
 name: connect
 description: >
-  Repara e expande ## Conexões entre essays, concepts, entities e
-  insights. Invoca /gaps para identificar candidatos e age sobre eles:
-  corrige links mecânicos, aplica conexões de alta confiança, propõe
-  relações ambíguas e cria stub de concept/entity somente com aprovação.
+  Repara e expande ## Conexões a partir dos candidatos de /gaps. Use para
+  corrigir wikilinks, aplicar conexões de alta confiança e propor relações ou
+  páginas de apoio que exigem confirmação.
+metadata:
+  second-brain-role: "graph-editor"
+  second-brain-mode: "write"
+  second-brain-scope: "graph"
+  second-brain-approval: "conditional"
+  second-brain-closure: "multi-page"
 allowed-tools: Bash Read Write Edit Glob Grep AskUserQuestion
 ---
 # Connect

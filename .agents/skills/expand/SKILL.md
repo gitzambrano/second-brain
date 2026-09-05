@@ -1,73 +1,70 @@
 ---
 name: expand
 description: >
-  Adiciona ou corrige conteúdo substantivo num essay já existente:
-  teses novas, conceitos, exemplos, ou correção de um erro conceitual/
-  factual, perguntando ao Usuário quando a direção não é óbvia. Use
-  quando o Usuário disser "adiciona uma ideia sobre X", "corrige esse
-  conceito", "acho que falta um exemplo aqui", "quero incluir a
-  perspectiva de Y", ou apontar uma lacuna/erro factual ou conceitual
-  num essay existente.
+  Adiciona ou corrige conteúdo substantivo dentro da estrutura existente de um
+  essay. Use para ideias, exemplos, derivações e correções factuais/conceituais;
+  use /chapter quando o pedido exigir criar, mover, fundir ou dividir seções.
+metadata:
+  second-brain-role: "content-editor"
+  second-brain-mode: "write"
+  second-brain-scope: "essay"
+  second-brain-approval: "conditional"
+  second-brain-closure: "single-essay"
 allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch AskUserQuestion
 ---
 # Expand
 
-Adiciona ou corrige conteúdo substantivo — ideias, teses, exemplos, conceitos — num essay que já existe. Diferente de `/chapter` (que lida com a estrutura: onde um capítulo entra, sai, se funde), `/expand` lida com o conteúdo em si: o que está sendo dito, não a organização de onde é dito.
+Edita **o que o essay diz** dentro da estrutura que já existe. `/chapter` é o dono de mudanças em H2/H3 e de reorganização estrutural.
 
-## Regra de abertura
+## Fluxo
 
-Leia o essay inteiro antes de qualquer edição, mesmo que o pedido pareça hiper-local. Ver `## Regras Gerais` no AGENTS.md.
+1. Resolva o essay e leia-o inteiro antes de editar.
+2. Identifique o ponto exato de integração e preserve a progressão do texto.
+3. Se o pedido estiver claro, execute. Pergunte apenas quando houver uma decisão substantiva que não possa ser inferida do contexto.
+4. Para afirmação factual, técnica, histórica ou quantitativa nova, verifique a fonte com `WebSearch`/`WebFetch` antes de escrever.
+5. Integre o conteúdo em prosa corrida; não acrescente um adendo solto ao fim.
+6. Se o pedido exigir **nova seção, divisão, fusão, movimento ou renomeação de seção**, não edite aqui: encaminhe o brief já resolvido para `/chapter`. `/chapter` não devolve esse trabalho para `/expand`.
 
-## Quando o pedido é vago, pergunte
+## Fontes e referências
 
-Se o Usuário disser "adiciona algo sobre determinismo" sem mais detalhe, não invente uma direção sozinho — pergunte o que ele quer que o essay defenda ou explore ali, que exemplo ou pensador ele tem em mente, ou se é uma expansão de um parágrafo existente ou um ponto novo. Uma pergunta direta, não um questionário. Se o pedido já vem específico ("adiciona um parágrafo citando o experimento mental do quarto chinês do Searle aqui"), não precisa perguntar, só execute.
+Quando o conteúdo novo usa uma fonte externa:
 
-## Dois modos
+- registre-a em `## Referências` quando ela sustentar o argumento;
+- procure primeiro em `wiki/references.md` e reutilize a citação canônica quando existir;
+- adicione ao campo `sources:` **somente** se o arquivo estiver arquivado em `wiki/sources/`;
+- um link externo consultado na web não vira `sources:` apenas por ter sido usado na edição.
 
-### 1. Adição
+Se o conceito tiver página própria e a correção também se aplicar a ela, atualize-a para evitar contradição. Crie concept/entity novo apenas quando tiver valor próprio além deste essay, seguindo `conventions/SKILL.md`.
 
-O Usuário quer incluir uma ideia, tese, conceito ou exemplo novo, sem tirar o que já está escrito.
+## Correção factual ou conceitual
 
-1. Depois de ler o essay inteiro, decida o melhor ponto de inserção — o lugar certo é onde o conteúdo novo se conecta ao que vem antes e prepara o que vem depois, não necessariamente o fim do documento.
-2. Se for grande o bastante para virar seção própria, isso é trabalho de `/chapter`, não deste skill — avise o Usuário e sugira.
-3. Se for uma expansão de um parágrafo ou ponto já existente, integre à prosa corrida, não como um adendo colado ao final.
-4. Se o conteúdo se apoia em fonte externa nova, adicione a `## Referências` e ao campo `sources:` do frontmatter, com link externo inline na primeira ocorrência do conceito. Antes de escrever a entrada, confira `wiki/references.md`: se a mesma obra já está catalogada, reuse a citação exata existente em vez de redigir uma nova.
-5. Se o novo conceito merece página própria (`wiki/concepts/` ou `wiki/entities/`), crie-a e linke em `## Conexões`.
-6. O frontmatter dessa página nova carrega `tags:` — reuse o vocabulário controlado (`## Reuso de vocabulário controlado` em `conventions/SKILL.md`).
+Quando o Usuário apontar um erro:
 
-### 2. Correção conceitual/factual
+1. verifique se o mesmo erro aparece em outros trechos do essay;
+2. confirme externamente fatos que não sejam puramente editoriais;
+3. corrija todas as ocorrências equivalentes dentro do escopo;
+4. preserve o restante do texto.
 
-O Usuário aponta um erro. Depois de ler o essay inteiro:
+Contradição entre uma fonte nova e o conteúdo existente segue a regra de contradição de `conventions/SKILL.md`; não escolha um lado silenciosamente.
 
-1. Verifique se o mesmo erro se repete em outro trecho e corrija todas as ocorrências, não só a apontada.
-2. Se envolve um dado, cifra, ou claim que merece verificação externa, use `WebSearch`/`WebFetch` antes de reescrever — nunca corrija um fato por palpite.
-3. Se o conceito tem página própria em `wiki/concepts/`, atualize-a também, para as duas fontes não ficarem contraditórias entre si.
-4. Preserve o resto do texto intacto — a correção é cirúrgica.
+## Fechamento
 
-## Depois
+Use o `## Fechamento padrão de essay único` de `conventions/SKILL.md`.
 
-Feche com o `## Fechamento padrão de essay único` de `conventions/SKILL.md`.
+Atualize `updated:` somente quando a prosa do corpo mudar de forma apreciável. Se `## Referências` mudou, rode `python scripts/build_references.py`. Se summary/tags mudaram, rode `python scripts/build_index.py`.
 
-Atualize `updated:` no frontmatter. Se a mudança foi substancial, log:
+Para mudança substancial, registre:
 
-```
+```markdown
 ## [YYYY-MM-DD] expand | Título do Essay
-Resumo do que foi adicionado/corrigido.
+Resumo do que foi adicionado ou corrigido.
 ```
 
-Se `## Sumário` ou `## Conexões` ficaram desatualizados, atualize-os. Se existir handout em `wiki/handouts/<slug>.md` e a tese central mudou, avise o Usuário e ofereça regenerá-lo (`/handout`).
+Se houver handout e a tese central tiver mudado, informe que ele ficou stale e ofereça `/handout`.
 
-Se `## Referências` mudou (modo Adição, passo 4), rode `python scripts/build_references.py` para regenerar `wiki/references.json`/`.md`.
+## Limites
 
-## Convenções
-
-Segue a regra de status (batch vs específico) de `## Status de essay` em `conventions/SKILL.md`.
-
-Todo texto adicionado segue `## Estilo de prosa` em `conventions/SKILL.md` (sem bullets no corpo, travessões extremamente raros) e está em Português do Brasil.
-
-Essays originais preservados de `raw/` também podem receber expansão — a regra de "texto intacto" vale para o momento da ingestão, não impede uma expansão pedida explicitamente depois.
-
-## Skills relacionadas
-
-- `/chapter` — quando a adição é estrutural, não conteúdo dentro de seção existente
-- `/continuity`, `/linkify`
+- Não cria nem reorganiza seções; isso é `/chapter`.
+- Não inventa direção editorial quando falta uma decisão substantiva.
+- Não inventa fatos, referências ou dados bibliográficos.
+- Segue estrutura, prosa, links, status e datas de `conventions/SKILL.md`.

@@ -1,9 +1,15 @@
 ---
 name: plan
 description: >
-  Gerencia plan/plano.md, o plano de longo prazo: Tarefas, Fontes para
-  Ingerir, Revisões, Estudos e Essays Futuros. Comandos: add, work,
-  done e list. /plan work encaminha o item para a skill adequada.
+  Gerencia plan/plano.md e encaminha itens para a skill correta. Use para
+  adicionar, listar, retomar ou concluir tarefas, fontes, revisões, estudos e
+  essays futuros de longo prazo.
+metadata:
+  second-brain-role: "task-router"
+  second-brain-mode: "mixed"
+  second-brain-scope: "plan"
+  second-brain-approval: "none"
+  second-brain-closure: "plan"
 allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch AskUserQuestion
 ---
 # Plan

@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""
-Checador estático de contrato de skills, subagents, scripts e documentação.
+"""Audita contratos estáticos de skills, subagents e suas referências.
 
-Default sem argumentos: auditar todas as skills e subagents de origem, mais
-AGENTS.md e README.md. ``.agents/`` é a única árvore-fonte; não há mirror
-gerado para conferir.
+`check_agents.py` audita fonte, mirrors, adapters e hook de bootstrap. Este
+checker audita o conteúdo canônico em `.agents/`: frontmatter, metadata do
+Second Brain, ferramentas permitidas, comandos, scripts e invariantes
+editoriais que podem ser verificados estaticamente.
 """
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ from collections import Counter
 from pathlib import Path
 
 import yaml
+
 from repo_paths import CODE_ROOT, SCRIPTS_DIR, SKILLS_DIR, SUBAGENTS_DIR
 from sanity_common import CheckResult
 
@@ -23,17 +24,36 @@ TOP_LEVEL_PATH_WORDS = {
     "mnt", "tmp", "data", "home", "usr", "var", "etc",
 }
 WEB_TOOLS = {"WebFetch", "WebSearch"}
-# Família mecânica: skills que, por `conventions/SKILL.md`, não alteram texto de
-# essay e portanto não podem instruir mudança de `updated:`.
+WRITE_TOOLS = {"Write", "Edit"}
 MECHANICAL_SKILLS = {"organize", "connect", "linkify", "proofread", "polish", "sweep"}
+
+SKILL_TOP_LEVEL_KEYS = {
+    "name", "description", "license", "compatibility", "metadata", "allowed-tools",
+}
+REQUIRED_SB_METADATA = {
+    "second-brain-role",
+    "second-brain-mode",
+    "second-brain-scope",
+    "second-brain-approval",
+    "second-brain-closure",
+}
+VALID_MODES = {"read", "write", "mixed"}
+VALID_APPROVALS = {"none", "conditional", "before-write", "before-remote"}
+VALID_CLOSURES = {
+    "none", "single-essay", "multi-essay", "multi-page", "page", "draft",
+    "artifact", "plan", "status", "source", "mechanical", "site-publish",
+}
+SKILL_NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+STALE_DESCRIPTION_RE = re.compile(
+    r"\b(n[aã]o existe mais|foi abandonad[oa]|arquitetura antiga|antes disto|antes desse fluxo)\b",
+    re.IGNORECASE,
+)
+
 SCRIPT_REF_RE = re.compile(r"scripts/([A-Za-z0-9_.-]+\.(?:py|sh|bat|lua|html))")
 SLASH_REF_RE = re.compile(r"(?<![/\w.])/(?:[a-z][a-z0-9-]*)")
 PY_COMMAND_RE = re.compile(r"python(?:3)?\s+scripts/([A-Za-z0-9_.-]+\.py)([^\n`]*)")
 FLAG_RE = re.compile(r"(?<!\w)(--[a-zA-Z0-9][a-zA-Z0-9-]*)")
 FENCE_RE = re.compile(r"```.*?```", re.S)
-# Um `/nome` só é comando quando o contexto o apresenta como tal: entre crases,
-# no início da linha (com marcador de lista/citação/heading opcional) ou dentro
-# de uma linha de tabela. Em prosa corrida ele é ambíguo demais para diagnosticar.
 LINE_START_PREFIX_RE = re.compile(r"^[\s>*+\-–—#]*(?:\d+[.)]\s*)?$")
 UPDATED_MENTION_RE = re.compile(r"`?\bupdated\b`?\s*:?", re.IGNORECASE)
 UPDATED_MUTATION_VERB_RE = re.compile(
@@ -133,14 +153,6 @@ def strip_fences(body: str) -> str:
 
 
 def updated_mutation_instructions(body: str) -> list[str]:
-    """Trechos que MANDAM alterar `updated:`.
-
-    Critério, desenhado para não acusar a própria citação da regra: um trecho só
-    conta quando (a) menciona `updated`, (b) traz um verbo de mudança e (c) não
-    tem negação antes desse verbo. Assim ``não altere `updated:` `` e ``nenhum
-    passo altera `updated:` `` passam, e ``atualize `updated:` `` é acusado.
-    Blocos de código saem antes porque template de frontmatter não é instrução.
-    """
     found: list[str] = []
     for line in strip_fences(body).splitlines():
         for segment in re.split(r"[;.]\s|\s—\s", line):
@@ -156,16 +168,88 @@ def updated_mutation_instructions(body: str) -> list[str]:
 
 
 def looks_like_command(body: str, match: re.Match[str]) -> bool:
-    """`/nome` apresentado como comando, não como caminho de arquivo."""
     if body[match.end():match.end() + 1] == "/":
         return False
-    line_start = body.rfind("\\n", 0, match.start()) + 1
+    line_start = body.rfind("\n", 0, match.start()) + 1
     prefix = body[line_start:match.start()]
     if prefix.endswith("`"):
         return True
     if prefix.lstrip().startswith("|"):
         return True
     return bool(LINE_START_PREFIX_RE.match(prefix))
+
+
+def validate_skill_frontmatter(meta: dict, rel: Path, result: CheckResult) -> None:
+    unknown = sorted(set(meta) - SKILL_TOP_LEVEL_KEYS)
+    for key in unknown:
+        result.warning(
+            "FRONTMATTER_NONSTANDARD_KEY",
+            f"top-level key '{key}' is not part of the Agent Skills frontmatter contract; use metadata for custom fields",
+            rel,
+        )
+
+    name = str(meta.get("name", "")).strip()
+    if name:
+        if len(name) > 64 or not SKILL_NAME_RE.fullmatch(name):
+            result.error(
+                "SKILL_NAME_INVALID",
+                "skill name must be <=64 chars, lowercase alphanumeric with single hyphens",
+                rel,
+            )
+
+    description = str(meta.get("description", "")).strip()
+    if not description:
+        result.error("DESCRIPTION_MISSING", "skill frontmatter must define description", rel)
+    else:
+        if len(description) > 1024:
+            result.error("DESCRIPTION_TOO_LONG", f"description has {len(description)} chars; maximum is 1024", rel)
+        elif len(description) > 500:
+            result.warning("DESCRIPTION_VERBOSE", f"description has {len(description)} chars; keep activation text concise", rel)
+        if not re.search(r"\buse\b", description, re.IGNORECASE):
+            result.warning("DESCRIPTION_NO_TRIGGER", "description should state when to use the skill", rel)
+        if STALE_DESCRIPTION_RE.search(description):
+            result.error("DESCRIPTION_STALE_HISTORY", "description contains migration/history language instead of current activation rules", rel)
+
+    metadata = meta.get("metadata")
+    if not isinstance(metadata, dict):
+        result.error("METADATA_MISSING", "skill frontmatter must define metadata mapping", rel)
+        return
+
+    missing = sorted(REQUIRED_SB_METADATA - set(metadata))
+    for key in missing:
+        result.error("METADATA_KEY_MISSING", f"metadata missing '{key}'", rel)
+
+    for key, value in metadata.items():
+        if not isinstance(key, str) or not isinstance(value, str):
+            result.error("METADATA_TYPE_INVALID", "metadata keys and values must be strings", rel)
+            break
+
+    mode = metadata.get("second-brain-mode")
+    approval = metadata.get("second-brain-approval")
+    closure = metadata.get("second-brain-closure")
+    role = metadata.get("second-brain-role")
+    scope = metadata.get("second-brain-scope")
+
+    if mode is not None and mode not in VALID_MODES:
+        result.error("METADATA_MODE_INVALID", f"second-brain-mode={mode!r}; expected one of {sorted(VALID_MODES)}", rel)
+    if approval is not None and approval not in VALID_APPROVALS:
+        result.error("METADATA_APPROVAL_INVALID", f"second-brain-approval={approval!r}; expected one of {sorted(VALID_APPROVALS)}", rel)
+    if closure is not None and closure not in VALID_CLOSURES:
+        result.error("METADATA_CLOSURE_INVALID", f"second-brain-closure={closure!r}; expected one of {sorted(VALID_CLOSURES)}", rel)
+    if role == "":
+        result.error("METADATA_ROLE_EMPTY", "second-brain-role cannot be empty", rel)
+    if scope == "":
+        result.error("METADATA_SCOPE_EMPTY", "second-brain-scope cannot be empty", rel)
+
+    tools = allowed_tools(meta)
+    if mode == "read" and tools & WRITE_TOOLS:
+        result.error(
+            "READ_SKILL_HAS_WRITE_TOOL",
+            f"read-only skill allows write tools: {', '.join(sorted(tools & WRITE_TOOLS))}",
+            rel,
+        )
+    if mode == "read" and approval in {"before-write", "before-remote"}:
+        result.error("READ_SKILL_WRITE_APPROVAL", "read-only skill declares a write/remote approval gate", rel)
 
 
 def audit() -> CheckResult:
@@ -184,6 +268,7 @@ def audit() -> CheckResult:
         except yaml.YAMLError as exc:
             result.error("FRONTMATTER_INVALID", str(exc), rel)
             continue
+
         name = str(meta.get("name", "")).strip()
         if not name:
             result.error("NAME_MISSING", "frontmatter must define name", rel)
@@ -192,6 +277,9 @@ def audit() -> CheckResult:
             expected = path.parent.name if path.name == "SKILL.md" else path.stem
             if name != expected:
                 result.error("NAME_PATH_MISMATCH", f"name '{name}' != path name '{expected}'", rel)
+
+        if path.name == "SKILL.md":
+            validate_skill_frontmatter(meta, rel, result)
 
         duplicates = consecutive_duplicate_paragraphs(body) + adjacent_duplicate_sentences(body)
         for duplicate in dict.fromkeys(duplicates):
@@ -214,7 +302,7 @@ def audit() -> CheckResult:
             for segment in dict.fromkeys(updated_mutation_instructions(body)):
                 result.error(
                     "UPDATED_FIELD_MUTATION",
-                    f"skill mecânica instrui alterar `updated:`: {segment[:120]}",
+                    f"mechanical skill instructs mutation of `updated:`: {segment[:120]}",
                     rel,
                 )
 
