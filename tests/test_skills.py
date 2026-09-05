@@ -11,6 +11,13 @@ REQUIRED_METADATA = {
     "second-brain-approval",
     "second-brain-closure",
 }
+ROOT = Path(__file__).resolve().parents[1]
+
+
+def skill_frontmatter(name: str) -> dict:
+    text = (ROOT / ".agents" / "skills" / name / "SKILL.md").read_text(encoding="utf-8")
+    raw = text.split("\n---\n", 1)[0].removeprefix("---\n")
+    return yaml.safe_load(raw)
 
 
 def test_real_skill_contracts_have_no_blocking_errors():
@@ -36,8 +43,7 @@ def test_known_contract_regressions_are_absent():
 
 
 def test_every_skill_has_structured_second_brain_metadata():
-    root = Path(__file__).resolve().parents[1]
-    skill_files = sorted((root / ".agents" / "skills").glob("*/SKILL.md"))
+    skill_files = sorted((ROOT / ".agents" / "skills").glob("*/SKILL.md"))
     assert skill_files
     for path in skill_files:
         text = path.read_text(encoding="utf-8")
@@ -49,25 +55,30 @@ def test_every_skill_has_structured_second_brain_metadata():
 
 
 def test_query_is_read_only_by_contract():
-    root = Path(__file__).resolve().parents[1]
-    text = (root / ".agents/skills/query/SKILL.md").read_text(encoding="utf-8")
-    assert 'second-brain-mode: "read"' in text
-    frontmatter = text.split("\n---\n", 1)[0]
-    assert "Write" not in frontmatter and "Edit" not in frontmatter
+    meta = skill_frontmatter("query")
+    assert meta["metadata"]["second-brain-mode"] == "read"
+    tools = set(meta["allowed-tools"].split())
+    assert not tools & {"Write", "Edit"}
 
 
 def test_expand_and_chapter_have_one_way_structural_handoff():
-    root = Path(__file__).resolve().parents[1]
-    expand = (root / ".agents/skills/expand/SKILL.md").read_text(encoding="utf-8")
-    chapter = (root / ".agents/skills/chapter/SKILL.md").read_text(encoding="utf-8")
-    assert "encaminhe o brief já resolvido para `/chapter`" in expand
-    assert "não devolve o conteúdo de uma seção nova para `/expand`" in chapter
-    assert "WebSearch WebFetch" in chapter.split("\n---\n", 1)[0]
+    expand = skill_frontmatter("expand")
+    chapter = skill_frontmatter("chapter")
+    assert expand["metadata"]["second-brain-role"] == "content-editor"
+    assert expand["metadata"]["second-brain-routes-to"] == "chapter"
+    assert chapter["metadata"]["second-brain-role"] == "structure-editor"
+    assert chapter["metadata"].get("second-brain-routes-to") != "expand"
+    chapter_tools = set(chapter["allowed-tools"].split())
+    assert {"WebSearch", "WebFetch"} <= chapter_tools
+
+
+def test_write_orchestrators_are_declared_as_write_workflows():
+    for name in ("organize", "sweep"):
+        assert skill_frontmatter(name)["metadata"]["second-brain-mode"] == "write"
 
 
 def test_update_preflight_validates_workspace_before_quality_gate():
-    root = Path(__file__).resolve().parents[1]
-    text = (root / ".agents/agents/update.md").read_text(encoding="utf-8")
+    text = (ROOT / ".agents/agents/update.md").read_text(encoding="utf-8")
     assert text.index("python scripts/sync_skills.py") < text.index("python scripts/check_repo.py --quick")
     assert text.index("python scripts/check_git_isolation.py") < text.index("python scripts/check_repo.py --quick")
     assert text.index("python scripts/check_path_discipline.py") < text.index("python scripts/check_repo.py --quick")
@@ -75,7 +86,6 @@ def test_update_preflight_validates_workspace_before_quality_gate():
 
 
 def test_update_never_publishes_the_public_site():
-    root = Path(__file__).resolve().parents[1]
-    text = (root / ".agents/agents/update.md").read_text(encoding="utf-8")
+    text = (ROOT / ".agents/agents/update.md").read_text(encoding="utf-8")
     assert "build_site.py" in text and "não commita em `site/`" in text
     assert "git -C data" in text and "git -C ." in text
