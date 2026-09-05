@@ -2,7 +2,6 @@ import json
 from pathlib import Path
 
 import yaml
-
 from conftest import run_script
 
 

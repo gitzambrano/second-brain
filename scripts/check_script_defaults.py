@@ -133,14 +133,22 @@ def audit_catalog(executables: set[str], result: CheckResult) -> None:
     top_level = {p.name for p in SCRIPTS_DIR.glob("*.py")}
 
     for name in sorted(documented - top_level):
-        result.warning("SCRIPT_DOC_STALE", f"SCRIPTS.md mentions missing scripts/{name}", catalog_path.relative_to(CODE_ROOT))
+        result.warning(
+            "SCRIPT_DOC_STALE",
+            f"SCRIPTS.md mentions missing scripts/{name}",
+            catalog_path.relative_to(CODE_ROOT),
+        )
 
     for name in sorted(executables - documented):
         path = SCRIPTS_DIR / name
         source = path.read_text(encoding="utf-8-sig", errors="replace")
         if SHIM_IMPORT in source and len(source.splitlines()) <= 12:
             continue
-        result.warning("SCRIPT_NOT_DOCUMENTED", f"executable scripts/{name} is not listed in SCRIPTS.md", path.relative_to(CODE_ROOT))
+        result.warning(
+            "SCRIPT_NOT_DOCUMENTED",
+            f"executable scripts/{name} is not listed in SCRIPTS.md",
+            path.relative_to(CODE_ROOT),
+        )
 
 
 def audit(paths: list[Path] | None = None) -> CheckResult:

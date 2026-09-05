@@ -15,7 +15,6 @@ from collections import Counter
 from pathlib import Path
 
 import yaml
-
 from repo_paths import CODE_ROOT, SCRIPTS_DIR, SKILLS_DIR, SUBAGENTS_DIR
 from sanity_common import CheckResult
 
@@ -184,7 +183,10 @@ def validate_skill_frontmatter(meta: dict, rel: Path, result: CheckResult) -> No
     for key in unknown:
         result.warning(
             "FRONTMATTER_NONSTANDARD_KEY",
-            f"top-level key '{key}' is not part of the Agent Skills frontmatter contract; use metadata for custom fields",
+            (
+                f"top-level key '{key}' is not part of the Agent Skills frontmatter contract; "
+                "use metadata for custom fields"
+            ),
             rel,
         )
 
@@ -202,13 +204,25 @@ def validate_skill_frontmatter(meta: dict, rel: Path, result: CheckResult) -> No
         result.error("DESCRIPTION_MISSING", "skill frontmatter must define description", rel)
     else:
         if len(description) > 1024:
-            result.error("DESCRIPTION_TOO_LONG", f"description has {len(description)} chars; maximum is 1024", rel)
+            result.error(
+                "DESCRIPTION_TOO_LONG",
+                f"description has {len(description)} chars; maximum is 1024",
+                rel,
+            )
         elif len(description) > 500:
-            result.warning("DESCRIPTION_VERBOSE", f"description has {len(description)} chars; keep activation text concise", rel)
+            result.warning(
+                "DESCRIPTION_VERBOSE",
+                f"description has {len(description)} chars; keep activation text concise",
+                rel,
+            )
         if not re.search(r"\buse\b", description, re.IGNORECASE):
             result.warning("DESCRIPTION_NO_TRIGGER", "description should state when to use the skill", rel)
         if STALE_DESCRIPTION_RE.search(description):
-            result.error("DESCRIPTION_STALE_HISTORY", "description contains migration/history language instead of current activation rules", rel)
+            result.error(
+                "DESCRIPTION_STALE_HISTORY",
+                "description contains migration/history language instead of current activation rules",
+                rel,
+            )
 
     metadata = meta.get("metadata")
     if not isinstance(metadata, dict):
@@ -231,11 +245,23 @@ def validate_skill_frontmatter(meta: dict, rel: Path, result: CheckResult) -> No
     scope = metadata.get("second-brain-scope")
 
     if mode is not None and mode not in VALID_MODES:
-        result.error("METADATA_MODE_INVALID", f"second-brain-mode={mode!r}; expected one of {sorted(VALID_MODES)}", rel)
+        result.error(
+            "METADATA_MODE_INVALID",
+            f"second-brain-mode={mode!r}; expected one of {sorted(VALID_MODES)}",
+            rel,
+        )
     if approval is not None and approval not in VALID_APPROVALS:
-        result.error("METADATA_APPROVAL_INVALID", f"second-brain-approval={approval!r}; expected one of {sorted(VALID_APPROVALS)}", rel)
+        result.error(
+            "METADATA_APPROVAL_INVALID",
+            f"second-brain-approval={approval!r}; expected one of {sorted(VALID_APPROVALS)}",
+            rel,
+        )
     if closure is not None and closure not in VALID_CLOSURES:
-        result.error("METADATA_CLOSURE_INVALID", f"second-brain-closure={closure!r}; expected one of {sorted(VALID_CLOSURES)}", rel)
+        result.error(
+            "METADATA_CLOSURE_INVALID",
+            f"second-brain-closure={closure!r}; expected one of {sorted(VALID_CLOSURES)}",
+            rel,
+        )
     if role == "":
         result.error("METADATA_ROLE_EMPTY", "second-brain-role cannot be empty", rel)
     if scope == "":
