@@ -1,6 +1,10 @@
 import json
+import warnings
+from pathlib import Path
 
 from conftest import run_script
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_every_executable_python_script_has_noarg_default():
@@ -16,6 +20,16 @@ def test_script_catalog_has_no_missing_documented_files():
     payload = json.loads(proc.stdout)
     stale = [i for i in payload["issues"] if i["code"] == "SCRIPT_DOC_STALE"]
     assert not stale, stale
+
+
+def test_scripts_compile_without_syntax_warnings():
+    scripts = sorted((ROOT / "scripts").glob("*.py"))
+    assert scripts
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", SyntaxWarning)
+        for path in scripts:
+            source = path.read_text(encoding="utf-8-sig")
+            compile(source, str(path), "exec")
 
 
 def test_legacy_parameter_tools_have_safe_empty_defaults():
