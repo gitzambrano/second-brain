@@ -1297,10 +1297,11 @@ def check_sources_manifest(essay_titles):
                         add("ERROR", "MANIFEST_BAD_SUBFOLDER",
                             f"wiki/sources/{sub.name}/ não é subpasta do vocabulário controlado")
 
+        # Raw source documents are intentionally local-only (see data/.gitignore).
+        # The durable manifest may therefore outlive the local raw file in a clean clone.
+        # Validation is one-way: a present raw source needs a manifest entry; the reverse
+        # is not required because raw source bytes are deliberately not versioned.
         for filename, entry in manifest_entries.items():
-            if filename not in files_on_disk:
-                add("ERROR", "MANIFEST_ENTRY_NO_FILE",
-                    f"manifest.md tem entrada para '{filename}' mas o arquivo não existe em wiki/sources/**")
             if entry["tipo"] == "Ensaio Completo Importado":
                 # `Virou: None` é uma resposta, não uma omissão: registra que o
                 # Usuário examinou a fonte e decidiu que ela não virou essay
