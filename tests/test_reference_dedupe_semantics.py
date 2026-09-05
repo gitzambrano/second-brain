@@ -16,6 +16,20 @@ def test_reference_core_detects_bibliographic_difference():
 
 def test_unused_reference_is_not_a_lint_issue(tmp_path):
     essay = tmp_path / "essay.md"
-    essay.write_text("""# Teste\n\nPor Autor\n\nTexto com citação [1].\n\n## Referências\n\n[1] Autor, A., *Usada*, Editora, 2020. [Link](https://example.com/a)\n\n[2] Autor, B., *Leitura complementar*, Editora, 2021. [Link](https://example.com/b)\n""", encoding="utf-8")
+    essay.write_text(
+        """# Teste
+
+Por Autor
+
+Texto com citação [1].
+
+## Referências
+
+[1] Autor, A., *Usada*, Editora, 2020. [Link](https://example.com/a)
+
+[2] Autor, B., *Leitura complementar*, Editora, 2021. [Link](https://example.com/b)
+""",
+        encoding="utf-8",
+    )
     result = check_essay(essay)
     assert all(issue["code"] != "REFERENCIA_NAO_USADA" for issue in result["issues"])
