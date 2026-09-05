@@ -55,6 +55,7 @@ Os scripts utilizam prefixos verbais padronizados que revelam imediatamente sua 
 
 | Script | Finalidade | Exemplo de Uso |
 | :--- | :--- | :--- |
+| **`close_workspace.py`** | Fecha o workspace de forma determinística. Sem subcommand executa `prepare`; `commit` roda `prepare` antes dos commits locais; `push` exige worktrees limpas. | `python scripts/close_workspace.py` |
 | **`build_index.py`** | Gera o catálogo consolidado de ensaios em `wiki/index.md` e `wiki/index.json`. | `python scripts/build_index.py` |
 | **`build_references.py`** | Consolida a bibliografia de todas as fontes em `wiki/references.md` e `.json`. | `python scripts/build_references.py` |
 | **`build_graph.py`** | Gera a visualização interativa do grafo 2D de conexões em `output/graph/`. | `python scripts/build_graph.py` |
