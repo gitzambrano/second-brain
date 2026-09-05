@@ -1,8 +1,8 @@
 # Newsletter — Kit
 
-A newsletter é uma projeção do Second Brain, não uma segunda fonte editorial.
+A newsletter é uma projeção do Second Brain. O site continua sendo a publicação canônica; o e-mail apenas anuncia um novo essay e aponta para ele.
 
-## Publicação
+## Publicar
 
 No front matter de um essay público:
 
@@ -11,29 +11,55 @@ visibility: public
 newsletter: true
 ```
 
-Depois do build normal do site, gere o manifesto:
+Opcionalmente:
 
-```bash
-python scripts/build_newsletter_manifest.py
+```yaml
+newsletter_issue: 1
+newsletter_subject: "Novo essay — Título"
+newsletter_summary: "Resumo específico para o e-mail."
+newsletter_preview: "Texto curto exibido pelo cliente de e-mail."
 ```
 
-O arquivo `newsletter-manifest.json` contém apenas metadados públicos: slug, título, summary, updated e URL relativa. O corpo do essay e caminhos do repositório privado não entram no manifesto.
+`newsletter_issue` evita reenvio acidental quando o essay é editado. O padrão é `1`. Só aumente para `2`, `3`, etc. se quiser deliberadamente anunciar uma nova edição do mesmo essay.
 
-## GitHub Pages → Kit
+Não há comando extra de publicação: `seal_publication.py` gera automaticamente `site/.github/newsletter-manifest.json`. O manifesto contém apenas metadados públicos e nunca entra no artefato do GitHub Pages.
 
-O repositório `second-brain-site`, na mesma branch `feature/kit-newsletter`, contém o workflow pós-deploy e o cliente da API v4 do Kit.
+## E-mail
 
-Configuração necessária no repositório do site:
+Padrão gerado automaticamente:
 
-- Secret `KIT_API_KEY` — chave privada da API v4 do Kit.
-- Variable `KIT_NEWSLETTER_ENABLED` — usar `true` somente depois dos testes; ausente ou diferente de `true` mantém dry-run.
+- Assunto: `Novo essay — <título>`
+- Preheader: resumo truncado do essay
+- Cabeçalho: `Second Brain`
+- Título do essay
+- Resumo
+- Tempo estimado de leitura
+- CTA: `Ler o essay completo →`
+- Assinatura: `Gustavo Zambrano · Second Brain`
+
+O corpo completo permanece no site. O broadcast é privado no Kit (`public: false`) para não criar uma segunda versão pública do artigo.
+
+## GitHub → Kit
+
+O workflow `.github/workflows/newsletter.yml` do `second-brain-site` só roda depois de um deploy Pages bem-sucedido em `main`.
+
+Configuração no repositório do site:
+
+- Secret `KIT_API_KEY` — API key v4 do Kit.
+- Variable `KIT_NEWSLETTER_ENABLED` — `true` habilita envio; qualquer outro valor mantém dry-run.
 - Variable `SITE_BASE_URL` — opcional; padrão `https://gitzambrano.github.io/second-brain-site`.
-- Variable `KIT_EMAIL_TEMPLATE_ID` — opcional; ID do template de e-mail no Kit.
+- Variable `KIT_EMAIL_TEMPLATE_ID` — opcional; usa o template padrão da conta quando ausente.
 
-O workflow só roda depois de um deploy Pages bem-sucedido em `main`. Ele compara o manifesto atual com o commit anterior. Re-runs não duplicam envio: cada broadcast usa a chave `second-brain-newsletter:<slug>:<updated>` e o script verifica os broadcasts já existentes no Kit.
+Proteções:
+
+- primeiro deploy cria baseline e não envia nada;
+- rerun não duplica broadcast;
+- edição comum do essay não reenvia;
+- envio real exige `KIT_NEWSLETTER_ENABLED=true` e `KIT_API_KEY`;
+- o broadcast só é criado depois de o Pages terminar com sucesso.
 
 ## Formulário de assinatura
 
-Criar no Kit um Form do tipo **Inline**, manter double opt-in e copiar o embed JavaScript fornecido pelo próprio Kit. O embed é público; a API key nunca vai para o HTML.
+No Kit, crie um **Form → Inline**, mantenha double opt-in e use o embed JavaScript recomendado pelo Kit. O UID/embed é público; a API key nunca vai para HTML ou JavaScript do site.
 
-A integração visual do formulário no template do site deve ser feita depois de criar esse Form, pois o código/UID do embed é específico da conta.
+Esta é a única parte que depende da conta Kit: o Form precisa existir para termos o UID/embed real. Depois disso, o embed deve ser colocado no template público do Atlas e validado em desktop/mobile antes do merge.
