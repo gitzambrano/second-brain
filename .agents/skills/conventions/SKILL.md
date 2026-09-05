@@ -279,6 +279,7 @@ Vale para texto novo ou reescrito pela wiki. Texto original importado só muda s
 14. Evite paralelismos, tríades, contrastes e aforismos usados apenas por efeito retórico.
 15. Não atribua autoridade a fontes vagas. Afirmações como `estudos mostram` ou `especialistas afirmam` exigem fonte identificável.
 16. Preserve a voz do autor. Estas regras indicam candidatos à revisão, não proibições mecânicas.
+17. Escreva o estado final do argumento. Não mencione versões anteriores, correções, pedidos do Usuário ou alternativas que não façam parte do texto final.
 
 `check_wiki.py` cobre as regras mecânicas; `/polish` e `/proofread` cobrem as editoriais.
 
