@@ -171,7 +171,7 @@ MD_LINK_IN_HEADING_RE = re.compile(r"\[([^\]]*)\]\([^\)]*\)")
 
 
 def heading_anchor(heading_text: str) -> str:
-    """Converte texto de heading no anchor que Pandoc/GitHub/Obsidian geram.
+    r"""Converte texto de heading no anchor que Pandoc/GitHub/Obsidian geram.
 
     Replica `gfm_auto_identifiers`, a regra usada pelo Obsidian e pelos dois
     exportadores (que passam `+gfm_auto_identifiers` ao Pandoc justamente para
