@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""
+r"""
 export_essay_pdf.py - Exporta essays para PDF via Pandoc + LaTeX (filtro
 pdf_boxes.lua mapeia fenced divs em caixas tcolorbox). Remove `## Conexões`,
 preserva `## Referências`, converte frontmatter em página de título.

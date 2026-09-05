@@ -67,7 +67,7 @@ def load(path):
 
 
 def get_frontmatter_field(content, field):
-    """Extrator YAML-ish minúsculo, suficiente para listas de tags/sources e datas.
+    r"""Extrator YAML-ish minúsculo, suficiente para listas de tags/sources e datas.
 
     `[ \t]*` e não `\s*`: `\s` inclui a quebra de linha, então num campo escrito
     em lista de bloco
