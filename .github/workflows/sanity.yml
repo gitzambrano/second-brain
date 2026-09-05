@@ -30,10 +30,13 @@ jobs:
           python scripts/check_path_discipline.py
       # Os espelhos .claude/ são derivados e gitignorados, então um clone novo
       # não os tem. Gerá-los aqui é o mesmo bootstrap que o hook SessionStart
-      # faz na máquina do autor; o --check dentro de check_repo.py em seguida
-      # prova que .agents/ sozinho reproduz o espelho inteiro.
-      - name: Generate agent mirrors (.agents -> .claude)
-        run: python scripts/sync_skills.py --quiet
+      # faz na máquina do autor. Os adapters .codex/, ao contrário, são
+      # versionados: se o sync precisar alterá-los, `git diff` reprova o job e
+      # impede que uma cópia stale seja mascarada pelo próprio bootstrap.
+      - name: Generate agent mirrors (.agents -> harness adapters)
+        run: |
+          python scripts/sync_skills.py --quiet
+          git diff --exit-code -- .codex/agents
       - run: python scripts/check_repo.py --quick
       # `browser` também fica de fora: o job não instala Chromium nem Pandoc, e
       # a auditoria visual tem job próprio (`site-browser`). Sem esta exclusão
