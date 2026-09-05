@@ -30,18 +30,6 @@ As cinco seções sempre existem, nesta ordem, precedidas por `# Plano` e `## Í
 
 `Status:` é `Pendente | Em Andamento`. `Adicionado:` usa `YYYY-MM-DD`. `Tópico:` é livre, mas reuse um existente antes de criar variante equivalente.
 
-Exemplo:
-
-```markdown
-## Tarefas
-
-### Título
-- Tópico: ...
-- Status: Pendente
-- Adicionado: YYYY-MM-DD
-- Nota: ...
-```
-
 ## `/plan add`
 
 1. Classifique o item: exploração → Estudo; tese formada → Essay Futuro; material identificado → Fonte para Ingerir; caso geral → Tarefa.

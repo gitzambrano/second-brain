@@ -127,41 +127,17 @@ Fonte única significa fonte única **editável**, não cópia única. Cada harn
 
 Nunca edite `.claude/skills/` ou `.claude/agents/` à mão: o conteúdo é sobrescrito no próximo sync. O hook `SessionStart` de `.claude/settings.json` roda `python scripts/sync_skills.py --quiet` na abertura da sessão, e `--check` reprova drift em `check_repo.py --quick` e nos testes.
 
-### Catálogo de Skills por Fase
+### Skills por fase
 
-| Fase                   | Skill           | Finalidade                                                                                                     |
-| :--------------------- | :-------------- | :------------------------------------------------------------------------------------------------------------- |
-| **Ideação**    | `/insight`    | Captura ideias atômicas sem essay-pai em `wiki/insights/`.                                                  |
-|                        | `/outline`    | Estrutura tese, capítulos e bullets antes de redigir prosa.                                                   |
-|                        | `/essay`      | Redige o essay completo a partir de um outline aprovado.                                                       |
-| **Iteração**   | `/expand`     | Adiciona ou ajusta conteúdo substantivo dentro da estrutura existente.                                        |
-|                        | `/chapter`    | Adiciona, move, funde ou divide seções/capítulos.                                                           |
-|                        | `/continuity` | Audita coerência estrutural, fechamento de tese e transições.                                               |
-|                        | `/proofread`  | Revisão ortográfica, gramatical e pontuação.                                                               |
-|                        | `/polish`     | Melhora clareza, concisão e naturalidade sem mudar conteúdo ou argumento.                                    |
-|                        | `/linkify`    | Enriquecimento e validação de links e citações externas.                                                   |
-|                        | `/review`     | Peer review crítico de argumentos, premissas e rigor conceitual.                                              |
-| **Fontes**       | `/import`     | Ingere ensaio pronto do próprio autor preservando o texto.                                                    |
-|                        | `/digest`     | Resume fontes de terceiros (papers, livros) e arquiva em `wiki/sources/`.                                    |
-|                        | `/absorb`     | Incorpora fonte já arquivada a páginas existentes da wiki.                                                   |
-|                        | `/study`      | Sessão socrática de estudo sobre fontes com conexões à wiki.                                               |
-|                        | `/scout`      | Curadoria e busca na web por fontes candidatas a ingestão.                                                    |
-| **Manutenção** | `/organize`   | Auditoria e correção mecânica de metadados, estrutura, links internos e derivados; remoto só com autorização. |
-|                        | `/sweep`      | Bateria completa sequencial: `/organize` ➔ `/continuity` ➔ `/proofread` ➔ `/polish` ➔ `/linkify`. |
-|                        | `/gaps`       | Identificação de lacunas mecânicas, léxicas e conceituais (read-only).                                     |
-|                        | `/connect`    | Ação resolutiva sobre lacunas identificadas por `/gaps`.                                                   |
-|                        | `/merge`      | Fusão de duas páginas do mesmo tipo redirecionando wikilinks.                                                |
-|                        | `/delete`     | Remoção segura de página com reparo de links e log.                                                         |
-|                        | `/plan`       | Gestão do roadmap de longo prazo em `plan/plano.md`.                                                        |
-|                        | `/stats`      | Dashboard rápido de métricas e saúde da wiki.                                                               |
-|                        | `/status`     | Snapshot contextual que conecta uma sessão de trabalho à próxima.                                           |
-|                        | `/doctor`     | Diagnóstico de integridade do repositório em modo read-only.                                                 |
-| **Saída**       | `/handout`    | Sumário executivo de uma página com tese e conclusões.                                                      |
-|                 | `/html`       | Exportação de essays em HTML standalone com tipografia refinada.                                             |
-|                 | `/pdf`        | Exportação de essays em PDF tipográfico via Pandoc + LuaLaTeX.                                              |
-|                 | `/publish`    | Publicação deliberada do Second Brain Atlas no GitHub Pages com validação de privacidade.                   |
-|                 | `/query`      | Consulta read-only ao conhecimento já registrado na wiki.                                                   |
-|                 | `/synthesize` | Busca e identificação de padrões emergentes entre temas.                                                    |
+O routing detalhado e os contratos ficam em **[`AGENTS.md`](./AGENTS.md)** e nas próprias skills. Este resumo mantém todos os comandos descobríveis sem duplicar suas descrições.
+
+| Fase | Comandos |
+| --- | --- |
+| **Ideação e criação** | `/insight`, `/outline`, `/essay` |
+| **Iteração** | `/expand`, `/chapter`, `/continuity`, `/proofread`, `/polish`, `/linkify`, `/review` |
+| **Fontes e estudo** | `/import`, `/digest`, `/absorb`, `/study`, `/scout` |
+| **Manutenção** | `/organize`, `/sweep`, `/gaps`, `/connect`, `/merge`, `/delete`, `/plan`, `/stats`, `/status`, `/doctor` |
+| **Saída e consulta** | `/handout`, `/html`, `/pdf`, `/publish`, `/query`, `/synthesize` |
 
 ### Subagents Especializados
 

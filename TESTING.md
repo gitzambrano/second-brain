@@ -2,13 +2,7 @@
 
 > Testes automatizados e quality gates do **`second-brain-engine`**.
 
-O engine não versiona corpus pessoal. Testes usam `tests/fixtures/mini-brain/` sob `tmp_path`; nunca grave no `data/` ativo.
-
----
-
-## 🏛️ Isolamento e Caminhos
-
-Todos os scripts e testes resolvem caminhos por `scripts/repo_paths.py`:
+O engine não versiona corpus pessoal. Testes usam `tests/fixtures/mini-brain/` sob `tmp_path`; nunca grave no `data/` ativo. Scripts e testes resolvem caminhos por `scripts/repo_paths.py`:
 
 ```text
 CODE_ROOT   → engine público

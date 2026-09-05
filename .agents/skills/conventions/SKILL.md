@@ -69,15 +69,12 @@ Não altere por correção mecânica, frontmatter, byline, cabeçalho, `## Sumá
 
 `tags:` das páginas e `Tags:` de `wiki/sources/manifest.md` usam o mesmo vocabulário, consolidado em `tags_in_use` de `wiki/index.json`.
 
-- Reuse uma tag existente antes de criar outra.
+- Confira `tags_in_use` antes de criar tag nova. Se o índice estiver desatualizado, rode `python scripts/build_index.py`.
+- Reuse uma tag existente sempre que ela cobrir o tema; crie uma nova apenas quando nenhuma servir.
 - Use uma única grafia em Title Case, sem variantes por plural, acento ou sinônimo.
 - Tags representam temas, não tipo de essay/source.
 - Use 2 a 5 tags por essay ou source.
 - `/organize` audita quase-duplicatas; renomeação em massa exige aprovação.
-
-## Reuso de vocabulário controlado (`tags_in_use`)
-
-Antes de criar tag nova, confira `tags_in_use`. Se o índice estiver desatualizado, rode `python scripts/build_index.py`. Crie uma tag apenas quando nenhuma existente cobrir o tema.
 
 ## Tipos de Source — Vocabulário Controlado
 

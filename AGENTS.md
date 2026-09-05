@@ -226,12 +226,3 @@ python scripts/check_repo.py --quick
 Mudança mecânica determinística deve ganhar teste de regressão quando viável. Use o corpus sintético `tests/fixtures/mini-brain/`, nunca `data/`. Matriz completa, marcadores e dependências: `TESTING.md`.
 
 `/doctor` é diagnóstico read-only. Todo script executável deve ter default útil sem argumentos.
-
-### Pendência de configuração, fora do alcance de qualquer script
-
-Os dois `main` públicos estão sem branch protection. Enquanto estiverem, um push direto entra na branch sem passar por gate nenhum — e no site isso significa ir ao ar. É configuração de repositório no GitHub, feita uma vez, pelo Usuário:
-
-| Repositório | Check a exigir |
-| --- | --- |
-| `second-brain-engine` | `Repository sanity` (o workflow `.github/workflows/sanity.yml`) |
-| `second-brain-site` | o workflow de deploy, que já roda a portaria `check_artifact.py` antes de publicar |
