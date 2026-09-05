@@ -1,0 +1,44 @@
+name: Fix PDF docstring warning
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install test dependency
+        run: python -m pip install pytest
+      - name: Make module docstring raw
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/export_essay_pdf.py')
+          text = path.read_text(encoding='utf-8')
+          old = '#!/usr/bin/env python3\n"""\nexport_essay_pdf.py'
+          new = '#!/usr/bin/env python3\nr"""\nexport_essay_pdf.py'
+          if old not in text:
+              raise SystemExit('expected module docstring opening not found')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+      - name: Validate warning and failing regression
+        run: |
+          python -W error::SyntaxWarning -m py_compile scripts/export_essay_pdf.py
+          python -m pytest -q tests/test_script_defaults.py::test_scripts_compile_without_syntax_warnings
+      - name: Commit patch
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add scripts/export_essay_pdf.py
+          git diff --cached --check
+          git commit -m 'fix: make PDF exporter module docstring raw'
+          git push
