@@ -10,6 +10,7 @@ metadata:
   second-brain-scope: "essay"
   second-brain-approval: "conditional"
   second-brain-closure: "single-essay"
+  second-brain-routes-to: "chapter"
 allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch AskUserQuestion
 ---
 # Expand
