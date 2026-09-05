@@ -43,5 +43,4 @@ crítico: N item(ns) — [lista nominal]
 atenção: N item(ns) — [agrupado quando seguro]
 informativo: N item(ns) — [contagens/sinais]
 erros: nenhum | [uma linha por script que falhou]
-```
-"""
+```"""
