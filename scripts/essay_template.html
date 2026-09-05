@@ -269,6 +269,12 @@ h4{
   margin:1.8rem 0 .55rem;
   color:color-mix(in srgb,var(--text-bright) 62%,var(--text-dim));
 }
+h5{
+  font-family:var(--font-display);
+  font-size:1rem;font-weight:700;
+  margin:1.55rem 0 .5rem;
+  color:color-mix(in srgb,var(--text-bright) 58%,var(--text-dim));
+}
 
 p{
   margin:0 0 1.25rem;word-break:break-word;
@@ -597,7 +603,7 @@ mjx-container:not([display="true"]){
   max-width:100%;
   overflow-x:auto;
   overflow-y:hidden;
-  vertical-align:-.25em;
+  vertical-align:-.15em;
 }
 mjx-container:not([display="true"]) svg{max-width:100%;height:auto;}
 /* Dentro de celula, `max-width:100%` era catastrofico: a tabela ja esta
@@ -678,6 +684,9 @@ html{scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
   .masthead-inner{padding:1.9rem 1rem 1.6rem;}
   .content{padding:2rem 1.05rem 4rem;}
   .content h2{margin-top:2.7rem;}
+  /* Equações em bloco ficam 10% menores só no celular. Fórmulas inline
+     preservam o corpo normal para não mudar a métrica da linha de texto. */
+  mjx-container[display="true"]{font-size:90%;}
   /* Monoespaçada encolhe mais que a serifada no mesmo corpo: a `.72em` de
      antes dava 11,9px no celular. Bloco e trecho inline sobem juntos. */
   pre{font-size:.88em;}
