@@ -25,78 +25,33 @@ jobs:
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
-
           p = Path('scripts/check_wiki.py')
-          text = p.read_text(encoding='utf-8')
-          old = '''        for filename, entry in manifest_entries.items():
-            if filename not in files_on_disk:
-                add("ERROR", "MANIFEST_ENTRY_NO_FILE",
-                    f"manifest.md tem entrada para '{filename}' mas o arquivo não existe em wiki/sources/**")
-            if entry["tipo"] == "Ensaio Completo Importado":
-'''
-          new = '''        # Raw source documents are intentionally local-only (see data/.gitignore).
-        # The manifest is durable provenance and is expected to outlive the local
-        # source file in a clean clone. Therefore validation is one-way: any raw
-        # source that IS present must have a manifest entry (checked above), but a
-        # manifest entry does not require the raw document to be versioned/present.
-        for filename, entry in manifest_entries.items():
-            if entry["tipo"] == "Ensaio Completo Importado":
-'''
-          if old not in text:
-              raise SystemExit('Expected MANIFEST_ENTRY_NO_FILE block not found')
-          p.write_text(text.replace(old, new, 1), encoding='utf-8')
-
-          test = Path('tests/test_manifest_local_sources.py')
-          test.write_text(r'''from __future__ import annotations
-
-import sys
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[1]
-SCRIPTS = ROOT / "scripts"
-if str(SCRIPTS) not in sys.path:
-    sys.path.insert(0, str(SCRIPTS))
-
-import check_wiki
-
-
-def _manifest(filename: str = "original.pdf") -> str:
-    return f"""# Manifesto de Sources
-
-## [2026-09-05] {filename}
-Tipo: Ensaio Completo Importado.
-Tags: Engenharia
-Pasta: wiki/sources/ensaio-importado/
-Virou: [[essay-existente|Essay Existente]] (essay novo).
-Verificação: referências bibliográficas confirmadas.
-"""
-
-
-def _prepare(monkeypatch, tmp_path):
-    sources = tmp_path / "wiki" / "sources"
-    (sources / "ensaio-importado").mkdir(parents=True)
-    (sources / "manifest.md").write_text(_manifest(), encoding="utf-8")
-    handouts = tmp_path / "wiki" / "handouts"
-    handouts.mkdir(parents=True)
-    monkeypatch.setattr(check_wiki, "SOURCES_DIR", sources)
-    monkeypatch.setattr(check_wiki, "HANDOUTS_DIR", handouts)
-    return sources
-
-
-def test_manifest_entry_may_outlive_local_raw_source(monkeypatch, tmp_path):
-    _prepare(monkeypatch, tmp_path)
-    issues = check_wiki.check_sources_manifest({"essay-existente"})
-    assert not [i for i in issues if i["code"] == "MANIFEST_ENTRY_NO_FILE"]
-    assert not [i for i in issues if i["severity"] in {"ERROR", "CRITICAL"}]
-
-
-def test_present_raw_source_still_requires_manifest_entry(monkeypatch, tmp_path):
-    sources = _prepare(monkeypatch, tmp_path)
-    (sources / "ensaio-importado" / "sem-manifesto.pdf").write_bytes(b"raw")
-    issues = check_wiki.check_sources_manifest({"essay-existente"})
-    assert any(i["code"] == "MANIFEST_MISSING_ENTRY" for i in issues)
-''', encoding='utf-8')
+          lines = p.read_text(encoding='utf-8').splitlines(keepends=True)
+          out = []
+          removed = 0
+          i = 0
+          while i < len(lines):
+              line = lines[i]
+              if 'for filename, entry in manifest_entries.items():' in line:
+                  out.extend([
+                      '        # Raw source documents are intentionally local-only (see data/.gitignore).\n',
+                      '        # The durable manifest may therefore outlive the local raw file in a clean clone.\n',
+                      '        # Validation is one-way: a present raw source needs a manifest entry; the reverse\n',
+                      '        # is not required because raw source bytes are deliberately not versioned.\n',
+                  ])
+              if 'if filename not in files_on_disk:' in line:
+                  if i + 2 >= len(lines) or 'MANIFEST_ENTRY_NO_FILE' not in lines[i + 1]:
+                      raise SystemExit('Unexpected MANIFEST_ENTRY_NO_FILE block shape')
+                  i += 3
+                  removed += 1
+                  continue
+              out.append(line)
+              i += 1
+          if removed != 1:
+              raise SystemExit(f'Expected one MANIFEST_ENTRY_NO_FILE block, removed={removed}')
+          p.write_text(''.join(out), encoding='utf-8')
           PY
+          printf '%s' 'ZnJvbSBfX2Z1dHVyZV9fIGltcG9ydCBhbm5vdGF0aW9ucwoKaW1wb3J0IHN5cwpmcm9tIHBhdGhsaWIgaW1wb3J0IFBhdGgKClJPT1QgPSBQYXRoKF9fZmlsZV9fKS5yZXNvbHZlKCkucGFyZW50c1sxXQpTQ1JJUFRTID0gUk9PVCAvICJzY3JpcHRzIgppZiBzdHIoU0NSSVBUUykgbm90IGluIHN5cy5wYXRoOgogICAgc3lzLnBhdGguaW5zZXJ0KDAsIHN0cihTQ1JJUFRTKSkKCmltcG9ydCBjaGVja193aWtpCgoKZGVmIF9tYW5pZmVzdChmaWxlbmFtZTogc3RyID0gIm9yaWdpbmFsLnBkZiIpIC0+IHN0cjoKICAgIHJldHVybiBmIiIiIyBNYW5pZmVzdG8gZGUgU291cmNlcwoKIyMgWzIwMjYtMDktMDVdIHtmaWxlbmFtZX0KVGlwbzogRW5zYWlvIENvbXBsZXRvIEltcG9ydGFkby4KVGFnczogRW5nZW5oYXJpYQpQYXN0YTogd2lraS9zb3VyY2VzL2Vuc2Fpby1pbXBvcnRhZG8vClZpcm91OiBbW2Vzc2F5LWV4aXN0ZW50ZXxFc3NheSBFeGlzdGVudGVdXSAoZXNzYXkgbm92bykuClZlcmlmaWNhw6fDo286IHJlZmVyw6puY2lhcyBiaWJsaW9ncsOhZmljYXMgY29uZmlybWFkYXMuCiIiIgoKCmRlZiBfcHJlcGFyZShtb25rZXlwYXRjaCwgdG1wX3BhdGgpOgogICAgc291cmNlcyA9IHRtcF9wYXRoIC8gIndpa2kiIC8gInNvdXJjZXMiCiAgICAoc291cmNlcyAvICJlbnNhaW8taW1wb3J0YWRvIikubWtkaXIocGFyZW50cz1UcnVlKQogICAgKHNvdXJjZXMgLyAibWFuaWZlc3QubWQiKS53cml0ZV90ZXh0KF9tYW5pZmVzdCgpLCBlbmNvZGluZz0idXRmLTgiKQogICAgaGFuZG91dHMgPSB0bXBfcGF0aCAvICJ3aWtpIiAvICJoYW5kb3V0cyIKICAgIGhhbmRvdXRzLm1rZGlyKHBhcmVudHM9VHJ1ZSkKICAgIG1vbmtleXBhdGNoLnNldGF0dHIoY2hlY2tfd2lraSwgIlNPVVJDRVNfRElSIiwgc291cmNlcykKICAgIG1vbmtleXBhdGNoLnNldGF0dHIoY2hlY2tfd2lraSwgIkhBTkRPVVRTX0RJUiIsIGhhbmRvdXRzKQogICAgcmV0dXJuIHNvdXJjZXMKCgpkZWYgdGVzdF9tYW5pZmVzdF9lbnRyeV9tYXlfb3V0bGl2ZV9sb2NhbF9yYXdfc291cmNlKG1vbmtleXBhdGNoLCB0bXBfcGF0aCk6CiAgICBfcHJlcGFyZShtb25rZXlwYXRjaCwgdG1wX3BhdGgpCiAgICBpc3N1ZXMgPSBjaGVja193aWtpLmNoZWNrX3NvdXJjZXNfbWFuaWZlc3QoeyJlc3NheS1leGlzdGVudGUifSkKICAgIGFzc2VydCBub3QgW2kgZm9yIGkgaW4gaXNzdWVzIGlmIGlbImNvZGUiXSA9PSAiTUFOSUZFU1RfRU5UUllfTk9fRklMRSJdCiAgICBhc3NlcnQgbm90IFtpIGZvciBpIGluIGlzc3VlcyBpZiBpWyJzZXZlcml0eSJdIGluIHsiRVJST1IiLCAiQ1JJVElDQUwifV0KCgpkZWYgdGVzdF9wcmVzZW50X3Jhd19zb3VyY2Vfc3RpbGxfcmVxdWlyZXNfbWFuaWZlc3RfZW50cnkobW9ua2V5cGF0Y2gsIHRtcF9wYXRoKToKICAgIHNvdXJjZXMgPSBfcHJlcGFyZShtb25rZXlwYXRjaCwgdG1wX3BhdGgpCiAgICAoc291cmNlcyAvICJlbnNhaW8taW1wb3J0YWRvIiAvICJzZW0tbWFuaWZlc3RvLnBkZiIpLndyaXRlX2J5dGVzKGIicmF3IikKICAgIGlzc3VlcyA9IGNoZWNrX3dpa2kuY2hlY2tfc291cmNlc19tYW5pZmVzdCh7ImVzc2F5LWV4aXN0ZW50ZSJ9KQogICAgYXNzZXJ0IGFueShpWyJjb2RlIl0gPT0gIk1BTklGRVNUX01JU1NJTkdfRU5UUlkiIGZvciBpIGluIGlzc3VlcykK' | base64 -d > tests/test_manifest_local_sources.py
       - name: Validate regression
         shell: bash
         run: |
