@@ -6,7 +6,7 @@ description: >
   automaticamente o inequívoco e acumula decisões editoriais para o relatório.
 metadata:
   second-brain-role: "review-orchestrator"
-  second-brain-mode: "mixed"
+  second-brain-mode: "write"
   second-brain-scope: "essay-or-corpus"
   second-brain-approval: "conditional"
   second-brain-closure: "multi-essay"
