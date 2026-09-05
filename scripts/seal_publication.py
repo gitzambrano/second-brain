@@ -39,10 +39,12 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+import build_newsletter_manifest
 import console_encoding  # noqa: F401  (UTF-8 no console; ver o módulo)
 from repo_paths import CODE_ROOT, SCRIPTS_DIR, SITE_ROOT
 
 MANIFEST = "site-manifest.json"
+NEWSLETTER_MANIFEST = ".github/newsletter-manifest.json"
 
 # O que existe no checkout e NÃO vai ao ar. O digest tem de cobrir exatamente o
 # conjunto que o workflow empacota em `_site/`: selar sobre o repositório e
@@ -76,7 +78,8 @@ def artifact_digest(root: Path) -> str:
     """Impressão determinística do conteúdo publicado, menos o próprio manifesto.
 
     O manifesto fica de fora porque é onde o selo é gravado: incluí-lo faria o
-    digest depender de si mesmo.
+    digest depender de si mesmo. Tudo em `.github/`, inclusive o manifesto da
+    newsletter, também fica fora porque nunca entra no artefato Pages.
     """
     h = hashlib.sha256()
     # Ordenar pelo caminho relativo em POSIX, não pelo `Path`. `WindowsPath`
@@ -142,6 +145,13 @@ def seal(root: Path, verbose: bool = True) -> int:
     if not manifesto.is_file():
         print(f"FALHA: {MANIFEST} não existe em {root}; rode o build antes de selar")
         return 1
+
+    # O manifesto da newsletter é metadado operacional do repo público, não
+    # conteúdo servido. Gerá-lo aqui garante que qualquer publicação selada
+    # carrega a visão atual dos `newsletter: true`, sem um segundo comando.
+    newsletter = build_newsletter_manifest.build(root / NEWSLETTER_MANIFEST)
+    if verbose:
+        print(f"  newsletter: {newsletter}")
 
     passaram, falharam = run_gates(verbose)
     if falharam:
