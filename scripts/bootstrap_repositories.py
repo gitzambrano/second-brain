@@ -52,7 +52,18 @@ output/**
 .qmd-config/
 .qmd-output/
 
-# Obsidian volatile state.
+# Obsidian: version the portable vault configuration, not third-party plugin code.
+.obsidian/*
+!.obsidian/app.json
+!.obsidian/appearance.json
+!.obsidian/core-plugins.json
+!.obsidian/community-plugins.json
+!.obsidian/graph.json
+!.obsidian/hotkeys.json
+!.obsidian/snippets/
+!.obsidian/plugins/
+.obsidian/plugins/*/*
+!.obsidian/plugins/*/data.json
 .obsidian/workspace*
 .obsidian/cache/
 
@@ -73,11 +84,13 @@ DATA_GITATTRIBUTES = """* text=auto
 
 DATA_README = """# Second Brain Data
 
-PRIVATE repository. Contains personal wiki, plan, raw inbox, Obsidian settings
-and private generated outputs.
+PRIVATE repository. Contains the Markdown knowledge corpus, plan, raw inbox and
+portable Obsidian vault configuration. Open this repository root as the Obsidian
+vault; agents and scripts operate on the same files directly.
 
-Raw documents under `wiki/sources/` are intentionally not versioned. The
-curated `manifest.md`, `map.md` and `resumos/` may be versioned.
+Raw documents under `wiki/sources/` and generated artifacts under `output/` are
+local-only. Portable Obsidian settings are versioned, but workspace/cache state
+and third-party plugin code are not.
 
 This repository must never be used as a GitHub Pages source.
 """
