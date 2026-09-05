@@ -1,0 +1,44 @@
+name: Apply final mobile review spacing
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-mobile-review-spacing-final-temp.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Apply screenshot-approved CSS
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('scripts/site_src/site.css')
+          s=p.read_text(encoding='utf-8')
+          old='  .card-meta .dot + span { font-size: 10px; letter-spacing: -0.025em; }\n'
+          new='  .card-meta .dot + span { font-size: 9.25px; letter-spacing: -0.045em; }\n'
+          if old not in s: raise SystemExit('expected current rule not found')
+          p.write_text(s.replace(old,new,1),encoding='utf-8')
+          PY
+          rm -f .github/workflows/apply-mobile-review-spacing-final-temp.yml
+
+      - name: Commit and push
+        run: |
+          set -euo pipefail
+          git config user.name 'Second Brain Publisher'
+          git config user.email 'actions@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git diff --cached -- scripts/site_src/site.css
+          git commit -m 'fix: clear mobile review badge from summary'
+          git push origin HEAD:main
