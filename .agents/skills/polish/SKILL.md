@@ -40,9 +40,10 @@ Leia o essay inteiro antes de reescrever. Avalie padrões no contexto do documen
 17. **Aforismos artificiais:** evite fórmulas como `X é a linguagem de Y` ou `X não é apenas uma ferramenta, é...` sem necessidade conceitual.
 18. **Objeções inexistentes:** não introduza `isso não significa que...` se essa interpretação não surgiu no argumento.
 19. **Alternativas fictícias:** não invente uma opção apenas para criar contraste e rejeitá-la.
-20. **Fontes vagas:** revise `estudos mostram`, `especialistas afirmam`, `a literatura demonstra`, `é amplamente reconhecido` sem fonte identificável.
-21. **Finais genéricos:** remova `isso abre novas possibilidades`, `aponta para um futuro promissor` e equivalentes sem consequência concreta.
-22. **Restos de chatbot:** elimine `vamos explorar`, `como podemos ver`, `espero que isso ajude` e equivalentes.
+20. **Histórico editorial residual:** remova explicações que só existem por causa de prompts, steers, correções ou versões anteriores. Escreva o estado final do argumento; não diga `não é X, mas Y` ou `a formulação correta é Y` quando X ou o erro não aparecem no texto.
+21. **Fontes vagas:** revise `estudos mostram`, `especialistas afirmam`, `a literatura demonstra`, `é amplamente reconhecido` sem fonte identificável.
+22. **Finais genéricos:** remova `isso abre novas possibilidades`, `aponta para um futuro promissor` e equivalentes sem consequência concreta.
+23. **Restos de chatbot:** elimine `vamos explorar`, `como podemos ver`, `espero que isso ajude` e equivalentes.
 
 ### Inflação retórica, marketing e dramatização
 
@@ -63,11 +64,11 @@ Esses termos são gatilhos, não proibições. Preserve usos técnicos reais, co
 
 ### Essays técnicos
 
-23. Não antropomorfize código, modelos ou teorias.
-24. Prefira voz ativa quando o agente for conhecido.
-25. Simplifique cadeias longas de `de/da/do`.
-26. Preserve grafia única para termos, siglas, unidades e variáveis.
-27. Não sacrifique causalidade, sintaxe natural ou precisão técnica para encurtar a frase.
+24. Não antropomorfize código, modelos ou teorias.
+25. Prefira voz ativa quando o agente for conhecido.
+26. Simplifique cadeias longas de `de/da/do`.
+27. Preserve grafia única para termos, siglas, unidades e variáveis.
+28. Não sacrifique causalidade, sintaxe natural ou precisão técnica para encurtar a frase.
 
 ## Não corrigir mecanicamente
 
