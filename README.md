@@ -62,7 +62,7 @@ python scripts/bootstrap_repositories.py --create --init-git
 
 ## 🤖 Agentes e Skills
 
-O engine é a **fonte única** (`.agents/`) de habilidades operacionais e editoriais consumidas por agentes de IA (Claude Code, Gemini, Antigravity, etc.).
+O engine é a **fonte única** (`.agents/`) de habilidades operacionais e editoriais consumidas por agentes de IA (Claude Code, Codex e outros harnesses compatíveis).
 
 Fonte única significa fonte única **editável**, não cópia única. Cada harness lê de um lugar diferente, então os espelhos são gerados:
 
@@ -80,28 +80,28 @@ Nunca edite `.claude/skills/` ou `.claude/agents/` à mão: o conteúdo é sobre
 
 | Fase                   | Skill           | Finalidade                                                                                                     |
 | :--------------------- | :-------------- | :------------------------------------------------------------------------------------------------------------- |
-| **Ideação**    | `/insight`    | Captura ideias atômicas sem essay-pai em`wiki/insights/`.                                                   |
+| **Ideação**    | `/insight`    | Captura ideias atômicas sem essay-pai em `wiki/insights/`.                                                  |
 |                        | `/outline`    | Estrutura tese, capítulos e bullets antes de redigir prosa.                                                   |
 |                        | `/essay`      | Redige o essay completo a partir de um outline aprovado.                                                       |
-| **Iteração**   | `/expand`     | Adiciona ou ajusta conteúdo substantivo, teses e exemplos.                                                    |
+| **Iteração**   | `/expand`     | Adiciona ou ajusta conteúdo substantivo dentro da estrutura existente.                                        |
 |                        | `/chapter`    | Adiciona, move, funde ou divide seções/capítulos.                                                           |
 |                        | `/continuity` | Audita coerência estrutural, fechamento de tese e transições.                                               |
 |                        | `/proofread`  | Revisão ortográfica, gramatical e pontuação.                                                               |
-|                        | `/polish`     | Aperfeiçoamento de ritmo e estilo literário/ensaístico.                                                     |
+|                        | `/polish`     | Melhora clareza, concisão e naturalidade sem mudar conteúdo ou argumento.                                    |
 |                        | `/linkify`    | Enriquecimento e validação de links e citações externas.                                                   |
 |                        | `/review`     | Peer review crítico de argumentos, premissas e rigor conceitual.                                              |
 | **Fontes**       | `/import`     | Ingere ensaio pronto do próprio autor preservando o texto.                                                    |
-|                        | `/digest`     | Resume fontes de terceiros (papers, livros) e arquiva em`wiki/sources/`.                                     |
+|                        | `/digest`     | Resume fontes de terceiros (papers, livros) e arquiva em `wiki/sources/`.                                    |
 |                        | `/absorb`     | Incorpora fonte já arquivada a páginas existentes da wiki.                                                   |
 |                        | `/study`      | Sessão socrática de estudo sobre fontes com conexões à wiki.                                               |
 |                        | `/scout`      | Curadoria e busca na web por fontes candidatas a ingestão.                                                    |
-| **Manutenção** | `/organize`   | Auditoria mecânica de metadados, tags, links internos e índice.                                              |
-|                        | `/sweep`      | Bateria completa sequencial:`/organize` ➔ `/continuity` ➔ `/proofread` ➔ `/polish` ➔ `/linkify`. |
+| **Manutenção** | `/organize`   | Auditoria e correção mecânica de metadados, estrutura, links internos e derivados; remoto só com autorização. |
+|                        | `/sweep`      | Bateria completa sequencial: `/organize` ➔ `/continuity` ➔ `/proofread` ➔ `/polish` ➔ `/linkify`. |
 |                        | `/gaps`       | Identificação de lacunas mecânicas, léxicas e conceituais (read-only).                                     |
-|                        | `/connect`    | Ação resolutiva sobre lacunas identificadas por`/gaps`.                                                    |
+|                        | `/connect`    | Ação resolutiva sobre lacunas identificadas por `/gaps`.                                                   |
 |                        | `/merge`      | Fusão de duas páginas do mesmo tipo redirecionando wikilinks.                                                |
 |                        | `/delete`     | Remoção segura de página com reparo de links e log.                                                         |
-|                        | `/plan`       | Gestão do roadmap de longo prazo em`plan/plano.md`.                                                         |
+|                        | `/plan`       | Gestão do roadmap de longo prazo em `plan/plano.md`.                                                        |
 |                        | `/stats`      | Dashboard rápido de métricas e saúde da wiki.                                                               |
 |                        | `/status`     | Snapshot contextual que conecta uma sessão de trabalho à próxima.                                           |
 |                        | `/doctor`     | Diagnóstico de integridade do repositório em modo read-only.                                                 |
@@ -109,13 +109,13 @@ Nunca edite `.claude/skills/` ou `.claude/agents/` à mão: o conteúdo é sobre
 |                 | `/html`       | Exportação de essays em HTML standalone com tipografia refinada.                                             |
 |                 | `/pdf`        | Exportação de essays em PDF tipográfico via Pandoc + LuaLaTeX.                                              |
 |                 | `/publish`    | Publicação deliberada do Second Brain Atlas no GitHub Pages com validação de privacidade.                   |
-|                 | `/query`      | Consulta e exploração da base de conhecimento da wiki.                                                       |
+|                 | `/query`      | Consulta read-only ao conhecimento já registrado na wiki.                                                   |
 |                 | `/synthesize` | Busca e identificação de padrões emergentes entre temas.                                                    |
 
 ### Subagents Especializados
 
-- **`update`**: Encerra sessões de trabalho substanciais através de pre-flight, correção mecânica, rebuild dos derivados e commit transacional isolado por repositório.
-- **`lint-report`**: Diagnóstico consolidado de qualidade agrupando avisos em Crítico, Atenção e Informativo.
+- **`update`**: Fechamento gated: valida, corrige mecanicamente e reconstrói derivados; depois cria commits locais separados em engine/data e só então faz os pushes autorizados. Nunca publica `site/`.
+- **`lint-report`**: Diagnóstico consolidado de qualidade que preserva a severidade dos checkers e agrupa os achados em Crítico, Atenção e Informativo.
 
 ---
 
@@ -126,9 +126,11 @@ Todos os scripts executáveis em `scripts/` possuem defaults úteis quando execu
 ```bash
 # Diagnóstico e Qualidade
 python scripts/check_repo.py                 # Diagnóstico global do repositório
-python scripts/check_repo.py --quick         # Checagem ultrarrápida para commits (isolamento git e caminhos)
+python scripts/check_repo.py --quick         # Checagem rápida de contratos e ambiente
 python scripts/check_repo.py --site          # Validação estrita da sentinela de privacidade do site
-python scripts/check_skills.py               # Valida contratos e integridade de todas as skills
+python scripts/check_skills.py               # Valida frontmatter, metadata, ferramentas e referências das skills
+python scripts/check_agents.py               # Valida fonte .agents, mirrors .claude, adapters Codex e hook de sync
+python scripts/check_script_defaults.py      # Valida defaults dos CLIs e alinhamento com SCRIPTS.md
 
 # Publicação do Atlas (site/)
 python scripts/set_visibility.py             # Lista ensaios por visibilidade (public/private/hidden)
@@ -162,7 +164,7 @@ O site público opera sob um modelo de **Atlas Aberto + Texto por Autorização*
 O engine conta com suíte de testes automatizados via `pytest` que rodam sobre ambientes isolados em `tmp_path`, garantindo total proteção do corpus real.
 
 ```bash
-python -m pytest -q                        # Executa a suíte rápida
+python -m pytest -q                         # Executa a suíte rápida
 python -m pytest tests/test_site_privacy.py # Sentinela estrita de privacidade
 ```
 
