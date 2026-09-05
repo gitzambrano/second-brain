@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 import sys
 from pathlib import Path
 
@@ -8,7 +9,7 @@ SCRIPTS = ROOT / "scripts"
 if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
-import check_wiki
+check_wiki = importlib.import_module("check_wiki")
 
 
 def _manifest(filename: str = "original.pdf") -> str:
