@@ -266,13 +266,19 @@ Vale para texto novo ou reescrito pela wiki. Texto original importado só muda s
 1. Uma proposição principal por frase.
 2. Use conectores apenas quando a transição lógica precisar deles.
 3. Corpo argumentativo em prosa; bullets apenas quando a estrutura exigir lista real.
-4. Use o mesmo termo para o mesmo conceito.
+4. Use o mesmo termo para o mesmo conceito. Não varie vocabulário apenas para evitar repetição.
 5. Abra cada parágrafo com o tema; um tema por parágrafo.
 6. Use travessões raramente: no máximo 1 a 2 na prosa do essay.
 7. Não use ponto e vírgula; prefira frases autônomas.
 8. Parênteses apenas para informação curta.
 9. Evite atalhos tipográficos: `/`, `~`, `--`, intervalos `5-30`, `Cap.`/`Sec.`, `e.g.`/`i.e.`.
 10. Prefira frase direta, completa e sem enchimento.
+11. Concisão não é estilo telegráfico. Preserve artigos, verbos, preposições, advérbios, conectores e outros elementos quando necessários para explicitar sujeito, relação lógica, tempo, causa, contraste ou condição.
+12. Prefira verbos simples e precisos a perífrases, nominalizações e formulações solenes sem ganho de significado.
+13. Elimine metadiscurso dispensável: não anuncie que vai explicar, observar ou destacar algo quando puder simplesmente fazê-lo.
+14. Evite paralelismos, tríades, contrastes e aforismos usados apenas por efeito retórico.
+15. Não atribua autoridade a fontes vagas. Afirmações como `estudos mostram` ou `especialistas afirmam` exigem fonte identificável.
+16. Preserve a voz do autor. Estas regras indicam candidatos à revisão, não proibições mecânicas.
 
 `check_wiki.py` cobre as regras mecânicas; `/polish` e `/proofread` cobrem as editoriais.
 
@@ -282,12 +288,15 @@ Vale para texto novo ou reescrito pela wiki. Texto original importado só muda s
 2. Não antropomorfize código, modelos ou teorias.
 3. Prefira voz ativa quando o agente for conhecido.
 4. Prefira verbo direto a nominalização.
-5. Evite gerúndio de consequência ambígua.
-6. Evite `isso/isto` quando o referente não for inequívoco.
-7. Simplifique cadeias longas de `de/da/do`.
-8. Mantenha grafia única para termos, siglas, unidades e variáveis.
-9. Elimine marketing, superlativo e hedge vazio.
-10. Concisão preserva sujeito, verbo e precisão técnica.
+5. Evite gerúndio quando a relação temporal, causal ou lógica for ambígua.
+6. Evite gerúndio ornamental que apenas simule análise ou ênfase.
+7. Evite `isso/isto` quando o referente não for inequívoco.
+8. Simplifique cadeias longas de `de/da/do`.
+9. Mantenha grafia única para termos, siglas, unidades e variáveis.
+10. Elimine marketing, superlativo, inflação retórica e hedge vazio.
+11. Não aumente artificialmente a importância de um resultado sem justificativa técnica.
+12. Não encerre uma seção com conclusão genérica que não acrescente informação.
+13. Concisão preserva sujeito, verbo, relações lógicas e fluidez sintática. Não sacrifique clareza para reduzir palavras.
 
 ## Formato do índice (`wiki/index.md`)
 

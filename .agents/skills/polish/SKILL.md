@@ -1,36 +1,85 @@
 ---
 name: polish
 description: >
-  Passada de estilo de prosa num essay: tom, ritmo, elegância, adesão
-  às regras de prosa da wiki. Use quando o Usuário disser "melhora o
-  estilo", "deixa a prosa mais elegante", "tira os bullets daqui",
-  "conta os travessões", ou quiser que o texto leia melhor sem mudar
-  o que ele argumenta.
+  Passada de estilo de prosa num essay: clareza, concisão, tom, ritmo,
+  naturalidade e adesão às regras de prosa da wiki. Use quando o Usuário
+  pedir melhoria de estilo sem mudar conteúdo ou argumento.
 allowed-tools: Bash Read Write Edit Glob Grep
 ---
 # Polish
 
-Ajusta tom, ritmo e elegância sem alterar conteúdo. Aplica `## Estilo de prosa` de `conventions/SKILL.md`.
+Melhora clareza, concisão, tom e naturalidade sem alterar conteúdo. Aplica `## Estilo de prosa` de `conventions/SKILL.md`.
 
 ## Regra de abertura
 
-Leia o essay inteiro antes de reescrever qualquer trecho.
+Leia o essay inteiro antes de reescrever. Avalie padrões no contexto do documento, não frases isoladas.
 
 ## O que corrigir
 
-1. **Uma proposição principal por frase.**
-2. **Conectores:** remova empilhamento ou transições desnecessárias.
-3. **Bullets:** converta em prosa quando estiverem substituindo argumento corrido; preserve listas reais quando a estrutura justificar.
-4. **Travessões:** respeite o limite de `conventions/SKILL.md`; reescreva excedentes.
-5. **Ponto e vírgula:** elimine; prefira frases autônomas.
-6. **Atalhos tipográficos:** evite barras, til, remissões abreviadas e intervalos com hífen na prosa quando prejudicarem clareza.
-7. **Essays técnicos:** elimine antropomorfização, gerúndio ambíguo, nominalização pesada e superlativo vazio.
+### Clareza e concisão
+
+1. **Frases sobrecarregadas:** mantenha uma proposição principal por frase.
+2. **Parágrafos sem foco:** mantenha um tema principal por parágrafo.
+3. **Conectores excessivos:** remova transições que não acrescentem relação lógica, mas preserve conectores necessários para explicitar causa, contraste, condição ou consequência.
+4. **Bullets artificiais:** converta em prosa quando apenas fragmentarem um argumento; preserve listas reais.
+5. **Filler:** remova `é importante observar que`, `vale destacar que`, `cabe mencionar que` e equivalentes.
+6. **Verbos indiretos e nominalizações:** prefira a ação direta: `possui a capacidade de representar` → `representa`; `realiza o cálculo de` → `calcula`; `constitui-se como` → `é`.
+7. **Hedge excessivo:** preserve incerteza real, mas simplifique construções como `pode potencialmente vir a indicar`.
+8. **Concisão excessiva:** não transforme prosa em estilo telegráfico. Preserve sujeito, verbo, artigos, preposições, conectores e modificadores quando necessários para a sintaxe ou para a relação lógica. Evite sequências como `Aumento de RPM. Maior rigidez. Menor flapping.` quando a relação entre as ideias deve ser explicitada.
+9. **Travessões:** respeite o limite de `conventions/SKILL.md`; reescreva excedentes.
+10. **Ponto e vírgula:** elimine; prefira frases autônomas.
+11. **Atalhos tipográficos:** evite barras, til, remissões abreviadas e intervalos com hífen na prosa quando prejudicarem clareza.
+
+### Padrões artificiais
+
+12. **Gerúndio ornamental:** revise `demonstrando`, `evidenciando`, `ressaltando`, `reforçando`, `refletindo` quando apenas repetirem ou dramatizarem a frase anterior.
+13. **Metadiscurso:** evite `vamos agora entender`, `vejamos a seguir`, `é aqui que entra`. Explique diretamente.
+14. **Repetição do heading:** não abra uma seção repetindo o título em outras palavras.
+15. **Paralelismos e tríades artificiais:** evite `não apenas X, mas também Y` e grupos de três criados apenas por efeito retórico.
+16. **Falsa profundidade:** revise `no fundo`, `em essência`, `a verdadeira questão`, `insight profundo` quando não acrescentarem conteúdo.
+17. **Aforismos artificiais:** evite fórmulas como `X é a linguagem de Y` ou `X não é apenas uma ferramenta, é...` sem necessidade conceitual.
+18. **Objeções inexistentes:** não introduza `isso não significa que...` se essa interpretação não surgiu no argumento.
+19. **Alternativas fictícias:** não invente uma opção apenas para criar contraste e rejeitá-la.
+20. **Fontes vagas:** revise `estudos mostram`, `especialistas afirmam`, `a literatura demonstra`, `é amplamente reconhecido` sem fonte identificável.
+21. **Finais genéricos:** remova `isso abre novas possibilidades`, `aponta para um futuro promissor` e equivalentes sem consequência concreta.
+22. **Restos de chatbot:** elimine `vamos explorar`, `como podemos ver`, `espero que isso ajude` e equivalentes.
+
+### Inflação retórica, marketing e dramatização
+
+Evite atribuir importância, profundidade, novidade, qualidade ou dramaticidade sem demonstrá-las.
+
+**Gatilhos frequentes:** `fundamental`, `crucial`, `central`, `profundo`, `rigoroso`, `notável`, `inovador`, `avançado`, `sofisticado`, `robusto`, `poderoso`, `elegante`, `revolucionário`, `transformador`, `impressionante`, `extraordinário`.
+
+Revise também:
+
+- **marketing:** `solução poderosa`, `abordagem inovadora`, `arquitetura elegante`, `método sofisticado`, `grande avanço`, `potencial transformador`;
+- **superlativos e absolutos:** `o mais importante`, `o melhor`, `um dos maiores`, `sem precedentes`, `definitivo`, `único`, `de toda a ciência`;
+- **dramatização não técnica:** `explosivo`, `catastrófico`, `devastador`, `brutal`, `dramático`, `radical`, `extremo`, `severo`;
+- **prestígio vazio:** `com rigor matemático`, `análise rigorosa`, `visão profunda`, `resultado central`, `fato notável`, `para compreender plenamente`.
+
+Prefira descrever a propriedade concreta: mecanismo, magnitude, taxa, condição de validade, vantagem ou consequência física.
+
+Esses termos são gatilhos, não proibições. Preserve usos técnicos reais, como `frequência fundamental`, `estabilidade robusta`, `nível de significância` ou classificações formais de severidade. O acúmulo de qualificadores próximos é sinal mais forte que uma ocorrência isolada.
+
+### Essays técnicos
+
+23. Não antropomorfize código, modelos ou teorias.
+24. Prefira voz ativa quando o agente for conhecido.
+25. Simplifique cadeias longas de `de/da/do`.
+26. Preserve grafia única para termos, siglas, unidades e variáveis.
+27. Não sacrifique causalidade, sintaxe natural ou precisão técnica para encurtar a frase.
+
+## Não corrigir mecanicamente
+
+Uma ocorrência isolada não constitui erro.
+
+Preserve voz do autor, terminologia técnica, repetição deliberada, ritmo intencional e cautela epistemológica necessária.
+
+O objetivo é remover padrões mecânicos e ornamentais, não uniformizar a escrita.
 
 ## O que preservar
 
-Mantenha a voz do autor, o registro adequado ao domínio e o conteúdo argumentativo.
-
-Não adicione nem remova ideias.
+Não adicione nem remova ideias. Não altere argumento ou ordem lógica sem necessidade estilística clara.
 
 ## Relatório
 
