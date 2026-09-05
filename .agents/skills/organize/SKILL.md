@@ -6,7 +6,7 @@ description: >
   se o Usuário autorizar explicitamente o subagent update.
 metadata:
   second-brain-role: "maintenance-orchestrator"
-  second-brain-mode: "mixed"
+  second-brain-mode: "write"
   second-brain-scope: "essay-or-corpus"
   second-brain-approval: "before-remote"
   second-brain-closure: "mechanical"
