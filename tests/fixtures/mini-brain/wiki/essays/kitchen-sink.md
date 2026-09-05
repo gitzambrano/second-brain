@@ -15,7 +15,9 @@ summary: "Essay sintético de qualificação do pipeline que reúne estrutura, m
 
 - [[#1. Introdução]]
 - [[#2. Estruturas suportadas]]
-- [[#3. Conclusão]]
+- [[#3. Caixa que enquadra a seção]]
+- [[#4. Callout no meio da prosa]]
+- [[#5. Conclusão]]
 
 ---
 
@@ -27,10 +29,10 @@ Este documento é uma fixture sintética. Um [termo de teste](https://example.co
 
 ### 2.1 Tabela e código
 
-| Parâmetro | Valor |
-| --- | ---: |
-| alfa | 1 |
-| beta | 2 |
+| Parâmetro | Valor | Fórmula na célula |
+| --- | ---: | --- |
+| alfa | 1 | $C_T/\sigma = \theta_0 (V\cos\alpha)(V\sin\alpha + v_i)/4$ |
+| beta | 2 | $\lambda_i = \sqrt{C_T/2}$ |
 
 ```python
 matrix = [[1, 2], [3, 4]]
@@ -43,7 +45,36 @@ print(matrix[0])
 
 A figura acima é deliberadamente simples para permitir um teste de presença no HTML e no PDF.
 
-## 3. Conclusão
+## 3. Caixa que enquadra a seção
+
+> **Ideia 01**
+
+Rótulo que abre a seção enquadra a seção inteira, subseções incluídas. Este parágrafo e o que vem depois dele pertencem ao quadro.
+
+### 3.1 Subseção dentro do quadro
+
+Bloco de código dentro da caixa precisa manter as linhas em branco do original e ganhar o mesmo recuo dos parágrafos:
+
+```text
+primeira linha do bloco
+
+linha depois de uma linha em branco
+```
+
+## 4. Callout no meio da prosa
+
+Prosa antes do rótulo, para que ele não abra a seção e valha como callout pontual.
+
+> **⚠ Atenção**
+
+Somente este parágrafo pertence ao callout.
+
+### 4.1 Fora do quadro
+
+Esta subseção fica fora da caixa: um callout no meio da prosa fecha no primeiro
+heading que encontra, em vez de engolir o resto do capítulo.
+
+## 5. Conclusão
 
 A conclusão contém a frase sentinela **PIPELINE-SENTINEL-ALPHA** para verificar preservação semântica entre formatos.
 

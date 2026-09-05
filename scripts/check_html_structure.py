@@ -16,6 +16,12 @@ from pathlib import Path
 
 from repo_paths import HTML_DIR
 
+# Caixa é callout, não capítulo. O pré-processador monta `.box` a partir de um
+# rótulo em blockquote mais o conteúdo que vem depois; quando a regra de
+# fronteira falha, a caixa engole o resto do capítulo e o HTML sai bem-formado
+# mas semanticamente destruído — nada no checador percebia isso.
+BOX_MAX_BLOCKS = 14
+
 
 def strip_noise(h: str) -> str:
     h = re.sub(r'data:[\w/+.-]+;base64,[A-Za-z0-9+/=]+', '', h)
@@ -67,6 +73,22 @@ def audit_file(html_path: Path) -> list[dict]:
         except FeatureNotFound:
             soup = BeautifulSoup(raw, "html.parser")
             add("HTML5LIB_UNAVAILABLE", "html5lib unavailable; used built-in html.parser fallback", "WARNING")
+        # Escopo de caixa. O pré-processador monta `.box` a partir de um
+        # rótulo em blockquote mais o conteúdo que vem depois; quando a regra
+        # de fronteira falha, a caixa engole o resto do capítulo e o HTML sai
+        # bem-formado mas semanticamente destruído. Heading dentro de caixa é
+        # o sintoma barato — exceto quando o rótulo abre a seção e enquadra a
+        # seção inteira, caso em que o primeiro filho é o badge e os headings
+        # são subseções dela.
+        for box in soup.select("div.box"):
+            sect = [h for h in box.find_all(["h1", "h2"])]
+            if sect:
+                add("BOX_CONTAINS_SECTION", f"caixa contém heading de seção: {sect[0].get_text()[:60]!r}")
+            blocks = box.find_all(["p", "pre", "ul", "ol", "table"], recursive=False)
+            if len(blocks) > BOX_MAX_BLOCKS:
+                add("BOX_TOO_MANY_BLOCKS",
+                    f"caixa com {len(blocks)} blocos diretos (limite {BOX_MAX_BLOCKS})", "WARNING")
+
         for img in soup.find_all("img"):
             src = str(img.get("src", ""))
             if not src: add("IMAGE_SRC_MISSING", "<img> has no src")

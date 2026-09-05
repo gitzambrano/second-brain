@@ -43,6 +43,25 @@ def test_html_render_checker_accepts_valid_and_rejects_broken(tmp_path):
     assert {"PAGE_HORIZONTAL_OVERFLOW", "BROKEN_TOC_NAVIGATION", "VISIBLE_WIKILINK"} <= codes
 
 
+@pytest.mark.html
+def test_structure_checker_flags_box_that_swallowed_a_chapter(tmp_path):
+    """Caixa é callout, não capítulo: heading de seção dentro dela é erro."""
+    root = _data_root(tmp_path)
+    (root / "output/html/leak.html").write_text(
+        '<!DOCTYPE html><html><body><div class="content">'
+        '<div class="box aviso"><div class="box-badge"><p>Aviso</p></div>'
+        '<p>corpo do callout</p><h2 id="s">Seção engolida</h2>'
+        + "<p>bloco</p>" * 20
+        + "</div></div></body></html>",
+        encoding="utf-8",
+    )
+    fail = run_script("check_html_structure.py", "leak", "--json", data_root=root)
+    assert fail.returncode == 1, fail.stdout + fail.stderr
+    payload = json.loads(fail.stdout)
+    codes = {i["code"] for values in payload["issues"].values() for i in values}
+    assert {"BOX_CONTAINS_SECTION", "BOX_TOO_MANY_BLOCKS"} <= codes
+
+
 @pytest.mark.pdf
 def test_pdf_checkers_accept_valid_and_reject_invalid(tmp_path):
     root = _data_root(tmp_path)

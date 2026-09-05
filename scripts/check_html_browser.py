@@ -21,6 +21,13 @@ from sanity_common import (
 
 VIEWPORTS = ((390, 844, "mobile"), (1440, 900, "desktop"))
 
+# Fórmula dentro de célula pode ser um pouco menor que a da prosa — `td` herda
+# um corpo menor que o do texto corrido. Abaixo desta fração da escala da prosa
+# não é hierarquia tipográfica, é a fórmula sendo esmagada pela largura da
+# célula: a `max-width:100%` do MathJax já reduziu equação de 35ex a 4px de
+# altura, ilegível, e sem disparar nenhuma checagem de overflow.
+MATH_CELL_MIN_RATIO = 0.75
+
 
 def audit_file(browser, path: Path, result: CheckResult) -> None:
     for width, height, label in VIEWPORTS:
@@ -71,7 +78,26 @@ def audit_file(browser, path: Path, result: CheckResult) -> None:
           const text = clean.textContent || '';
           return text.includes('[[') && text.includes(']]');
           })(),
-          rawFencedDiv: document.body.innerText.includes(':::{') || document.body.innerText.includes('::: {')
+          rawFencedDiv: document.body.innerText.includes(':::{') || document.body.innerText.includes('::: {'),
+          // Escala real do MathJax: altura renderizada dividida pela altura
+          // declarada em `ex`. Numa fórmula espremida por `max-width` a razão
+          // despenca e a equação vira um risco de 4px — a checagem de overflow
+          // não pega, porque encolher é justamente o que evita o overflow.
+          mathScale: (() => {
+            const px = el => {
+              const svg = el.querySelector('svg');
+              if (!svg) return null;
+              const ex = parseFloat(svg.getAttribute('height'));
+              if (!ex) return null;
+              return svg.getBoundingClientRect().height / ex;
+            };
+            const all = [...document.querySelectorAll('mjx-container:not([display="true"])')];
+            const cell = all.filter(e => e.closest('td,th')).map(px).filter(Boolean);
+            const prose = all.filter(e => !e.closest('td,th')).map(px).filter(Boolean);
+            if (!cell.length || !prose.length) return null;
+            const med = a => [...a].sort((x, y) => x - y)[Math.floor(a.length / 2)];
+            return {minCell: Math.min(...cell), medProse: med(prose), n: cell.length};
+          })()
         })""")
         if data["docWidth"] > data["innerWidth"] + 2:
             result.error(
@@ -96,6 +122,14 @@ def audit_file(browser, path: Path, result: CheckResult) -> None:
             result.error("VISIBLE_WIKILINK", f"{label}: raw [[wikilink]] visible", path.name)
         if data["rawFencedDiv"]:
             result.error("VISIBLE_FENCED_DIV", f"{label}: fenced div marker visible", path.name)
+        scale = data["mathScale"]
+        if scale and scale["minCell"] < MATH_CELL_MIN_RATIO * scale["medProse"]:
+            result.error(
+                "MATH_SHRUNK_IN_CELL",
+                f"{label}: fórmula em célula a {scale['minCell']:.2f}px/ex contra "
+                f"{scale['medProse']:.2f}px/ex na prosa ({scale['n']} fórmulas em tabela)",
+                path.name,
+            )
         for message in console_errors[:5]:
             result.error("CONSOLE_ERROR", f"{label}: {message}", path.name)
         for url in failed[:5]:

@@ -276,13 +276,34 @@ def _prev_was_quote(lines, i):
 
 def _section_boundary(blk):
     """Bloco inicia nova secao? H1/H2 ou regua horizontal (---)."""
+    return _chain_boundary(blk, strict=False)
+
+
+def _chain_boundary(blk, strict):
+    """Bloco encerra a cadeia crua que um rotulo esta absorvendo?
+
+    Regua horizontal e H1/H2 sempre encerram. `strict` decide o destino de
+    H3+ e depende de ONDE o rotulo apareceu:
+
+    * rotulo que ABRE a secao (primeiro bloco depois de H1/H2/---) enquadra
+      a secao inteira, subsecoes incluidas -> strict=False, H3+ fica dentro;
+    * rotulo no MEIO da prosa e um callout pontual -> strict=True, e o
+      primeiro heading de qualquer nivel fecha a caixa.
+
+    Sem essa distincao um callout no meio de um capitulo engolia o resto do
+    capitulo, porque so H1/H2 o interrompiam.
+    """
     first = blk[0].strip() if blk else ''
     if not first:
         return False
     if re.match(r'^(-{3,}|_{3,}|\*{3,})$', first):
         return True
     m = HEADING_RE.match(first)
-    return bool(m and len(first) - len(first.lstrip('#')) <= 2)
+    if not m:
+        return False
+    if strict:
+        return True
+    return len(first) - len(first.lstrip('#')) <= 2
 
 
 # ---------------------------------------------------------------------------
@@ -395,6 +416,19 @@ def _is_label_candidate(grp):
     return len(t) <= 48 and not re.search(r'[.!?:;]\s*$', t)
 
 
+def _chain_block_body(blk):
+    """Bloco cru -> paragrafo do corpo da caixa.
+
+    Bloco com cerca (```) entra verbatim: juntar suas linhas com quebra dura
+    apagava as linhas em branco do codigo e colava dois espacos no fim de
+    cada uma. Prosa e lista seguem com quebra dura, para que listas
+    associativas nao colapsem em prosa corrida.
+    """
+    if blk and FENCE_RE.match(blk[0]):
+        return '\n'.join(blk).strip('\n')
+    return '  \n'.join(ln.rstrip() for ln in blk if ln.strip())
+
+
 def _transform_group(grp, next_grp, raw_chain=None):
     """Transforma um grupo de blockquote.
 
@@ -440,7 +474,7 @@ def _transform_group(grp, next_grp, raw_chain=None):
                 return emit_typed_box(cls, label, title, body, verdicts), len(raw_chain) + 1
         body_lines = []
         for blk in raw_chain:
-            body = '  \n'.join(ln.rstrip() for ln in blk if ln.strip())
+            body = _chain_block_body(blk)
             if body:
                 body_lines.append(body)
         body, verdicts = _extract_verdicts(body_lines)
@@ -526,21 +560,26 @@ def transform_markdown(body):
         kind, payload = blocks[i]
 
         if kind == 'quote':
+            # Um rotulo que abre a secao enquadra a secao inteira; um no meio
+            # da prosa e um callout pontual e para no primeiro heading.
+            strict = not (i == 0 or (blocks[i - 1][0] == 'raw'
+                                     and _section_boundary(blocks[i - 1][1])))
             j = i + 1
             nxt_quote, raw_chain = None, []
             if j < len(blocks):
                 if blocks[j][0] == 'quote':
                     nxt_quote = blocks[j][1]
-                elif blocks[j][0] == 'raw':
+                elif blocks[j][0] == 'raw' \
+                        and not _chain_boundary(blocks[j][1], strict):
                     # Cadeia de blocos brutos consecutivos (prosa/lista/
                     # headings): candidatos a conteudo de caixa de um rotulo.
-                    # Fronteira generica: H1/H2 ou regua horizontal encerram
-                    # a cadeia — sao inicio de nova secao, nao conteudo da
-                    # caixa (H3+ pode: subsecoes internas sao comuns).
+                    # `_chain_boundary` decide onde ela para; o proprio
+                    # primeiro bloco tambem passa pelo teste, senao um H2
+                    # colado no rotulo entrava dentro da caixa.
                     raw_chain.append(blocks[j][1])
                     k = j + 1
                     while k < len(blocks) and blocks[k][0] == 'raw' \
-                            and not _section_boundary(blocks[k][1]):
+                            and not _chain_boundary(blocks[k][1], strict):
                         raw_chain.append(blocks[k][1])
                         k += 1
                     # Quote logo apos a cadeia crua e o CORPO da caixa

@@ -316,6 +316,11 @@ li::marker{color:color-mix(in srgb,var(--gold-dim) 70%,var(--text-dim));}
    colados na borda enquanto o texto tem 1.3rem — recuo esquisito) */
 .box > :is(h3,h4,h5){margin:1.1rem 1.3rem .45rem;}
 .card > :is(h3,h4,h5){margin:.6rem 0 .45rem;}
+/* Bloco de codigo dentro de caixa: mesmo recuo dos paragrafos e respiro em
+   cima e embaixo. Sem isto o <pre> ia de borda a borda da caixa e encostava
+   nos paragrafos vizinhos — a regra de recuo existia para heading e lista,
+   nunca para codigo. */
+.box > pre,.card > pre,.quote > pre{margin:1.1rem 1.3rem;}
 
 /* Ancora discreta nos titulos */
 .hlink{border-bottom:none;margin-left:.45rem;font-size:.6em;vertical-align:.35em;color:var(--border);transition:color .15s;}
@@ -559,9 +564,14 @@ pre code{overflow-wrap:normal;}
 pre{
   background:var(--surface2);border:1px solid var(--border);
   padding:1em 1.2em;border-radius:6px;overflow-x:auto;
-  font-size:.8em;line-height:1.55;
+  /* `.656em` e não `.8em` porque o `<code>` interno deixou de multiplicar o
+     seu próprio `.82em` — o corpo final na tela grande é exatamente o mesmo. */
+  font-size:.656em;line-height:1.55;
 }
-pre code{background:none;padding:0;}
+/* O Pandoc envolve todo bloco em `<pre><code>`, e o `.82em` do `code` se
+   multiplicava pelo do `pre`: no celular o texto do bloco saía a 9,7px, bem
+   abaixo do que o `pre` anuncia. O tamanho do bloco passa a ser só o do `pre`. */
+pre code{background:none;padding:0;font-size:inherit;}
 
 /* MathJax (saida SVG): equacoes nunca podem empurrar a largura da pagina.
    Display mantem o tamanho e rola internamente; inline escala para caber
@@ -590,6 +600,13 @@ mjx-container:not([display="true"]){
   vertical-align:-.25em;
 }
 mjx-container:not([display="true"]) svg{max-width:100%;height:auto;}
+/* Dentro de celula, `max-width:100%` era catastrofico: a tabela ja esta
+   limitada a 100% da coluna, o layout automatico espremia a celula, e a
+   formula encolhia junto — uma equacao de 35ex saia com 4px de altura no
+   celular. A tabela tem rolagem horizontal propria (regra de `table`), entao
+   aqui a formula fica no tamanho natural e quem rola e a tabela. */
+:is(td,th) mjx-container:not([display="true"]) svg{max-width:none;}
+:is(td,th) mjx-container:not([display="true"]){overflow:visible;}
 /* MathML assistivo: existe so para leitor de tela e ja vem `clip`ado pelo
    MathJax — mas `clip` esconde sem encolher. A caixa continuava com a largura
    real da formula (376px numa coluna de 356) e, absoluta dentro do container,
@@ -661,11 +678,30 @@ html{scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
   .masthead-inner{padding:1.9rem 1rem 1.6rem;}
   .content{padding:2rem 1.05rem 4rem;}
   .content h2{margin-top:2.7rem;}
-  pre{font-size:.72em;}
+  /* Monoespaçada encolhe mais que a serifada no mesmo corpo: a `.72em` de
+     antes dava 11,9px no celular. Bloco e trecho inline sobem juntos. */
+  pre{font-size:.88em;}
+  code{font-size:.88em;}
   .quote,.card{padding:.95rem 1.05rem;}
-  .box > p{margin-left:1.05rem;margin-right:1.05rem;}
+  .box > p{margin-left:1.05rem;margin-right:1.05rem;font-size:1rem;}
+  .box > pre,.card > pre,.quote > pre{margin:1.05rem;}
   .box-title{padding:1rem 1.05rem .3rem;}
   .box-verdict{padding:.95rem 1.05rem 1rem;}
+  /* Pisos de legibilidade no celular. Na tela grande estas vozes menores
+     funcionam como hierarquia; a 375px viravam 10-12px, abaixo do que se le
+     confortavelmente. Só o piso sobe — a hierarquia continua. */
+  th{font-size:.82rem;}
+  .quote p{font-size:1rem;}
+  .box-verdict p{font-size:.96rem;}
+  /* Vozes de rótulo — versalete espacejado em monoespaçada. A 375px elas
+     caíam para 9,9-11,5px, e o espacejamento de .2em piora ainda mais a
+     leitura nesse corpo. */
+  .box-badge{font-size:.78rem;}
+  .verdict-tag{font-size:.76rem;}
+  .label-solo{font-size:.74rem;}
+  .card-meta{font-size:.78rem;}
+  .pq-cite{font-size:.9rem;}
+  .pull-quote.epigraph p:last-child{font-size:.78rem;}
 }
 
 /* ------------------------------------------------------------------ */
