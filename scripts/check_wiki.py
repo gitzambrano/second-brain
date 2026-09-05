@@ -171,7 +171,7 @@ MD_LINK_IN_HEADING_RE = re.compile(r"\[([^\]]*)\]\([^\)]*\)")
 
 
 def heading_anchor(heading_text: str) -> str:
-    """Converte texto de heading no anchor que Pandoc/GitHub/Obsidian geram.
+    r"""Converte texto de heading no anchor que Pandoc/GitHub/Obsidian geram.
 
     Replica `gfm_auto_identifiers`, a regra usada pelo Obsidian e pelos dois
     exportadores (que passam `+gfm_auto_identifiers` ao Pandoc justamente para
@@ -574,12 +574,6 @@ def check_essay(filepath: Path) -> dict:
                 add("WARNING", "REF_MISSING_TITLE",
                     f"Entrada sem título aparente, só autor+ano+container: {e[:70]}")
 
-        # Chamadas de citação [N] no corpo x entradas listadas. Corpo sem
-        # fences e sem links (markdown/wikilink) para não pegar o "[texto]"
-        # de um link; aceita listas do tipo "[1, 3]". Só é chamada de
-        # citação o número dentro do alcance plausível da bibliografia
-        # (até max(listed)+2): [64]/[255] num essay cuja bibliografia vai
-        # a [15] é notação (casas do tabuleiro, índice de vetor), não citação.
         cite_body = strip_fences(body_before_ref)
         cite_body = re.sub(r"\[\[#(?:refer[eê]ncias|references)\|([^\]]*)\]\]", r"\1", cite_body, flags=re.IGNORECASE)
         cite_body = re.sub(r"\[(\d{1,3}(?:\s*,\s*\d{1,3})*)\]\(#(?:refer[eê]ncias|references)\)", r"[\1]", cite_body, flags=re.IGNORECASE)
@@ -603,11 +597,6 @@ def check_essay(filepath: Path) -> dict:
             add("INFO", "REF_NEVER_CITED",
                 f"Entrada [{n}] em '## Referências' nunca é citada no corpo")
 
-    # -----------------------------------------------------------------------
-    # 5b. Numeração de capítulos (H2) e subseções (H3)
-    #     Essays ou numeram todos os capítulos, ou nenhum; a sequência não
-    #     salta (1,2,3… / I,II,III…); H3 "N.M" exige pai N e M sequencial.
-    # -----------------------------------------------------------------------
     ROMAN_VALUES = {"I": 1, "V": 5, "X": 10, "L": 50, "C": 100}
 
     def roman_to_int(s):
@@ -618,10 +607,6 @@ def check_essay(filepath: Path) -> dict:
             prev = max(prev, val)
         return total
 
-    # "7. Conclusão" -> ("7", resto); "Seção 9 — X" -> ("9", resto);
-    # "Capítulo II: X" -> ("II", resto); "Introdução" -> (None, texto).
-    # O número só vale seguido de separador/espaço/fim — evita ler o "I"
-    # inicial de "Introdução" como romano.
     NUM_HEADING_RE = re.compile(
         r"^(?:(?:se[çc][aã]o|cap[íi]tulo|parte)\s*)?"
         r"((?:[IVXLC]+|\d+)(?:[.:\-—–]|\s|$))?\s*(.*)$",
@@ -637,7 +622,7 @@ def check_essay(filepath: Path) -> dict:
         return num, tok
 
     num_body = strip_fences(content).split("## Conexões")[0]
-    seq_items = []  # (kind, line_no, text, num, tok, sub)
+    seq_items = []
     for ln_no, ln in enumerate(num_body.splitlines(), 1):
         m2 = re.match(r"^## (?!#)(.+)$", ln)
         m3 = re.match(r"^### (?!#)(.+)$", ln)
@@ -655,8 +640,6 @@ def check_essay(filepath: Path) -> dict:
             else:
                 seq_items.append(("h3", ln_no, txt, None, None, None))
 
-    # Seções semânticas (Introdução, Conclusão, Resumo Executivo…) são
-    # deliberadamente sem número — não contam como "capítulo sem número".
     SEM_HEADING_RE = re.compile(
         r"^(?:se[çc][aã]o|cap[íi]tulo|parte)?\s*(?:\d+|[IVXLC]+)?\s*[.:\-—–]?\s*"
         r"(introdu[çc][aã]o|conclus[aã]o|resumo(?:\s+executivo)?|pref[áa]cio|"
@@ -684,7 +667,7 @@ def check_essay(filepath: Path) -> dict:
                 add("WARNING", "NUMBERING_SEQUENCE",
                     f"linha {it[1]}: capítulo '{it[2][:44]}' usa '{it[4]}', "
                     f"esperado '{expected}' — sequência quebrada ou salto")
-                expected = it[3]  # re-sincroniza: um aviso por quebra
+                expected = it[3]
             expected += 1
 
         cur_parent = None
@@ -695,7 +678,7 @@ def check_essay(filepath: Path) -> dict:
                 expected_sub = 1
                 continue
             if it[3] is None:
-                continue  # H3 sem número: legítimo, salvo misto abaixo
+                continue
             if cur_parent is None:
                 add("WARNING", "NUMBERING_H3_SEM_PAI",
                     f"linha {it[1]}: subseção '{it[2][:40]}' numerada antes de "
@@ -723,9 +706,6 @@ def check_essay(filepath: Path) -> dict:
                 f"{len(unnum)} subseção(ões) H3 sem número em essay com "
                 f"subseções numeradas: {unnum[:3]}")
 
-    # -----------------------------------------------------------------------
-    # 6. ## Conexões — presente e última H2
-    # -----------------------------------------------------------------------
     if not re.search(r"^## Conexões$", content, re.MULTILINE):
         add("ERROR", "NO_CONEXOES", "Seção '## Conexões' ausente")
     else:
@@ -734,24 +714,12 @@ def check_essay(filepath: Path) -> dict:
             add("ERROR", "CONEXOES_NOT_LAST",
                 "'## Conexões' não é a última seção H2 do essay")
 
-    # -----------------------------------------------------------------------
-    # 7. Wikilinks fora de Conexões
-    # -----------------------------------------------------------------------
     body_before_conex = strip_fences(content).split("## Conexões")[0]
-    # `[[#Heading]]` é link para seção do próprio arquivo, não para outra
-    # página: é a forma que o `## Sumário` usa, e a única que o Obsidian
-    # resolve. A regra "só link externo no corpo" existe para o essay ser
-    # autocontido no PDF, e o export converte esses em âncora normal, então
-    # eles não violam nada.
     wikilinks_in_body = [
         w for w in re.findall(r"\[\[([^\]]+)\]\]", body_before_conex)
         if not w.startswith("#")
     ]
 
-    # Todo `[[#Heading]]` do corpo é validado, não só os do `## Sumário`. Links
-    # de seção aparecem também em índices internos e em referências cruzadas no
-    # meio do texto, e por muito tempo ninguém os checou: foi exatamente aí que
-    # 20 links quebrados sobreviveram a várias passadas de lint.
     todos_headings = {
         m.group(1).strip() for m in re.finditer(r"(?m)^#{2,6} (.+)$", content)
     }
@@ -764,20 +732,11 @@ def check_essay(filepath: Path) -> dict:
             f"{len(wikilinks_in_body)} [[wikilink(s)]] fora de Conexões: "
             f"{wikilinks_in_body[:3]}")
 
-    # -----------------------------------------------------------------------
-    # 8. Links externos (mínimo 10)
-    # -----------------------------------------------------------------------
     ext_links = re.findall(r"\[([^\]]+)\]\((https?://[^\)]+)\)", content)
     if len(ext_links) < 10:
-        # WARNING, não ERROR: o mínimo de 10 é alvo editorial, e um white paper
-        # curto e muito técnico pode legitimamente não ter 10 fontes externas
-        # que valha a pena linkar. Quem decide é o Usuário, via `/linkify`.
         add("WARNING", "FEW_EXT_LINKS",
             f"Apenas {len(ext_links)} link(s) externos (mínimo recomendado: 10)")
 
-    # -----------------------------------------------------------------------
-    # 9. Aspas ASCII suspeitas na prosa
-    # -----------------------------------------------------------------------
     prose_body = re.sub(r"^---.*?---\n", "", content, count=1, flags=re.DOTALL)
     prose_body = strip_fences(prose_body)
     prose_body = re.sub(r"`[^`]+`", "", prose_body)
@@ -794,9 +753,6 @@ def check_essay(filepath: Path) -> dict:
             f"{ascii_single} apóstrofos/aspas simples ASCII (') na prosa — ok se for contrações, "
             "verifique se intencional")
 
-    # -----------------------------------------------------------------------
-    # 10. Espaços duplos
-    # -----------------------------------------------------------------------
     double_spaces = [
         i + 1 for i, line in enumerate(lines_clean)
         if "  " in line and not line.startswith("```") and not line.startswith("|")
@@ -806,20 +762,11 @@ def check_essay(filepath: Path) -> dict:
             f"Espaços duplos em {len(double_spaces)} linha(s): {double_spaces[:5]}"
             + ("..." if len(double_spaces) > 5 else ""))
 
-    # -----------------------------------------------------------------------
-    # 11. Linhas em branco excessivas (>=3 consecutivas)
-    # -----------------------------------------------------------------------
     blank_runs = re.findall(r"\n{4,}", content)
     if blank_runs:
         add("WARNING", "EXCESS_BLANK_LINES",
             f"{len(blank_runs)} trecho(s) com >=3 linhas em branco consecutivas")
 
-    # -----------------------------------------------------------------------
-    # 12. Travessões (—) — max 2 por essay
-    # -----------------------------------------------------------------------
-    # Conta só a prosa. `## Referências` e `## Conexões` são estruturais: o
-    # formato AIAA exige `—` antes da nota de cada entrada, e cada linha de
-    # Conexões usa `—` antes da descrição. Nenhum dos dois é escolha de estilo.
     prose_for_dashes = re.split(r"(?m)^## Refer[êe]ncias\s*$", content)[0]
     prose_for_dashes = re.split(r"(?m)^## Conex[õo]es\s*$", prose_for_dashes)[0]
     em_dash_count = prose_for_dashes.count("—")
@@ -830,9 +777,6 @@ def check_essay(filepath: Path) -> dict:
             f"{effective_dashes} travessão(ões) (—) na prosa "
             "(máximo recomendado: 2; prefira vírgula, dois-pontos ou parênteses)")
 
-    # -----------------------------------------------------------------------
-    # 13. Bullets no corpo argumentativo (só Sumário/Referências/tabelas)
-    # -----------------------------------------------------------------------
     body_for_bullets = content
     for section in ("## Sumário", "## Referências", "## Conexões"):
         parts_s = body_for_bullets.split(section, 1)
@@ -855,9 +799,6 @@ def check_essay(filepath: Path) -> dict:
             f"use prosa argumentativa: linhas {[b[0] for b in bullet_lines[:5]]}"
             + ("..." if len(bullet_lines) > 5 else ""))
 
-    # -----------------------------------------------------------------------
-    # 13.5 Remissão a outro essay no corpo
-    # -----------------------------------------------------------------------
     xref_body = re.sub(r"^---.*?---\n", "", content, count=1, flags=re.DOTALL)
     xref_body = strip_fences(xref_body)
     xref_body = re.split(
@@ -868,12 +809,6 @@ def check_essay(filepath: Path) -> dict:
             f"{len(xrefs)} remiss\u00e3o(\u00f5es) a outro essay no corpo \u2014 o essay \u00e9 autocontido "
             f"e a rela\u00e7\u00e3o entre p\u00e1ginas vive em ## Conex\u00f5es: {xrefs[:3]}")
 
-    # -----------------------------------------------------------------------
-    # 13.6 Estilo de prosa mecanizavel (## Estilo de prosa em conventions)
-    # -----------------------------------------------------------------------
-    # Base limpa: sem frontmatter, sem codigo, sem matematica, sem tabela e sem
-    # URL. Sem isso a barra de uma URL e o hifen dentro de `$...$` viram falso
-    # positivo.
     est = re.sub(r"^---.*?---\n", "", content, count=1, flags=re.DOTALL)
     est = strip_fences(est)
     est = re.split(r"(?m)^## (?:Refer[eê]ncias|Conex[oõ]es)\s*$", est)[0]
@@ -883,22 +818,18 @@ def check_essay(filepath: Path) -> dict:
     est = re.sub(r"\[([^\]]*)\]\([^\)]*\)", r"\1", est)
     est = re.sub(r"(?m)^\|.*$", "", est)
 
-    # "Sem ponto e virgula": divida em frases autonomas.
     n_pv = est.count(";")
     if n_pv:
         add("INFO", "SEMICOLON",
             f"{n_pv} ponto(s) e vírgula na prosa — a convenção pede frases "
             "autônomas; trabalho de /polish")
 
-    # "Por exemplo" e "ou seja" por extenso, sem abreviacao latina solta.
     lat = re.findall(r"(?i)\b(?:e\.g\.|i\.e\.)", est)
     if lat:
         add("WARNING", "LATIN_ABBREV",
             f"{len(lat)} abreviação(ões) latina(s) {sorted(set(lat))} — escreva "
             "“por exemplo”, “ou seja”")
 
-    # "Remissoes completas": Capitulo 3, nao Cap. 3. `Fig. 1` no inicio de linha
-    # fica de fora: e o formato de legenda que pdf_boxes.lua estiliza.
     cross = [m.group(0) for m in re.finditer(
         r"(?im)(?<![\n*])\b(?:cap|sec|seç|tab|eq)\.\s*\d+", est)]
     if cross:
@@ -906,31 +837,23 @@ def check_essay(filepath: Path) -> dict:
             f"{len(cross)} remissão(ões) abreviada(s) {cross[:3]} — escreva "
             "“Capítulo 3”, “Seção 2” por extenso")
 
-    # "Intervalos numericos por extenso": 5 a 30, nao 5-30.
     faixa = re.findall(r"(?<![\d\-–])\d{1,4}\s?[-–]\s?\d{1,4}(?![\d\-–])", est)
     if faixa:
         add("INFO", "NUMERIC_RANGE_HYPHEN",
             f"{len(faixa)} intervalo(s) numérico(s) com hífen {faixa[:3]} — a "
             "convenção pede “5 a 30”")
 
-    # "Sem barras obliquas": escreva "e" ou "ou" por extenso.
     barras = re.findall(r"(?<=[a-zà-ú])\s?/\s?(?=[a-zà-ú])", est)
     if barras:
         add("INFO", "SLASH_IN_PROSE",
             f"{len(barras)} barra(s) oblíqua(s) entre palavras — escreva “e” ou "
             "“ou” por extenso")
 
-    # "Sem simbolos de atalho": ~ vira "aproximadamente".
     til = re.findall(r"~\s?\d", est)
     if til:
         add("WARNING", "TILDE_APPROX",
             f"{len(til)} uso(s) de ~ como “aproximadamente” — escreva por extenso")
 
-    # -----------------------------------------------------------------------
-    # 13.7 Imagens (## Tratamento de imagens em conventions)
-    # -----------------------------------------------------------------------
-    # ERROR porque quebram o export em silêncio: o Pandoc não acha o arquivo e o
-    # PDF sai sem a figura, sem aviso alto.
     for alvo in re.findall(r"!\[[^\]]*\]\(([^\)]+)\)", content):
         alvo_limpo = alvo.split()[0].strip("<>")
         if alvo_limpo.startswith("data:"):
@@ -944,9 +867,6 @@ def check_essay(filepath: Path) -> dict:
                 add("ERROR", "IMAGE_MISSING",
                     f"imagem inexistente: {alvo_limpo[:60]}")
 
-    # -----------------------------------------------------------------------
-    # 13.8 Wikilink sem título visível (## Compatibilidade com Obsidian)
-    # -----------------------------------------------------------------------
     conex_txt = content.split("## Conexões")[-1] if "## Conexões" in content else ""
     sem_pipe = [w for w in re.findall(r"\[\[([^\]]+)\]\]", conex_txt)
                 if "|" not in w and not w.startswith("#")]
@@ -955,49 +875,23 @@ def check_essay(filepath: Path) -> dict:
             f"{len(sem_pipe)} wikilink(s) sem título visível {sem_pipe[:3]} — o "
             "formato é [[nome-do-arquivo|Título Da Página]]")
 
-    # -----------------------------------------------------------------------
-    # 13.9 Nome de arquivo (## Nomenclatura de páginas)
-    # -----------------------------------------------------------------------
     if not re.match(r"^[a-z0-9]+(-[a-z0-9]+)*$", filepath.stem):
         add("WARNING", "FILENAME_NOT_KEBAB",
             f"nome de arquivo fora do kebab-case: {filepath.stem}")
 
-    # -----------------------------------------------------------------------
-    # 14. HTML residual
-    # -----------------------------------------------------------------------
     html_tags = HTML_TAG_RE.findall(strip_fences(content))
     if html_tags:
         add("ERROR", "HTML_RESIDUAL",
             f"{len(html_tags)} tag(s) HTML residuais: {html_tags[:3]}")
 
-    # -----------------------------------------------------------------------
-    # 15. Símbolos residuais
-    # -----------------------------------------------------------------------
     for desc, occurrences in detect_residual_symbols(lines_clean):
         add("ERROR", "RESIDUAL_SYMBOL",
             f"Símbolo residual '{desc}' em {len(occurrences)} linha(s): {occurrences[:5]}")
 
-    # -----------------------------------------------------------------------
-    # 16. Idioma — parágrafos possivelmente em inglês
-    # -----------------------------------------------------------------------
     for snippet in detect_english_paragraphs(content):
         add("WARNING", "ENGLISH_PARAGRAPH",
             f"Parágrafo possivelmente em inglês: \"{snippet}...\"")
 
-    # -----------------------------------------------------------------------
-    # 17. Loose chapter labels (ex: "01 — Introdução" como linha solta)
-    # -----------------------------------------------------------------------
-    # Separador tem que ser traço (-, –, —), nunca ponto: "1. Texto" é item de
-    # lista ordenada Markdown padrão (## Estilo de prosa permite lista quando
-    # a numeração é passo-a-passo de um argumento), não o resíduo de import de
-    # PDF que esta regra tenta pegar. Incluir "." aqui gerava aviso em toda
-    # lista numerada do corpus — ruído puro, sem nenhum caso real capturado.
-    #
-    # Também exclui linha com sinal de LaTeX (`\comando`, `$`, `&` de tabela
-    # de matriz): dentro de um bloco `$$...$$`/`\begin{cases}` (que
-    # strip_fences não esvazia — só cobre ``` ```), uma linha de sistema
-    # linear como "1 - \lambda_A \lambda_B \rho & \text{se } x = 0" também
-    # começa com dígito+traço, mas é matemática, não capítulo órfão.
     LATEX_TOKEN_RE = re.compile(r"\\[a-zA-Z]|\$|&")
     for i, line in enumerate(lines_clean):
         stripped = line.strip()
@@ -1007,10 +901,6 @@ def check_essay(filepath: Path) -> dict:
 
     return {"name": name, "issues": issues}
 
-
-# ---------------------------------------------------------------------------
-# Checagens de corpus (puladas em escopo de essay único)
-# ---------------------------------------------------------------------------
 
 def build_title_map():
     """Mapa de título -> arquivo (e o inverso) para todas as categorias, e o
@@ -1027,11 +917,6 @@ def build_title_map():
             rel_path = f"{category}/{file.name}"
             content = load(file)
             title = get_h1(content)
-            # O slug do arquivo é alvo VÁLIDO de wikilink, e é a forma canônica:
-            # o Obsidian resolve `[[...]]` por nome de arquivo, nunca pelo H1 nem
-            # por alias de frontmatter (verificado no leitor real). A convenção da
-            # wiki é `[[slug-do-arquivo|Título Visível]]`. O H1 continua aceito
-            # aqui só para não quebrar link antigo ainda não migrado.
             all_titles.add(file.stem)
             all_slugs.add(file.stem)
             if category == "essays":
@@ -1142,9 +1027,6 @@ def check_dead_wikilinks(title_map, essay_only_file=None):
                 if target not in all_titles:
                     dead_links.setdefault(target, set()).add(f"{category}/{file.name}")
                 elif target not in all_slugs:
-                    # Existe uma pagina com esse H1, mas o link usa o titulo em vez
-                    # do nome de arquivo: resolve aqui (falso "vivo"), mas o Obsidian
-                    # so resolve por slug e abre uma nota nova em branco.
                     non_slug_links.setdefault(target, set()).add(f"{category}/{file.name}")
 
     for target, sources in sorted(dead_links.items()):
@@ -1187,10 +1069,6 @@ def check_orphans(title_map):
             title = get_h1(load(file))
             if not title:
                 continue
-            # Casa pelo slug do arquivo E pelo H1: a forma canônica é
-            # `[[slug|Título]]`, mas link antigo pelo título ainda conta como
-            # referência — senão a migração para slug marcaria a wiki inteira
-            # como órfã.
             alvos = "|".join(re.escape(a) for a in (file.stem, title))
             pattern = re.compile(r"\[\[(?:" + alvos + r")(\|[^\]]+)?\]\]")
             if pattern.search(essay_content):
@@ -1302,10 +1180,6 @@ def check_sources_manifest(essay_titles):
                 add("ERROR", "MANIFEST_ENTRY_NO_FILE",
                     f"manifest.md tem entrada para '{filename}' mas o arquivo não existe em wiki/sources/**")
             if entry["tipo"] == "Ensaio Completo Importado":
-                # `Virou: None` é uma resposta, não uma omissão: registra que o
-                # Usuário examinou a fonte e decidiu que ela não virou essay
-                # nenhum. Sem esse valor, a única forma de calar o erro seria
-                # apontar para um essay que não existe.
                 virou = (entry["virou"] or "").strip()
                 if virou.lower().strip('"').strip("'") in MANIFEST_VIROU_NONE:
                     pass
@@ -1392,10 +1266,6 @@ def check_insights():
     return corpus
 
 
-# ---------------------------------------------------------------------------
-# CLI
-# ---------------------------------------------------------------------------
-
 def build_parser():
     p = argparse.ArgumentParser(
         description="Lint unificado da wiki (formatação de essay + estrutura/grafo)."
@@ -1448,7 +1318,6 @@ def main():
     corpus_skipped = False
     if target_essay is not None:
         corpus_skipped = True
-        # Ainda faz sentido filtrar wikilinks mortos originados NESTE essay.
         title_map = build_title_map()
         corpus_issues.extend(check_dead_wikilinks(title_map, essay_only_file=target_essay))
         corpus_issues.extend(check_index(title_map, essay_only_file=target_essay))
@@ -1476,7 +1345,6 @@ def main():
         print(json.dumps(output, ensure_ascii=False, indent=2))
         return
 
-    # ---- saída human-readable ----
     severity_order = {"CRITICAL": 0, "ERROR": 1, "WARNING": 2, "INFO": 3}
     ICONS = {"CRITICAL": "🔴", "ERROR": "❌", "WARNING": "⚠️ ", "INFO": "ℹ️ "}
 
