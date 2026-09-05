@@ -84,7 +84,7 @@ Tente os pushes separadamente. Em falha: reporte repositório, erro e comando de
 
 ## Relato
 
-Reporte `pre-flight`, `post-flight`, SHA/estado de engine e data, artefatos gerados e erros. Se push falhar, registre o SHA local e o comando exato para concluir.
+Reporte `pre-flight`, `post-flight`, SHA/estado de engine e data, artefatos gerados e erros. Etapa barrada por gate: use `NÃO EXECUTADO (gate falhou)`. Se push falhar, registre o SHA local e o comando exato para concluir.
 
 ## Nunca
 
