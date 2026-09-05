@@ -4,7 +4,6 @@ from pathlib import Path
 import yaml
 from conftest import run_script
 
-
 REQUIRED_METADATA = {
     "second-brain-role",
     "second-brain-mode",
