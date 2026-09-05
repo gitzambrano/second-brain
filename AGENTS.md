@@ -102,11 +102,23 @@ registradas na inicialização.
 
 ## Skills Disponíveis
 
-Tag de modo:
+A coluna **Modo** abaixo descreve o tipo de execução da skill:
 
 - **[script]** — execução mecânica;
 - **[leitura]** — julgamento editorial/conceitual;
 - **[ambos]** — combina os dois.
+
+Isso é diferente de `metadata.second-brain-mode` no frontmatter. O metadata declara **efeito persistente**: `read` não escreve, `write` é um workflow que pode escrever e `mixed` possui modos reais de leitura e escrita conforme subcomando ou autorização.
+
+Toda skill declara em `metadata`:
+
+- `second-brain-role` — responsabilidade principal;
+- `second-brain-mode` — `read | write | mixed`;
+- `second-brain-scope` — unidade sobre a qual opera;
+- `second-brain-approval` — `none | conditional | before-write | before-remote`;
+- `second-brain-closure` — tipo de fechamento esperado.
+
+Campos adicionais podem declarar contratos específicos. `second-brain-routes-to`, quando presente, registra um handoff operacional direto para outra skill; por exemplo, `/expand` entrega mudança estrutural a `/chapter`.
 
 ### Ideação e criação
 
@@ -143,12 +155,12 @@ Tag de modo:
 
 | Skill    | Comando       | Modo   | Quando usar                                                                       |
 | -------- | ------------- | ------ | --------------------------------------------------------------------------------- |
-| Organize | `/organize` | ambos  | Metadados, estrutura e formatação mecânica; o fechamento de corpus chama `update`, que commita e faz push |
+| Organize | `/organize` | ambos  | Metadados, estrutura e formatação mecânica; oferece `update` para commit/push somente após autorização explícita |
 | Sweep    | `/sweep`    | ambos  | `/organize` → `/continuity` → `/proofread` → `/polish` → `/linkify` |
 | Gaps     | `/gaps`     | ambos  | Identificar lacunas mecânicas, léxicas e semânticas; read-only                 |
-| Connect  | `/connect`  | ambos  | Agir sobre candidatos de`/gaps`                                                 |
+| Connect  | `/connect`  | ambos  | Agir sobre candidatos de `/gaps`                                                |
 | Stats    | `/stats`    | script | Dashboard read-only da wiki                                                       |
-| Status   | `/status`   | script | Mostrar ou atualizar`wiki/status.md`                                            |
+| Status   | `/status`   | script | Mostrar ou atualizar `wiki/status.md`                                           |
 | Merge    | `/merge`    | ambos  | Fundir duas páginas do mesmo tipo                                                |
 | Delete   | `/delete`   | ambos  | Remover página com confirmação e reparar consequências                        |
 | Doctor   | `/doctor`   | script | Diagnóstico read-only do repositório                                            |
@@ -258,7 +270,7 @@ Pendência de curto prazo fica em `wiki/status.md`, não no plano.
 
 - **Abertura:** se o pedido envolve trabalho substancial, leia `wiki/status.md` e as convenções relevantes antes de editar.
 - **Fechamento:** após trabalho substancial (`/essay`, `/import`, `/digest`, `/absorb`, `/organize`, `/sweep`, `/study`, `/plan work`), ofereça `/status update`.
-- Skills que precisam regenerar derivados usam o subagent `update` **depois** das edições.
+- Skills que precisam regenerar derivados podem oferecer o subagent `update` depois das edições; execute-o somente com a autorização exigida pela skill chamadora.
 - `/stats` é read-only e não chama `update`.
 
 ## Regras Gerais
@@ -299,11 +311,11 @@ Executa fechamento com portão (gated): pre-flight, fixer, rebuild, post-flight 
 
 Pode reconstruir índice, referências, grafo, sphere, stats, qmd e espelhos. Não decide conteúdo, não resolve contradições, não funde/deleta páginas e não escreve prosa.
 
-Chame apenas quando a skill de fechamento pedir ou sob pedido direto de sincronização/atualização.
+Execute apenas quando a skill de fechamento pedir **e** sua autorização estiver satisfeita, ou sob pedido direto de sincronização/atualização.
 
 ### `lint-report`
 
-Agrega diagnósticos de `check_wiki.py`, `check_references.py`, `check_dedupe.py` e `check_gaps.py`, prioriza em Crítico/Atenção/Informativo e não corrige nada.
+Agrega diagnósticos de `check_wiki.py`, `check_references.py`, `check_dedupe.py`, `check_freshness.py` e `check_gaps.py`. Preserva as severidades emitidas pelos checkers, agrupa em Crítico/Atenção/Informativo e não corrige nada.
 
 Só sob pedido direto; nenhuma skill precisa chamá-lo automaticamente.
 
@@ -317,8 +329,8 @@ Vale para `.agents/skills/` e `.agents/agents/`.
 - Não descreva o que outra skill faz; cite o comando ou arquivo canônico.
 - Não registre histórico de mudança; o arquivo descreve o comportamento atual.
 - Reserve “nunca” e “sempre” para invariantes realmente bloqueantes.
-- Mudou o comportamento, atualize `description:` do frontmatter.
-- Editou `.agents/`, rode `python scripts/sync_skills.py` para atualizar os espelhos. Valide com `python scripts/check_skills.py`.
+- Mudou o comportamento, atualize `description:` e o `metadata` afetado no frontmatter.
+- Editou `.agents/`, rode `python scripts/sync_skills.py` para atualizar os espelhos/adapters. Valide com `python scripts/check_skills.py` e `python scripts/check_agents.py`.
 
 ## Ferramentas
 
