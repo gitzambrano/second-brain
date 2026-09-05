@@ -25,10 +25,12 @@ def test_post_image_emphasis_stays_inline_and_real_captions_stay_captions():
       }
     </style>
     <div class="content">
-      <p><picture><img alt="Q-Q" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="></picture></p>
+      <p><picture><img alt="Q-Q"
+        src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="></picture></p>
       <p id="prose">O modelo subestima o <em id="sink">sink rate</em> principalmente na cauda.</p>
 
-      <p><picture><img alt="Rotor" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="></picture></p>
+      <p><picture><img alt="Rotor"
+        src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="></picture></p>
       <p id="fig">Fig. 1 - Variação do <em id="flapping">flapping</em> longitudinal.</p>
 
       <p><img alt="Plot" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="></p>
