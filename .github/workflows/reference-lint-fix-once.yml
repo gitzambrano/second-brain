@@ -1,0 +1,79 @@
+name: Reference lint semantics fix once
+
+on:
+  push:
+    paths:
+      - '.github/workflows/reference-lint-fix-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Patch reference lint semantics
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('scripts/check_references.py')
+          s = p.read_text(encoding='utf-8')
+          old = s
+          s = s.replace('    REFERENCIA_NAO_USADA         WARNING  entrada nunca citada no corpo\n', '')
+          s = s.replace('INLINE_CITATION_RE = re.compile(r"\\[(\\d+)\\]")\n', '')
+          s = s.replace('    cited_numbers = {int(n) for n in INLINE_CITATION_RE.findall(body)}\n', '')
+          start_marker = '        # `REFERENCIA_NAO_USADA` só faz sentido'
+          end_marker = '\n    for m in MD_LINK_RE.finditer(body):'
+          if start_marker not in s:
+              raise SystemExit('REFERENCIA_NAO_USADA block not found')
+          start = s.index(start_marker)
+          end = s.index(end_marker, start)
+          s = s[:start] + s[end:]
+          if s == old:
+              raise SystemExit('check_references.py unchanged')
+          p.write_text(s, encoding='utf-8')
+
+          p = Path('scripts/check_dedupe.py')
+          s = p.read_text(encoding='utf-8')
+          old = s
+          needle = 'from check_title import normalize as normalize_title\n'
+          replacement = 'from check_references import TAIL_LINK_RE, citation_and_note\n' + needle
+          if needle not in s:
+              raise SystemExit('check_dedupe import anchor not found')
+          s = s.replace(needle, replacement, 1)
+          anchor = '\ndef check_references(threshold):\n'
+          helper = '''\ndef reference_core(citation):\n    \"\"\"Núcleo bibliográfico, sem nota contextual nem o `[Link]` final.\n\n    A mesma obra pode ter notas diferentes em essays diferentes; isso não é\n    divergência bibliográfica e não deve aparecer como candidato de dedupe.\n    \"\"\"\n    text = TAIL_LINK_RE.sub(\"\", citation).rstrip()\n    core, _note = citation_and_note(text)\n    return normalize_citation(core)\n\n'''
+          if anchor not in s:
+              raise SystemExit('check_dedupe function anchor not found')
+          s = s.replace(anchor, helper + 'def check_references(threshold):\n', 1)
+          s = s.replace('        variants = {normalize_citation(c): c for _, c in occurrences}\n',
+                        '        variants = {reference_core(c): c for _, c in occurrences}\n', 1)
+          s = s.replace('        citations, lambda it: normalize_citation(it[1]), threshold\n',
+                        '        citations, lambda it: reference_core(it[1]), threshold\n', 1)
+          s = s.replace('        if a[1].strip() == b[1].strip():\n',
+                        '        if reference_core(a[1]) == reference_core(b[1]):\n', 1)
+          if s == old:
+              raise SystemExit('check_dedupe.py unchanged')
+          p.write_text(s, encoding='utf-8')
+
+          test = Path('tests/test_reference_dedupe_semantics.py')
+          test.write_text('''from check_dedupe import reference_core\nfrom check_references import check_essay\n\n\ndef test_reference_core_ignores_context_note():\n    a = \"Author, A., *Book Title*, Publisher, 2020. — Nota A. [Link](https://example.com/book)\"\n    b = \"Author, A., *Book Title*, Publisher, 2020. — Nota B. [Link](https://example.com/book)\"\n    assert reference_core(a) == reference_core(b)\n\n\ndef test_reference_core_detects_bibliographic_difference():\n    a = \"Author, A., *Book Title*, Publisher, 2020. [Link](https://example.com/book)\"\n    b = \"Author, A., *Book Title*, Other Publisher, 2020. [Link](https://example.com/book)\"\n    assert reference_core(a) != reference_core(b)\n\n\ndef test_unused_reference_is_not_a_lint_issue(tmp_path):\n    essay = tmp_path / \"essay.md\"\n    essay.write_text(\"\"\"# Teste\\n\\nPor Autor\\n\\nTexto com citação [1].\\n\\n## Referências\\n\\n[1] Autor, A., *Usada*, Editora, 2020. [Link](https://example.com/a)\\n\\n[2] Autor, B., *Leitura complementar*, Editora, 2021. [Link](https://example.com/b)\\n\"\"\", encoding=\"utf-8\")\n    result = check_essay(essay)\n    assert all(issue[\"code\"] != \"REFERENCIA_NAO_USADA\" for issue in result[\"issues\"])\n''', encoding='utf-8')
+          PY
+      - name: Validate
+        run: |
+          python -m pip install --quiet pytest pyyaml
+          python -m py_compile scripts/check_references.py scripts/check_dedupe.py
+          pytest -q tests/test_reference_dedupe_semantics.py tests/test_docs_references.py tests/test_fix_lint.py
+          git diff --check
+      - name: Commit and push
+        run: |
+          rm .github/workflows/reference-lint-fix-once.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add scripts/check_references.py scripts/check_dedupe.py tests/test_reference_dedupe_semantics.py .github/workflows/reference-lint-fix-once.yml
+          git commit -m 'Refine reference lint and dedupe semantics'
+          git push origin main
