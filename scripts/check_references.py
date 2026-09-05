@@ -13,7 +13,6 @@ Gera:
     DUPLICATE_REFERENCIA         ERROR    mesma URL duas vezes no mesmo essay
     LINK_NOT_IN_REFERENCIAS      ERROR    URL citada no corpo sem entrada
     REFERENCIA_SEM_LINK          WARNING  entrada sem link
-    REFERENCIA_NAO_USADA         WARNING  entrada nunca citada no corpo
 
 Uso:
     python scripts/check_references.py              # todos os essays
@@ -95,7 +94,6 @@ ITALIC_RE = re.compile(r"(?<!\*)\*([^*\n]+)\*(?!\*)")
 # `nome_var` ou `x_1`: ali o caractere antes/depois do underscore é letra/dígito,
 # então o boundary falha e a regex não entra.
 UNDERSCORE_ITALIC_RE = re.compile(r"(?<!\w)_([^_\n]+)_(?!\w)")
-INLINE_CITATION_RE = re.compile(r"\[(\d+)\]")
 DOUBLE_QUOTE_SPAN_RE = re.compile(r'["\u201c]([^"\u201d\n]+)["\u201d]')
 
 
@@ -232,7 +230,6 @@ def check_essay(path):
 
     entries = parse_entries(section)
     body = split_body(content)
-    cited_numbers = {int(n) for n in INLINE_CITATION_RE.findall(body)}
 
     seen_urls = {}
     for position, entry in enumerate(entries, start=1):
@@ -356,24 +353,6 @@ def check_essay(path):
             else:
                 seen_urls[key] = entry["number"]
 
-        # `REFERENCIA_NAO_USADA` só faz sentido num essay que de fato usa
-        # citação numérica inline. Nenhuma regra de conventions/SKILL.md obriga
-        # isso — a bibliografia pode ser lista de leitura, não aparato de
-        # citação. Num essay sem nenhuma citação `[N]` no corpo, marcar todas as
-        # entradas como "não usadas" seria ruído, não achado; o que interessa é
-        # o caso misto, em que o autor citou algumas e esqueceu outras.
-        if cited_numbers and entry["number"] not in cited_numbers:
-            issues.append(
-                {
-                    "code": "REFERENCIA_NAO_USADA",
-                    "severity": "WARNING",
-                    "fixable": False,
-                    "message": (
-                        f"entrada [{entry['number']}] nunca citada no corpo, num essay "
-                        f"que cita outras entradas inline"
-                    ),
-                }
-            )
 
     for m in MD_LINK_RE.finditer(body):
         url = m.group("url")

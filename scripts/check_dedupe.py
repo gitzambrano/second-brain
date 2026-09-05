@@ -35,6 +35,7 @@ from build_references import (
     normalize_citation,
     normalize_url,
 )
+from check_references import TAIL_LINK_RE, citation_and_note
 from check_title import normalize as normalize_title
 from repo_paths import CODE_ROOT, DATA_ROOT, WIKI_ROOT
 
@@ -162,6 +163,16 @@ def check_tags(threshold):
     return [{"a": a, "b": b, "similarity": ratio} for a, b, ratio in pairs]
 
 
+def reference_core(citation):
+    """Núcleo bibliográfico, sem nota contextual nem o `[Link]` final.
+
+    A mesma obra pode ter notas diferentes em essays diferentes; isso não é
+    divergência bibliográfica e não deve aparecer como candidato de dedupe.
+    """
+    text = TAIL_LINK_RE.sub("", citation).rstrip()
+    core, _note = citation_and_note(text)
+    return normalize_citation(core)
+
 def check_references(threshold):
     """Mesma fonte citada em essays diferentes com grafia distinta."""
     by_url = defaultdict(list)   # url normalizada -> [(slug, citação)]
@@ -181,7 +192,7 @@ def check_references(threshold):
     # Mesma URL, essays diferentes, citação escrita de forma diferente.
     for url, occurrences in sorted(by_url.items()):
         slugs = {slug for slug, _ in occurrences}
-        variants = {normalize_citation(c): c for _, c in occurrences}
+        variants = {reference_core(c): c for _, c in occurrences}
         if len(slugs) > 1 and len(variants) > 1:
             findings.append(
                 {
@@ -194,11 +205,11 @@ def check_references(threshold):
 
     # Sem URL: citação quase-idêntica em essays diferentes.
     for a, b, ratio in near_duplicate_pairs(
-        citations, lambda it: normalize_citation(it[1]), threshold
+        citations, lambda it: reference_core(it[1]), threshold
     ):
         if a[0] == b[0]:
             continue  # mesmo essay é DUPLICATE_REFERENCIA, do check_references.py
-        if a[1].strip() == b[1].strip():
+        if reference_core(a[1]) == reference_core(b[1]):
             # Mesma citação, caractere a caractere, em essays diferentes: é a
             # mesma obra corretamente reutilizada (ver conventions/SKILL.md,
             # "procure a mesma fonte em wiki/references.md antes de redigir
