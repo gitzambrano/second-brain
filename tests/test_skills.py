@@ -20,6 +20,13 @@ def skill_frontmatter(name: str) -> dict:
     return yaml.safe_load(raw)
 
 
+def all_skill_frontmatters() -> dict[str, dict]:
+    return {
+        path.parent.name: skill_frontmatter(path.parent.name)
+        for path in sorted((ROOT / ".agents" / "skills").glob("*/SKILL.md"))
+    }
+
+
 def test_real_skill_contracts_have_no_blocking_errors():
     proc = run_script("check_skills.py", "--json")
     assert proc.returncode == 0, proc.stdout + proc.stderr
@@ -52,6 +59,18 @@ def test_every_skill_has_structured_second_brain_metadata():
         assert REQUIRED_METADATA <= set(meta["metadata"]), path
         assert all(isinstance(v, str) for v in meta["metadata"].values()), path
         assert len(meta["description"]) <= 1024, path
+
+
+def test_declared_skill_routes_resolve_without_direct_cycles():
+    skills = all_skill_frontmatters()
+    for source, frontmatter in skills.items():
+        target = frontmatter["metadata"].get("second-brain-routes-to")
+        if not target:
+            continue
+        assert target in skills, f"/{source} routes to unknown skill /{target}"
+        assert target != source, f"/{source} routes to itself"
+        reverse = skills[target]["metadata"].get("second-brain-routes-to")
+        assert reverse != source, f"direct routing cycle: /{source} <-> /{target}"
 
 
 def test_query_is_read_only_by_contract():
