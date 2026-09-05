@@ -1,0 +1,117 @@
+name: Fix local source manifest checker once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/fix-local-source-manifest-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Patch checker and add regression test
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('scripts/check_wiki.py')
+          text = p.read_text(encoding='utf-8')
+          old = '''        for filename, entry in manifest_entries.items():
+            if filename not in files_on_disk:
+                add("ERROR", "MANIFEST_ENTRY_NO_FILE",
+                    f"manifest.md tem entrada para '{filename}' mas o arquivo não existe em wiki/sources/**")
+            if entry["tipo"] == "Ensaio Completo Importado":
+'''
+          new = '''        # Raw source documents are intentionally local-only (see data/.gitignore).
+        # The manifest is durable provenance and is expected to outlive the local
+        # source file in a clean clone. Therefore validation is one-way: any raw
+        # source that IS present must have a manifest entry (checked above), but a
+        # manifest entry does not require the raw document to be versioned/present.
+        for filename, entry in manifest_entries.items():
+            if entry["tipo"] == "Ensaio Completo Importado":
+'''
+          if old not in text:
+              raise SystemExit('Expected MANIFEST_ENTRY_NO_FILE block not found')
+          p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          test = Path('tests/test_manifest_local_sources.py')
+          test.write_text(r'''from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+SCRIPTS = ROOT / "scripts"
+if str(SCRIPTS) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS))
+
+import check_wiki
+
+
+def _manifest(filename: str = "original.pdf") -> str:
+    return f"""# Manifesto de Sources
+
+## [2026-09-05] {filename}
+Tipo: Ensaio Completo Importado.
+Tags: Engenharia
+Pasta: wiki/sources/ensaio-importado/
+Virou: [[essay-existente|Essay Existente]] (essay novo).
+Verificação: referências bibliográficas confirmadas.
+"""
+
+
+def _prepare(monkeypatch, tmp_path):
+    sources = tmp_path / "wiki" / "sources"
+    (sources / "ensaio-importado").mkdir(parents=True)
+    (sources / "manifest.md").write_text(_manifest(), encoding="utf-8")
+    handouts = tmp_path / "wiki" / "handouts"
+    handouts.mkdir(parents=True)
+    monkeypatch.setattr(check_wiki, "SOURCES_DIR", sources)
+    monkeypatch.setattr(check_wiki, "HANDOUTS_DIR", handouts)
+    return sources
+
+
+def test_manifest_entry_may_outlive_local_raw_source(monkeypatch, tmp_path):
+    _prepare(monkeypatch, tmp_path)
+    issues = check_wiki.check_sources_manifest({"essay-existente"})
+    assert not [i for i in issues if i["code"] == "MANIFEST_ENTRY_NO_FILE"]
+    assert not [i for i in issues if i["severity"] in {"ERROR", "CRITICAL"}]
+
+
+def test_present_raw_source_still_requires_manifest_entry(monkeypatch, tmp_path):
+    sources = _prepare(monkeypatch, tmp_path)
+    (sources / "ensaio-importado" / "sem-manifesto.pdf").write_bytes(b"raw")
+    issues = check_wiki.check_sources_manifest({"essay-existente"})
+    assert any(i["code"] == "MANIFEST_MISSING_ENTRY" for i in issues)
+''', encoding='utf-8')
+          PY
+      - name: Validate regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m pip install -r requirements-ci.txt
+          python -m pytest -q tests/test_manifest_local_sources.py tests/test_checker_selftests.py
+          python -m compileall -q scripts
+          git diff --check
+      - name: Commit and push fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f .github/workflows/fix-local-source-manifest-once.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add scripts/check_wiki.py tests/test_manifest_local_sources.py .github/workflows/fix-local-source-manifest-once.yml
+          git commit -m 'Allow manifest provenance for local-only sources'
+          git push origin HEAD:main
