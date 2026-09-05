@@ -202,8 +202,8 @@ O site público opera sob um modelo de **Atlas Aberto + Texto por Autorização*
 O engine conta com suíte de testes automatizados via `pytest` que rodam sobre ambientes isolados em `tmp_path`, garantindo total proteção do corpus real.
 
 ```bash
-python -m pytest -q                         # Executa a suíte rápida
-python -m pytest tests/test_site_privacy.py # Sentinela estrita de privacidade
+python -m pytest -q -m "not html and not pdf and not slow and not browser" # suíte rápida/core
+python -m pytest tests/test_site_privacy.py                                # sentinela de privacidade
 ```
 
-Consulte o arquivo **[`TESTING.md`](./TESTING.md)** para instruções completas sobre os quality gates, dependências opcionais (Pandoc, Playwright) e regras de regressão.
+Consulte o arquivo **[`TESTING.md`](./TESTING.md)** para a matriz completa de testes e dependências opcionais (Pandoc, LuaLaTeX e Chromium).
