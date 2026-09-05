@@ -1,0 +1,47 @@
+name: Apply mobile review spacing
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-mobile-review-spacing-temp.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Apply mobile-only reading-time compression
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('scripts/site_src/site.css')
+          s = p.read_text(encoding='utf-8')
+          needle = '  .card-meta { font-size: 10.5px; gap: 6px; }\n'
+          addition = '  .card-meta .dot + span { font-size: 10px; letter-spacing: -0.025em; }\n'
+          if addition in s:
+              raise SystemExit('rule already present')
+          if needle not in s:
+              raise SystemExit('mobile card-meta rule not found')
+          p.write_text(s.replace(needle, needle + addition, 1), encoding='utf-8')
+          PY
+          rm -f .github/workflows/apply-mobile-review-spacing-temp.yml
+
+      - name: Commit and push
+        run: |
+          set -euo pipefail
+          git config user.name 'Second Brain Publisher'
+          git config user.email 'actions@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git diff --cached -- scripts/site_src/site.css
+          git commit -m 'fix: improve mobile review badge spacing'
+          git push origin HEAD:main
