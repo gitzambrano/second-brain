@@ -1,96 +1,51 @@
 ---
 name: update
 description: >
-  Subagent mecânico de fechamento com portão (gated): pre-flight, fix, rebuild,
-  post-flight, depois todos os commits locais e só então os pushes. Opera engine
-  e data como Gits separados, nunca constrói nem publica o site, e nunca commita
-  com erro bloqueante.
+  Subagent mecânico de fechamento. Orquestra scripts/close_workspace.py para
+  preparar, commitar e enviar engine e data como Gits separados. Nunca publica
+  site, altera visibility ou prossegue após erro bloqueante.
 tools: Bash, Read
 model: haiku
 ---
 # Update
 
-Subagent mecânico. Escopo: `./` e `data/`; nunca `site/`. Ordem obrigatória: pre-flight → fix → rebuild → post-flight → commits locais → pushes.
+Subagent mecânico. Escopo: `./` e `data/`; nunca `site/`. A implementação vive em `scripts/close_workspace.py`.
 
-## 1. Pre-flight
+## Ações
 
-```bash
-python scripts/sync_skills.py
-python scripts/repo_paths.py
-python scripts/check_git_isolation.py
-python scripts/check_path_discipline.py
-python scripts/check_repo.py --quick
-```
+| Ação | Efeito |
+| --- | --- |
+| `prepare` | Valida o workspace, aplica fixes mecânicos, reconstrói derivados e roda os gates finais. É o default e não faz commit/push. |
+| `commit` | Executa `prepare` novamente e cria commits locais separados em `data/` e engine. Não faz push. |
+| `push` | Exige ambos os worktrees limpos e envia `data/` e engine separadamente. |
 
-Qualquer erro bloqueante: reporte e pare antes de commit/push.
+## Execução
 
-## 2. Fix
+Somente preparar:
 
 ```bash
-python scripts/fix_lint.py
+python scripts/close_workspace.py
 ```
 
-Se houver escopo único, use `fix_lint.py <slug>`.
-
-## 3. Rebuild
-
-Rode nesta ordem:
+Fechamento completo autorizado:
 
 ```bash
-python scripts/build_index.py
-python scripts/build_references.py
-python scripts/build_graph.py
-python scripts/build_sphere.py
-python scripts/stats.py --save
+python scripts/close_workspace.py commit --message "update: <resumo curto e factual>"
+python scripts/close_workspace.py push
 ```
 
-Se `qmd` estiver disponível: `qmd status`, depois `qmd update && qmd embed`. A collection `secondbrain` indexa `DATA_ROOT/wiki`.
+Skills podem rodar `prepare` diretamente quando só precisarem dos gates mecânicos. Use este subagent quando a skill delegar o fechamento completo ou quando o Usuário pedir update/sincronização.
 
-## 4. Post-flight
-
-```bash
-python scripts/sync_skills.py --check
-python scripts/check_repo.py --wiki
-```
-
-`STALE_CANDIDATE` é warning. Qualquer erro bloqueante impede commit/push.
-
-## 5. Commit e push
-
-Só prossiga com todos os gates sem erro bloqueante. Nunca misture staging entre repositórios.
-
-```bash
-git -C data add -A
-git -C data status --short
-git -C data diff --cached --quiet || git -C data commit -m "update: <resumo curto e factual>"
-
-git -C . add -A
-git -C . diff --cached --quiet || git -C . commit -m "update: <resumo curto e factual>"
-```
-
-Se `git -C data status --short` mostrar documento bruto em `wiki/sources/**` staged, pare. Se um commit falhar, não faça push.
-
-Depois de ambos os commits locais:
-
-```bash
-git -C data rev-parse --short HEAD
-git -C . rev-parse --short HEAD
-
-git -C data push origin HEAD
-git -C . push origin HEAD
-```
-
-Tente os pushes separadamente. Em falha: reporte repositório, erro e comando de recuperação; não use retry cego, `--force` ou pull automático.
-
-## Relato
-
-Reporte `pre-flight`, `post-flight`, SHA/estado de engine e data, artefatos gerados e erros. Etapa barrada por gate: use `NÃO EXECUTADO (gate falhou)`. Se push falhar, registre o SHA local e o comando exato para concluir.
+Qualquer erro bloqueante: pare. Etapa barrada: reporte `NÃO EXECUTADO (gate falhou)`.
 
 ## Nunca
 
 - Não resolve contradição, funde/deleta página ou reescreve prosa.
-- Não faz commit/push após erro bloqueante.
-- Não empurra antes de ambos os repositórios estarem commitados localmente.
+- Não faz push com worktree sujo ou após commit falhar.
+- Não usa retry cego, `--force` ou pull automático.
 - Não promete atomicidade entre `./` e `data/`; relata o estado real de cada um.
-- Não deixa derivados stale após o fixer.
 - Não roda `build_site.py`, não commita em `site/` e não altera `visibility:`.
+
+## Relato
+
+Reporte resultado de `prepare`, SHA/estado de engine e data, artefatos gerados e erros. Se push falhar, identifique o repositório e o SHA local pendente.
