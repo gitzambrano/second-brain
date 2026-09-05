@@ -79,9 +79,15 @@ def artifact_digest(root: Path) -> str:
     digest depender de si mesmo.
     """
     h = hashlib.sha256()
+    # Ordenar pelo caminho relativo em POSIX, não pelo `Path`. `WindowsPath`
+    # compara case-folded e `PosixPath` compara byte a byte: com as fontes web
+    # em CamelCase no artefato, selar no Windows e conferir no runner Linux
+    # alimentava o hash em ordens diferentes e o selo reprovava toda
+    # publicação legítima. A chave é a mesma string que já entra no hash.
     arquivos = sorted(
-        p for p in root.rglob("*")
-        if p.is_file() and not _fora_do_artefato(p, root)
+        (p for p in root.rglob("*")
+         if p.is_file() and not _fora_do_artefato(p, root)),
+        key=lambda p: p.relative_to(root).as_posix(),
     )
     for path in arquivos:
         dados = path.read_bytes()
