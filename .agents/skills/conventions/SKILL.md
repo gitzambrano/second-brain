@@ -230,41 +230,34 @@ Vale para texto novo ou reescrito pela wiki. Texto original importado só muda s
 
 ### Regras gerais
 
-1. Uma proposição principal por frase.
-2. Use conectores apenas quando a transição lógica precisar deles.
-3. Corpo argumentativo em prosa; bullets apenas quando a estrutura exigir lista real.
-4. Use o mesmo termo para o mesmo conceito. Não varie vocabulário apenas para evitar repetição.
-5. Abra cada parágrafo com o tema; um tema por parágrafo.
-6. Use travessões raramente: no máximo 1 a 2 na prosa do essay.
-7. Não use ponto e vírgula; prefira frases autônomas.
-8. Parênteses apenas para informação curta.
-9. Evite atalhos tipográficos: `/`, `~`, `--`, intervalos `5-30`, `Cap.`/`Sec.`, `e.g.`/`i.e.`.
-10. Prefira frase direta, completa e sem enchimento.
-11. Concisão não é estilo telegráfico. Preserve elementos necessários para explicitar sujeito, relação lógica, tempo, causa, contraste ou condição.
-12. Prefira verbos simples e precisos a perífrases, nominalizações e formulações solenes sem ganho de significado.
-13. Elimine metadiscurso dispensável.
-14. Evite paralelismos, tríades, contrastes e aforismos usados apenas por efeito retórico.
-15. Não atribua autoridade a fontes vagas. `Estudos mostram` ou `especialistas afirmam` exigem fonte identificável.
-16. Preserve a voz do autor. Estas regras indicam candidatos à revisão, não proibições mecânicas.
-17. Escreva o estado final do argumento. Não mencione versões anteriores, correções, pedidos do Usuário ou alternativas fora do texto final.
+1. Uma proposição principal por frase. Prefira frase direta, completa e sem enchimento; concisão não é estilo telegráfico.
+2. Abra cada parágrafo com o tema e mantenha um tema por parágrafo.
+3. Use o mesmo termo para o mesmo conceito. Mantenha grafia consistente para termos, siglas, unidades e variáveis.
+4. Explicite causa, condição, contraste e sequência quando necessários; use conectores apenas quando ajudarem essa lógica.
+5. Prefira verbos simples e precisos a perífrases e nominalizações.
+6. Corpo argumentativo em prosa; bullets apenas para listas reais.
+7. Não use ponto e vírgula na prosa. Separe em frases ou use outra construção sintática.
+8. Use travessões raramente: no máximo 1 a 2 em todo o corpo de um essay. Não os use como substituto recorrente de vírgulas, parênteses ou dois-pontos.
+9. Parênteses apenas para informação curta. Evite atalhos tipográficos como `/`, `~`, `--`, `5-30`, `Cap.`/`Sec.`, `e.g.` e `i.e.`.
+10. Elimine metadiscurso dispensável: não anuncie o que o texto fará, acabou de fazer ou pretende demonstrar quando a própria argumentação já o mostra.
+11. Evite frases de efeito, tríades, paralelismos e contrastes simétricos usados apenas para ritmo ou ênfase. Use-os somente quando cada elemento expressar uma distinção necessária ao argumento.
+12. Não atribua autoridade a fontes vagas. `Estudos mostram` ou `especialistas afirmam` exigem fonte identificável.
+13. Preserve a voz do autor. Estas regras orientam revisão editorial, não substituição mecânica de estilo.
+14. Escreva apenas o estado final do argumento. Não mencione versões anteriores, correções, pedidos do Usuário ou alternativas fora do texto final.
 
 `check_wiki.py` cobre as regras mecânicas; `/polish` e `/proofread` cobrem as editoriais.
 
 ### Regras adicionais para essays técnicos
 
-1. Português claro, conciso, formal e assertivo.
+1. Use português claro, conciso, formal e assertivo.
 2. Não antropomorfize código, modelos ou teorias.
 3. Prefira voz ativa quando o agente for conhecido.
-4. Prefira verbo direto a nominalização.
-5. Evite gerúndio quando a relação temporal, causal ou lógica for ambígua.
-6. Evite gerúndio ornamental que apenas simule análise ou ênfase.
-7. Evite `isso/isto` quando o referente não for inequívoco.
-8. Simplifique cadeias longas de `de/da/do`.
-9. Mantenha grafia única para termos, siglas, unidades e variáveis.
-10. Elimine marketing, superlativo, inflação retórica e hedge vazio.
-11. Não aumente artificialmente a importância de um resultado sem justificativa técnica.
-12. Não encerre uma seção com conclusão genérica que não acrescente informação.
-13. Concisão preserva sujeito, verbo, relações lógicas e fluidez sintática. Não sacrifique clareza para reduzir palavras.
+4. Use gerúndio somente quando sua relação temporal, causal ou lógica for clara e necessária; elimine gerúndio ornamental.
+5. Evite `isso/isto` com referente ambíguo e simplifique cadeias longas de `de/da/do`.
+6. Não use linguagem promocional ou superlativos sem medida objetiva. Evite termos como `revolucionário`, `extraordinário`, `fundamental`, `crucial`, `impressionante` ou `dramático` apenas para intensificar a afirmação.
+7. Não aumente a importância de um resultado além do que a evidência permite. Descreva o efeito e sua consequência técnica diretamente.
+8. Evite qualificadores vagos como `possivelmente`, `potencialmente`, `de certa forma`, `em grande medida` ou `pode-se dizer` quando não expressarem incerteza real. Quando houver incerteza, diga sua origem: hipótese, limitação dos dados, aproximação do modelo ou evidência conflitante.
+9. Não encerre uma seção com conclusão genérica que não acrescente informação.
 
 ## Formato do índice (`wiki/index.md`)
 
