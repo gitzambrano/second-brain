@@ -23,17 +23,30 @@ O projeto separa estritamente o **motor de código** do **conhecimento pessoal**
 | Repositório | Caminho | Visibilidade | Responsabilidade |
 | :-------------------------------- | :------------ | :----------------- | :------------------------------------------------------------------------------------------------------------------------------ |
 | **`second-brain-engine`** | `./` (raiz) | **Público** | Agentes (`.agents/`), scripts de automação, testes, templates do site e pipelines de qualidade. |
-| **`second-brain-data`** | `data/` | **Privado** | O cofre de conhecimento: ensaios, conceitos, entidades, fontes, insights, plano e notas no Obsidian. |
+| **`second-brain-data`** | `data/` | **Privado** | Corpus Markdown, fontes, plano, estado da wiki e configuração portátil do Obsidian. |
 | **`second-brain-site`** | `site/` | **Público** | Projeção estática gerada via GitHub Pages contendo o [Second Brain Atlas](https://gitzambrano.github.io/second-brain-site/). |
 
 > [!NOTE]
 > `data/` e `site/` são integralmente ignorados pelo Git do engine. O engine funciona de forma 100% autônoma para desenvolvimento e testes usando o corpus sintético (`tests/fixtures/mini-brain/`).
 
+### Obsidian no fluxo de trabalho
+
+`data/` é ao mesmo tempo a raiz do repositório privado **`second-brain-data`** e o **vault do Obsidian**. Abra `data/` no Obsidian — não `data/wiki/`.
+
+O Obsidian é a interface humana para ler, navegar e editar o corpus. Agents e scripts trabalham diretamente nos mesmos arquivos Markdown; não existe banco ou etapa de sincronização intermediária e o Obsidian não precisa estar aberto para o engine funcionar.
+
+A configuração portátil do vault também fica em `data/.obsidian/`:
+
+- **Versionado:** preferências do app e aparência, plugins habilitados, configuração do grafo, hotkeys, snippets e `data.json` dos plugins.
+- **Local apenas:** `workspace*`, cache e código/binários instalados de plugins de terceiros.
+
+Assim, Git versiona o **conhecimento** e a **configuração reproduzível** do vault, mas não o estado efêmero de uma sessão do Obsidian.
+
 ---
 
 ## 🚀 Início Rápido
 
-### 1. Clonar e configurar ambiente
+### 1. Clonar e configurar o engine
 
 ```bash
 git clone https://github.com/gitzambrano/second-brain-engine.git second-brain
@@ -43,20 +56,45 @@ cd second-brain
 python -m pip install pyyaml pytest
 ```
 
-### 2. Validar a instalação
+### 2. Preparar `data/` e `site/`
+
+Para uma instalação já existente, clone os dois repositórios complementares **dentro da raiz do engine**, com estes nomes:
+
+```text
+second-brain/
+├── data/    # repositório privado + vault do Obsidian
+└── site/    # repositório público gerado
+```
+
+Para começar do zero, o bootstrap cria os esqueletos e inicializa os dois repositórios Git locais:
+
+```bash
+python scripts/bootstrap_repositories.py --create --init-git
+```
+
+O bootstrap **não cria repositórios nem remotes no GitHub**. Configure `origin` separadamente se quiser backup remoto do `data/` e publicação via `site/`.
+
+### 3. Abrir o vault
+
+No Obsidian, escolha **Open folder as vault** e abra a pasta `data/`. A edição manual no Obsidian e a edição por agents/scripts alteram exatamente os mesmos arquivos.
+
+### 4. Validar a instalação
 
 ```bash
 python scripts/check_repo.py --quick   # validação rápida de ambiente e integridade
 python -m pytest -q                    # executa a suíte de testes
 ```
 
-### 3. (Opcional) Inicializar os repositórios complementares
+---
 
-Se desejar inicializar os esqueletos de `data/` (privado) e `site/` (público):
+## 🔄 Fluxo de Trabalho
 
-```bash
-python scripts/bootstrap_repositories.py --create --init-git
-```
+1. **Criar e editar conhecimento** — manualmente no Obsidian ou pelas skills; o estado persistente vive em `data/`.
+2. **Revisar e manter** — agents e scripts validam estrutura, referências, metadados e derivados diretamente sobre o corpus.
+3. **Versionar** — `engine/` e `data/` têm históricos Git independentes; o subagent `update` cria commits separados e só faz push quando autorizado.
+4. **Publicar** — `/publish` gera `site/` a partir de `data/`, aplicando os gates de visibilidade e privacidade antes de qualquer conteúdo público.
+
+Artefatos reproduzíveis como PDFs, HTMLs e outros outputs locais ficam em `data/output/` e não são versionados no repositório privado.
 
 ---
 
