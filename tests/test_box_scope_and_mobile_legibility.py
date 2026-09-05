@@ -10,12 +10,12 @@ Três defeitos reais, todos invisíveis para os gates que existiam:
   equação de 35ex a 4px de altura — ilegível, e sem disparar a checagem de
   overflow, já que encolher é justamente o que evita o overflow.
 """
+import re
+import sys
 from pathlib import Path
 
 import pytest
 from conftest import SCRIPTS
-
-import sys
 
 sys.path.insert(0, str(SCRIPTS))
 from html_preprocess import transform_markdown  # noqa: E402
@@ -121,8 +121,6 @@ def test_pisos_de_corpo_no_celular(selector, minimum):
     """As vozes menores da folha caíam para 9,9-12px a 375px de largura."""
     css = TEMPLATE.read_text(encoding="utf-8")
     block = css.split("@media (max-width:640px){", 1)[1].split("\n}", 1)[0]
-    import re
-
     m = re.search(re.escape(selector) + r"\{[^}]*font-size:([\d.]+)(rem|em)", block)
     assert m, f"{selector} sem piso de corpo no bloco de celular"
     assert float(m.group(1)) >= minimum, f"{selector} = {m.group(1)}{m.group(2)}"
