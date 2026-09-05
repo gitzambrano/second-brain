@@ -96,15 +96,14 @@ def test_write_orchestrators_are_declared_as_write_workflows():
         assert skill_frontmatter(name)["metadata"]["second-brain-mode"] == "write"
 
 
-def test_update_preflight_validates_workspace_before_quality_gate():
+def test_update_delegates_mechanical_closure_to_close_workspace():
     text = (ROOT / ".agents/agents/update.md").read_text(encoding="utf-8")
-    assert text.index("python scripts/sync_skills.py") < text.index("python scripts/check_repo.py --quick")
-    assert text.index("python scripts/check_git_isolation.py") < text.index("python scripts/check_repo.py --quick")
-    assert text.index("python scripts/check_path_discipline.py") < text.index("python scripts/check_repo.py --quick")
+    assert "scripts/close_workspace.py" in text
+    assert "prepare" in text and "commit" in text and "push" in text
     assert "NÃO EXECUTADO (gate falhou)" in text
 
 
 def test_update_never_publishes_the_public_site():
     text = (ROOT / ".agents/agents/update.md").read_text(encoding="utf-8")
     assert "build_site.py" in text and "não commita em `site/`" in text
-    assert "git -C data" in text and "git -C ." in text
+    assert "visibility:" in text
