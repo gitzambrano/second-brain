@@ -860,10 +860,10 @@ h1, h2, h3 {
   /* No celular a linha de cabeçalho é data + tempo de leitura + etiqueta, e
      em 360px ela não cabia: a etiqueta caía sozinha numa segunda linha. Os
      dois lados encolhem um pouco para a linha voltar a ser uma linha. */
-  .card-head { gap: 6px; }
-  .card-meta { font-size: 10.5px; gap: 6px; }
-  .card-meta .dot + span { font-size: 9.25px; letter-spacing: -0.045em; }
-  .badge { font-size: 9px; padding: 2px 6px; letter-spacing: 0.04em; }
+  .card-head { gap: 2px; }
+  .card-meta { font-size: 10.5px; gap: 5px; }
+  .card-meta .dot + span { font-size: 10px; letter-spacing: -0.045em; }
+  .badge { font-size: 9px; padding: 2px 4px; letter-spacing: 0.04em; }
 
   .footer { flex-direction: column; align-items: flex-start; gap: 8px; }
 }
