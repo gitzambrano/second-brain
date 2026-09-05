@@ -6,6 +6,19 @@
 
   var root = document.documentElement;
 
+  /* --- Essay legibility ---------------------------------------------------- */
+  /* Keep this tiny runtime override in sync with essay_template.html. Public
+     essays embed the template CSS at build time but load this file externally,
+     so these rules also repair already-published pages before the next rebuild. */
+  var legibilityStyle = document.createElement('style');
+  legibilityStyle.id = 'sb-essay-legibility-fixes';
+  legibilityStyle.textContent = [
+    '.content h5{font-family:var(--font-display);font-size:1rem;font-weight:700;margin:1.55rem 0 .5rem;color:color-mix(in srgb,var(--text-bright) 58%,var(--text-dim));}',
+    'mjx-container:not([display="true"]){vertical-align:-.15em;}',
+    '@media (max-width:640px){mjx-container[display="true"]{font-size:90%;}}'
+  ].join('\n');
+  document.head.appendChild(legibilityStyle);
+
   /* --- Theme --------------------------------------------------------------- */
   var themeButton = document.getElementById('sbTheme');
   function applyTheme(theme, persist) {
