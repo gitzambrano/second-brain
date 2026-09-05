@@ -55,29 +55,15 @@ status: draft | revisao | finalizado
 visibility: public     # opcional; ver ## Publicação
 ```
 
-`summary:` sempre entre aspas duplas. `visibility:` é opcional e sua ausência
-significa privado, o estado seguro.
+`summary:`: 200–530 caracteres, uma linha, aspas duplas; descreva o arco do argumento, não apenas o tema.
 
-O `summary:` de um essay tem entre **200 e 530 caracteres**, cobrados por
-`check_wiki.py`. Ele descreve o arco do argumento, não só o tema: `wiki/index.md`
-e o catálogo do site mostram esse texto como única amostra do essay, e um rótulo
-de uma frase não permite escolher o que ler. Escreva em prosa contínua, sem
-quebra de linha.
+`visibility:` é opcional; ausência significa `private`.
 
 ### `updated:` mede o texto, não a manutenção
 
-Só mexa em `updated:` quando a **prosa do corpo** mudar de forma apreciável —
-capítulo novo, argumento reescrito, seção fundida ou dividida. É o caso de
-`/essay`, `/import`, `/expand` e `/chapter`.
+Altere `updated:` somente quando a prosa do corpo mudar substancialmente, como capítulo novo, argumento reescrito ou seção fundida/dividida.
 
-Não atualize a data por: correção mecânica, frontmatter, byline, cabeçalho,
-`## Sumário`, `## Conexões`, `## Referências`, wikilink, link externo, tag,
-renomeação ou mudança de `visibility:`. Ou seja: `/organize`, `/connect`,
-`/linkify`, `/proofread`, `/polish` e o subagent `update` não tocam a data.
-
-O motivo é que a data é lida como "quando este texto mudou". Uma passada de lint
-que empurra 43 essays para a mesma quinta-feira transforma o campo em ruído: o
-catálogo passa a ordenar por data de manutenção, não por data de escrita.
+Não altere por correção mecânica, frontmatter, byline, cabeçalho, `## Sumário`, `## Conexões`, `## Referências`, wikilink, link externo, tag, renomeação ou `visibility:`.
 
 ## Tags — Vocabulário Controlado
 
@@ -128,47 +114,29 @@ Para skills que editam prosa:
 
 ## Publicação
 
-`visibility:` controla **leitura**, não visibilidade no catálogo. Nunca use `tags:`
-para controlar exposição: `tags:` descreve assunto, `visibility:` decide quem pode
-ler o texto.
-
-O site tem duas camadas:
-
-| Camada | Alcance | Conteúdo |
-| --- | --- | --- |
-| Catálogo e mapa | base inteira | título, resumo, tags, datas, status, conexões |
-| Texto | só `visibility: public` (ou legado `publish: true`) | corpo renderizado e link que abre |
-
-A busca da capa filtra os cartões já renderizados por título, resumo e tags; o
-corpo não é indexado, nem para essay publicado. `search-index.json` é catálogo,
-não corpus — nenhum texto de essay sai nele.
+`visibility:` controla leitura do texto; `tags:` nunca controla exposição.
 
 | `visibility:` | Resultado |
 | --- | --- |
-| `public` | texto legível no site |
-| `private` | catalogado e mapeado por título e resumo; não abre |
+| `public` | catálogo + mapa + corpo e link de leitura |
+| `private` | catálogo + mapa; sem corpo nem link de leitura |
 | `hidden` | ausente do site, do índice da wiki e do grafo da wiki |
-| campo ausente | tratado como `private` |
-| valor não reconhecido | tratado como `private` |
-| `publish: true` (grafia antiga) | equivale a `public` |
+| campo ausente ou valor inválido | tratado como `private` |
+| `publish: true` (legado) | equivale a `public` |
 
 As grafias `público`, `privado` e `oculto` também são aceitas.
 
 Regras:
 
-- `visibility:` só se aplica a **essays**; nenhuma outra página tem o campo;
-- nenhuma skill de escrita, revisão ou organização define ou altera `visibility:` automaticamente — é decisão explícita do Usuário;
-- o corpo de uma página não autorizada nunca é renderizado nem linkado, e nenhum corpo — autorizado ou não — entra nos arquivos de dados do site;
-- nenhum caminho para dentro de `data/` pode aparecer na saída pública;
-- imagem só é copiada para o site se for referenciada por um essay publicado **e** estiver dentro de `DATA_ROOT/wiki/assets`;
-- um essay não publicado aparece no catálogo e no mapa com o selo **privado**, e em rascunho com **draft**.
+- `visibility:` só se aplica a essays.
+- Nenhuma skill define ou altera `visibility:` automaticamente; exige decisão explícita do Usuário.
+- Nenhum corpo não autorizado, link de leitura restrito ou caminho para `data/` pode aparecer na saída pública.
+- Nenhum corpo de essay entra nos arquivos de dados do site.
+- Imagem só é copiada se for referenciada por essay `public` e estiver em `DATA_ROOT/wiki/assets`.
+- Metadata de essays `private` pode aparecer no catálogo e no mapa; essays `hidden` não aparecem.
+- Aplicação e verificação: `scripts/set_visibility.py`, `scripts/check_visibility_field.py` e `scripts/check_site_privacy.py`.
 
-Um site estático não esconde o que serve: título e resumo publicados no catálogo
-são legíveis por qualquer pessoa. A troca é deliberada — o mapa é público, o
-texto não.
-
-Aplicação e verificação ficam em `scripts/set_visibility.py`, `scripts/check_visibility_field.py`
-e `scripts/check_site_privacy.py`. Detalhes de implementação do site não pertencem aqui.
+Detalhes de implementação do site não pertencem aqui.
 
 ## Byline do essay
 
@@ -209,19 +177,17 @@ Não use `[[wikilinks]]` nem `:` na byline.
 Regras:
 - O alvo de wikilink é o nome do arquivo, não o H1.
 - Não coloque link Markdown dentro de heading.
-- Não remeta a outro essay no corpo; mantenha o documento autocontido e registre a relação em `## Conexões`.
+- Não remeta a outro essay no corpo; registre a relação em `## Conexões`.
 - Trabalho bibliográfico modifica `## Referências`, não links do corpo.
-- Como referência prática, essays completos devem ter cerca de 10 links externos ou mais quando o tema oferecer material relevante.
+- Essays completos devem ter cerca de 10 links externos ou mais quando o tema oferecer material relevante.
+- Use caminhos relativos para imagens e Markdown puro nos artefatos gerados.
+- Valide no Obsidian mudanças de sintaxe que alterem comportamento de clique.
 
 Exportadores convertem links de seção, removem `## Conexões` e limpam wikilinks residuais.
 
-## Compatibilidade com Obsidian
-
-Use os formatos canônicos de `## Regra de links — Obsidian é o leitor primário`, caminhos relativos para imagens e Markdown puro nos artefatos gerados. Valide mudanças de sintaxe de navegação no Obsidian quando elas alterarem comportamento de clique.
-
 ## Dois tipos de essay
 
-- **Originais (`/import`)**: a prosa do autor é preservada na ingestão; o essay só recebe estrutura, links e metadados, na lista de transformações autorizadas de `/import`. Tradução não está nessa lista — exige decisão explícita do Usuário e fica registrada. Edição substantiva posterior também exige pedido explícito. O documento arquivado em `wiki/sources/` permanece intocado em qualquer cenário.
+- **Originais (`/import`)**: preserve a prosa do autor na ingestão; aplique apenas as transformações autorizadas em `/import`. Tradução ou edição substantiva exige pedido explícito. O documento arquivado em `wiki/sources/` permanece intocado.
 - **Criados (`/essay`)**: texto novo, livremente iterável pelas skills editoriais.
 
 ## Formato de `## Referências` — padrão AIAA
@@ -277,13 +243,13 @@ Vale para texto novo ou reescrito pela wiki. Texto original importado só muda s
 8. Parênteses apenas para informação curta.
 9. Evite atalhos tipográficos: `/`, `~`, `--`, intervalos `5-30`, `Cap.`/`Sec.`, `e.g.`/`i.e.`.
 10. Prefira frase direta, completa e sem enchimento.
-11. Concisão não é estilo telegráfico. Preserve artigos, verbos, preposições, advérbios, conectores e outros elementos quando necessários para explicitar sujeito, relação lógica, tempo, causa, contraste ou condição.
+11. Concisão não é estilo telegráfico. Preserve elementos necessários para explicitar sujeito, relação lógica, tempo, causa, contraste ou condição.
 12. Prefira verbos simples e precisos a perífrases, nominalizações e formulações solenes sem ganho de significado.
-13. Elimine metadiscurso dispensável: não anuncie que vai explicar, observar ou destacar algo quando puder simplesmente fazê-lo.
+13. Elimine metadiscurso dispensável.
 14. Evite paralelismos, tríades, contrastes e aforismos usados apenas por efeito retórico.
-15. Não atribua autoridade a fontes vagas. Afirmações como `estudos mostram` ou `especialistas afirmam` exigem fonte identificável.
+15. Não atribua autoridade a fontes vagas. `Estudos mostram` ou `especialistas afirmam` exigem fonte identificável.
 16. Preserve a voz do autor. Estas regras indicam candidatos à revisão, não proibições mecânicas.
-17. Escreva o estado final do argumento. Não mencione versões anteriores, correções, pedidos do Usuário ou alternativas que não façam parte do texto final.
+17. Escreva o estado final do argumento. Não mencione versões anteriores, correções, pedidos do Usuário ou alternativas fora do texto final.
 
 `check_wiki.py` cobre as regras mecânicas; `/polish` e `/proofread` cobrem as editoriais.
 
@@ -344,10 +310,7 @@ Verificação: referências confirmadas | não verificado — checar antes de ci
 
 `Tags:` é obrigatório e usa o mesmo vocabulário das páginas. Atualize manifesto e mapa quando a fonte sair de `raw/` para `wiki/sources/`.
 
-Numa fonte `Tipo: Ensaio Completo Importado`, `Virou:` é obrigatório — mas
-`None` é uma resposta válida, não uma omissão: registra que o Usuário examinou
-a fonte e concluiu que ela não virou essay nenhum. `check_wiki.py` aceita
-`None`, `nenhum`, `nenhuma`, `-` e `—`.
+Numa fonte `Tipo: Ensaio Completo Importado`, `Virou:` é obrigatório. `None`, `nenhum`, `nenhuma`, `-` e `—` registram explicitamente que a fonte não virou essay.
 
 ## Formato do mapa de sources (`wiki/sources/map.md`)
 

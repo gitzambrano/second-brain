@@ -9,7 +9,6 @@
 🔗 **Atalhos rápidos:**
 
 - **[Atlas ao Vivo](https://gitzambrano.github.io/second-brain-site/)** — o site público do Second Brain: o ideário de essays, white papers e estudos, com o catálogo completo, o grafo de conexões entre essays, conceitos, entidades e referências, e o globo, que é o mesmo mapa numa esfera. O catálogo e os mapas cobrem a base inteira; o texto só abre para o que foi explicitamente autorizado.
-
 - **[`AGENTS.md`](./AGENTS.md)** — regras operacionais, routing e convenções de agentes.
 - **[`conventions/SKILL.md`](./.agents/skills/conventions/SKILL.md)** — especificação normativa de formato, estilo e frontmatter.
 - **[`TESTING.md`](./TESTING.md)** — suíte de testes, fixtures e quality gates do repositório.
@@ -24,7 +23,7 @@ O projeto separa estritamente o **motor de código** do **conhecimento pessoal**
 | :-------------------------------- | :------------ | :----------------- | :------------------------------------------------------------------------------------------------------------------------------ |
 | **`second-brain-engine`** | `./` (raiz) | **Público** | Agentes (`.agents/`), scripts de automação, testes, templates do site e pipelines de qualidade. |
 | **`second-brain-data`** | `data/` | **Privado** | Corpus Markdown, fontes, plano, estado da wiki e configuração portátil do Obsidian. |
-| **`second-brain-site`** | `site/` | **Público** | Projeção estática gerada via GitHub Pages contendo o [Second Brain Atlas](https://gitzambrano.github.io/second-brain-site/). |
+| **`second-brain-site`** | `site/` | **Público** | Projeção estática gerada via GitHub Pages contendo o [Second Brain Atlas](https://gitzambrano.github.io/second-brain-site/). |
 
 > [!NOTE]
 > `data/` e `site/` são integralmente ignorados pelo Git do engine. O engine funciona de forma 100% autônoma para desenvolvimento e testes usando o corpus sintético (`tests/fixtures/mini-brain/`).
@@ -41,6 +40,20 @@ A configuração portátil do vault também fica em `data/.obsidian/`:
 - **Local apenas:** `workspace*`, cache e código/binários instalados de plugins de terceiros.
 
 Assim, Git versiona o **conhecimento** e a **configuração reproduzível** do vault, mas não o estado efêmero de uma sessão do Obsidian.
+
+### Ferramentas principais
+
+| Ferramenta | Papel |
+| --- | --- |
+| **Obsidian** | leitura, navegação e edição humana do corpus |
+| **qmd** | busca semântica e embeddings de `DATA_ROOT/wiki` |
+| **pytest** | testes de regressão e contratos do engine |
+| **Pandoc** | transformação Markdown/HTML e base dos exports |
+| **LuaLaTeX** | geração tipográfica de PDF |
+| **Playwright + Chromium** | validação real de browser, desktop e mobile |
+| **GitHub Pages** | publicação do Atlas |
+
+A collection qmd `secondbrain` deve apontar para `DATA_ROOT/wiki`. Use `scripts/sync_qmd.sh` ou `scripts/sync_qmd.bat` para atualizar índice e embeddings.
 
 ---
 
@@ -169,6 +182,10 @@ python scripts/check_repo.py --site          # Validação estrita da sentinela 
 python scripts/check_skills.py               # Valida frontmatter, metadata, ferramentas e referências das skills
 python scripts/check_agents.py               # Valida fonte .agents, mirrors .claude, adapters Codex e hook de sync
 python scripts/check_script_defaults.py      # Valida defaults dos CLIs e alinhamento com SCRIPTS.md
+
+# Busca semântica qmd
+./scripts/sync_qmd.sh                        # POSIX: atualiza índice, embeddings e status
+scripts\sync_qmd.bat                         # Windows: equivalente
 
 # Publicação do Atlas (site/)
 python scripts/set_visibility.py             # Lista ensaios por visibilidade (public/private/hidden)

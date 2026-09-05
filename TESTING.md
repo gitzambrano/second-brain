@@ -1,120 +1,105 @@
 # 🧪 Testing and Repository Quality Gates
 
-> Guia de qualidade, testes automatizados e proteção de integridade do **`second-brain-engine`**.
+> Testes automatizados e quality gates do **`second-brain-engine`**.
 
-O engine público versionado **não contém corpus pessoal**. A suíte de testes do repositório foi desenhada para rodar de forma 100% isolada e reproduzível em qualquer ambiente de CI, sem depender de credenciais privadas ou do repositório `data/`.
+O engine não versiona corpus pessoal. Testes usam `tests/fixtures/mini-brain/` sob `tmp_path`; nunca grave no `data/` ativo.
 
 ---
 
-## 🏛️ Isolamento e Resolução de Caminhos
+## 🏛️ Isolamento e Caminhos
 
-Os testes e scripts resolvem caminhos através de `scripts/repo_paths.py`:
+Todos os scripts e testes resolvem caminhos por `scripts/repo_paths.py`:
 
 ```text
-CODE_ROOT   → Raiz do engine público (onde vive este repositório)
-DATA_ROOT   → data/ (ou variável de ambiente SECOND_BRAIN_DATA_ROOT)
-SITE_ROOT   → site/ (ou variável de ambiente SECOND_BRAIN_SITE_ROOT)
+CODE_ROOT   → engine público
+DATA_ROOT   → data/ ou SECOND_BRAIN_DATA_ROOT
+SITE_ROOT   → site/ ou SECOND_BRAIN_SITE_ROOT
 ```
-
-Durante a execução dos testes, o fixture sintético `tests/fixtures/mini-brain/` é copiado para um diretório temporário isolado do pytest (`tmp_path`). **Os testes nunca gravam no repositório real ou na pasta `data/` ativa.**
 
 ---
 
-## 🚦 Portais de Qualidade (Quality Gates)
-
-### 1. Diagnóstico do Repositório (`check_repo.py`)
-
-O script `scripts/check_repo.py` é o ponto de entrada canônico para validar a saúde do ecossistema:
+## 🚦 Quality Gates
 
 | Comando | Finalidade |
 | :--- | :--- |
-| `python scripts/check_repo.py` | **Diagnóstico completo** de ambiente, scripts, disciplina de caminhos e integridade. |
-| `python scripts/check_repo.py --quick` | **Checagem rápida** (isolamento de git aninhado e disciplina de caminhos; ideal para pré-commit). |
-| `python scripts/check_repo.py --wiki` | Validação estendida da wiki (frescor temporal e conformidade de publicação). |
-| `python scripts/check_repo.py --exports` | Validação de exportações e paridade documental. |
-| `python scripts/check_repo.py --site` | Sentinela de privacidade, auditoria visual e orçamento de tamanho do site. |
-| `python scripts/check_repo.py --architecture` | Contratos estruturais: três Gits isolados, disciplina de caminhos e a cadeia `.agents/` → espelhos → adaptadores. |
-| `python -m pytest -q -m browser` | Auditoria visual em Chromium real: home, essay e os dois mapas, em claro, escuro e mobile. Exige Chromium **e Pandoc**; pulada onde não há navegador. |
+| `python scripts/check_repo.py` | diagnóstico completo |
+| `python scripts/check_repo.py --quick` | contratos rápidos e isolamento |
+| `python scripts/check_repo.py --wiki` | wiki, frescor e publicação |
+| `python scripts/check_repo.py --exports` | exports e paridade documental |
+| `python scripts/check_repo.py --site` | privacidade, browser audit e budget do site |
+| `python scripts/check_repo.py --architecture` | três Gits, paths e cadeia `.agents/` → mirrors/adapters |
+| `python -m pytest -q -m browser` | auditoria em Chromium: home, essay e mapas; claro, escuro e mobile |
 
-> [!NOTE]
-> Em ambientes de CI ou clones novos sem a pasta `data/` populada, os grupos de teste que dependem de corpus real retornam status `SKIP` com elegância, sem falhar o build.
+Grupos dependentes de corpus ou ferramentas ausentes devem retornar `SKIP`, não acessar dados privados.
 
-### 2. Contratos de Scripts e Skills
+### Contratos de scripts e agentes
 
-- **Defaults sem argumentos:** Todo script executável em `scripts/` deve executar uma tarefa útil ou diagnóstico seguro quando chamado sem argumentos:
-  ```bash
-  python scripts/check_script_defaults.py
-  ```
-- **Contratos de Skills:** Valida frontmatter, sintaxe e regras de isolamento em `.agents/`:
-  ```bash
-  python scripts/check_skills.py
-  ```
-- **Contrato de sincronização de agentes:** `.agents/` é a fonte editável; `.claude/skills/` e `.claude/agents/` são espelhos gerados por `scripts/sync_skills.py`. O contrato exige paridade byte a byte, nenhum arquivo órfão no espelho e reprodutibilidade integral a partir da fonte:
-  ```bash
-  python scripts/sync_skills.py --check
-  python -m pytest tests/test_agent_sync_contract.py
-  ```
-  Um espelho editado à mão é drift, e o `--check` reprova. Para consertar, edite `.agents/` e rode `python scripts/sync_skills.py`.
+```bash
+python scripts/check_script_defaults.py
+python scripts/check_skills.py
+python scripts/sync_skills.py --check
+python -m pytest tests/test_agent_sync_contract.py
+```
+
+- Scripts executáveis devem ter default seguro e útil.
+- `.agents/` é a fonte editável; `.claude/skills/` e `.claude/agents/` são mirrors gerados.
+- Drift de mirror é erro; corrija em `.agents/` e rode `python scripts/sync_skills.py`.
 
 ---
 
-## 🛡️ Sentinela de Privacidade do Site
-
-A publicação pública possui uma barreira estrita e dedicada para impedir vazamento de notas e rascunhos:
+## 🛡️ Privacidade do Site
 
 ```bash
 python scripts/build_site.py --check
 python scripts/check_site_privacy.py
 ```
 
-O teste automatizado **`tests/test_site_privacy.py`** atua como sentinela:
-- Cria um site sintético com um ensaio público e um ensaio privado com marcadores sentinela exclusivos.
-- Comprova que corpos de texto privados, links de leitura restritos, slugs ou nós do grafo privado **nunca** chegam aos arquivos gerados em `site/`.
-- **Nunca enfraqueça ou desative este teste.**
+`tests/test_site_privacy.py` deve garantir:
+
+- `private`: metadata permitida no catálogo/mapa; corpo e link de leitura proibidos.
+- `hidden`: metadata, slug, nó, corpo e links não podem aparecer na saída pública.
+- caminhos para `data/` e corpos não autorizados nunca podem vazar.
+
+**Nunca enfraqueça ou desative esse gate.**
 
 ---
 
-## 🏃 Executando a Suíte de Testes (pytest)
+## 🏃 Pytest
 
-### Execução Rápida
+Suíte rápida/core:
+
 ```bash
 python -m pytest -q -m "not html and not pdf and not slow and not browser"
 ```
 
-Este é exatamente o comando do job `core` da CI. `python -m pytest -q` puro deixou
-de ser rápido — e nem sempre passa — porque o marcador `browser` roda a auditoria
-visual em Chromium real e exige navegador **e Pandoc** instalados. Rode a suíte
-sem marcador só quando tiver o ambiente completo.
+Marcadores úteis:
 
-### Execução Seletiva por Marcadores
 ```bash
-python -m pytest -m "not slow"   # Pula verificações demoradas de renderização
-python -m pytest -m html         # Valida exports e visualização HTML
-python -m pytest -m pdf          # Valida exportação e layout PDF
-python -m pytest -m browser      # Auditoria visual em Chromium real (job site-browser)
+python -m pytest -m "not slow"
+python -m pytest -m html
+python -m pytest -m pdf
+python -m pytest -m browser
 ```
 
----
-
-## 📦 Dependências de Teste
-
-| Ferramenta | Necessária Para | Instalação / Verificação |
-| :--- | :--- | :--- |
-| **PyYAML & pytest** | Suíte básica do engine | `pip install pyyaml pytest` |
-| **Playwright (Chromium)** | Testes visuais de HTML e testes `browser` | `python -m playwright install chromium` |
-| **Pandoc** | Exportação HTML e testes `browser` — o site da auditoria visual é construído com Pandoc | Binário de sistema no PATH |
-| **Pandoc & LuaLaTeX** | Testes de exportação em PDF | Binários de sistema instalados no PATH |
+`browser` exige Chromium e Pandoc. Rode `python -m pytest -q` sem filtro apenas em ambiente completo.
 
 ---
 
-## 🐛 Protocolo de Regressão para Bugs Mecânicos
+## 📦 Dependências
 
-Para qualquer correção mecânica determinística:
-1. **Reprodução:** Crie uma mutação ou caso de teste no fixture sintético `tests/fixtures/mini-brain/`.
-2. **Falha comprovada:** Escreva um teste que falha no comportamento incorreto.
-3. **Correção:** Aplique o fix no código do engine.
-4. **Verificação:** Confirme que o teste focado passa.
-5. **Garantia:** Execute a suíte completa para prevenir efeitos colaterais.
+| Ferramenta | Necessária para |
+| :--- | :--- |
+| **PyYAML + pytest** | suíte básica |
+| **Playwright + Chromium** | testes `browser` e validação visual |
+| **Pandoc** | HTML e construção do site nos testes de browser |
+| **LuaLaTeX** | PDF |
 
-> [!CAUTION]
-> Nunca use ensaios reais do repositório privado como fixtures de regressão. Use sempre o mini-brain sintético.
+Instalação do Chromium: `python -m playwright install chromium`.
+
+---
+
+## 🐛 Regressão de Bugs Mecânicos
+
+Bug mecânico determinístico: adicione regressão ao `mini-brain`, confirme falha antes do fix e passagem depois, então rode o gate aplicável.
+
+Nunca use essays reais do repositório privado como fixture.

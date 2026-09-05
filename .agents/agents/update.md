@@ -10,22 +10,7 @@ model: haiku
 ---
 # Update
 
-Subagent mecânico. Não interpreta conteúdo editorial.
-
-O fechamento é **gated**, não transacional: os gates decidem se a escrita
-acontece, e nada mais. Dois repositórios Git remotos não commitam nem publicam
-atomicamente, e não há desfazer para um push já aceito. O que este subagent
-garante é ordem: validar tudo, commitar os dois locais, e só então empurrar.
-
-O workspace tem três Gits independentes:
-
-```text
-./      engine público    (second-brain-engine)
-data/   dados privados    (second-brain-data)
-site/   projeção pública  (second-brain-site)
-```
-
-Este subagent atua em `./` e em `data/`. **Nunca** em `site/`.
+Subagent mecânico. Escopo: `./` e `data/`; nunca `site/`. Ordem obrigatória: pre-flight → fix → rebuild → post-flight → commits locais → pushes.
 
 ## 1. Pre-flight
 
@@ -37,19 +22,19 @@ python scripts/check_path_discipline.py
 python scripts/check_repo.py --quick
 ```
 
-Erro em qualquer um é bloqueante: reporte e pare antes de qualquer commit/push.
+Qualquer erro bloqueante: reporte e pare antes de commit/push.
 
-## 2. Mutation
+## 2. Fix
 
 ```bash
 python scripts/fix_lint.py
 ```
 
-Se o agente principal passou escopo único, use `fix_lint.py <slug>`.
+Se houver escopo único, use `fix_lint.py <slug>`.
 
 ## 3. Rebuild
 
-Nesta ordem, depois do fixer. Tudo escreve em `DATA_ROOT`, resolvido por `repo_paths.py`:
+Rode nesta ordem:
 
 ```bash
 python scripts/build_index.py
@@ -59,8 +44,7 @@ python scripts/build_sphere.py
 python scripts/stats.py --save
 ```
 
-Se `qmd` estiver disponível, rode `qmd status`; depois `qmd update && qmd embed`.
-A collection `secondbrain` indexa `DATA_ROOT/wiki`.
+Se `qmd` estiver disponível: `qmd status`, depois `qmd update && qmd embed`. A collection `secondbrain` indexa `DATA_ROOT/wiki`.
 
 ## 4. Post-flight
 
@@ -69,14 +53,11 @@ python scripts/sync_skills.py --check
 python scripts/check_repo.py --wiki
 ```
 
-`STALE_CANDIDATE` do freshness é warning, não bloqueia. Qualquer erro bloqueante impede commit/push.
+`STALE_CANDIDATE` é warning. Qualquer erro bloqueante impede commit/push.
 
-## 5. Commit gate
+## 5. Commit e push
 
-Somente se pre-flight, rebuild e post-flight estiverem sem erro bloqueante. Um
-comando de Git por repositório, nunca staging misturado.
-
-### 5a. Commits locais — os dois antes de qualquer push
+Só prossiga com todos os gates sem erro bloqueante. Nunca misture staging entre repositórios.
 
 ```bash
 git -C data add -A
@@ -87,12 +68,9 @@ git -C . add -A
 git -C . diff --cached --quiet || git -C . commit -m "update: <resumo curto e factual>"
 ```
 
-No `git -C data status --short`, nenhum documento bruto de `wiki/sources/**` pode
-aparecer staged; se aparecer, pare antes do commit.
+Se `git -C data status --short` mostrar documento bruto em `wiki/sources/**` staged, pare. Se um commit falhar, não faça push.
 
-Se um dos commits falhar, não empurre nada: reporte e pare.
-
-### 5b. Pushes — depois dos dois commits
+Depois de ambos os commits locais:
 
 ```bash
 git -C data rev-parse --short HEAD
@@ -102,35 +80,17 @@ git -C data push origin HEAD
 git -C . push origin HEAD
 ```
 
-Tente os dois pushes de forma independente: falha de um não cancela o outro,
-porque os dois já estão commitados localmente e cada um se recupera sozinho.
-
-Push falhar: reporte o erro exato, qual repositório ficou para trás e o comando
-que resolve (`git -C data push origin HEAD` ou `git -C . push origin HEAD`). Sem
-retry cego, sem `--force`, sem pull automático.
-
-Nada staged num repositório: reporte `nada a commitar` para ele e siga com o outro.
+Tente os pushes separadamente. Em falha: reporte repositório, erro e comando de recuperação; não use retry cego, `--force` ou pull automático.
 
 ## Relato
 
-Registre o SHA curto de cada repositório mesmo quando o push falha — é o que
-permite ao Usuário parear as duas pontas depois.
-
-```text
-pre-flight: PASS|FAIL
-stats: data/output/stats/stats-YYYY-MM-DD.md
-grafo: data/output/graph/MySecondBrain.html e MySecondBrain_sphere.html
-post-flight: PASS|FAIL
-git engine: <sha> <mensagem> pushed | <sha> <mensagem> COMMITADO LOCAL, PUSH FALHOU — rode `git -C . push origin HEAD` | nada a commitar | NÃO EXECUTADO (gate falhou)
-git data:   <sha> <mensagem> pushed | <sha> <mensagem> COMMITADO LOCAL, PUSH FALHOU — rode `git -C data push origin HEAD` | nada a commitar | NÃO EXECUTADO (gate falhou)
-erros: nenhum | <lista>
-```
+Reporte `pre-flight`, `post-flight`, SHA/estado de engine e data, artefatos gerados e erros. Se push falhar, registre o SHA local e o comando exato para concluir.
 
 ## Nunca
 
-- Não resolve contradição, não funde/deleta página, não reescreve prosa.
-- Não faz commit/push depois de erro bloqueante.
-- Não empurra um repositório antes de os dois estarem commitados localmente.
+- Não resolve contradição, funde/deleta página ou reescreve prosa.
+- Não faz commit/push após erro bloqueante.
+- Não empurra antes de ambos os repositórios estarem commitados localmente.
 - Não promete atomicidade entre `./` e `data/`; relata o estado real de cada um.
-- Não gera artefatos antes do fixer e depois deixa índices stale.
-- Não roda `build_site.py`, não commita em `site/`, não altera `visibility:` de nenhum essay.
+- Não deixa derivados stale após o fixer.
+- Não roda `build_site.py`, não commita em `site/` e não altera `visibility:`.

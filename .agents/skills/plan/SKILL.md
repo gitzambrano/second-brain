@@ -14,108 +14,54 @@ allowed-tools: Bash Read Write Edit Glob Grep WebSearch WebFetch AskUserQuestion
 ---
 # Plan
 
-`plan/plano.md` guarda intenção de trabalho futuro. `wiki/status.md` guarda estado de curto prazo entre sessões.
+`plan/plano.md` guarda trabalho futuro. `wiki/status.md` guarda estado de curto prazo entre sessões.
 
-## Categorias
+## Estrutura
 
-| Seção | Quando usar | Routing típico em `/plan work` |
+As cinco seções sempre existem, nesta ordem, precedidas por `# Plano` e `## Índice`.
+
+| Seção | Campos do item | Routing típico em `/plan work` |
 | --- | --- | --- |
-| Tarefas | pendência geral | executar a tarefa |
-| Fontes para Ingerir | material já identificado | `/import`, `/digest`, `/absorb` |
-| Revisões | conteúdo existente precisa revisão | `/review`, `/continuity`, `/expand`, `/chapter` |
-| Estudos | tema ainda exploratório | `/study` |
-| Essays Futuros | tese/ideia pronta para estruturar | `/outline` → `/essay` |
+| Tarefas | `Tópico`, `Status`, `Adicionado`, `Nota` | executar a tarefa |
+| Fontes para Ingerir | `Tópico`, `Status`, `Adicionado`, `Fonte`, `Skill sugerida`, `Nota` | `/import`, `/digest`, `/absorb` |
+| Revisões | `Alvo`, `Tópico`, `Status`, `Adicionado`, `Nota` | `/review`, `/continuity`, `/expand`, `/chapter` |
+| Estudos | `Tópico`, `Status`, `Adicionado`, `Fonte`, `Nota` | `/study` |
+| Essays Futuros | `Tópico`, `Status`, `Adicionado`, `Fonte`, `Nota` | `/outline` → `/essay` |
 
-As cinco seções sempre existem e permanecem nesta ordem.
+`Status:` é `Pendente | Em Andamento`. `Adicionado:` usa `YYYY-MM-DD`. `Tópico:` é livre, mas reuse um existente antes de criar variante equivalente.
 
-## Formato
+Exemplo:
 
 ```markdown
-# Plano
-
-## Índice
-- [Tarefas](#tarefas)
-- [Fontes para Ingerir](#fontes-para-ingerir)
-- [Revisões](#revisões)
-- [Estudos](#estudos)
-- [Essays Futuros](#essays-futuros)
-
 ## Tarefas
 
 ### Título
 - Tópico: ...
-- Status: Pendente | Em Andamento
+- Status: Pendente
 - Adicionado: YYYY-MM-DD
-- Nota: ...
-
-## Fontes para Ingerir
-
-### Título
-- Tópico: ...
-- Status: Pendente | Em Andamento
-- Adicionado: YYYY-MM-DD
-- Fonte: ...
-- Skill sugerida: /import | /digest | /absorb
-- Nota: ...
-
-## Revisões
-
-### Título
-- Alvo: [[slug|Página]]
-- Tópico: ...
-- Status: Pendente | Em Andamento
-- Adicionado: YYYY-MM-DD
-- Nota: ...
-
-## Estudos
-
-### Título
-- Tópico: ...
-- Status: Pendente | Em Andamento
-- Adicionado: YYYY-MM-DD
-- Fonte: ...
-- Nota: ...
-
-## Essays Futuros
-
-### Título
-- Tópico: ...
-- Status: Pendente | Em Andamento
-- Adicionado: YYYY-MM-DD
-- Fonte: ...
 - Nota: ...
 ```
 
-`Tópico:` é livre, mas reuse um existente antes de criar variante equivalente.
-
 ## `/plan add`
 
-1. Classifique o item.
-   - Estudo vs Essay Futuro: exploração vs tese já formada.
-   - Tarefa vs Fonte para Ingerir: existe ou não material identificado.
-2. Preencha os campos da categoria.
-3. Em Fonte para Ingerir, sugira `/import`, `/digest` ou `/absorb` quando for claro.
+1. Classifique o item: exploração → Estudo; tese formada → Essay Futuro; material identificado → Fonte para Ingerir; caso geral → Tarefa.
+2. Preencha os campos da seção.
+3. Para fonte, sugira `/import`, `/digest` ou `/absorb` quando for claro.
 4. Adicione na seção correta.
 
-Não escreva `wiki/log.md` apenas por adicionar uma pendência.
+Não escreva `wiki/log.md` apenas por adicionar pendência.
 
 ## `/plan work <item>`
 
-1. Localize o item.
-2. Marque `Status: Em Andamento`.
-3. Execute o routing da tabela dentro da mesma conversa; leia a skill de destino e siga-a.
-4. Se concluir, execute `/plan done`.
-5. Se ficar parcial, mantenha `Em Andamento` e atualize `Nota:` com o progresso.
+1. Localize o item e marque `Em Andamento`.
+2. Execute o routing da tabela na mesma conversa e siga a skill de destino.
+3. Concluído → `/plan done`; parcial → mantenha `Em Andamento` e atualize `Nota:`.
 
-Para Essays Futuros:
-- draft existente em `plan/drafts/` → `/essay`;
-- sem draft → `/outline` primeiro.
+Essay Futuro: draft em `plan/drafts/` → `/essay`; sem draft → `/outline`.
 
 ## `/plan done <item>`
 
-Remova apenas o item; preserve a seção.
-
-Registre:
+Remova apenas o item; preserve a seção. Registre:
 
 ```markdown
 ## [YYYY-MM-DD] plano-concluído | Título
@@ -128,6 +74,6 @@ Mostre itens por seção na ordem canônica, com título, tópico e status. Read
 
 ## Limites
 
-- `/plan` gerencia e encaminha; conteúdo é produzido pela skill de destino.
+- `/plan` gerencia e encaminha; a skill de destino produz conteúdo.
 - Não use o plano para substituir `wiki/status.md`.
 - Não duplique itens equivalentes.

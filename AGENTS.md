@@ -10,115 +10,38 @@ Siga este arquivo e as skills em `.agents/skills/`. `conventions/SKILL.md` é a 
 
 ## Arquitetura
 
-Este checkout é a raiz do Git **público** do engine. Dentro dele vivem dois
-repositórios Git independentes, que **não** são submodules e são integralmente
-ignorados pelo Git externo:
+| Caminho | Repositório | Visibilidade | Papel |
+| --- | --- | --- | --- |
+| `./` | `second-brain-engine` | público | `AGENTS.md`, `.agents/`, scripts e testes |
+| `data/` | `second-brain-data` | privado | `wiki/`, `plan/`, `raw/`, `output/`, `.obsidian/` |
+| `site/` | `second-brain-site` | público | projeção gerada dos essays autorizados |
 
-```text
-./      second-brain-engine  PUBLIC   engine: AGENTS.md, .agents/, scripts, tests
-data/   second-brain-data    PRIVATE  wiki, plan, raw, output, .obsidian
-site/   second-brain-site    PUBLIC   projeção gerada dos essays autorizados
-```
+São três repositórios Git independentes, sem submodules. O engine ignora `data/` e `site/`.
 
-Neste arquivo e nas skills, caminho de conteúdo é **lógico**:
+Caminhos `wiki/...`, `plan/...`, `raw/...` e `output/...` são relativos a `DATA_ROOT` (`data/` por padrão). Resolva caminhos com `scripts/repo_paths.py`; nunca pelo diretório corrente.
 
-```text
-wiki/...    ⇒ DATA_ROOT/wiki/...
-plan/...    ⇒ DATA_ROOT/plan/...
-raw/...     ⇒ DATA_ROOT/raw/...
-output/...  ⇒ DATA_ROOT/output/...
-```
-
-`DATA_ROOT` é `data/` por padrão. Scripts resolvem isso por `scripts/repo_paths.py`;
-nunca deduza caminho de conteúdo a partir do diretório corrente.
-
-- **`raw/`** — inbox temporário. Conteúdo ainda não processado. `/import` e `/digest` arquivam a fonte em `wiki/sources/` depois do processamento.
-- **`wiki/`** — espaço de trabalho:
-  - `essays/` — conteúdo central: ensaios, white papers e estudos.
-  - `concepts/` e `entities/` — páginas curtas de apoio.
-  - `insights/` — ideias que ainda não pertencem a um essay.
-  - `sources/` — arquivo permanente dos documentos processados, por tipo.
-  - `handouts/` — resumo de uma página de um essay, sob demanda.
-  - `assets/` — imagens e figuras.
-  - `book-chapters/` — reservado para projeto futuro; não usar ainda.
-  - `index.md` / `index.json` — catálogo gerado de essays; nunca editar à mão.
-  - `references.md` / `references.json` — bibliografia consolidada gerada.
-  - `log.md` — histórico append-only.
-  - `status.md` — estado de curto prazo entre sessões.
-- **`plan/`** — plano de longo prazo. `plano.md` guarda pendências; `drafts/` guarda outlines antes de `/essay`.
-- **`scripts/`** — lint, busca, índices, grafo, export, quality gates e templates do site (`scripts/site_src/`).
-- **`tests/`** — testes automatizados e fixtures sintéticas isoladas.
-
-Detalhes de tipos de source, frontmatter, tags, links, referências, prosa, imagens e formatos vivem em `conventions/SKILL.md`.
+Estrutura detalhada de conteúdo, frontmatter, tags, links, referências, prosa e imagens: `conventions/SKILL.md`.
 
 ### Fonte única para agentes
 
-`.agents/` é a única árvore **editável** de skills e subagents, e vale para todos
-os agentes. Fonte única não quer dizer cópia única: os espelhos existem porque
-cada harness lê de um lugar diferente. Quer dizer que só `.agents/` pode ser
-editado à mão.
+Edite somente `.agents/`. Os mirrors existem para os harnesses e são gerados por `scripts/sync_skills.py`.
 
 ```text
-.agents/                 fonte única editável
+.agents/                 fonte editável
     ↓ scripts/sync_skills.py
-.claude/skills/          espelho gerado
-.claude/agents/          espelho gerado
-.codex/agents/*.toml     adaptadores específicos do Codex
+.claude/skills/          mirror gerado
+.claude/agents/          mirror gerado
+.codex/agents/*.toml     adapters Codex
 ```
 
-`CLAUDE.md` é apenas um adaptador de uma linha que importa `@AGENTS.md`.
-
-**Nunca edite `.claude/skills/` ou `.claude/agents/` à mão.** Qualquer conteúdo
-ali é saída de `sync_skills.py` e será sobrescrito ou removido na próxima
-sincronização. Mudou o comportamento de uma skill? Edite `.agents/` e rode o
-sync.
-
-#### O sync
-
-```text
-SessionStart
-   ↓
-python scripts/sync_skills.py --quiet
-   ↓
-.claude/skills/ + .claude/agents/ atualizados
-```
-
-O hook `SessionStart` de `.claude/settings.json` existe só para esse bootstrap.
-`settings.json` é o único arquivo versionado dentro de `.claude/`; os espelhos
-são ignorados pelo Git, porque são derivados.
-
-| Comando | Papel |
-| --- | --- |
-| `python scripts/sync_skills.py` | espelha e relata o que mudou |
-| `python scripts/sync_skills.py --check` | não escreve; sai com 1 se houver drift |
-| `python scripts/sync_skills.py --quiet` | modo hook: só fala se algo mudou |
-
-`--check` é contrato de repositório: roda em `check_repo.py --quick`, no
-subagent `update` e em `tests/test_agent_sync_contract.py`. Um espelho que não
-possa ser reproduzido integralmente a partir de `.agents/` é falha, não aviso.
-
-Skill nova aparece no Claude Code na sessão seguinte ao sync, porque skills são
-registradas na inicialização.
+- Nunca edite `.claude/skills/` ou `.claude/agents/` à mão.
+- Após alterar `.agents/`, rode `python scripts/sync_skills.py`.
+- `python scripts/sync_skills.py --check` deve passar.
+- `CLAUDE.md` apenas importa `@AGENTS.md`.
 
 ## Skills Disponíveis
 
-A coluna **Modo** abaixo descreve o tipo de execução da skill:
-
-- **[script]** — execução mecânica;
-- **[leitura]** — julgamento editorial/conceitual;
-- **[ambos]** — combina os dois.
-
-Isso é diferente de `metadata.second-brain-mode` no frontmatter. O metadata declara **efeito persistente**: `read` não escreve, `write` é um workflow que pode escrever e `mixed` possui modos reais de leitura e escrita conforme subcomando ou autorização.
-
-Toda skill declara em `metadata`:
-
-- `second-brain-role` — responsabilidade principal;
-- `second-brain-mode` — `read | write | mixed`;
-- `second-brain-scope` — unidade sobre a qual opera;
-- `second-brain-approval` — `none | conditional | before-write | before-remote`;
-- `second-brain-closure` — tipo de fechamento esperado.
-
-Campos adicionais podem declarar contratos específicos. `second-brain-routes-to`, quando presente, registra um handoff operacional direto para outra skill; por exemplo, `/expand` entrega mudança estrutural a `/chapter`.
+A coluna **Modo** descreve a execução da skill. O metadata declara seu contrato persistente e é validado por `check_skills.py`.
 
 ### Ideação e criação
 
@@ -202,75 +125,38 @@ Campos adicionais podem declarar contratos específicos. `second-brain-routes-to
 
 `tags:` das páginas e `Tags:` do manifesto usam o mesmo vocabulário. Tipos de source definem as subpastas físicas em `wiki/sources/`.
 
-A fonte normativa para tags, tipos, status, manifesto/mapa e regras de reuso é `conventions/SKILL.md`. Reuse valores existentes antes de criar novos; `/organize` audita consistência.
+Regras normativas: `conventions/SKILL.md`. Reuse valores existentes antes de criar novos; `/organize` audita consistência.
 
 ## Publicação
 
-O site público tem **duas camadas**, com regras diferentes.
+`visibility:` só se aplica a essays.
 
-**Catálogo e mapa — públicos para a base inteira.** O índice lista todos os
-essays e o grafo mostra todos os essays, concepts, entities, insights e
-referências, com título, resumo, tags, datas, status e conexões. É um atlas: a
-forma do conhecimento é pública.
-
-**Texto — só por allowlist.** O corpo de uma página só é renderizado, indexado
-para busca e linkável quando o essay é `public`.
-
-O campo é `visibility:`, com três níveis:
-
-| Valor | Efeito |
+| Valor | Saída pública |
 | --- | --- |
-| `public` | texto legível no site |
-| `private` | catalogado e mapeado por título e resumo; o texto não sai |
-| `hidden` | ausente de tudo — site, índice da wiki e grafo da wiki |
+| `public` | catálogo + mapa + corpo |
+| `private` | catálogo + mapa; sem corpo nem link de leitura |
+| `hidden` | não aparece no site, índice ou grafo |
+| ausente ou inválido | tratado como `private` |
 
-- campo ausente = `private`;
-- valor não reconhecido = `private` (nunca publica por engano);
-- `publish: true` continua valendo como grafia antiga de `visibility: public`;
-- aceita as grafias em português: `público`, `privado`, `oculto`;
-- só se aplica a essays — nunca a source, concept, entity, insight, handout, status, log ou plano.
+`publish: true` continua equivalente a `public`; `público`, `privado` e `oculto` também são aceitos.
 
-`scripts/set_visibility.py` escreve o campo (`allow`, `deny`, `hide`, `set-exclusive`)
-e sem argumentos lista o corpus por nível.
-
-O que **nunca** sai do repo privado: o corpo de qualquer página, qualquer caminho
-para dentro de `data/`, e qualquer link que abra uma página não autorizada. Um
-essay não publicado aparece no catálogo e no mapa marcado como **privado**, e não
-abre.
-
-Um site estático não esconde o que serve: título e resumo no catálogo são
-legíveis por qualquer pessoa. Essa é a troca deliberada.
-
-Nenhuma skill define ou altera `visibility:` automaticamente. Nem `/review`, nem
-`/import`, nem `/organize`, nem o subagent `update`. É decisão explícita do Usuário,
-aplicada por `scripts/set_visibility.py` ou pela skill `/publish`.
-
-`scripts/build_site.py` roda **apenas** sob pedido explícito de publicação (via skill `/publish`), e o
-resultado precisa passar em `scripts/check_site_privacy.py`.
-
-Regras completas em `conventions/SKILL.md`.
+- Nunca altere `visibility:` automaticamente; exige decisão explícita do Usuário.
+- Nenhum corpo não autorizado, link de leitura restrito ou caminho para `data/` pode sair.
+- `scripts/build_site.py` só roda sob pedido explícito de publicação.
+- Publicação exige `scripts/check_site_privacy.py`.
+- Contrato completo de dados: `conventions/SKILL.md`; workflow: `/publish`.
 
 ## Plano de Longo Prazo
 
-`plan/plano.md`, mantido por `/plan`, possui cinco seções fixas:
-
-1. Tarefas
-2. Fontes para Ingerir
-3. Revisões
-4. Estudos
-5. Essays Futuros
-
-`/plan work` retoma um item e executa o routing para a skill adequada. O item só sai pelo fluxo `/plan done`.
-
-Pendência de curto prazo fica em `wiki/status.md`, não no plano.
+`plan/plano.md` é o backlog de longo prazo. Use `/plan add|list|work|done`; não replique seu schema aqui. Pendência de curto prazo fica em `wiki/status.md`.
 
 ## Status e Ritual de Sessão
 
-`wiki/status.md` liga uma sessão à próxima. `wiki/log.md` é histórico, não estado atual.
+`wiki/status.md` liga uma sessão à próxima; `wiki/log.md` é histórico.
 
-- **Abertura:** se o pedido envolve trabalho substancial, leia `wiki/status.md` e as convenções relevantes antes de editar.
-- **Fechamento:** após trabalho substancial (`/essay`, `/import`, `/digest`, `/absorb`, `/organize`, `/sweep`, `/study`, `/plan work`), ofereça `/status update`.
-- Skills que precisam regenerar derivados podem oferecer o subagent `update` depois das edições; execute-o somente com a autorização exigida pela skill chamadora.
+- Em trabalho substancial, leia o status e as convenções relevantes antes de editar.
+- Após trabalho substancial, ofereça `/status update`.
+- Skills podem oferecer o subagent `update` quando precisarem fechar derivados/Git; respeite a autorização da skill chamadora.
 - `/stats` é read-only e não chama `update`.
 
 ## Regras Gerais
@@ -279,19 +165,11 @@ Pendência de curto prazo fica em `wiki/status.md`, não no plano.
 2. Derivados (`index.*`, `references.*`, grafo, stats) são gerados por script; nunca editar à mão.
 3. Registre operações de conteúdo em `wiki/log.md` quando a skill exigir; o log é append-only.
 4. Toda página segue frontmatter, nomenclatura e estrutura de `conventions/SKILL.md`.
-5. **`updated:` mede o texto, não a manutenção.** Só mexa na data quando a prosa
-   do corpo mudar de forma apreciável — capítulo novo, argumento reescrito, seção
-   fundida ou dividida. Correção mecânica, frontmatter, byline, cabeçalho,
-   `## Sumário`, `## Conexões`, `## Referências`, wikilink, link externo, tag,
-   renomeação e `visibility:` **não** atualizam a data. Uma passada de lint que
-   empurra dezenas de essays para o mesmo dia transforma o campo em ruído e faz o
-   catálogo ordenar por manutenção em vez de por escrita. Regra completa em
-   `conventions/SKILL.md`.
+5. Altere `updated:` somente quando a prosa do corpo mudar substancialmente. Não altere por metadata, lint, links, referências, formatação, renomeação ou `visibility:`.
 6. **Contradição entre fontes:** não escolha um lado nem faça média. Mostre as versões com localização e aguarde a decisão do Usuário.
 7. Busque na wiki primeiro. Vá às fontes arquivadas quando a wiki não bastar ou quando for necessário verificar a evidência.
 8. Toda a wiki é escrita em Português do Brasil.
-9. **Git é sempre explícito por repositório.** Nunca use um único `git add`/`commit`
-   para representar o workspace inteiro:
+9. **Git é explícito por repositório.** Nunca represente o workspace com um único `git add`/`commit`:
 
    ```bash
    git -C . status
@@ -299,7 +177,7 @@ Pendência de curto prazo fica em `wiki/status.md`, não no plano.
    git -C site status
    ```
 
-   O engine ignora `/data/` e `/site/` integralmente; nunca force `git add -f data`.
+   Nunca force `git add -f data`.
 
 ## Subagents
 
@@ -307,17 +185,15 @@ Pendência de curto prazo fica em `wiki/status.md`, não no plano.
 
 ### `update`
 
-Executa fechamento com portão (gated): pre-flight, fixer, rebuild, post-flight e, somente com gates sem erro bloqueante, os commits locais de `./` e `data/` primeiro e os pushes depois. Não é transacional — dois repositórios remotos não publicam atomicamente; o que o gate garante é que uma falha de push deixa os dois locais coerentes, e o relato diz qual repositório ficou para trás e com que comando empurrá-lo.
+Fechamento mecânico de `./` e `data/`: pre-flight → fixer → rebuild → post-flight → commits locais → pushes. Nunca publica `site/`, decide conteúdo ou reescreve prosa.
 
-Pode reconstruir índice, referências, grafo, sphere, stats, qmd e espelhos. Não decide conteúdo, não resolve contradições, não funde/deleta páginas e não escreve prosa.
-
-Execute apenas quando a skill de fechamento pedir **e** sua autorização estiver satisfeita, ou sob pedido direto de sincronização/atualização.
+Execute apenas quando a skill chamadora autorizar ou sob pedido direto de sincronização/atualização. Contrato completo: `.agents/agents/update.md`.
 
 ### `lint-report`
 
-Agrega diagnósticos de `check_wiki.py`, `check_references.py`, `check_dedupe.py`, `check_freshness.py` e `check_gaps.py`. Preserva as severidades emitidas pelos checkers, agrupa em Crítico/Atenção/Informativo e não corrige nada.
+Agrega diagnósticos de `check_wiki.py`, `check_references.py`, `check_dedupe.py`, `check_freshness.py` e `check_gaps.py`. Preserva severidades e não corrige nada.
 
-Só sob pedido direto; nenhuma skill precisa chamá-lo automaticamente.
+Só sob pedido direto.
 
 ### Escrever e modificar skills e agentes
 
@@ -330,44 +206,30 @@ Vale para `.agents/skills/` e `.agents/agents/`.
 - Não registre histórico de mudança; o arquivo descreve o comportamento atual.
 - Reserve “nunca” e “sempre” para invariantes realmente bloqueantes.
 - Mudou o comportamento, atualize `description:` e o `metadata` afetado no frontmatter.
-- Editou `.agents/`, rode `python scripts/sync_skills.py` para atualizar os espelhos/adapters. Valide com `python scripts/check_skills.py` e `python scripts/check_agents.py`.
+- Editou `.agents/`, rode `python scripts/sync_skills.py`. Valide com `python scripts/check_skills.py` e `python scripts/check_agents.py`.
 
 ## Ferramentas
 
-- **qmd** — primeira opção de busca conceitual quando disponível. Collection `secondbrain`, indexando `DATA_ROOT/wiki/**/*.md` (por padrão `data/wiki`), nunca a raiz do engine. Confirme com `qmd status`; se indisponível, use `scripts/find_text.py`.
-- **scripts/find_text.py** — busca textual com contexto na wiki; também serve para termos/wikilinks exatos.
+- **qmd** — primeira opção de busca conceitual quando disponível. Collection `secondbrain`, indexando `DATA_ROOT/wiki/**/*.md`; confirme com `qmd status`. Se indisponível, use `scripts/find_text.py`.
+- **scripts/find_text.py** — busca textual com contexto e termos/wikilinks exatos.
 - **summarize** — resume links, arquivos e mídia quando disponível.
 - **agent-browser** — fallback de navegador quando busca/fetch não resolverem.
 
 ## Repository Quality Gates
 
-O repositório público versionado é um **engine de código e agentes**, não uma wiki. Ele não
-contém corpus pessoal: `wiki/`, `plan/`, `raw/`, `output/` e `.obsidian/` vivem no repo
-privado `data/` e são ignorados aqui. O único corpus versionado é sintético, em
-`tests/fixtures/mini-brain/`, e os testes o instalam sob `tmp_path` — nunca na `data/` real.
-CI roda sem `data/` e sem `site/`, e nunca clona nem recebe credencial do repo privado.
+Antes de fechar mudança mecânica:
 
 ```bash
-python scripts/check_repo.py
 python scripts/check_repo.py --quick
-python scripts/check_repo.py --architecture
-python scripts/check_script_defaults.py
-python -m pytest -q
 ```
 
-- `check_repo.py` sem argumentos executa o diagnóstico completo; `--wiki`, `--exports`, `--site` e `--architecture` restringem o escopo.
-- `--architecture` reúne os contratos estruturais: os três Gits isolados, a disciplina de caminhos e a cadeia `.agents/` → espelhos → adaptadores (`check_agents.py`).
-- Os testes de navegador ficam atrás da marca `browser` e só rodam onde há Chromium: `python -m pytest -q -m browser`.
-- Todo script executável deve ter um default útil sem argumentos.
-- `/doctor` é diagnóstico read-only e nunca corrige/commita.
-- Clone sem essays, HTML ou PDF produz `SKIP` nos grupos aplicáveis.
-- Correção mecânica determinística deve ganhar teste de regressão quando viável. Ver `TESTING.md`.
+Mudança mecânica determinística deve ganhar teste de regressão quando viável. Use o corpus sintético `tests/fixtures/mini-brain/`, nunca `data/`. Matriz completa, marcadores e dependências: `TESTING.md`.
+
+`/doctor` é diagnóstico read-only. Todo script executável deve ter default útil sem argumentos.
 
 ### Pendência de configuração, fora do alcance de qualquer script
 
-Os dois `main` públicos estão sem branch protection. Enquanto estiverem, um push
-direto entra na branch sem passar por gate nenhum — e no site isso significa ir
-ao ar. É configuração de repositório no GitHub, feita uma vez, pelo Usuário:
+Os dois `main` públicos estão sem branch protection. Enquanto estiverem, um push direto entra na branch sem passar por gate nenhum — e no site isso significa ir ao ar. É configuração de repositório no GitHub, feita uma vez, pelo Usuário:
 
 | Repositório | Check a exigir |
 | --- | --- |
